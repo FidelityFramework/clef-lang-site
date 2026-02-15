@@ -1,0 +1,118 @@
+baseURL: https://clef-lang.com/
+languageCode: en-us
+title: Clef Programming Language
+
+module:
+  hugoVersion:
+    min: 0.128.0
+
+  imports:
+    # Hextra theme
+    - path: github.com/imfing/hextra
+
+    # Language specification from external repo (uncomment when clef-lang-spec has go.mod)
+    # - path: github.com/FidelityFramework/clef-lang-spec
+    #   mounts:
+    #     - source: stable
+    #       target: content/spec/v0.1
+    #     - source: draft
+    #       target: content/spec/draft
+    #     - source: diagrams
+    #       target: static/images/spec
+
+  # Local project mounts (REQUIRED once any import has custom mounts)
+  # Uncomment when spec module is enabled:
+  # mounts:
+  #   - source: content
+  #     target: content
+  #   - source: static
+  #     target: static
+  #   - source: assets
+  #     target: assets
+  #   - source: layouts
+  #     target: layouts
+  #   - source: data
+  #     target: data
+
+enableRobotsTXT: true
+enableGitInfo: true
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+    extensions:
+      passthrough:
+        delimiters:
+          block:
+            - - \[
+              - \]
+            - - $$
+              - $$
+          inline:
+            - - \(
+              - \)
+        enable: true
+  highlight:
+    noClasses: false
+
+menu:
+  main:
+    - identifier: docs
+      name: Documentation
+      pageRef: /docs
+      weight: 1
+    - identifier: spec
+      name: Specification
+      pageRef: /spec
+      weight: 2
+    - identifier: blog
+      name: Blog
+      pageRef: /blog
+      weight: 3
+    - identifier: search
+      name: Search
+      weight: 4
+      params:
+        type: search
+    - identifier: github
+      name: GitHub
+      url: https://github.com/FidelityFramework
+      weight: 5
+      params:
+        icon: github
+
+params:
+  description: "Clef is a systems programming language designed for correctness, performance, and formal verification."
+
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    width: wide
+
+  page:
+    width: wide
+
+  theme:
+    default: system
+    displayToggle: true
+
+  editURL:
+    enable: true
+    base: https://github.com/FidelityFramework/clef-lang-site/edit/main/hugo/content
+
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+      tokenize: forward
+
+  footer:
+    displayCopyright: true
+    displayPoweredBy: false
+
+  highlight:
+    copy:
+      enable: true
+      display: hover
