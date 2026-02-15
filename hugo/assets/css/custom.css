@@ -1,25 +1,13 @@
 /* Hextra++ customizations for clef-lang.com */
 
 /* Brand colors — override Hextra primary hue */
-/* Adjust these values to match the Clef brand palette */
 :root {
-  --primary-hue: 174;          /* Teal — similar to SpeakEZ but distinct */
+  --primary-hue: 174;
   --primary-saturation: 38%;
   --primary-lightness: 45%;
 }
 
-/* Custom fonts — loaded via head-end.html partial */
-.content {
-  font-family: 'Montserrat', sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Nunito', sans-serif;
-}
-
-code, pre, .code {
-  font-family: 'Fira Code', monospace;
-}
+/* Fonts: using Hextra defaults */
 
 /* Spec pages — subtle visual distinction */
 [data-spec="true"] {

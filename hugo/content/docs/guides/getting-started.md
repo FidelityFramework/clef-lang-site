@@ -9,11 +9,11 @@ Clef is under active development. This guide will be expanded as the toolchain m
 
 ## Overview
 
-Clef is a systems programming language that combines:
+Clef is a concurrent systems language targeting heterogeneous compute:
 
-- **Algebraic effects** for composable side-effect management
-- **Dependent types** for compile-time correctness guarantees
-- **Proof-aware compilation** for verified software at native performance
+- **Multi-target** — compiles to CPU, GPU, NPU, FPGA, and other accelerators
+- **Concurrent** — first-class concurrency primitives for parallel and distributed systems
+- **Proof-carrying** — proof-aware compilation for safe realtime systems
 
 ## Ecosystem
 

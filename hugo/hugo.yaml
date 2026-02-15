@@ -83,15 +83,14 @@ menu:
         icon: github
 
 params:
-  description: "Clef is a systems programming language designed for correctness, performance, and formal verification."
+  description: "Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems."
 
   navbar:
     displayTitle: true
     displayLogo: true
-    width: wide
 
   page:
-    width: wide
+    width: normal
 
   theme:
     default: system

@@ -10,13 +10,13 @@ toc: false
 
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
-  A language built for&nbsp;<br class="sm:hx-block hx-hidden" />correctness and performance
+  Concurrent systems language&nbsp;<br class="sm:hx-block hx-hidden" />for heterogeneous compute
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  Clef combines algebraic effects, dependent types, and proof-aware compilation&nbsp;<br class="sm:hx-block hx-hidden" />to deliver verified software at systems-level performance.
+  Clef targets CPU, GPU, NPU, FPGA, and other accelerators&nbsp;<br class="sm:hx-block hx-hidden" />with proof-carrying capabilities for safe realtime systems.
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -36,7 +36,7 @@ toc: false
   >}}
   {{< hextra/feature-card
     title="Composer Compiler"
-    subtitle="Multi-target build orchestration with proof-aware compilation and algebraic effect inference."
+    subtitle="Multi-target build orchestration for CPU, GPU, NPU, and FPGA with proof-aware compilation."
     link="docs/internals"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(0,101,178,0.15),hsla(0,0%,100%,0));"
   >}}
