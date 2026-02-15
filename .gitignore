@@ -1,0 +1,31 @@
+# Hugo build output
+hugo/public/
+hugo/resources/_gen/
+
+# Hugo module cache
+hugo/.hugo_build.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# .NET build output (for CLI)
+cli/bin/
+cli/obj/
+
+# Node modules (for Workers)
+workers/*/node_modules/
+workers/*/dist/
+
+# Deploy state
+.clef-deploy-state.json
+
+# Environment
+.env
+.env.local
