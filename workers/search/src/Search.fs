@@ -14,29 +14,32 @@ module Search =
         emitJsExpr x "$0 == null"
 
     /// Sanitize a user query for FTS5 MATCH.
-    /// FTS5 operators like # (column filter), * (prefix), - (NOT), " (phrase),
-    /// NEAR, AND, OR, NOT can cause parse errors when passed raw.
-    /// We strip special chars and quote each token as FTS5 literals.
-    /// Also defends against injection: length limit, control char stripping, null bytes.
+    /// The tokenizer uses `tokenchars .-_#+` so F#, C#, F*, C++, .NET are valid tokens.
+    /// We quote each whitespace-delimited term so FTS5 treats them as phrase literals
+    /// rather than interpreting operators like # (column filter) or * (prefix).
+    /// Double-quotes inside input are stripped since they control FTS5 phrase syntax.
+    /// Also: length limit, control char / null byte stripping.
     let private sanitizeFts5Query (raw: string) : string =
-        // Length limit to prevent abuse
         let query = if raw.Length > 500 then raw.Substring(0, 500) else raw
-        // Characters that are FTS5 operators or could cause parse errors
-        let isSpecial (c: char) =
+        // Only strip characters that are dangerous even inside FTS5 quotes,
+        // or that have no place in search input at all.
+        // Preserve: # + - . _ * (these are tokenchars in our FTS5 index)
+        let mustStrip (c: char) =
             match c with
-            | '#' | '*' | '"' | '(' | ')' | '{' | '}' | ':' | '^' | '~'
-            | '+' | '-' | '!' | '\\' | '/' | '\'' | '\x00' -> true
-            | c when Char.IsControl(c) -> true
+            | '"' -> true                      // controls FTS5 phrase syntax
+            | '(' | ')' -> true                // FTS5 grouping
+            | '{' | '}' -> true                // FTS5 aux syntax
+            | '\x00' -> true                   // null byte
+            | c when Char.IsControl(c) -> true // control chars
             | _ -> false
-        // Split on whitespace, process each token
         query.Split([| ' '; '\t'; '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
         |> Array.map (fun token ->
-            // Strip special chars from token
             let cleaned =
                 token.ToCharArray()
-                |> Array.filter (fun c -> not (isSpecial c))
+                |> Array.filter (fun c -> not (mustStrip c))
                 |> System.String
-            // Quote each token to prevent FTS5 operator interpretation
+            // Wrap in double quotes to make FTS5 treat it as a literal phrase.
+            // This neutralizes operators like # : ^ ~ * when they appear in tokens.
             if cleaned.Length > 0 then
                 sprintf "\"%s\"" cleaned
             else "")
