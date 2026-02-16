@@ -2,8 +2,9 @@
 hugo/public/
 hugo/resources/_gen/
 
-# Hugo module cache
+# Hugo module cache and vendored themes
 hugo/.hugo_build.lock
+hugo/_vendor/
 
 # OS
 .DS_Store

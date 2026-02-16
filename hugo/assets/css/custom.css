@@ -1,21 +1,41 @@
-/* Hextra++ customizations for clef-lang.com */
+/* Hextra++ customizations for clef-lang.com
+   ─────────────────────────────────────────────
+   This file is concatenated AFTER Hextra's pre-compiled main.css,
+   which is fully Tailwind v4 @layer'd. Unlayered CSS here wins the
+   cascade automatically — no !important needed.
+*/
 
-/* Brand colors — override Hextra primary hue */
+/* ── Brand colors ──────────────────────────────────────────── */
 :root {
-  --primary-hue: 174;
-  --primary-saturation: 38%;
-  --primary-lightness: 45%;
+  --primary-hue: 215;
+  --primary-saturation: 65%;
+  --primary-lightness: 48%;
 }
 
-/* Fonts: using Hextra defaults */
+/* ── Dark mode links — orange for readability ──────────────── */
+.dark .content a {
+  color: #F59E0B;
+}
 
-/* Spec pages — subtle visual distinction */
+/* ── Code: Fira Code with ligatures ────────────────────────── */
+code, pre, kbd {
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  font-feature-settings: "liga" 1, "calt" 1;
+  font-weight: 400;
+}
+
+/* Single size control — Hextra compounds .9em × .9em = .81em.
+   Set both levels to the same value so there's no compounding. */
+.hextra-code-block     { font-size: 0.95em; }
+.hextra-code-block pre { font-size: 1em; }
+
+/* ── Spec pages ────────────────────────────────────────────── */
 [data-spec="true"] {
   border-left: 3px solid hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
   padding-left: 1rem;
 }
 
-/* Provenance block styling */
+/* ── Provenance block ──────────────────────────────────────── */
 .provenance {
   border-left: 3px solid #888;
   padding-left: 1rem;
@@ -31,17 +51,11 @@
   gap: 1.25rem;
   margin-top: 1rem;
 }
-
 @media (min-width: 640px) {
-  .blog-card-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .blog-card-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
 @media (min-width: 1024px) {
-  .blog-card-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .blog-card-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 .blog-card {
@@ -56,25 +70,20 @@
   color: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .blog-card:hover {
   border-color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
-
 :is(.dark) .blog-card {
   border-color: #374151;
   background: #111827;
 }
-
 :is(.dark) .blog-card:hover {
   border-color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.blog-card-body {
-  flex: 1;
-}
+.blog-card-body { flex: 1; }
 
 .blog-card-tags {
   display: flex;
@@ -82,7 +91,6 @@
   margin-bottom: 0.75rem;
   flex-wrap: wrap;
 }
-
 .blog-card-tag {
   font-size: 0.7rem;
   font-weight: 600;
@@ -93,7 +101,6 @@
   padding: 0.15rem 0.5rem;
   border-radius: 9999px;
 }
-
 .blog-card-title {
   font-size: 1.15rem;
   font-weight: 700;
@@ -101,10 +108,7 @@
   margin: 0 0 0.5rem;
   color: #0f172a;
 }
-
-:is(.dark) .blog-card-title {
-  color: #f1f5f9;
-}
+:is(.dark) .blog-card-title { color: #f1f5f9; }
 
 .blog-card-desc {
   font-size: 0.875rem;
@@ -116,10 +120,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
-:is(.dark) .blog-card-desc {
-  color: #94a3b8;
-}
+:is(.dark) .blog-card-desc { color: #94a3b8; }
 
 .blog-card-footer {
   display: flex;
@@ -131,12 +132,205 @@
   font-size: 0.775rem;
   color: #94a3b8;
 }
-
 :is(.dark) .blog-card-footer {
   border-top-color: #1e293b;
   color: #64748b;
 }
+.blog-card-author { font-weight: 500; }
 
-.blog-card-author {
-  font-weight: 500;
+
+/* ═══════════════════════════════════════════════════════════════
+   SYNTAX HIGHLIGHTING — SpeakEZ palette
+   Selectors match Hextra's .highlight .chroma .X structure
+   so they have equal specificity and win by source order.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Light theme ───────────────────────────────────────────── */
+.highlight {
+  /* Comments — warm brown italic */
+  .chroma .c   { color: #92400e; font-style: italic }
+  .chroma .ch  { color: #92400e; font-style: italic }
+  .chroma .cm  { color: #92400e; font-style: italic }
+  .chroma .c1  { color: #92400e; font-style: italic }
+  .chroma .cs  { color: #92400e; font-weight: bold; font-style: italic }
+  .chroma .cp  { color: #92400e; font-weight: bold; font-style: italic }
+  .chroma .cpf { color: #92400e; font-weight: bold; font-style: italic }
+
+  /* Keywords — forest green bold */
+  .chroma .k   { color: #047857; font-weight: bold }
+  .chroma .kc  { color: #059669; font-weight: bold }
+  .chroma .kd  { color: #047857; font-weight: bold }
+  .chroma .kn  { color: #047857; font-weight: bold }
+  .chroma .kp  { color: #047857; font-weight: bold }
+  .chroma .kr  { color: #047857; font-weight: bold }
+  .chroma .kt  { color: #047857; font-weight: bold }
+
+  /* Strings — deep red */
+  .chroma .s   { color: #b91c1c }
+  .chroma .sa  { color: #b91c1c }
+  .chroma .sb  { color: #b91c1c }
+  .chroma .sc  { color: #b91c1c }
+  .chroma .dl  { color: #b91c1c }
+  .chroma .sd  { color: #92400e; font-style: italic }
+  .chroma .s2  { color: #b91c1c }
+  .chroma .se  { color: #a16207 }
+  .chroma .sh  { color: #b91c1c }
+  .chroma .si  { color: #b91c1c }
+  .chroma .sx  { color: #b91c1c }
+  .chroma .sr  { color: #854d0e }
+  .chroma .s1  { color: #b91c1c }
+  .chroma .ss  { color: #b91c1c }
+
+  /* Numbers — warm amber */
+  .chroma .m   { color: #a16207 }
+  .chroma .mb  { color: #a16207 }
+  .chroma .mf  { color: #a16207 }
+  .chroma .mh  { color: #a16207 }
+  .chroma .mi  { color: #a16207 }
+  .chroma .il  { color: #a16207 }
+  .chroma .mo  { color: #a16207 }
+  .chroma .l   { color: #a16207 }
+  .chroma .ld  { color: #a16207 }
+
+  /* Names */
+  .chroma .n   { color: #1e293b }
+  .chroma .na  { color: #92400e; font-style: italic }
+  .chroma .nb  { color: #92400e }
+  .chroma .bp  { color: #1d4ed8 }
+  .chroma .nc  { color: #b45309; font-weight: bold }
+  .chroma .no  { color: #92400e }
+  .chroma .nd  { color: #92400e; font-weight: bold }
+  .chroma .ni  { color: #1e293b }
+  .chroma .ne  { color: #c2410c; font-weight: bold }
+  .chroma .nf  { color: #c2410c; font-weight: bold }
+  .chroma .fm  { color: #92400e }
+  .chroma .nl  { color: #1e293b }
+  .chroma .nn  { color: #854d0e; font-style: italic }
+  .chroma .nx  { color: #1e293b }
+  .chroma .py  { color: #92400e }
+  .chroma .nt  { color: #047857 }
+  .chroma .nv  { color: #92400e }
+  .chroma .vc  { color: #92400e }
+  .chroma .vg  { color: #92400e }
+  .chroma .vi  { color: #92400e }
+  .chroma .vm  { color: #1d4ed8 }
+
+  /* Operators — dark slate bold */
+  .chroma .o   { color: #334155; font-weight: bold }
+  .chroma .ow  { color: #334155; font-weight: bold }
+
+  /* Punctuation */
+  .chroma .p   { color: #64748b }
+
+  /* Error */
+  .chroma .err { color: #a61717; background-color: #e3d2d2 }
+
+  /* Generic */
+  .chroma .gd  { color: #000000; background-color: #ffdddd }
+  .chroma .ge  { font-style: italic }
+  .chroma .gr  { color: #aa0000 }
+  .chroma .gh  { color: #854d0e; font-weight: bold }
+  .chroma .gi  { color: #000000; background-color: #ddffdd }
+  .chroma .go  { color: #888888 }
+  .chroma .gp  { color: #555555 }
+  .chroma .gs  { font-weight: bold }
+  .chroma .gu  { color: #aaaaaa }
+  .chroma .gt  { color: #aa0000 }
+  .chroma .gl  { text-decoration: underline }
+  .chroma .w   { color: #bbbbbb }
+}
+
+/* ── Dark theme ────────────────────────────────────────────── */
+.dark .highlight {
+  /* Comments — warm amber italic */
+  .chroma .c   { color: #D4A574; font-style: italic }
+  .chroma .ch  { color: #D4A574; font-style: italic }
+  .chroma .cm  { color: #D4A574; font-style: italic }
+  .chroma .c1  { color: #D4A574; font-style: italic }
+  .chroma .cs  { color: #D4A574; font-weight: bold; font-style: italic }
+  .chroma .cp  { color: #D4A574; font-weight: bold; font-style: italic }
+  .chroma .cpf { color: #D4A574; font-weight: bold; font-style: italic }
+
+  /* Keywords — subdued green */
+  .chroma .k   { color: #059669 }
+  .chroma .kc  { color: #10B981 }
+  .chroma .kd  { color: #059669 }
+  .chroma .kn  { color: #059669 }
+  .chroma .kp  { color: #059669 }
+  .chroma .kr  { color: #059669 }
+  .chroma .kt  { color: #059669 }
+
+  /* Strings — base text */
+  .chroma .s   { color: #EAEAEA }
+  .chroma .sa  { color: #EAEAEA }
+  .chroma .sb  { color: #EAEAEA }
+  .chroma .sc  { color: #EAEAEA }
+  .chroma .dl  { color: #EAEAEA }
+  .chroma .sd  { color: #D4A574; font-style: italic }
+  .chroma .s2  { color: #EAEAEA }
+  .chroma .se  { color: #EFBF04 }
+  .chroma .sh  { color: #EAEAEA }
+  .chroma .si  { color: #EAEAEA }
+  .chroma .sx  { color: #EAEAEA }
+  .chroma .sr  { color: #D97706 }
+  .chroma .s1  { color: #EAEAEA }
+  .chroma .ss  { color: #EAEAEA }
+
+  /* Numbers — golden yellow */
+  .chroma .m   { color: #EFBF04 }
+  .chroma .mb  { color: #EFBF04 }
+  .chroma .mf  { color: #EFBF04 }
+  .chroma .mh  { color: #EFBF04 }
+  .chroma .mi  { color: #EFBF04 }
+  .chroma .il  { color: #EFBF04 }
+  .chroma .mo  { color: #EFBF04 }
+  .chroma .l   { color: #EFBF04 }
+  .chroma .ld  { color: #EFBF04 }
+
+  /* Names */
+  .chroma .n   { color: #EAEAEA }
+  .chroma .na  { color: #D97706; font-style: italic }
+  .chroma .nb  { color: #F59E0B }
+  .chroma .bp  { color: #3B82F6 }
+  .chroma .nc  { color: #FBBF24 }
+  .chroma .no  { color: #D97706 }
+  .chroma .nd  { color: #D97706 }
+  .chroma .ni  { color: #EAEAEA }
+  .chroma .ne  { color: #F97316 }
+  .chroma .nf  { color: #F97316 }
+  .chroma .fm  { color: #F59E0B }
+  .chroma .nl  { color: #EAEAEA }
+  .chroma .nn  { color: #BF9903; font-style: italic }
+  .chroma .nx  { color: #EAEAEA }
+  .chroma .py  { color: #F59E0B }
+  .chroma .nt  { color: #059669 }
+  .chroma .nv  { color: #D97706 }
+  .chroma .vc  { color: #D97706 }
+  .chroma .vg  { color: #D97706 }
+  .chroma .vi  { color: #D97706 }
+  .chroma .vm  { color: #3B82F6 }
+
+  /* Operators — light gray */
+  .chroma .o   { color: #BEBEBE }
+  .chroma .ow  { color: #BEBEBE }
+
+  /* Punctuation */
+  .chroma .p   { color: #8A8A8D }
+
+  /* Error */
+  .chroma .err { color: #f85149 }
+
+  /* Generic */
+  .chroma .gd  { color: #FB923C; background-color: rgba(251, 146, 60, 0.1) }
+  .chroma .ge  { font-style: italic }
+  .chroma .gr  { color: #ffa198 }
+  .chroma .gh  { color: #D97706; font-weight: bold }
+  .chroma .gi  { color: #10B981; background-color: rgba(16, 185, 129, 0.1) }
+  .chroma .go  { color: #8A8A8D }
+  .chroma .gp  { color: #8A8A8D }
+  .chroma .gs  { font-weight: bold }
+  .chroma .gu  { color: #8A8A8D }
+  .chroma .gt  { color: #F97316 }
+  .chroma .gl  { text-decoration: underline }
+  .chroma .w   { color: #6e7681 }
 }
