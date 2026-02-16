@@ -195,7 +195,7 @@ module Handlers =
                 "stream" ==> true
             ]
 
-            let! streamResponse = env.AI.run("@cf/meta/llama-3.1-8b-instruct", aiRequest)
+            let! streamResponse = env.AI.run("@cf/glm-4.7-flash", aiRequest)
 
             // Create a TransformStream to build our SSE response
             let transformStream: obj = emitJsExpr () "new TransformStream()"
@@ -218,9 +218,15 @@ module Handlers =
                         // Send search results first
                         do! writeEvent "results" {| results = topResults |}
 
-                        let responseBody: obj = streamResponse?body
-                        if not (isNullOrUndefined responseBody) then
-                            let reader: obj = responseBody?getReader()
+                        // Workers AI with stream:true returns a ReadableStream directly,
+                        // not a Response with .body. Handle both cases.
+                        let stream: obj =
+                            let body: obj = streamResponse?body
+                            if not (isNullOrUndefined body) then body
+                            else streamResponse |> unbox
+                        let hasGetReader: bool = emitJsExpr stream "typeof $0?.getReader === 'function'"
+                        if hasGetReader then
+                            let reader: obj = stream?getReader()
                             let decoder: obj = emitJsExpr () "new TextDecoder()"
                             let mutable isDone = false
                             let mutable fullText = ""
@@ -257,7 +263,7 @@ module Handlers =
                             do! writeEvent "done" {| complete = true; fullText = fullText |}
                             do! writer?close() |> unbox<JS.Promise<unit>>
                         else
-                            do! writeEvent "error" {| message = "No response body from AI" |}
+                            do! writeEvent "error" {| message = "AI response is not a readable stream" |}
                             do! writer?close() |> unbox<JS.Promise<unit>>
                     with ex ->
                         do! writeEvent "error" {| message = ex.Message |}
