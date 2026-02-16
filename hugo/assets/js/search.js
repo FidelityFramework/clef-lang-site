@@ -217,7 +217,7 @@
         }
       } catch (err) {
         if (err.name !== "AbortError") {
-          results.innerHTML = `<div class="clef-search-empty">Search error — try again</div>`;
+          results.innerHTML = `<div class="clef-search-empty">Search error - try again</div>`;
         }
       }
     }, DEBOUNCE_MS);

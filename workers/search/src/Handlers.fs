@@ -65,6 +65,31 @@ module Handlers =
             header.Substring(7) = env.INDEX_API_KEY
         | _ -> false
 
+    // ── Input validation ────────────────────────────────────────────
+
+    let private maxQueryLength = 500
+    let private maxLimit = 50
+
+    /// Validate and clamp query input
+    let private validateQuery (raw: string) : Result<string, string> =
+        if isNullOrUndefined raw || String.IsNullOrWhiteSpace(raw) then
+            Error "query is required"
+        else
+            let trimmed = raw.Trim()
+            if trimmed.Length > maxQueryLength then
+                Ok (trimmed.Substring(0, maxQueryLength))
+            else
+                Ok trimmed
+
+    /// Validate and clamp limit
+    let private validateLimit (raw: obj) (defaultLimit: int) : int =
+        if isNullOrUndefined raw then defaultLimit
+        else
+            try
+                let n: int = emitJsExpr raw "Number($0) | 0"
+                min (max 1 n) maxLimit
+            with _ -> defaultLimit
+
     // ── Route handlers ────────────────────────────────────────────
 
     /// GET /search?q=...&limit=...&type=...
@@ -78,12 +103,13 @@ module Handlers =
             let query: string = searchParams?get("q") |> unbox
             let limitStr: string = searchParams?get("limit") |> unbox
             let typeStr: string = searchParams?get("type") |> unbox
-            let limit = if isNullOrUndefined limitStr then 10 else try int limitStr with _ -> 10
+            let limit = validateLimit limitStr 10
             let contentType = if isNullOrUndefined typeStr || String.IsNullOrWhiteSpace(typeStr) then None else Some typeStr
 
-            if isNullOrUndefined query || String.IsNullOrWhiteSpace(query) then
-                return jsonResponse {| error = "Query parameter 'q' is required" |} 400
-            else
+            match validateQuery query with
+            | Error msg ->
+                return jsonResponse {| error = msg |} 400
+            | Ok query ->
 
             let! results = Search.bm25Search env.DB query limit contentType
             let latencyMs = int (DateTime.UtcNow - startTime).TotalMilliseconds
@@ -103,16 +129,15 @@ module Handlers =
             let startTime = DateTime.UtcNow
             let! body = request.json<obj>()
             let query: string = body?query |> unbox
-            let limit =
-                let l = body?limit
-                if isNullOrUndefined l then 10 else int l
+            let limit = validateLimit body?limit 10
             let contentType =
                 let t: string = body?``type`` |> unbox
                 if isNullOrUndefined t || String.IsNullOrWhiteSpace(t) then None else Some t
 
-            if isNullOrUndefined query || String.IsNullOrWhiteSpace(query) then
-                return jsonResponse {| error = "query is required" |} 400
-            else
+            match validateQuery query with
+            | Error msg ->
+                return jsonResponse {| error = msg |} 400
+            | Ok query ->
 
             // Run BM25 and vector search in parallel
             let bm25Promise = Search.bm25Search env.DB query (limit * 2) contentType
@@ -141,13 +166,12 @@ module Handlers =
         promise {
             let! body = request.json<obj>()
             let query: string = body?query |> unbox
-            let limit =
-                let l = body?limit
-                if isNullOrUndefined l then 5 else int l
+            let limit = validateLimit body?limit 5
 
-            if isNullOrUndefined query || String.IsNullOrWhiteSpace(query) then
-                return jsonResponse {| error = "query is required" |} 400
-            else
+            match validateQuery query with
+            | Error msg ->
+                return jsonResponse {| error = msg |} 400
+            | Ok query ->
 
             // Hybrid search first
             let! bm25Results = Search.bm25Search env.DB query (limit * 2) None

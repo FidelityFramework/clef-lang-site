@@ -118,17 +118,16 @@ module SmartDeploy =
 
     /// Check for changes beyond committed git diffs:
     /// - Hugo module updates (go.sum changed since last deploy)
-    /// - Uncommitted/untracked files in the working tree
     let private detectExtraChanges
         (workingDir: string)
         (state: Config.DeploymentState option)
-        (verbose: bool)
+        (_verbose: bool)
         : Config.DeploymentScope * string list =
 
         let mutable reasons = []
         let mutable scope = Config.NoDeploy
 
-        // 1. Hugo module changes (go.sum hash differs from last deploy)
+        // Hugo module changes (go.sum hash differs from last deploy)
         let currentGoSumHash = hashFile (Path.Combine(workingDir, "hugo", "go.sum"))
         let lastGoSumHash = state |> Option.bind (fun s -> s.LastGoSumHash)
         match currentGoSumHash, lastGoSumHash with
@@ -138,30 +137,6 @@ module SmartDeploy =
         | Some _, None ->
             reasons <- "Hugo modules detected (first tracked deploy)" :: reasons
             scope <- Config.PagesAndR2
-        | _ -> ()
-
-        // 2. Uncommitted/untracked working tree changes
-        match GitDiffAnalyzer.getWorkingTreeChanges workingDir with
-        | Ok changes when changes.Length > 0 ->
-            let workerChanges = changes |> List.filter (fun (_, p) -> p.StartsWith("workers/"))
-            let contentChanges = changes |> List.filter (fun (_, p) -> p.StartsWith("hugo/content/"))
-            let hugoChanges = changes |> List.filter (fun (_, p) -> p.StartsWith("hugo/") && not (p.StartsWith("hugo/content/")))
-
-            if workerChanges.Length > 0 then
-                reasons <- $"Uncommitted worker changes ({workerChanges.Length} files)" :: reasons
-                scope <- Config.FullDeploy
-            if contentChanges.Length > 0 then
-                reasons <- $"Uncommitted content changes ({contentChanges.Length} files)" :: reasons
-                scope <- broaderScope scope Config.PagesAndR2
-            if hugoChanges.Length > 0 then
-                reasons <- $"Uncommitted Hugo changes ({hugoChanges.Length} files)" :: reasons
-                scope <- broaderScope scope Config.PagesOnly
-
-            if verbose then
-                for (status, path) in changes |> List.truncate 10 do
-                    printfn "    [%s] %s" status path
-                if changes.Length > 10 then
-                    printfn "    ... and %d more" (changes.Length - 10)
         | _ -> ()
 
         (scope, List.rev reasons)
@@ -268,13 +243,7 @@ module SmartDeploy =
                 | Config.FullDeploy ->
                     // Worker and/or CLI changes detected — deploy only what changed
                     let workerFiles =
-                        let gitWorkerFiles = gitAnalysis |> Option.map (fun a -> a.WorkerFilesChanged) |> Option.defaultValue []
-                        // Also include uncommitted worker files from working tree
-                        let extraWorkerFiles =
-                            match GitDiffAnalyzer.getWorkingTreeChanges workingDir with
-                            | Ok changes -> changes |> List.map snd |> List.filter (fun p -> p.StartsWith("workers/"))
-                            | Error _ -> []
-                        gitWorkerFiles @ extraWorkerFiles |> List.distinct
+                        gitAnalysis |> Option.map (fun a -> a.WorkerFilesChanged) |> Option.defaultValue []
 
                     let workers = changedWorkers workerFiles
 

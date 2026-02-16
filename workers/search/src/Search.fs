@@ -13,10 +13,44 @@ module Search =
     let inline private isNullOrUndefined (x: 'a) : bool =
         emitJsExpr x "$0 == null"
 
+    /// Sanitize a user query for FTS5 MATCH.
+    /// FTS5 operators like # (column filter), * (prefix), - (NOT), " (phrase),
+    /// NEAR, AND, OR, NOT can cause parse errors when passed raw.
+    /// We strip special chars and quote each token as FTS5 literals.
+    /// Also defends against injection: length limit, control char stripping, null bytes.
+    let private sanitizeFts5Query (raw: string) : string =
+        // Length limit to prevent abuse
+        let query = if raw.Length > 500 then raw.Substring(0, 500) else raw
+        // Characters that are FTS5 operators or could cause parse errors
+        let isSpecial (c: char) =
+            match c with
+            | '#' | '*' | '"' | '(' | ')' | '{' | '}' | ':' | '^' | '~'
+            | '+' | '-' | '!' | '\\' | '/' | '\'' | '\x00' -> true
+            | c when Char.IsControl(c) -> true
+            | _ -> false
+        // Split on whitespace, process each token
+        query.Split([| ' '; '\t'; '\n'; '\r' |], StringSplitOptions.RemoveEmptyEntries)
+        |> Array.map (fun token ->
+            // Strip special chars from token
+            let cleaned =
+                token.ToCharArray()
+                |> Array.filter (fun c -> not (isSpecial c))
+                |> System.String
+            // Quote each token to prevent FTS5 operator interpretation
+            if cleaned.Length > 0 then
+                sprintf "\"%s\"" cleaned
+            else "")
+        |> Array.filter (fun s -> s <> "")
+        |> String.concat " "
+
     /// BM25 full-text search using D1 FTS5
     /// bm25() returns negative scores (lower = better match), we negate for ranking
     let bm25Search (db: D1Database) (query: string) (limit: int) (contentType: string option) : JS.Promise<SearchResult array> =
         promise {
+            let ftsQuery = sanitizeFts5Query query
+            if ftsQuery = "" then return [||]
+            else
+
             let sql, args =
                 match contentType with
                 | Some ct ->
@@ -33,7 +67,7 @@ module Search =
                     ORDER BY score
                     LIMIT ?
                     """,
-                    [| box query; box ct; box limit |]
+                    [| box ftsQuery; box ct; box limit |]
                 | None ->
                     """
                     SELECT
@@ -47,7 +81,7 @@ module Search =
                     ORDER BY score
                     LIMIT ?
                     """,
-                    [| box query; box limit |]
+                    [| box ftsQuery; box limit |]
 
             let stmt = db.prepare(sql)
             let bound = stmt.bind(args)
