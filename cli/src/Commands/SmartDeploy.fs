@@ -207,7 +207,8 @@ module SmartDeploy =
                     printfn ""
 
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" false verbose
+                    // Always refresh spec module to pick up upstream changes
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
