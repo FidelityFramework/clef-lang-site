@@ -1,0 +1,19 @@
+# Local Development Configuration
+# NOTE: This file is ONLY for local development with `wrangler dev`
+# Production deployment uses the CLI tool via Cloudflare Management API
+# Do not use `wrangler deploy` - use `dotnet run --project cli/ -- deploy` instead
+
+name = "clef-content-sync-dev"
+main = "dist/worker.js"
+compatibility_date = "2024-11-01"
+
+# Environment variables
+[vars]
+SYNC_API_KEY = "dev-local-key"  # Override via --var for real testing
+
+# R2 bucket for content storage
+[[r2_buckets]]
+binding = "CONTENT"
+bucket_name = "clef-blog-content-dev"
+preview_bucket_name = "clef-blog-content-dev"
+remote = true

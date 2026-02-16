@@ -22,6 +22,11 @@ cli/obj/
 # Node modules (for Workers)
 workers/*/node_modules/
 workers/*/dist/
+workers/*/bin/
+workers/*/obj/
+workers/*/.config/
+workers/*/.wrangler/
+workers/*/package-lock.json
 
 # Deploy state
 .clef-deploy-state.json

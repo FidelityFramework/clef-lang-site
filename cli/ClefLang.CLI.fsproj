@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/Config.fs" />
+    <Compile Include="src/Core/HttpHelpers.fs" />
+    <Compile Include="src/Core/R2Client.fs" />
+    <Compile Include="src/Core/KVClient.fs" />
+    <Compile Include="src/Core/D1Client.fs" />
+    <Compile Include="src/Core/WorkersClient.fs" />
+    <Compile Include="src/Core/PagesClient.fs" />
+    <Compile Include="src/Core/GitDiffAnalyzer.fs" />
+    <Compile Include="src/Commands/Provision.fs" />
+    <Compile Include="src/Commands/Deploy.fs" />
+    <Compile Include="src/Commands/DeployPages.fs" />
+    <Compile Include="src/Commands/Sync.fs" />
+    <Compile Include="src/Commands/Status.fs" />
+    <Compile Include="src/Commands/Migrate.fs" />
+    <Compile Include="src/Commands/AnalyzeDiff.fs" />
+    <Compile Include="src/Commands/SmartDeploy.fs" />
+    <Compile Include="src/Commands/Purge.fs" />
+    <Compile Include="src/Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Argu" Version="6.2.5" />
+    <PackageReference Include="Blake3" Version="2.0.0" />
+  </ItemGroup>
+
+  <!-- Local Fidelity.CloudEdge project references -->
+  <ItemGroup>
+    <ProjectReference Include="../../Fidelity.CloudEdge/src/Management/CloudEdge.Management.Workers/CloudEdge.Management.Workers.fsproj" />
+    <ProjectReference Include="../../Fidelity.CloudEdge/src/Management/CloudEdge.Management.R2/CloudEdge.Management.R2.fsproj" />
+    <ProjectReference Include="../../Fidelity.CloudEdge/src/Management/CloudEdge.Management.D1/CloudEdge.Management.D1.fsproj" />
+    <ProjectReference Include="../../Fidelity.CloudEdge/src/Management/CloudEdge.Management.Pages/CloudEdge.Management.Pages.fsproj" />
+  </ItemGroup>
+</Project>

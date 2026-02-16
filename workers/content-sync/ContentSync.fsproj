@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/Types.fs" />
+    <Compile Include="src/Handlers.fs" />
+    <Compile Include="src/Main.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.3.0" />
+    <PackageReference Include="Fable.Promise" Version="3.2.0" />
+  </ItemGroup>
+
+  <!-- Local CloudflareFS Runtime bindings -->
+  <ItemGroup>
+    <ProjectReference Include="../../../CloudflareFS/src/Runtime/CloudFlare.Worker.Context/CloudFlare.Worker.Context.fsproj" />
+    <ProjectReference Include="../../../CloudflareFS/src/Runtime/CloudFlare.R2/CloudFlare.R2.fsproj" />
+  </ItemGroup>
+
+</Project>

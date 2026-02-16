@@ -1,0 +1,97 @@
+Clef Programming Language — clef-lang.com
+Copyright 2025-2026 SpeakEZ Technologies, LLC
+
+This product includes software developed at SpeakEZ Technologies, LLC.
+
+================================================================================
+
+Licensing
+---------
+
+Code (templates, scripts, CLI, workers):
+  Apache License 2.0 with LLVM Exception — see LICENSE
+
+Content (documentation, design docs, blog posts, specifications):
+  Creative Commons Attribution 4.0 International — see LICENSE-CONTENT
+
+================================================================================
+
+Acknowledgments and Intellectual Heritage
+-----------------------------------------
+
+The Clef language and the Fidelity Framework build upon ideas, research, and
+open-source contributions from many projects and communities. We gratefully
+acknowledge the following:
+
+LANGUAGE DESIGN HERITAGE
+
+  F# Programming Language (MIT License)
+  https://github.com/dotnet/fsharp
+  https://fsharp.org/specs/language-spec/
+  Clef's syntax, type system, and functional programming model descend
+  directly from F#, which itself inherits from OCaml and the ML family.
+
+  F* (FStar) Proof-Oriented Programming Language (Apache 2.0)
+  https://github.com/FStarLang/FStar
+  https://fstar-lang.org/
+  F*'s approach to refinement types, effect systems, and proof-oriented
+  programming deeply influenced Clef's verification architecture and
+  the Fidelity Framework's proof-aware compilation model.
+
+COMPILER INFRASTRUCTURE
+
+  LLVM and MLIR (Apache 2.0 with LLVM Exception)
+  https://llvm.org/
+  https://mlir.llvm.org/
+  The Composer compiler targets MLIR as its intermediate representation.
+  MLIR's multi-level dialect system is foundational to Clef's approach
+  to progressive lowering and hardware-aware code generation.
+
+  Nanopass Compiler Framework
+  https://nanopass.org/
+  A. Keep and R. K. Dybvig, "A Nanopass Infrastructure for Compiler
+  Education," Proc. ACM SIGPLAN ICFP, 2013.
+  The nanopass approach to compiler construction — decomposing compilation
+  into many small, composable passes — influenced the design of Composer's
+  compilation pipeline and the Program Semantic Graph architecture.
+
+THEORETICAL FOUNDATIONS
+
+  Coeffects: A Calculus of Context-Dependent Computation
+  T. Petricek, D. Orchard, and A. Mycroft, ACM SIGPLAN Notices 49.9, 2014.
+  The formal foundation for Clef's coeffect system, which tracks what
+  computations require from their execution context.
+
+  Koka: Programming with Row Polymorphic Effect Types
+  D. Leijen, EPTCS 153, 2014.
+  Koka's algebraic effect system influenced Clef's approach to
+  effect tracking and compiler-driven optimization.
+
+  SSA is Functional Programming
+  A. W. Appel, ACM SIGPLAN Notices 33.4, 1998.
+  The equivalence between SSA form and functional programming established
+  by Appel enables the dual control-flow/data-flow interpretation central
+  to the Program Semantic Graph.
+
+  Delimited Continuations
+  O. Danvy and A. Filinski, "Abstracting Control," LFP, 1990.
+  The theoretical foundation for zero-copy async and WAMI's stack
+  switching implementation.
+
+ECOSYSTEM
+
+  Hextra Hugo Theme (MIT License)
+  https://github.com/imfing/hextra
+  This site is built with the Hextra theme for Hugo.
+
+================================================================================
+
+Patent Notice
+-------------
+
+SpeakEZ Technologies, LLC has a patent pending:
+"System and Method for Verification-Preserving Compilation Using Formal
+Certificate Guided Optimization" (US 63/786,264)
+
+Subject to the terms of the Apache License 2.0, contributors grant a patent
+license for patent claims necessarily infringed by their contributions.

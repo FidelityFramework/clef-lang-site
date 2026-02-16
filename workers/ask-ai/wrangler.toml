@@ -1,0 +1,22 @@
+# Local Development Configuration
+# NOTE: This file is ONLY for local development with `wrangler dev`
+# Production deployment uses the CLI tool via Cloudflare Management API
+# Do not use `wrangler deploy` - use `dotnet run --project cli/ -- deploy` instead
+
+name = "clef-ask-ai-dev"
+main = "dist/worker.js"
+compatibility_date = "2024-11-01"
+
+# Environment variables
+[vars]
+ALLOWED_ORIGIN = "http://localhost:1313"
+
+# D1 database for query logging
+[[d1_databases]]
+binding = "DB"
+database_name = "clef-ask-ai-dev"
+database_id = "placeholder-replace-with-actual-id"
+
+# AI binding for Workers AI synthesis
+[ai]
+binding = "AI"

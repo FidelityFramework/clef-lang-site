@@ -1,31 +1,32 @@
 ---
 title: Clef Programming Language
+layout: hextra-home
 toc: false
 ---
 
+<div class="hx:mt-6 hx:mb-8">
 {{< hextra/hero-badge link="https://github.com/FidelityFramework" >}}
   <span>FidelityFramework</span>
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
+</div>
 
-<div class="hx-mt-6 hx-mb-6">
+<div class="hx:mt-8 hx:mb-8">
 {{< hextra/hero-headline >}}
-  Concurrent systems language&nbsp;<br class="sm:hx-block hx-hidden" />for heterogeneous compute
+  Concurrent systems language&nbsp;<br class="sm:hx:block hx:hidden" />for heterogeneous compute
 {{< /hextra/hero-headline >}}
 </div>
 
-<div class="hx-mb-12">
+<div class="hx:mb-16">
 {{< hextra/hero-subtitle >}}
-  Clef targets CPU, GPU, NPU, FPGA, and other accelerators&nbsp;<br class="sm:hx-block hx-hidden" />with proof-carrying capabilities for safe realtime systems.
+  Clef targets CPU, GPU, NPU, FPGA, and other accelerators&nbsp;<br class="sm:hx:block hx:hidden" />with proof-carrying capabilities for safe realtime systems.
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx-mb-6">
+<div class="hx:mb-16">
 {{< hextra/hero-button text="Read the Spec" link="spec" >}}
 {{< hextra/hero-button text="Get Started" link="docs/guides" style="alt" >}}
 </div>
-
-<div class="hx-mt-6"></div>
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card

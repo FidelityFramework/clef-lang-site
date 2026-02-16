@@ -1,0 +1,21 @@
+{
+  "name": "clef-ask-ai-worker",
+  "version": "0.1.0",
+  "description": "Clef Ask AI Cloudflare Worker - synthesizes summaries from BM25 search results",
+  "type": "module",
+  "main": "dist/worker.js",
+  "scripts": {
+    "fable": "dotnet fable . --outDir dist/fable --noCache",
+    "bundle": "esbuild dist/fable/src/Main.js --bundle --format=esm --outfile=dist/worker.js --minify",
+    "build": "npm run fable && npm run bundle",
+    "build:watch": "dotnet fable . --outDir dist/fable --watch",
+    "dev": "npm run build && wrangler dev --remote",
+    "dev:local": "npm run build && wrangler dev",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "wrangler": "^3.91.0"
+  },
+  "dependencies": {}
+}
