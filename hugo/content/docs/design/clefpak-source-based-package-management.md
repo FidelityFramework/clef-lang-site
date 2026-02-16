@@ -92,12 +92,12 @@ When developers package their projects for distribution, ClefPak will create `.f
 robot_controller-1.2.0.fidpkg/
 ├── RobotController.fidproj     # The package manifest
 ├── src/                        # All source files
-│   ├── lib.fs                  # Library entry point
+│   ├── lib.clef                # Library entry point
 │   ├── Control/
-│   │   ├── PID.fs             # PID controller implementation
-│   │   └── Kalman.fs          # Kalman filter algorithms
+│   │   ├── PID.clef           # PID controller implementation
+│   │   └── Kalman.clef        # Kalman filter algorithms
 │   └── Hardware/
-│       └── Actuators.fs       # Hardware abstraction layer
+│       └── Actuators.clef     # Hardware abstraction layer
 ├── platform/                   # Platform-specific configurations
 │   ├── cuda.toml              # GPU-specific settings
 │   └── embedded.toml          # Embedded platform constraints
@@ -190,7 +190,7 @@ Our current registry designs would incorporate several features that address the
 
 The registry design should also support federation, though we're still working on the details on how that could and *should* operate. The goal is to allow organizations to run private registries that can optionally upstream to the public registry. This design will enable corporate users to maintain private packages while still benefiting from the public ecosystem. We have some specific designs around this that embrace our own security-as-first-class-consideration perspective, and so more considered design work is scheduled when we arrive at that point in the platform roadmap.
 
-## Integration with F# Language Features
+## Integration with Clef Language Features
 
 One of ClefPak's key design goals is preserving the Clef development experience while enabling new capabilities. We plan to implement a new reference resolution provider that recognizes the "clefpak:" symbol. The system will support familiar reference syntax with natural extensions for source-based packages:
 
@@ -267,7 +267,7 @@ Source-based distribution isn't just a philosophical choice, it will enable conc
 
 **Layout Optimization** will enable data structures to be reorganized for optimal cache usage on the target platform. What works best for an x86-64's complex cache hierarchy may differ dramatically from what's optimal for an embedded system's simple memory architecture.
 
-We expect ClefPak-built applications to be consistent with performance of C/C++ codebases using this approach, all while maintaining all of F#'s safety and expressiveness advantages.
+We expect ClefPak-built applications to be consistent with performance of C/C++ codebases using this approach, all while maintaining all of Clef's safety and expressiveness advantages.
 
 ## A Format for the Future
 
@@ -275,6 +275,6 @@ The ClefPak package management system represents more than a technical solution 
 
 As quantum computing, neuromorphic processors and other novel architectures emerge, ClefPak's source-based approach will adapt with the advances in MLIR and LLVM "backend" development. In this unique model, the same package that compiles to current architectures will be able to target future platforms without modification, with the compiler handling platform-specific optimizations transparently.
 
-This design is currently in internal development within the Fidelity Framework project, with careful attention being paid to every architectural decision. In the near future, we plan to open the project to the community, inviting contributions and feedback from the broader F# and MLIR/LLVM communities. The combination of F#'s expressive power and ClefPak's distribution model promises to unlock new possibilities for systems programming, embedded development, and high-performance computing that were previously the exclusive domain of lower-level languages.
+This design is currently in internal development within the Fidelity Framework project, with careful attention being paid to every architectural decision. In the near future, we plan to open the project to the community, inviting contributions and feedback from the broader Clef and MLIR/LLVM communities. The combination of Clef's expressive power and ClefPak's distribution model promises to unlock new possibilities for systems programming, embedded development, and high-performance computing that were previously the exclusive domain of lower-level languages.
 
 The journey from managed code to native compilation is not just a technical transition, it's an opportunity to reimagine what's possible when a language and its tooling evolve together. ClefPak represents our commitment to making that journey not just possible, but pleasant and productive for every Clef developer ready to explore new frontiers in technology.

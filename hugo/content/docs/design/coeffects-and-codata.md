@@ -19,13 +19,13 @@ params:
 
 Modern async and parallel programming presents an engineering challenge: we need both the performance of low-level control and the safety of high-level abstractions. Nearly 20 years ago, the .NET ecosystem pioneered the `async`/`await` syntactic pattern, making concurrent code accessible to millions of developers and influencing other technology stacks in following years. However, this pattern comes with tradeoffs - runtime machinery that, while powerful, can become opaque when we need to understand or optimize workload behavior.
 
-Composer explores a fresh perspective in that design space: what if we could preserve F#'s elegant async abstractions while compiling them to transparent, predictable machine code? By applying mathematical concepts from programming language theory - specifically **coeffects** (tracking what code needs from its context) and **codata** (recognizing demand-driven computation patterns) - the Composer compiler design aims to transform high-level F# async code into efficient implementations tailored for speed and safety.
+Composer explores a fresh perspective in that design space: what if we could preserve Clef's elegant async abstractions while compiling them to transparent, predictable machine code? By applying mathematical concepts from programming language theory - specifically **coeffects** (tracking what code needs from its context) and **codata** (recognizing demand-driven computation patterns) - the Composer compiler design aims to transform high-level Clef async code into efficient implementations tailored for speed and safety.
 
 We want to emphasize that this approach isn't about replacing existing solutions. It's about exploring how functional programming principles can drive compiler design to achieve new levels of performance and observability without compromise.
 
 ## The Engineering Challenge
 
-Consider a typical F# async workflow that processes sensor data:
+Consider a typical Clef async workflow that processes sensor data:
 
 ```fsharp
 let processSensorStream (sensor: ISensor) (cancellationToken: CancellationToken) = async {
@@ -137,7 +137,7 @@ Each coeffect annotation is designed to guide compilation strategy:
 ```mermaid
 graph TD
     subgraph "Source Code Analysis"
-        CODE[F# Function] --> INFER[Coeffect Inference]
+        CODE[Clef Function] --> INFER[Coeffect Inference]
         INFER --> CTX[Context Requirements]
     end
 
@@ -204,9 +204,9 @@ and StreamCell<'T> =
 
 The eager list must materialize all elements immediately. The stream produces elements only when requested. This isn't just about memory usage; it fundamentally changes how the compiler can optimize the code.
 
-#### The Idiomatic F# Trap
+#### The Idiomatic Trap
 
-Most F# developers naturally reach for familiar patterns that inadvertently create expensive computations:
+Most Clef developers naturally reach for familiar patterns that inadvertently create expensive computations:
 
 ```fsharp
 // Natural but expensive: Creates all intermediate collections
@@ -225,7 +225,7 @@ let processLargeDatasetEfficient (data: float[]) =
         if doubled > 100.0 then Math.Sqrt doubled else 0.0)
 ```
 
-The first pattern feels more composable and readable, following the natural F# style of building pipelines. Yet it allocates three intermediate arrays that might never be needed again.
+The first pattern feels more composable and readable, following the natural Clef style of building pipelines. Yet it allocates three intermediate arrays that might never be needed again.
 
 > For a million-element array, that's 24MB of unnecessary allocations.
 
@@ -255,7 +255,7 @@ let analyzeTimeSeriesCodata (readings: float[]) =
     |> Seq.toList                    // Only allocates final result
 ```
 
-The codata version maintains the same idiomatic F# pipeline style but with fundamentally different execution semantics. Each element flows through the entire pipeline before the next begins, maintaining a constant memory footprint. This of course opens opportunities for parallelism and other features to take advantage of targeted hardware, and is a source of research as we work to bring these algorithms into practice.
+The codata version maintains the same idiomatic Clef pipeline style but with fundamentally different execution semantics. Each element flows through the entire pipeline before the next begins, maintaining a constant memory footprint. This of course opens opportunities for parallelism and other features to take advantage of targeted hardware, and is a source of research as we work to bring these algorithms into practice.
 
 #### When Eager is Right, When Lazy is Right
 
@@ -278,7 +278,7 @@ let streamingStats (data: seq<float>) =
     |> AsyncSeq.bufferByTime (TimeSpan.FromSeconds 1.0)
 ```
 
-Our expectation is that the Composer compiler's coeffect analysis will help identify these patterns, providing gentle guidance toward more efficient alternatives while preserving F#'s natural programming style.
+Our expectation is that the Composer compiler's coeffect analysis will help identify these patterns, providing gentle guidance toward more efficient alternatives while preserving Clef's natural programming style.
 
 #### Design-Time Analyzer Guidance
 
@@ -310,7 +310,7 @@ This design-time feedback would help developers internalize the data/codata dist
 
 ### Recognizing Codata Patterns
 
-Composer's architecture will identify codata patterns in F# async sequences and generators:
+Composer's architecture will identify codata patterns in Clef async sequences and generators:
 
 ```fsharp
 // Will be recognized as codata: infinite sequence, demand-driven
@@ -510,17 +510,17 @@ The mathematical guarantee means Composer can automatically:
 - Batch pure operations into single kernel launches
 - Fuse map operations to minimize memory transfers
 - Partition work across heterogeneous accelerators
-- All while preserving exact F# semantics
+- All while preserving exact Clef semantics
 
-This isn't speculative optimization - it's mathematically sound transformation, enabling a single F# expression to compile to efficient code whether targeting a CPU, GPU cluster, or custom silicon.
+This isn't speculative optimization - it's mathematically sound transformation, enabling a single Clef expression to compile to efficient code whether targeting a CPU, GPU cluster, or custom silicon.
 
 ## Hardware-Aware Code Generation
 
-The combination of coeffect analysis and codata recognition will enable Composer to choose optimal compilation strategies for different hardware targets. This design philosophy embraces hardware diversity - the same F# code will compile differently based on deployment context.
+The combination of coeffect analysis and codata recognition will enable Composer to choose optimal compilation strategies for different hardware targets. This design philosophy embraces hardware diversity - the same Clef code will compile differently based on deployment context.
 
 ### Native Code via LLVM
 
-For native targets, Composer's architecture leverages LLVM's optimization infrastructure while preserving F#'s semantics:
+For native targets, Composer's architecture leverages LLVM's optimization infrastructure while preserving Clef's semantics:
 
 #### Pure Computations
 
@@ -562,7 +562,7 @@ blurPixel2x2:
     ret
 ```
 
-Notice how the pure functional F# code compiles directly to efficient assembly with no allocations, no function call overhead, and optimal use of floating-point registers. The purity guarantee allows the compiler to vectorize this operation across multiple pixels when used in a larger image processing pipeline.
+Notice how the pure functional Clef code compiles directly to efficient assembly with no allocations, no function call overhead, and optimal use of floating-point registers. The purity guarantee allows the compiler to vectorize this operation across multiple pixels when used in a larger image processing pipeline.
 
 #### Async Computations
 
@@ -599,7 +599,7 @@ These continuation points integrate naturally with Fidelity's actor-based memory
 
 ### WebAssembly via WAMI
 
-The WAMI (WebAssembly Machine Interface) backend represents a fundamental shift in how we think about compiling functional abstractions. By preserving delimited continuations (dcont) through every stage of compilation - from F# source to WebAssembly machine code - WAMI enables something previously thought impossible: first-class control flow at the hardware level.
+The WAMI (WebAssembly Machine Interface) backend represents a fundamental shift in how we think about compiling functional abstractions. By preserving delimited continuations (dcont) through every stage of compilation - from Clef source to WebAssembly machine code - WAMI enables something previously thought impossible: first-class control flow at the hardware level.
 
 #### The Delimited Continuation Advantage
 
@@ -712,7 +712,7 @@ Unlike traditional compilers where optimization decisions are opaque, Composer's
 ```mermaid
 flowchart TB
     subgraph "Input"
-        SRC[F# Source Code]
+        SRC[Clef Source Code]
         SRC --> ANALYSIS[Coeffect Analysis]
     end
 
@@ -874,7 +874,7 @@ Early benchmarks suggest potential for 10-100x reduction in allocation rates for
 
 ### 3. Transparent Cross-Platform Deployment
 
-The architecture enables the same F# code to compile optimally for different targets:
+The architecture enables the same Clef code to compile optimally for different targets:
 
 ```fsharp
 // Cloud server: Will compile to LLVM with coroutines
@@ -908,7 +908,7 @@ The theoretical underpinnings of Composer's design draw from several areas of pr
 
 **Delimited Continuations** (Danvy and Filinski, 1990) provide the theoretical foundation for WAMI's stack switching implementation. By recognizing async/await as a syntax for delimited continuations, Composer achieves zero-copy context switching without runtime support.
 
-The integration of these concepts - using coeffects to identify codata patterns and compiling them via delimited continuations - represents a novel synthesis that will enable hardware-aware functional programming. We believe that this will enable new opportunities for the F# language and for new ecosystems to emerge that provide ample opportunity to confidently produce efficient, transparent workloads for high reliability systems.
+The integration of these concepts - using coeffects to identify codata patterns and compiling them via delimited continuations - represents a novel synthesis that will enable hardware-aware functional programming. We believe that this will enable new opportunities for the Clef language and for new ecosystems to emerge that provide ample opportunity to confidently produce efficient, transparent workloads for high reliability systems.
 
 ## Looking Forward: The Future of Functional Systems Programming
 
@@ -919,7 +919,7 @@ Our "virtual whiteboard" session in the blog post demonstrates that functional p
 - Preserves high-level abstractions without runtime overhead
 - Targets diverse hardware from a single source
 
-This approach points toward a future where the boundaries between systems programming and functional programming dissolve. Where async operations become as transparent as synchronous mechanisms. Where the same elegant F# code runs efficiently on everything from embedded devices to data center scaled server clusters. There are still significant engineering challenges to overcome and new opportunities to discover, but we're confident in the theoretical and technological path we've chosen.
+This approach points toward a future where the boundaries between systems programming and functional programming dissolve. Where async operations become as transparent as synchronous mechanisms. Where the same elegant Clef code runs efficiently on everything from embedded devices to data center scaled server clusters. There are still significant engineering challenges to overcome and new opportunities to discover, but we're confident in the theoretical and technological path we've chosen.
 
 The algorithmic foundations of coeffects and codata don't exist in isolation - they form the theoretical backbone for Fidelity's complete approach to systems programming. From solving the byref problem through capability-based memory management, to enabling RAII-based actor systems with deterministic cleanup, to supporting zero-copy cross-process communication through memory mapping and Reference Sentinels, these concepts enable a unified architecture. The same mathematical principles that guide compilation decisions also inform memory management strategies, creating a coherent system where theory and practice reinforce each other.
 

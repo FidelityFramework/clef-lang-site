@@ -233,7 +233,7 @@ These performance proofs enable optimizations that would otherwise be too risky.
 
 Organizations adopting proof-aware compilation through hypergraphs gain multiple advantages:
 
-**Development Speed**: Developers write normal F# code with lightweight annotations. The hypergraph automatically derives and maintains proof obligations. No need for separate verification languages or tools.
+**Development Speed**: Developers write normal Clef code with lightweight annotations. The hypergraph automatically derives and maintains proof obligations. No need for separate verification languages or tools.
 
 **Runtime Performance**: Proof-guided optimization often exceeds traditional compilation because the compiler has more information to work with. Knowing what must be preserved allows everything else to be transformed aggressively.
 

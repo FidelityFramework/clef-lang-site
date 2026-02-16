@@ -97,8 +97,7 @@ params:
     displayToggle: true
 
   editURL:
-    enable: true
-    base: https://github.com/FidelityFramework/clef-lang-site/edit/main/hugo/content
+    enable: false
 
   search:
     enable: true

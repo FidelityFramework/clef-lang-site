@@ -201,7 +201,7 @@ This unification enables the [Program Semantic Graph](/docs/design/program-seman
 ```mermaid
 graph TB
     subgraph "Source Program"
-        FSH[F# with DMM + DTS]
+        FSH[Clef with DMM + DTS]
     end
 
     subgraph "Program Semantic Graph"
@@ -322,7 +322,7 @@ The answer lies in scope, not competition. Modular has built excellent infrastru
 
 What Modular cannot preserve is dimensional semantics, because those semantics were never in Python or PyTorch to begin with. When Chris Lattner says "we're not an AI compiler, we're throwing that concept away,"[^5] he's being precise about their scope: kernel infrastructure for experts who carry domain knowledge in their heads.
 
-Fidelity addresses a different problem. The [Program Semantic Graph](/docs/design/program-semantic-graph/) represents general F# programs with control flow, recursion, closures, and pattern matching. Via the equivalence between SSA and functional programming established by Appel[^6], the same structure can be interpreted as control-flow graph (for CPU/sequential targets) or dataflow graph (for FPGA/spatial targets). Dimensional constraints are invariant across both interpretations.
+Fidelity addresses a different problem. The [Program Semantic Graph](/docs/design/program-semantic-graph/) represents general Clef programs with control flow, recursion, closures, and pattern matching. Via the equivalence between SSA and functional programming established by Appel[^6], the same structure can be interpreted as control-flow graph (for CPU/sequential targets) or dataflow graph (for FPGA/spatial targets). Dimensional constraints are invariant across both interpretations.
 
 This isn't criticism. Different solution spaces require different architectures. But the asymmetry is worth noting: Fidelity's PSG can represent tensor computations and lower them through MLIR to optimized kernels. That's just dataflow with arithmetic, which the graph handles natively and with extreme efficiency. The reverse isn't true. Modular cannot reconstruct the semantic information it never had: dimensional constraints, physical invariants, or the control-flow/dataflow duality that enables targeting other advanced accelerators. They do their thing well. We can do their thing *and* everything else that our innovations make possible.
 
@@ -368,7 +368,7 @@ Every framework asks developers to learn something new. The question is whether 
 
 For F# developers, the language is familiar. Computation expressions work the same way. Active patterns work the same way. Units of Measure work the same way, except now they don't erase. The new learning is understanding what compilation to native code means: deterministic memory lifetimes, explicit allocation strategies, preservation of dimensional information through to machine code.
 
-The verification depth is opt-in. Most code needs no F* proofs. Developers add verification where the domain demands it: safety-critical paths, regulatory requirements, high-assurance components. The framework handles everything from casual tooling to the most stringent certification requirements.
+The verification depth is opt-in. Most code needs no SMT proofs. Developers add verification where the domain demands it: safety-critical paths, regulatory requirements, high-assurance components. The framework handles everything from casual tooling to the most stringent certification requirements.
 
 ```fsharp
 // Simple code: no proofs needed
@@ -376,8 +376,8 @@ let average (values: float[]) =
     values |> Array.average
 
 // Safety-critical code: full verification
-[<F* Requires("length(values) > 0")>]
-[<F* Ensures("result >= min(values) && result <= max(values)")>]
+[<SMT Requires("length(values) > 0")>]
+[<SMT Ensures("result >= min(values) && result <= max(values)")>]
 let verifiedAverage (values: float[]) =
     values |> Array.average
 ```
@@ -388,7 +388,7 @@ The same language, the same idioms, different levels of assurance based on the a
 
 Modern systems don't run on single architectures. A robotics application might process sensor data on an FPGA, run inference on a GPU, execute control logic on a CPU, and communicate over a network. Current practice requires different languages, different toolchains, and manual coordination at every boundary.
 
-Fidelity's unified representation enables a completely new set of options for designers, integrators and decision-makers. For the first time, the same elegant F# semantics can compile to appropriate code for each target. Dimensional constraints verified once apply across all targets. Memory semantics appropriate to each platform are generated from the same source.
+Fidelity's unified representation enables a completely new set of options for designers, integrators and decision-makers. For the first time, the same elegant Clef semantics can compile to appropriate code for each target. Dimensional constraints verified once apply across all targets. Memory semantics appropriate to each platform are generated from the same source.
 
 ```fsharp
 // Single source, multiple targets
@@ -415,7 +415,7 @@ The Fidelity framework bets on a specific thesis: that preserving semantic infor
 
 While this might not right approach for every domain, it has a high degree of reach. Web services don't need meters per second verified at compile time, but both .NET and Fable compiled versions of F# can handle that domain admirably. Business applications don't need deterministic microsecond-level resource cleanup, but F# has handled that efficiently for a generation. The tooling that exists serves those domains well.
 
-And while we see the Fidelity framework as a general systems platform that can span from the server to the microcontroller, we see particular strength in targeting systems that interface with physical reality. The language is concise, familiar F#. The compilation target is native code via MLIR. The semantic information that previous models would discard now survives to do mission-critical work.
+And while we see the Fidelity framework as a general systems platform that can span from the server to the microcontroller, we see particular strength in targeting systems that interface with physical reality. The language is concise and familiar. The compilation target is native code via MLIR. The semantic information that previous models would discard now survives to do mission-critical work.
 
 The multi-stack world is here. The question is whether our tools will rise to meet it.
 

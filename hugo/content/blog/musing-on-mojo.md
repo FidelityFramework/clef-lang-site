@@ -182,7 +182,7 @@ What's most exciting about the current moment in programming language design is 
 
 The technical challenges Mojo faces are substantial. Creating a language that satisfies both Python developers' expectations and systems programmers' requirements involves navigating countless design decisions. The fact that the Mojo compiler remains closed source likely reflects the enormous complexity of this undertaking, getting the fundamentals right before opening the implementation to broader scrutiny.
 
-Meanwhile, F#'s mature foundation provides different opportunities. With twenty years of production use through .NET amd Fable compilers with a type system refined through decades of research, the Composer compiler can focus on the compilation and deployment innovations that MLIR enables. The Fidelity framework benefits from F#'s lack of historical baggage from Python's module system or object model, allowing more direct mapping to MLIR's capabilities.
+Meanwhile, F#'s mature foundation provides different opportunities. With twenty years of production use through .NET and Fable compilers with a type system refined through decades of research, the Composer compiler can focus on the compilation and deployment innovations that MLIR enables. The Fidelity framework benefits from F#'s lack of historical baggage from Python's module system or object model, allowing more direct mapping to MLIR's capabilities.
 
 ## Learning from Each Other
 
@@ -194,7 +194,7 @@ Both projects can learn from each other's approaches:
 - The importance of first-class AI/ML hardware support in modern languages
 - The revealing nature of the def/fn split, which demonstrates both the appeal and perhaps folly of unifying dynamic and static programming models
 
-**From F#/Fidelity, we see**:
+**From Clef/Fidelity, we see**:
 - The power of building on proven theoretical foundations
 - How rich type systems enable sophisticated compile-time optimizations
 - The benefits of platform-adaptive compilation strategies
@@ -210,6 +210,6 @@ At SpeakEZ, we're excited to be exploring this space alongside Mojo, albeit from
 
 The future of compiler technology is not a zero-sum game. As MLIR continues to evolve and mature, we'll likely see even more innovative approaches to language design. Some will start from dynamic languages and add performance, like Mojo. Others will bring formality to add flexibility. Still others might explore entirely new points in the design space.
 
-What's certain is that we're entering a golden age of language innovation, enabled by a new Cambrian explosion of new hardware designs and bridging infrastructure like MLIR. Whether you're drawn to Mojo's Python-centric approach or F#'s functional elegance, the future holds exciting possibilities for developers seeking both productivity and performance.
+What's certain is that we're entering a golden age of language innovation, enabled by a new Cambrian explosion of new hardware designs and bridging infrastructure like MLIR. Whether you're drawn to Mojo's Python-centric approach or Clef's functional elegance, the future holds exciting possibilities for developers seeking both productivity and performance.
 
 We look forward to seeing Mojo's continued evolution and the innovative solutions it brings to long-standing challenges in language design. The programming community benefits when brilliant minds like Lattner's push the boundaries of what's possible. In that spirit, we're proud to be exploring parallel paths toward the same goal: making powerful, efficient computation accessible to more developers than ever before.
