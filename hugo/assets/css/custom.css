@@ -139,6 +139,252 @@ code, pre, kbd {
 .blog-card-author { font-weight: 500; }
 
 
+/* ── Search modal ────────────────────────────────────────────── */
+.clef-search-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+}
+
+.clef-search-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.clef-search-container {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 70vh;
+  margin: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+:is(.dark) .clef-search-container {
+  background: #111827;
+  border-color: #374151;
+}
+
+/* ── Header with search input ── */
+.clef-search-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+:is(.dark) .clef-search-header {
+  border-bottom-color: #374151;
+}
+
+.clef-search-icon {
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.clef-search-header input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  color: #111827;
+}
+:is(.dark) .clef-search-header input {
+  color: #f3f4f6;
+}
+.clef-search-header input::placeholder {
+  color: #9ca3af;
+}
+
+.clef-search-kbd {
+  flex-shrink: 0;
+  padding: 0.125rem 0.375rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  background: #f9fafb;
+}
+:is(.dark) .clef-search-kbd {
+  border-color: #4b5563;
+  color: #9ca3af;
+  background: #1f2937;
+}
+
+/* ── Results area ── */
+.clef-search-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.clef-search-empty,
+.clef-search-loading {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.clef-search-result {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+.clef-search-result:hover,
+.clef-search-result.clef-result-selected {
+  background: #f3f4f6;
+}
+:is(.dark) .clef-search-result:hover,
+:is(.dark) .clef-search-result.clef-result-selected {
+  background: #1f2937;
+}
+
+.clef-result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clef-result-type {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  color: var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 12%, transparent);
+}
+
+.clef-result-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+:is(.dark) .clef-result-title {
+  color: #f3f4f6;
+}
+
+.clef-result-section {
+  display: block;
+  font-size: 0.775rem;
+  color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  margin-top: 0.125rem;
+}
+
+.clef-result-snippet {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #6b7280;
+  margin: 0.25rem 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+:is(.dark) .clef-result-snippet {
+  color: #9ca3af;
+}
+
+/* ── AI Synthesis area ── */
+.clef-search-synthesis {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+}
+:is(.dark) .clef-search-synthesis {
+  border-bottom-color: #374151;
+  background: #0d1117;
+}
+
+.clef-synthesis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.clef-synthesis-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+}
+
+.clef-synthesis-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+.clef-synthesis-close:hover {
+  color: #6b7280;
+}
+
+.clef-synthesis-content {
+  font-size: 0.85rem;
+  line-height: 1.65;
+  color: #374151;
+  white-space: pre-wrap;
+}
+:is(.dark) .clef-synthesis-content {
+  color: #d1d5db;
+}
+
+/* ── Footer ── */
+.clef-search-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+:is(.dark) .clef-search-footer {
+  border-top-color: #374151;
+}
+
+.clef-synthesize-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  border-radius: 0.375rem;
+  color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.clef-synthesize-btn:hover {
+  background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  color: #fff;
+}
+
+
 /* ═══════════════════════════════════════════════════════════════
    SYNTAX HIGHLIGHTING — SpeakEZ palette
    Selectors match Hextra's .highlight .chroma .X structure

@@ -31,6 +31,7 @@ module Program =
 
     [<RequireQualifiedAccess>]
     type DeployArgs =
+        | [<AltCommandLine("-n")>] Worker_Name of name: string
         | [<AltCommandLine("-w")>] Worker_Dir of path: string
         | [<AltCommandLine("-s")>] Skip_Build
         | [<AltCommandLine("-f")>] Force
@@ -39,7 +40,8 @@ module Program =
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
-                | Worker_Dir _ -> "Worker source directory (default: ./workers/ask-ai)"
+                | Worker_Name _ -> "Worker to deploy: smart-search, search, content-sync, all (default: smart-search)"
+                | Worker_Dir _ -> "Worker source directory (overrides default for worker)"
                 | Skip_Build -> "Skip worker build step"
                 | Force -> "Force deployment even if source unchanged"
                 | Verbose -> "Enable verbose output"
@@ -49,6 +51,7 @@ module Program =
         | [<AltCommandLine("-v")>] Verbose
         | Skip_Provision
         | Skip_Sync
+        | Skip_Index
         | Skip_Deploy
 
         interface IArgParserTemplate with
@@ -57,6 +60,7 @@ module Program =
                 | Verbose -> "Enable verbose output"
                 | Skip_Provision -> "Skip resource provisioning"
                 | Skip_Sync -> "Skip content sync"
+                | Skip_Index -> "Skip search indexing"
                 | Skip_Deploy -> "Skip worker deployment"
 
     [<RequireQualifiedAccess>]
@@ -110,6 +114,21 @@ module Program =
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
+    type IndexArgs =
+        | [<AltCommandLine("-d")>] Content_Dir of path: string
+        | [<AltCommandLine("-l")>] Local
+        | [<AltCommandLine("-p")>] Port of int
+        | [<AltCommandLine("-v")>] Verbose
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Content_Dir _ -> "Hugo content directory (default: ./hugo/content)"
+                | Local -> "Use local search worker (localhost:8787)"
+                | Port _ -> "Local worker port (default: 8787, requires --local)"
+                | Verbose -> "Enable verbose output"
+
+    [<RequireQualifiedAccess>]
     type PurgeArgs =
         | [<AltCommandLine("-l")>] Local
         | [<AltCommandLine("-p")>] Port of int
@@ -132,20 +151,22 @@ module Program =
         | [<CliPrefix(CliPrefix.None)>] Status of ParseResults<StatusArgs>
         | [<CliPrefix(CliPrefix.None); CustomCommandLine("analyze-diff")>] AnalyzeDiff of ParseResults<AnalyzeDiffArgs>
         | [<CliPrefix(CliPrefix.None); CustomCommandLine("smart-deploy")>] SmartDeploy of ParseResults<SmartDeployArgs>
+        | [<CliPrefix(CliPrefix.None)>] Index of ParseResults<IndexArgs>
         | [<CliPrefix(CliPrefix.None)>] Purge of ParseResults<PurgeArgs>
         | [<AltCommandLine("-V")>] Version
 
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
-                | Provision _ -> "Provision Cloudflare resources (R2, D1)"
+                | Provision _ -> "Provision Cloudflare resources (R2, D1, Vectorize)"
                 | Sync _ -> "Sync Hugo content to R2"
-                | Deploy _ -> "Deploy Ask AI worker"
+                | Deploy _ -> "Deploy workers (smart-search, search, content-sync, all)"
                 | DeployPages _ -> "Deploy Hugo site to Cloudflare Pages"
                 | Migrate _ -> "Full migration: provision -> sync -> deploy"
                 | Status _ -> "Show deployment status"
                 | AnalyzeDiff _ -> "Analyze git diff to determine deployment scope"
                 | SmartDeploy _ -> "Deploy based on git diff analysis"
+                | Index _ -> "Index content into D1 FTS5 + Vectorize for search"
                 | Purge _ -> "Purge all content from R2 bucket"
                 | Version -> "Show version"
 
@@ -215,12 +236,39 @@ module Program =
                         eprintfn "Error: %s" e
                         1
                     | Ok config ->
-                        let workerDir = args.GetResult(<@ DeployArgs.Worker_Dir @>, "./workers/ask-ai")
+                        let workerName = args.GetResult(<@ DeployArgs.Worker_Name @>, "smart-search")
                         let skipBuild = args.Contains <@ DeployArgs.Skip_Build @>
                         let force = args.Contains <@ DeployArgs.Force @>
                         let verbose = args.Contains <@ DeployArgs.Verbose @>
-                        Commands.Deploy.execute config workerDir skipBuild force verbose
-                        |> runAsync
+
+                        let deployOne name dir =
+                            match name with
+                            | "search" -> Commands.Deploy.executeSearch config dir skipBuild force verbose
+                            | "content-sync" -> Commands.Deploy.executeContentSync config dir skipBuild force verbose
+                            | _ -> Commands.Deploy.executeSmartSearch config dir skipBuild force verbose
+
+                        match workerName with
+                        | "all" ->
+                            let computation = async {
+                                let! r1 = Commands.Deploy.executeContentSync config "./workers/content-sync" skipBuild force verbose
+                                match r1 with
+                                | Error e -> return Error e
+                                | Ok _ ->
+                                let! r2 = Commands.Deploy.executeSmartSearch config "./workers/smart-search" skipBuild force verbose
+                                match r2 with
+                                | Error e -> return Error e
+                                | Ok _ ->
+                                return! Commands.Deploy.executeSearch config "./workers/search" skipBuild force verbose
+                            }
+                            computation |> runAsync
+                        | name ->
+                            let defaultDir =
+                                match name with
+                                | "search" -> "./workers/search"
+                                | "content-sync" -> "./workers/content-sync"
+                                | _ -> "./workers/smart-search"
+                            let workerDir = args.GetResult(<@ DeployArgs.Worker_Dir @>, defaultDir)
+                            deployOne name workerDir |> runAsync
 
                 | CLIArgs.DeployPages args ->
                     match loadConfig() with
@@ -244,11 +292,13 @@ module Program =
                         let verbose = args.Contains <@ MigrateArgs.Verbose @>
                         if args.Contains <@ MigrateArgs.Skip_Provision @> ||
                            args.Contains <@ MigrateArgs.Skip_Sync @> ||
+                           args.Contains <@ MigrateArgs.Skip_Index @> ||
                            args.Contains <@ MigrateArgs.Skip_Deploy @> then
                             Commands.Migrate.executeSelective
                                 config
                                 (args.Contains <@ MigrateArgs.Skip_Provision @>)
                                 (args.Contains <@ MigrateArgs.Skip_Sync @>)
+                                (args.Contains <@ MigrateArgs.Skip_Index @>)
                                 (args.Contains <@ MigrateArgs.Skip_Deploy @>)
                                 verbose
                             |> runAsync
@@ -288,6 +338,14 @@ module Program =
                         let verbose = args.Contains <@ SmartDeployArgs.Verbose @>
                         Commands.SmartDeploy.execute config baseRef force verbose
                         |> runAsync
+
+                | CLIArgs.Index args ->
+                    let contentDir = args.GetResult(<@ IndexArgs.Content_Dir @>, "./hugo/content")
+                    let useLocal = args.Contains <@ IndexArgs.Local @>
+                    let localPort = args.GetResult(<@ IndexArgs.Port @>, 8787)
+                    let verbose = args.Contains <@ IndexArgs.Verbose @>
+                    Commands.Index.execute contentDir useLocal localPort verbose
+                    |> runAsync
 
                 | CLIArgs.Purge args ->
                     match loadConfig() with

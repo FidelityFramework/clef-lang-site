@@ -1,6 +1,6 @@
 #!/bin/bash
-# Full migration: provision -> sync -> deploy
-# Usage: ./scripts/migrate.sh [-v|--verbose] [--skip-provision] [--skip-sync] [--skip-deploy]
+# Full migration: provision -> deploy workers -> sync -> index -> deploy pages
+# Usage: ./scripts/migrate.sh [-v|--verbose] [--skip-provision] [--skip-sync] [--skip-index] [--skip-deploy]
 
 set -e
 
@@ -11,6 +11,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VERBOSE=""
 SKIP_PROVISION=""
 SKIP_SYNC=""
+SKIP_INDEX=""
 SKIP_DEPLOY=""
 
 # Parse arguments
@@ -28,12 +29,16 @@ while [[ $# -gt 0 ]]; do
             SKIP_SYNC="--skip-sync"
             shift
             ;;
+        --skip-index)
+            SKIP_INDEX="--skip-index"
+            shift
+            ;;
         --skip-deploy)
             SKIP_DEPLOY="--skip-deploy"
             shift
             ;;
         -h|--help)
-            echo "Full migration: provision -> sync -> deploy"
+            echo "Full migration: provision -> deploy workers -> sync -> index -> deploy pages"
             echo ""
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -41,6 +46,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -v, --verbose      Enable verbose output"
             echo "  --skip-provision   Skip resource provisioning"
             echo "  --skip-sync        Skip content sync"
+            echo "  --skip-index       Skip search indexing"
             echo "  --skip-deploy      Skip worker deployment"
             echo "  -h, --help         Show this help message"
             exit 0
@@ -53,4 +59,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "$PROJECT_ROOT"
-dotnet run --project cli/ClefLang.CLI.fsproj -- migrate $SKIP_PROVISION $SKIP_SYNC $SKIP_DEPLOY $VERBOSE
+dotnet run --project cli/ClefLang.CLI.fsproj -- migrate $SKIP_PROVISION $SKIP_SYNC $SKIP_INDEX $SKIP_DEPLOY $VERBOSE

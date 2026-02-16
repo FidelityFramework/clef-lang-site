@@ -26,6 +26,25 @@ module GitDiffAnalyzer =
         if proc.ExitCode = 0 then Ok stdout
         else Error $"Git error: {stderr}"
 
+    /// Resolve a ref (e.g. "HEAD") to its actual commit SHA
+    let resolveRef (ref: string) (workingDir: string) : Result<string, string> =
+        match runGit $"rev-parse {ref}" workingDir with
+        | Ok sha -> Ok (sha.Trim())
+        | Error e -> Error e
+
+    /// Get list of uncommitted/untracked files (working tree state)
+    let getWorkingTreeChanges (workingDir: string) : Result<(string * string) list, string> =
+        match runGit "status --porcelain" workingDir with
+        | Error e -> Error e
+        | Ok output ->
+            output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map (fun line ->
+                let status = line.Substring(0, 2).Trim()
+                let path = line.Substring(3)
+                (status, path))
+            |> List.ofArray
+            |> Ok
+
     /// Get list of changed files with status
     let getChangedFiles (baseRef: string) (headRef: string) (workingDir: string)
         : Result<(string * string) list, string> =
@@ -35,7 +54,11 @@ module GitDiffAnalyzer =
             output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
             |> Array.map (fun line ->
                 let parts = line.Split('\t')
-                if parts.Length >= 2 then (parts.[0], parts.[1])
+                if parts.[0].StartsWith("R") && parts.Length >= 3 then
+                    // Renames: R100\told/path\tnew/path — use destination
+                    ("R", parts.[2])
+                elif parts.Length >= 2 then
+                    (parts.[0], parts.[1])
                 else ("?", line))
             |> List.ofArray
             |> Ok
@@ -93,7 +116,7 @@ module GitDiffAnalyzer =
     /// Classify a file based on its path
     let classifyFilePath (filePath: string) : Config.ChangeClassification option =
         let normalized = filePath.Replace("\\", "/").ToLowerInvariant()
-        if normalized.StartsWith("workers/") && normalized.EndsWith(".fs") then
+        if normalized.StartsWith("workers/") then
             Some Config.WorkerChange
         elif normalized.StartsWith("cli/") && normalized.EndsWith(".fs") then
             Some Config.CLIChange

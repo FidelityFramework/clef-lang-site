@@ -4,14 +4,14 @@ open ClefLang.CLI
 
 module Migrate =
 
-    /// Full migration: provision -> sync -> deploy
+    /// Full migration: provision -> deploy workers -> sync -> index
     let execute (config: Config.CloudflareConfig) (verbose: bool) : Async<Result<string, string>> =
         async {
             printfn "Starting full migration..."
             printfn ""
 
-            // Step 1: Provision resources
-            printfn "=== Step 1/3: Provisioning Resources ==="
+            // Step 1: Provision resources (R2, D1, Vectorize)
+            printfn "=== Step 1/5: Provisioning Resources ==="
             printfn ""
 
             let! provisionResult = Provision.execute config verbose
@@ -21,27 +21,64 @@ module Migrate =
 
             printfn ""
 
-            // Step 2: Sync content to R2
-            printfn "=== Step 2/3: Syncing Content ==="
+            // Step 2: Deploy all workers (they must be up before sync/index can reach them)
+            printfn "=== Step 2/5: Deploying Workers ==="
+            printfn ""
+
+            let! contentSyncResult = Deploy.executeContentSync config "./workers/content-sync" false false verbose
+            match contentSyncResult with
+            | Error e -> return Error $"Content-sync worker deployment failed: {e}"
+            | Ok contentSyncUrl ->
+
+            let! smartSearchResult = Deploy.executeSmartSearch config "./workers/smart-search" false false verbose
+            match smartSearchResult with
+            | Error e -> return Error $"Smart-search worker deployment failed: {e}"
+            | Ok smartSearchUrl ->
+
+            let! searchResult = Deploy.executeSearch config "./workers/search" false false verbose
+            match searchResult with
+            | Error e -> return Error $"Search worker deployment failed: {e}"
+            | Ok searchUrl ->
+
+            printfn ""
+
+            // Step 3: Sync content to R2 (via content-sync worker)
+            printfn "=== Step 3/5: Syncing Content to R2 ==="
             printfn ""
 
             let hugoContentDir = "./hugo/content"
             let! syncResult = Sync.execute config hugoContentDir false 8788 verbose
-            match syncResult with
-            | Error e -> return Error $"Content sync failed: {e}"
-            | Ok syncCount ->
+            let syncCount =
+                match syncResult with
+                | Ok n -> n
+                | Error e ->
+                    printfn "Warning: Content sync failed: %s" e
+                    0
 
             printfn ""
 
-            // Step 3: Deploy worker
-            printfn "=== Step 3/3: Deploying Worker ==="
+            // Step 4: Index content for search (via search worker)
+            printfn "=== Step 4/5: Indexing Content for Search ==="
             printfn ""
 
-            let workerDir = "./workers/ask-ai"
-            let! deployResult = Deploy.execute config workerDir false false verbose
-            match deployResult with
-            | Error e -> return Error $"Worker deployment failed: {e}"
-            | Ok workerUrl ->
+            let! indexResult = Index.execute hugoContentDir false 8787 verbose
+            let indexCount =
+                match indexResult with
+                | Ok n -> n
+                | Error e ->
+                    printfn "Warning: Search indexing failed: %s" e
+                    0
+
+            printfn ""
+
+            // Step 5: Deploy Hugo site to Cloudflare Pages
+            printfn "=== Step 5/5: Deploying Hugo Site to Cloudflare Pages ==="
+            printfn ""
+
+            let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" false verbose
+            match pagesResult with
+            | Error e -> return Error $"Pages deployment failed: {e}"
+            | Ok _ ->
 
             // Final summary
             printfn ""
@@ -50,19 +87,20 @@ module Migrate =
             printfn "=========================================="
             printfn ""
             printfn "Resources:"
-            printfn "  R2 Bucket:   %s" Config.defaultResourceNames.R2BucketName
-            printfn "  D1 Database: %s" Config.defaultResourceNames.D1DatabaseName
+            printfn "  R2 Bucket:       %s" Config.defaultResourceNames.R2BucketName
+            printfn "  D1 (smart):      %s" Config.defaultResourceNames.SmartSearchD1Name
+            printfn "  D1 (search):     %s" Config.defaultResourceNames.SearchD1Name
+            printfn "  Vectorize:       %s" Config.defaultResourceNames.VectorizeIndexName
             printfn ""
-            printfn "Content synced: %d files" syncCount
+            printfn "Workers:"
+            printfn "  Content-sync:    %s" contentSyncUrl
+            printfn "  Smart-search:    %s" smartSearchUrl
+            printfn "  Search:          %s" searchUrl
             printfn ""
-            printfn "Worker URL: %s" workerUrl
-            printfn ""
-            printfn "Next steps:"
-            printfn "  1. Configure Hugo to use worker URL for Ask AI feature"
-            printfn "  2. Deploy Hugo site to Cloudflare Pages"
-            printfn "  3. Set up custom domain (optional)"
+            printfn "Content synced:    %d files" syncCount
+            printfn "Search indexed:    %d sections" indexCount
 
-            return Ok workerUrl
+            return Ok "Migration complete"
         }
 
     /// Migrate with selective steps
@@ -70,6 +108,7 @@ module Migrate =
         (config: Config.CloudflareConfig)
         (skipProvision: bool)
         (skipSync: bool)
+        (skipIndex: bool)
         (skipDeploy: bool)
         (verbose: bool)
         : Async<Result<string, string>> =
@@ -89,12 +128,23 @@ module Migrate =
             | Error _ -> return lastResult
             | Ok _ ->
 
-            if not skipSync then
-                printfn "=== Syncing Content ==="
+            // Deploy workers first so sync/index endpoints are available
+            if not skipDeploy then
+                printfn "=== Deploying Workers ==="
                 printfn ""
-                let! result = Sync.execute config "./hugo/content" false 8788 verbose
+                let! result = Deploy.executeContentSync config "./workers/content-sync" false false verbose
+                match result with
+                | Error e -> printfn "Warning: Content-sync deploy failed: %s" e
+                | Ok _ -> ()
+
+                let! result = Deploy.executeSmartSearch config "./workers/smart-search" false false verbose
                 match result with
                 | Error e -> lastResult <- Error e
+                | Ok _ -> ()
+
+                let! result = Deploy.executeSearch config "./workers/search" false false verbose
+                match result with
+                | Error e -> printfn "Warning: Search worker deploy failed: %s" e
                 | Ok _ -> ()
                 printfn ""
 
@@ -102,13 +152,22 @@ module Migrate =
             | Error _ -> return lastResult
             | Ok _ ->
 
-            if not skipDeploy then
-                printfn "=== Deploying Worker ==="
+            if not skipSync then
+                printfn "=== Syncing Content ==="
                 printfn ""
-                let! result = Deploy.execute config "./workers/ask-ai" false false verbose
+                let! result = Sync.execute config "./hugo/content" false 8788 verbose
                 match result with
-                | Error e -> lastResult <- Error e
-                | Ok url -> lastResult <- Ok url
+                | Error e -> printfn "Warning: Content sync failed: %s" e
+                | Ok _ -> ()
+                printfn ""
+
+            if not skipIndex then
+                printfn "=== Indexing Content for Search ==="
+                printfn ""
+                let! result = Index.execute "./hugo/content" false 8787 verbose
+                match result with
+                | Error e -> printfn "Warning: Search indexing failed: %s" e
+                | Ok _ -> ()
                 printfn ""
 
             return lastResult

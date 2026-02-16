@@ -1,4 +1,4 @@
--- Query log table for Ask AI analytics
+-- Query log table for Smart Search analytics
 CREATE TABLE IF NOT EXISTS query_log (
     id TEXT PRIMARY KEY,
     query_text TEXT NOT NULL,

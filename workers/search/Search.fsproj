@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <Compile Include="src/Types.fs" />
+    <Compile Include="src/Search.fs" />
+    <Compile Include="src/Indexing.fs" />
     <Compile Include="src/Handlers.fs" />
     <Compile Include="src/Main.fs" />
   </ItemGroup>
@@ -20,6 +22,7 @@
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.Worker.Context/CloudEdge.Worker.Context.fsproj" />
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.D1/CloudEdge.D1.fsproj" />
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.AI/CloudEdge.AI.fsproj" />
+    <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.Vectorize/CloudEdge.Vectorize.fsproj" />
   </ItemGroup>
 
 </Project>

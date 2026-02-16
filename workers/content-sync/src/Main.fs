@@ -2,7 +2,7 @@ namespace ClefLang.ContentSync
 
 open Fable.Core
 open Fable.Core.JsInterop
-open CloudFlare.Worker.Context
+open Fidelity.CloudEdge.Worker.Context
 
 module Main =
 

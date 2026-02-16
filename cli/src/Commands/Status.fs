@@ -16,12 +16,16 @@ module Status =
                 printfn "========================="
                 printfn ""
                 printfn "Infrastructure:"
-                printfn "  R2 Bucket:   %s" (if state.R2BucketCreated then "Created" else "Not created")
-                printfn "  D1 Database: %s" (state.D1DatabaseId |> Option.map (fun id -> $"ID: {id}") |> Option.defaultValue "Not created")
+                printfn "  R2 Bucket:       %s" (if state.R2BucketCreated then "Created" else "Not created")
+                printfn "  Smart Search D1: %s" (state.SmartSearchD1Id |> Option.map (fun id -> $"ID: {id}") |> Option.defaultValue "Not created")
+                printfn "  Search D1:       %s" (state.SearchD1Id |> Option.map (fun id -> $"ID: {id}") |> Option.defaultValue "Not created")
+                printfn "  Vectorize:       %s" (if state.VectorizeIndexCreated then "Created" else "Not created")
                 printfn ""
                 printfn "Workers:"
-                printfn "  Ask AI:        %s" (if state.AskAiWorkerDeployed then "Deployed" else "Not deployed")
-                printfn "  Ask AI URL:    %s" (state.AskAiWorkerUrl |> Option.defaultValue "N/A")
+                printfn "  Smart Search:  %s" (if state.SmartSearchWorkerDeployed then "Deployed" else "Not deployed")
+                printfn "  Smart URL:     %s" (state.SmartSearchWorkerUrl |> Option.defaultValue "N/A")
+                printfn "  Search:        %s" (if state.SearchWorkerDeployed then "Deployed" else "Not deployed")
+                printfn "  Search URL:    %s" (state.SearchWorkerUrl |> Option.defaultValue "N/A")
                 printfn "  Content Sync:  %s" (if state.ContentSyncWorkerDeployed then "Deployed" else "Not deployed")
                 printfn "  Content URL:   %s" (state.ContentSyncWorkerUrl |> Option.defaultValue "N/A")
                 printfn ""
@@ -31,10 +35,13 @@ module Status =
                 printfn ""
                 printfn "Resource Names:"
                 let resources = Config.defaultResourceNames
-                printfn "  Ask AI Worker:       %s" resources.AskAiWorkerName
+                printfn "  Smart Search Worker: %s" resources.SmartSearchWorkerName
+                printfn "  Search Worker:       %s" resources.SearchWorkerName
                 printfn "  Content Sync Worker: %s" resources.ContentSyncWorkerName
                 printfn "  R2 Bucket:           %s" resources.R2BucketName
-                printfn "  D1 Database:         %s" resources.D1DatabaseName
+                printfn "  Smart Search D1:     %s" resources.SmartSearchD1Name
+                printfn "  Search D1:           %s" resources.SearchD1Name
+                printfn "  Vectorize Index:     %s" resources.VectorizeIndexName
 
                 return Ok ()
         }

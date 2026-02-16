@@ -98,10 +98,8 @@ params:
 
   search:
     enable: true
-    type: flexsearch
-    flexsearch:
-      index: content
-      tokenize: forward
+
+  searchWorkerUrl: "https://clef-search.engineering-0c5.workers.dev"
 
   footer:
     displayCopyright: true

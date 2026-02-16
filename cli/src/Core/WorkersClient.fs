@@ -15,6 +15,7 @@ module WorkersClient =
         | R2Bucket of name: string * bucketName: string
         | D1Database of name: string * databaseId: string
         | AIBinding of name: string
+        | VectorizeIndex of name: string * indexName: string
         | PlainText of name: string * value: string
 
     /// Worker deployment metadata
@@ -36,21 +37,20 @@ module WorkersClient =
                 |> List.map (fun binding ->
                     match binding with
                     | R2Bucket (name, bucketName) ->
-                        sprintf """{\"type\":\"r2_bucket\",\"name\":\"%s\",\"bucket_name\":\"%s\"}""" name bucketName
+                        $"""{{ "type": "r2_bucket", "name": "{name}", "bucket_name": "{bucketName}" }}"""
                     | D1Database (name, databaseId) ->
-                        sprintf """{\"type\":\"d1\",\"name\":\"%s\",\"id\":\"%s\"}""" name databaseId
+                        $"""{{ "type": "d1", "name": "{name}", "id": "{databaseId}" }}"""
                     | AIBinding name ->
-                        sprintf """{\"type\":\"ai\",\"name\":\"%s\"}""" name
+                        $"""{{ "type": "ai", "name": "{name}" }}"""
+                    | VectorizeIndex (name, indexName) ->
+                        $"""{{ "type": "vectorize", "name": "{name}", "index_name": "{indexName}" }}"""
                     | PlainText (name, value) ->
-                        sprintf """{\"type\":\"plain_text\",\"name\":\"%s\",\"text\":\"%s\"}""" name value
+                        $"""{{ "type": "plain_text", "name": "{name}", "text": "{value}" }}"""
                 )
                 |> String.concat ","
 
-            sprintf """{
-                \"main_module\": \"%s\",
-                \"compatibility_date\": \"%s\",
-                \"bindings\": [%s]
-            }""" metadata.MainModule metadata.CompatibilityDate bindings
+            let bindingsArray = $"[{bindings}]"
+            $"""{{ "main_module": "{metadata.MainModule}", "compatibility_date": "{metadata.CompatibilityDate}", "bindings": {bindingsArray} }}"""
 
         /// Get account subdomain for workers.dev
         member this.GetSubdomain() : Async<Result<string option, string>> =
@@ -205,7 +205,7 @@ module WorkersClient =
             async {
                 try
                     let url = $"https://api.cloudflare.com/client/v4/accounts/{accountId}/workers/scripts/{scriptName}/subdomain"
-                    let payload = """{\"enabled\": true, \"previews_enabled\": false}"""
+                    let payload = """{ "enabled": true, "previews_enabled": false }"""
                     use content = new StringContent(payload, Encoding.UTF8, "application/json")
                     use request = new HttpRequestMessage(HttpMethod.Post, url)
                     request.Content <- content

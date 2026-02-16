@@ -1,7 +1,7 @@
 {
-  "name": "clef-smart-search-worker",
+  "name": "clef-search-worker",
   "version": "0.1.0",
-  "description": "Clef Smart Search Cloudflare Worker - synthesizes summaries from BM25 search results",
+  "description": "Clef Search Worker - hybrid BM25 + vector search via D1 FTS5 and Vectorize",
   "type": "module",
   "main": "dist/worker.js",
   "scripts": {

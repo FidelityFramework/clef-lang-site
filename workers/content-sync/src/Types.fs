@@ -2,8 +2,8 @@ namespace ClefLang.ContentSync
 
 open Fable.Core
 open Fable.Core.JsInterop
-open CloudFlare.Worker.Context
-open CloudFlare.R2
+open Fidelity.CloudEdge.Worker.Context
+open Fidelity.CloudEdge.R2
 
 [<AutoOpen>]
 module Types =

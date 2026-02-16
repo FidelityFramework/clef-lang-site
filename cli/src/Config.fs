@@ -14,17 +14,23 @@ module Config =
     }
 
     type ResourceNames = {
-        AskAiWorkerName: string
+        SmartSearchWorkerName: string
         ContentSyncWorkerName: string
+        SearchWorkerName: string
         R2BucketName: string
-        D1DatabaseName: string
+        SmartSearchD1Name: string
+        SearchD1Name: string
+        VectorizeIndexName: string
     }
 
     let defaultResourceNames = {
-        AskAiWorkerName = "clef-ask-ai"
+        SmartSearchWorkerName = "clef-smart-search"
         ContentSyncWorkerName = "clef-content-sync"
+        SearchWorkerName = "clef-search"
         R2BucketName = "clef-blog-content"
-        D1DatabaseName = "clef-ask-ai"
+        SmartSearchD1Name = "clef-smart-search"
+        SearchD1Name = "clef-search"
+        VectorizeIndexName = "clef-content"
     }
 
     /// Deployment scope determined by git diff analysis
@@ -70,15 +76,21 @@ module Config =
 
     type DeploymentState = {
         R2BucketCreated: bool
-        D1DatabaseId: string option
-        AskAiWorkerDeployed: bool
-        AskAiWorkerUrl: string option
+        SmartSearchD1Id: string option
+        SmartSearchWorkerDeployed: bool
+        SmartSearchWorkerUrl: string option
         ContentSyncWorkerDeployed: bool
         ContentSyncWorkerUrl: string option
         ContentSyncApiKey: string option
+        SearchWorkerDeployed: bool
+        SearchWorkerUrl: string option
+        SearchIndexApiKey: string option
+        SearchD1Id: string option
+        VectorizeIndexCreated: bool
         LastDeployHash: string option
         LastSyncTimestamp: DateTime option
-        LastDeployedCommit: string option  // Track last deployed git commit
+        LastDeployedCommit: string option
+        LastGoSumHash: string option
     }
 
     let loadConfig () : Result<CloudflareConfig, string> =
@@ -118,13 +130,19 @@ module Config =
 
     let defaultState = {
         R2BucketCreated = false
-        D1DatabaseId = None
-        AskAiWorkerDeployed = false
-        AskAiWorkerUrl = None
+        SmartSearchD1Id = None
+        SmartSearchWorkerDeployed = false
+        SmartSearchWorkerUrl = None
         ContentSyncWorkerDeployed = false
         ContentSyncWorkerUrl = None
         ContentSyncApiKey = None
+        SearchWorkerDeployed = false
+        SearchWorkerUrl = None
+        SearchIndexApiKey = None
+        SearchD1Id = None
+        VectorizeIndexCreated = false
         LastDeployHash = None
         LastSyncTimestamp = None
         LastDeployedCommit = None
+        LastGoSumHash = None
     }

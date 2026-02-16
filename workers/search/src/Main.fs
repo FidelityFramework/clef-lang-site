@@ -1,4 +1,4 @@
-namespace ClefLang.SmartSearch
+namespace ClefLang.Search
 
 open Fable.Core
 open Fable.Core.JsInterop
@@ -18,7 +18,7 @@ module Main =
         member _.pathname: string = jsNative
         member _.searchParams: obj = jsNative
 
-    /// Main fetch handler - entry point for the Cloudflare Worker
+    /// Main fetch handler — entry point for the Cloudflare Worker
     [<ExportDefault>]
     let handler =
         createObj [
@@ -40,28 +40,46 @@ module Main =
                             // CORS preflight
                             return Handlers.handleOptions env origin
 
-                        | "POST", "/synthesize" ->
-                            // Synthesize summary from pre-ranked BM25 results
-                            let! response = Handlers.handleSynthesizeRequest request env ctx
+                        | "GET", "/search" ->
+                            // Fast BM25-only search
+                            let! response = Handlers.handleSearch request env
+                            return Handlers.withCORS env origin response
+
+                        | "POST", "/search/hybrid" ->
+                            // Hybrid BM25 + vector search with RRF
+                            let! response = Handlers.handleHybridSearch request env
                             return Handlers.withCORS env origin response
 
                         | "POST", "/synthesize-stream" ->
-                            // Streaming synthesis (SSE)
-                            let! response = Handlers.handleSynthesizeStreamRequest request env ctx
+                            // Hybrid search + AI synthesis SSE
+                            let! response = Handlers.handleSynthesizeStream request env ctx
                             return Handlers.withCORS env origin response
+
+                        | "POST", "/index" ->
+                            // Batch index content (authenticated)
+                            let! response = Handlers.handleIndex request env
+                            return response
+
+                        | "POST", "/purge-index" ->
+                            // Clear all indexed content (authenticated)
+                            let! response = Handlers.handlePurgeIndex request env
+                            return response
 
                         | "GET", "/health" ->
                             return Handlers.handleHealth ()
 
                         | "GET", "/" ->
-                            // Root - return info
+                            // Root — return service info
                             let info = createObj [
-                                "name" ==> "Clef Smart Search Worker"
+                                "name" ==> "Clef Search Worker"
                                 "version" ==> "0.1.0"
-                                "description" ==> "Synthesizes summaries from BM25 search results via Workers AI"
+                                "description" ==> "Hybrid BM25 + vector search via D1 FTS5 and Vectorize"
                                 "endpoints" ==> [|
-                                    createObj [ "method" ==> "POST"; "path" ==> "/synthesize"; "description" ==> "Generate summary from search results" ]
-                                    createObj [ "method" ==> "POST"; "path" ==> "/synthesize-stream"; "description" ==> "Stream summary from search results (SSE)" ]
+                                    createObj [ "method" ==> "GET"; "path" ==> "/search?q=&limit=&type="; "description" ==> "BM25 full-text search" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/search/hybrid"; "description" ==> "Hybrid BM25 + vector search with RRF fusion" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/synthesize-stream"; "description" ==> "Hybrid search + AI synthesis (SSE)" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/index"; "description" ==> "Batch index content (authenticated)" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/purge-index"; "description" ==> "Clear all indexed content (authenticated)" ]
                                     createObj [ "method" ==> "GET"; "path" ==> "/health"; "description" ==> "Health check" ]
                                 |]
                             ]

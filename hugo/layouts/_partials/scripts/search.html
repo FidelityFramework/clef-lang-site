@@ -1,0 +1,11 @@
+{{/* Clef Smart Search — replaces Hextra FlexSearch */}}
+{{- if (site.Params.search.enable | default true) -}}
+  <script>
+    window.CLEF_SEARCH_URL = "{{ site.Params.searchWorkerUrl | default "https://clef-search.engineering-0c5.workers.dev" }}";
+  </script>
+  {{- $jsSearch := resources.Get "js/search.js" -}}
+  {{- if hugo.IsProduction -}}
+    {{- $jsSearch = $jsSearch | minify | fingerprint -}}
+  {{- end -}}
+  <script defer src="{{ $jsSearch.RelPermalink }}"{{ if hugo.IsProduction }} integrity="{{ $jsSearch.Data.Integrity }}"{{ end }}></script>
+{{- end -}}

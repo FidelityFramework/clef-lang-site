@@ -1,11 +1,11 @@
-namespace ClefLang.AskAI
+namespace ClefLang.SmartSearch
 
 open System
 open Fable.Core
 open Fable.Core.JsInterop
-open CloudFlare.Worker.Context
-open CloudFlare.Worker.Context.Globals
-open CloudFlare.D1
+open Fidelity.CloudEdge.Worker.Context
+open Fidelity.CloudEdge.Worker.Context.Globals
+open Fidelity.CloudEdge.D1
 
 module Handlers =
 
