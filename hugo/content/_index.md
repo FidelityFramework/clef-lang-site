@@ -13,7 +13,7 @@ toc: false
 
 <div class="hx:mt-8 hx:mb-8">
 {{< hextra/hero-headline >}}
-  Concurrent systems language&nbsp;<br class="sm:hx:block hx:hidden" />for heterogeneous compute
+  A concurrent systems language&nbsp;<br class="sm:hx:block hx:hidden" />for heterogeneous compute
 {{< /hextra/hero-headline >}}
 </div>
 
