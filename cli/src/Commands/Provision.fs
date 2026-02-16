@@ -176,23 +176,25 @@ module Provision =
             | Ok () ->
                 if verbose then printfn "        Metadata index created (content_type)"
 
+            // Preserve existing worker state (workers may already be deployed)
+            let existing = Config.loadState () |> Option.defaultValue Config.defaultState
             let state: Config.DeploymentState = {
                 R2BucketCreated = true
                 SmartSearchD1Id = Some smartSearchD1Id
-                SmartSearchWorkerDeployed = false
-                SmartSearchWorkerUrl = None
-                ContentSyncWorkerDeployed = false
-                ContentSyncWorkerUrl = None
-                ContentSyncApiKey = None
-                SearchWorkerDeployed = false
-                SearchWorkerUrl = None
-                SearchIndexApiKey = None
+                SmartSearchWorkerDeployed = existing.SmartSearchWorkerDeployed
+                SmartSearchWorkerUrl = existing.SmartSearchWorkerUrl
+                ContentSyncWorkerDeployed = existing.ContentSyncWorkerDeployed
+                ContentSyncWorkerUrl = existing.ContentSyncWorkerUrl
+                ContentSyncApiKey = existing.ContentSyncApiKey
+                SearchWorkerDeployed = existing.SearchWorkerDeployed
+                SearchWorkerUrl = existing.SearchWorkerUrl
+                SearchIndexApiKey = existing.SearchIndexApiKey
                 SearchD1Id = Some searchD1Id
                 VectorizeIndexCreated = true
-                LastDeployHash = None
-                LastSyncTimestamp = None
-                LastDeployedCommit = None
-                LastGoSumHash = None
+                LastDeployHash = existing.LastDeployHash
+                LastSyncTimestamp = existing.LastSyncTimestamp
+                LastDeployedCommit = existing.LastDeployedCommit
+                LastGoSumHash = existing.LastGoSumHash
             }
 
             Config.saveState state
