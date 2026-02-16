@@ -92,6 +92,7 @@ module Main =
                         let error = createObj [
                             "error" ==> ex.Message
                         ]
-                        return Handlers.jsonResponse error 500
+                        let resp = Handlers.jsonResponse error 500
+                        return Handlers.withCORS env origin resp
                 }
         ]

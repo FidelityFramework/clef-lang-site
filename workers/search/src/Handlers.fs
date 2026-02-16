@@ -196,22 +196,28 @@ module Handlers =
 
             let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
-            // Workers AI non-streaming returns { response: "..." }
+            // Workers AI non-streaming: try multiple response shapes
             let responseText: string =
-                let r: obj = aiResult?response
-                if not (isNullOrUndefined r) then string r
+                if isNullOrUndefined aiResult then ""
                 else
-                    // Some models return { result: { response: "..." } }
-                    let r2: obj = aiResult?result?response
-                    if not (isNullOrUndefined r2) then string r2
-                    else ""
+                    // Shape 1: { response: "..." }
+                    let r: obj = try aiResult?response with _ -> null
+                    if not (isNullOrUndefined r) then string r
+                    else
+                        // Shape 2: result is a string directly
+                        let t = emitJsExpr aiResult "typeof $0"
+                        if t = "string" then string aiResult
+                        else ""
 
             if responseText = "" then
+                // Return debug info so we can see the actual shape
+                let shape = emitJsExpr aiResult "JSON.stringify($0).substring(0, 500)"
                 return jsonResponse {|
                     query = query
                     results = topResults
                     synthesis = null
-                    error = "AI returned empty response"
+                    error = "AI returned unexpected format"
+                    debug = shape
                 |} 200
             else
 
