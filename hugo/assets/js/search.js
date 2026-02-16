@@ -133,13 +133,13 @@
     if (!query) return;
 
     synthesisArea.style.display = "";
-    synthesisContent.textContent = "";
+    synthesisContent.innerHTML = '<span class="clef-synthesis-spinner"></span> Generating summary...';
 
     try {
       const resp = await fetch(`${SEARCH_URL}/synthesize-stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, limit: 10 }),
+        body: JSON.stringify({ query, limit: 5 }),
       });
 
       if (!resp.ok) {
@@ -147,40 +147,12 @@
         return;
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop(); // keep incomplete line
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const payload = line.slice(6);
-            if (payload === "[DONE]") break;
-            try {
-              const obj = JSON.parse(payload);
-              if (obj.text) {
-                synthesisContent.textContent += obj.text;
-              } else if (obj.response) {
-                synthesisContent.textContent += obj.response;
-              }
-            } catch {
-              // Non-JSON data line — append as text
-              if (payload.trim()) {
-                synthesisContent.textContent += payload;
-              }
-            }
-          }
-        }
-      }
-
-      if (!synthesisContent.textContent.trim()) {
+      const data = await resp.json();
+      if (data.synthesis) {
+        synthesisContent.textContent = data.synthesis;
+      } else if (data.error) {
+        synthesisContent.textContent = data.error;
+      } else {
         synthesisContent.textContent = "No synthesis available for this query.";
       }
     } catch (err) {

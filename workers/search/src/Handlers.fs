@@ -183,7 +183,7 @@ module Handlers =
                 return jsonResponse {| error = "No results found for synthesis" |} 404
             else
 
-            // Build prompt and call Workers AI with streaming
+            // Build prompt and call Workers AI (non-streaming for short synthesis)
             let prompt = Search.buildSynthesisPrompt query topResults
 
             let aiRequest = createObj [
@@ -192,97 +192,34 @@ module Handlers =
                 |]
                 "max_tokens" ==> 256
                 "temperature" ==> 0.3
-                "stream" ==> true
             ]
 
-            let! streamResponse = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
+            let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
-            // Create a TransformStream to build our SSE response
-            let transformStream: obj = emitJsExpr () "new TransformStream()"
-            let readable: obj = transformStream?readable
-            let writable: obj = transformStream?writable
-            let writer: obj = writable?getWriter()
-            let encoder: obj = emitJsExpr () "new TextEncoder()"
+            // Workers AI non-streaming returns { response: "..." }
+            let responseText: string =
+                let r: obj = aiResult?response
+                if not (isNullOrUndefined r) then string r
+                else
+                    // Some models return { result: { response: "..." } }
+                    let r2: obj = aiResult?result?response
+                    if not (isNullOrUndefined r2) then string r2
+                    else ""
 
-            // Helper to write SSE event
-            let writeEvent (eventType: string) (data: obj) : JS.Promise<unit> =
-                let json = JS.JSON.stringify(data)
-                let sseData = $"event: {eventType}\ndata: {json}\n\n"
-                let encoded: obj = encoder?encode(sseData)
-                writer?write(encoded) |> unbox
+            if responseText = "" then
+                return jsonResponse {|
+                    query = query
+                    results = topResults
+                    synthesis = null
+                    error = "AI returned empty response"
+                |} 200
+            else
 
-            // Process the AI stream in background
-            let processStream () : JS.Promise<unit> =
-                promise {
-                    try
-                        // Send search results first
-                        do! writeEvent "results" {| results = topResults |}
-
-                        // Workers AI with stream:true returns a ReadableStream directly,
-                        // not a Response with .body. Handle both cases.
-                        let stream: obj =
-                            let body: obj = streamResponse?body
-                            if not (isNullOrUndefined body) then body
-                            else streamResponse |> unbox
-                        let hasGetReader: bool = emitJsExpr stream "typeof $0?.getReader === 'function'"
-                        if hasGetReader then
-                            let reader: obj = stream?getReader()
-                            let decoder: obj = emitJsExpr () "new TextDecoder()"
-                            let mutable isDone = false
-                            let mutable fullText = ""
-                            let mutable buffer = ""
-
-                            while not isDone do
-                                let! result = reader?read() |> unbox<JS.Promise<obj>>
-                                let done': bool = result?``done`` |> unbox
-                                let value: obj = result?value
-
-                                if done' then
-                                    isDone <- true
-                                else if not (isNullOrUndefined value) then
-                                    let chunk: string = decoder?decode(value) |> unbox
-                                    buffer <- buffer + chunk
-
-                                    // Process complete SSE messages (end with \n\n)
-                                    let parts = buffer.Split([|"\n\n"|], StringSplitOptions.None)
-                                    if parts.Length > 1 then
-                                        for i in 0 .. parts.Length - 2 do
-                                            let line = parts.[i]
-                                            if line.StartsWith("data: ") then
-                                                try
-                                                    let json = line.Substring(6)
-                                                    let parsed: obj = JS.JSON.parse(json)
-                                                    let response: obj = parsed?response
-                                                    if not (isNullOrUndefined response) then
-                                                        let text = string response
-                                                        fullText <- fullText + text
-                                                        do! writeEvent "chunk" {| text = text |}
-                                                with _ -> ()
-                                        buffer <- parts.[parts.Length - 1]
-
-                            do! writeEvent "done" {| complete = true; fullText = fullText |}
-                            do! writer?close() |> unbox<JS.Promise<unit>>
-                        else
-                            do! writeEvent "error" {| message = "AI response is not a readable stream" |}
-                            do! writer?close() |> unbox<JS.Promise<unit>>
-                    with ex ->
-                        do! writeEvent "error" {| message = ex.Message |}
-                        do! writer?close() |> unbox<JS.Promise<unit>>
-                }
-
-            // Start processing (don't await - let it run in background)
-            processStream () |> ignore
-
-            // Return SSE response immediately with the readable stream
-            let headers = Globals.Headers.Create()
-            headers.set("Content-Type", "text/event-stream")
-            headers.set("Cache-Control", "no-cache")
-            headers.set("Connection", "keep-alive")
-
-            return Globals.Response.Create(!!readable, !!createObj [
-                "status" ==> 200
-                "headers" ==> headers
-            ])
+            return jsonResponse {|
+                query = query
+                results = topResults
+                synthesis = responseText
+            |} 200
         }
 
     /// POST /index (auth required) — batch index content
