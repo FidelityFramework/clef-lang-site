@@ -71,7 +71,7 @@ module DeployPages =
             Error $"hugo mod get failed: {stderr}"
         else
 
-        printfn "        Updating vendor directory..."
+        printfn "        Re-vendoring modules..."
         let exitCode, _, stderr =
             runProcess "hugo" "mod vendor" hugoDir verbose
 
