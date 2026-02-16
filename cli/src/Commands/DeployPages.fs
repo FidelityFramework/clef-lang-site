@@ -55,7 +55,26 @@ module DeployPages =
             "GONOSUMDB", "github.com/FidelityFramework/*"
         ]
 
-        printfn "        Clearing spec module cache..."
+        // 1. Nuke Go's module cache for this module — hugo mod clean only clears Hugo's cache,
+        //    Go keeps its own cache that can serve stale branch resolutions
+        printfn "        Clearing Go module cache for spec..."
+        let exitCode, goModCache, _ = runProcess "go" "env GOMODCACHE" hugoDir false
+        if exitCode = 0 then
+            let cacheRoot = goModCache.Trim()
+            // Go stores with case-folded paths: FidelityFramework → !fidelity!framework
+            let downloadCache = Path.Combine(cacheRoot, "cache", "download", "github.com", "!fidelity!framework", "clef-lang-spec")
+            let moduleCache = Path.Combine(cacheRoot, "github.com", "!fidelity!framework")
+            if Directory.Exists(downloadCache) then
+                Directory.Delete(downloadCache, true)
+                if verbose then printfn "        Deleted Go download cache"
+            if Directory.Exists(moduleCache) then
+                // Delete all clef-lang-spec version directories
+                for dir in Directory.GetDirectories(moduleCache, "clef-lang-spec*") do
+                    Directory.Delete(dir, true)
+                    if verbose then printfn "        Deleted cached module: %s" (Path.GetFileName(dir))
+
+        // 2. Clear Hugo's module cache too
+        printfn "        Clearing Hugo module cache..."
         let exitCode, _, stderr =
             runProcess "hugo" "mod clean --pattern *clef-lang-spec*" hugoDir verbose
 
@@ -63,6 +82,7 @@ module DeployPages =
             Error $"hugo mod clean failed: {stderr}"
         else
 
+        // 3. Fetch latest from Git directly (no proxy, no cache)
         printfn "        Pulling latest spec from fidelity branch (direct, no proxy)..."
         let exitCode, _, stderr =
             runProcessWithEnv "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@fidelity" hugoDir goDirectEnv verbose
@@ -71,6 +91,7 @@ module DeployPages =
             Error $"hugo mod get failed: {stderr}"
         else
 
+        // 4. Re-vendor so the build uses the freshly fetched version
         printfn "        Re-vendoring modules..."
         let exitCode, _, stderr =
             runProcess "hugo" "mod vendor" hugoDir verbose
@@ -79,7 +100,7 @@ module DeployPages =
             Error $"hugo mod vendor failed: {stderr}"
         else
 
-        // Always show resolved module version so you can verify the right commit was pulled
+        // Always show resolved module version
         let _, stdout, _ = runProcess "hugo" "mod graph" hugoDir false
         let specLine =
             stdout.Split('\n')
