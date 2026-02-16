@@ -11,6 +11,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VERBOSE=""
 HUGO_DIR=""
 PROJECT_NAME=""
+REFRESH_SPEC=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -27,6 +28,10 @@ while [[ $# -gt 0 ]]; do
             PROJECT_NAME="--project-name $2"
             shift 2
             ;;
+        -r|--refresh-spec)
+            REFRESH_SPEC="--refresh-spec"
+            shift
+            ;;
         -h|--help)
             echo "Deploy Hugo site to Cloudflare Pages"
             echo ""
@@ -36,6 +41,7 @@ while [[ $# -gt 0 ]]; do
             echo "  -v, --verbose         Enable verbose output"
             echo "  -d, --hugo-dir PATH   Hugo site directory (default: ./hugo)"
             echo "  -n, --project-name    Pages project name (default: clef-lang)"
+            echo "  -r, --refresh-spec    Pull latest spec from clef-lang-spec before building"
             echo "  -h, --help            Show this help message"
             exit 0
             ;;
@@ -47,4 +53,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "$PROJECT_ROOT"
-dotnet run --project cli/ClefLang.CLI.fsproj -- deploy-pages $HUGO_DIR $PROJECT_NAME $VERBOSE
+dotnet run --project cli/ClefLang.CLI.fsproj -- deploy-pages $HUGO_DIR $PROJECT_NAME $REFRESH_SPEC $VERBOSE

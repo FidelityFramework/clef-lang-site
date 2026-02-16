@@ -98,6 +98,7 @@ module Program =
     type DeployPagesArgs =
         | [<AltCommandLine("-d")>] Hugo_Dir of path: string
         | [<AltCommandLine("-n")>] Project_Name of name: string
+        | [<AltCommandLine("-r")>] Refresh_Spec
         | [<AltCommandLine("-v")>] Verbose
 
         interface IArgParserTemplate with
@@ -105,6 +106,7 @@ module Program =
                 match this with
                 | Hugo_Dir _ -> "Hugo site directory (default: ./hugo)"
                 | Project_Name _ -> "Pages project name (default: clef-lang)"
+                | Refresh_Spec -> "Pull latest spec from clef-lang-spec before building"
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
@@ -228,8 +230,9 @@ module Program =
                     | Ok config ->
                         let hugoDir = args.GetResult(<@ DeployPagesArgs.Hugo_Dir @>, "./hugo")
                         let projectName = args.GetResult(<@ DeployPagesArgs.Project_Name @>, "clef-lang")
+                        let refreshSpec = args.Contains <@ DeployPagesArgs.Refresh_Spec @>
                         let verbose = args.Contains <@ DeployPagesArgs.Verbose @>
-                        Commands.DeployPages.execute config hugoDir projectName verbose
+                        Commands.DeployPages.execute config hugoDir projectName refreshSpec verbose
                         |> runAsync
 
                 | CLIArgs.Migrate args ->

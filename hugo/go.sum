@@ -1,2 +1,12 @@
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft h1:52bUvnZd69M/tX6sQ70zZDya6YvFima8ER8dC297G5s=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216114641-39331998e83b h1:pK6zkfd3AjSsFWfXHeaYFslY4Z+2vh+dvOxPaqvgMFA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216114641-39331998e83b/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216120201-8da44c6cdb82 h1:clDhKWg16v77+bDr1XOf/W6KBte1OFJaOhxNZ1+QED4=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216120201-8da44c6cdb82/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216121811-f4882b054cb6 h1:c1tbIRw3LAozWKGe3mhBHrdtf0vwrB2M5x0utxDg4MY=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216121811-f4882b054cb6/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216122847-40b21dd9beb6 h1:CmlDaT+dBS3tQ5RGqvW6Bsi7qf2e30kwdjipC6vh6w8=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260216122847-40b21dd9beb6/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
 github.com/imfing/hextra v0.11.1 h1:8pTc4ReYbzGTHAnyiebmlT3ijFfIXiGu1r7tM/UGjFI=
 github.com/imfing/hextra v0.11.1/go.mod h1:cEfel3lU/bSx7lTE/+uuR4GJaphyOyiwNR3PTqFTXpI=

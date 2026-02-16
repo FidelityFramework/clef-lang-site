@@ -10,29 +10,26 @@ module:
     # Hextra theme
     - path: github.com/imfing/hextra
 
-    # Language specification from external repo (uncomment when clef-lang-spec has go.mod)
-    # - path: github.com/FidelityFramework/clef-lang-spec
-    #   mounts:
-    #     - source: stable
-    #       target: content/spec/v0.1
-    #     - source: draft
-    #       target: content/spec/draft
-    #     - source: diagrams
-    #       target: static/images/spec
+    # Language specification from external repo
+    - path: github.com/FidelityFramework/clef-lang-spec
+      mounts:
+        - source: spec
+          target: content/spec/draft
 
   # Local project mounts (REQUIRED once any import has custom mounts)
-  # Uncomment when spec module is enabled:
-  # mounts:
-  #   - source: content
-  #     target: content
-  #   - source: static
-  #     target: static
-  #   - source: assets
-  #     target: assets
-  #   - source: layouts
-  #     target: layouts
-  #   - source: data
-  #     target: data
+  mounts:
+    - source: content
+      target: content
+    - source: static
+      target: static
+    - source: assets
+      target: assets
+    - source: layouts
+      target: layouts
+    - source: data
+      target: data
+    - source: i18n
+      target: i18n
 
 enableRobotsTXT: true
 enableGitInfo: true
