@@ -95,7 +95,7 @@ module Program =
             member this.Usage =
                 match this with
                 | Base _ -> "Base git ref for comparison"
-                | Force -> "Force full deployment regardless of changes"
+                | Force -> "Force spec refresh + build + deploy pages (no state checks)"
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
@@ -103,6 +103,7 @@ module Program =
         | [<AltCommandLine("-d")>] Hugo_Dir of path: string
         | [<AltCommandLine("-n")>] Project_Name of name: string
         | [<AltCommandLine("-r")>] Refresh_Spec
+        | [<AltCommandLine("-f")>] Force
         | [<AltCommandLine("-v")>] Verbose
 
         interface IArgParserTemplate with
@@ -111,6 +112,7 @@ module Program =
                 | Hugo_Dir _ -> "Hugo site directory (default: ./hugo)"
                 | Project_Name _ -> "Pages project name (default: clef-lang)"
                 | Refresh_Spec -> "Pull latest spec from clef-lang-spec before building"
+                | Force -> "Force spec refresh, build, and deploy (no state checks)"
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
@@ -278,7 +280,8 @@ module Program =
                     | Ok config ->
                         let hugoDir = args.GetResult(<@ DeployPagesArgs.Hugo_Dir @>, "./hugo")
                         let projectName = args.GetResult(<@ DeployPagesArgs.Project_Name @>, "clef-lang")
-                        let refreshSpec = args.Contains <@ DeployPagesArgs.Refresh_Spec @>
+                        let force = args.Contains <@ DeployPagesArgs.Force @>
+                        let refreshSpec = force || args.Contains <@ DeployPagesArgs.Refresh_Spec @>
                         let verbose = args.Contains <@ DeployPagesArgs.Verbose @>
                         Commands.DeployPages.execute config hugoDir projectName refreshSpec verbose
                         |> runAsync

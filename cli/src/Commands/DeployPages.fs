@@ -25,7 +25,36 @@ module DeployPages =
 
         (proc.ExitCode, stdout, stderr)
 
+    /// Run a process with extra environment variables (e.g. to bypass Go proxy)
+    let private runProcessWithEnv (name: string) (args: string) (workDir: string) (env: (string * string) list) (verbose: bool) =
+        let psi = System.Diagnostics.ProcessStartInfo(name, args)
+        psi.WorkingDirectory <- workDir
+        psi.RedirectStandardOutput <- true
+        psi.RedirectStandardError <- true
+        psi.UseShellExecute <- false
+        psi.CreateNoWindow <- true
+
+        for (key, value) in env do
+            psi.Environment.[key] <- value
+
+        use proc = System.Diagnostics.Process.Start(psi)
+        let stdout = proc.StandardOutput.ReadToEnd()
+        let stderr = proc.StandardError.ReadToEnd()
+        proc.WaitForExit()
+
+        if verbose && stdout.Length > 0 then
+            printfn "        %s" (stdout.TrimEnd())
+
+        (proc.ExitCode, stdout, stderr)
+
     let private refreshSpecModule (hugoDir: string) (verbose: bool) : Result<unit, string> =
+        // Bypass Go module proxy — fetch directly from Git to avoid stale cached versions
+        let goDirectEnv = [
+            "GONOSUMCHECK", "github.com/FidelityFramework/*"
+            "GONOPROXY", "github.com/FidelityFramework/*"
+            "GONOSUMDB", "github.com/FidelityFramework/*"
+        ]
+
         printfn "        Clearing spec module cache..."
         let exitCode, _, stderr =
             runProcess "hugo" "mod clean --pattern *clef-lang-spec*" hugoDir verbose
@@ -34,9 +63,15 @@ module DeployPages =
             Error $"hugo mod clean failed: {stderr}"
         else
 
-        printfn "        Pulling latest spec from fidelity branch..."
+        // Delete vendored spec directory to ensure a completely fresh copy
+        let vendorSpecDir = Path.Combine(hugoDir, "_vendor", "github.com", "FidelityFramework", "clef-lang-spec")
+        if Directory.Exists(vendorSpecDir) then
+            if verbose then printfn "        Removing vendored spec directory..."
+            Directory.Delete(vendorSpecDir, true)
+
+        printfn "        Pulling latest spec from fidelity branch (direct, no proxy)..."
         let exitCode, _, stderr =
-            runProcess "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@fidelity" hugoDir verbose
+            runProcessWithEnv "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@fidelity" hugoDir goDirectEnv verbose
 
         if exitCode <> 0 then
             Error $"hugo mod get failed: {stderr}"
@@ -50,14 +85,14 @@ module DeployPages =
             Error $"hugo mod vendor failed: {stderr}"
         else
 
-        if verbose then
-            let _, stdout, _ = runProcess "hugo" "mod graph" hugoDir false
-            let specLine =
-                stdout.Split('\n')
-                |> Array.tryFind (fun l -> l.Contains("clef-lang-spec"))
-            match specLine with
-            | Some line -> printfn "        Module: %s" (line.TrimStart())
-            | None -> ()
+        // Always show resolved module version so you can verify the right commit was pulled
+        let _, stdout, _ = runProcess "hugo" "mod graph" hugoDir false
+        let specLine =
+            stdout.Split('\n')
+            |> Array.tryFind (fun l -> l.Contains("clef-lang-spec"))
+        match specLine with
+        | Some line -> printfn "        Module: %s" (line.TrimStart())
+        | None -> printfn "        Warning: clef-lang-spec not found in module graph"
 
         Ok ()
 

@@ -149,8 +149,21 @@ module SmartDeploy =
         : Async<Result<string, string>> =
         async {
             if force then
-                printfn "Force flag set - running full deployment"
-                return! Migrate.execute config verbose
+                printfn "Force flag set — refreshing spec, building, and deploying pages"
+                printfn ""
+
+                printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
+                let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
+                match pagesResult with
+                | Error e -> return Error $"Pages deployment failed: {e}"
+                | Ok url ->
+
+                let workingDir = Environment.CurrentDirectory
+                saveDeployState workingDir id
+
+                printfn ""
+                printfn "Force deployment complete!"
+                return Ok url
             else
                 let workingDir = Environment.CurrentDirectory
                 let state = Config.loadState ()

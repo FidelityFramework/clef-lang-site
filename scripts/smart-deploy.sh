@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  -v, --verbose    Enable verbose output"
-            echo "  -f, --force      Force full deployment regardless of changes"
+            echo "  -f, --force      Force spec refresh + build + deploy pages (no state checks)"
             echo "  -b, --base REF   Base git ref for comparison (default: last deployed commit)"
             echo "  -h, --help       Show this help message"
             echo ""
@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
             echo "  - Content changes     → Pages + R2 sync + search index"
             echo "  - Worker changes      → Rebuild & deploy affected workers + Pages"
             echo "  - Hugo/theme changes  → Pages only"
-            echo "  - --force             → Full migration (provision + all workers + sync + index + pages)"
+            echo "  - --force             → Refresh spec + build + deploy pages (skip all state checks)"
             exit 0
             ;;
         *)
