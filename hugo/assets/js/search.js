@@ -86,6 +86,17 @@
     return s.substring(0, max) + "\u2026";
   }
 
+  /** Generate a Hugo/Goldmark-compatible heading anchor from a section title */
+  function headingAnchor(title) {
+    if (!title || title === "Introduction") return "";
+    return "#" + title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
   // ── Search API ─────────────────────────────────────────────
 
   async function fetchSearch(query) {
@@ -116,7 +127,7 @@
     }
 
     const items = currentResults.map((r, i) =>
-      `<a href="${escapeHtml(r.pageUrl)}" class="clef-search-result" data-index="${i}">
+      `<a href="${escapeHtml(r.pageUrl + headingAnchor(r.sectionTitle))}" class="clef-search-result" data-index="${i}">
         <div class="clef-result-header">
           ${typeBadge(r.contentType)}
           <span class="clef-result-title">${escapeHtml(r.pageTitle)}</span>
