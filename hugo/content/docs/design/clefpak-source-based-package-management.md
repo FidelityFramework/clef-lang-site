@@ -59,7 +59,7 @@ keywords = ["robotics", "control-systems", "real-time"]
 [dependencies]
 # Version specifications follow semantic versioning conventions
 fsil = "1.0.0"                    # Exact version requirement
-alloy = "^0.5.0"                  # Compatible releases (>=0.5.0, <0.6.0)
+barewire = "^0.5.0"               # Compatible releases (>=0.5.0, <0.6.0)
 math_algorithms = "~0.3.2"        # Minimal updates only (>=0.3.2, <0.4.0)
 
 # Feature-gated dependencies will activate only when specific features are enabled
@@ -77,8 +77,8 @@ wasm_bindgen = "0.2.0"
 
 [features]
 default = ["std"]
-std = ["alloy/std", "fsil/std"]
-embedded = ["alloy/no_std", "static_alloc"]
+std = ["barewire/std", "fsil/std"]
+embedded = ["barewire/no_std", "static_alloc"]
 gpu_acceleration = ["neural_net", "cuda_kernels"]
 ```
 
@@ -197,7 +197,7 @@ One of ClefPak's key design goals is preserving the Clef development experience 
 ```fsharp
 // ClefPak references in Clef scripts will feel familiar yet powerful
 #r "clefpak: robot_controller, 1.2.0"
-#r "clefpak: alloy, ^0.5.0, features: embedded"
+#r "clefpak: barewire, ^0.5.0, features: embedded"
 #r "git: https://github.com/ml/neural-net, branch: experiments"
 #r "path: ../local_package"
 

@@ -40,7 +40,7 @@ This compilation approach shares philosophical ground with Rust's zero-cost asyn
 
 The Fidelity Framework includes several key libraries for concurrency, which we'll explore in a logical order:
 
-1. **Alloy**: Automatic static resolution of functions and types
+1. **CCS Intrinsics**: Automatic static resolution of functions and types
 2. **BAREWire**: Zero-copy memory protocol for efficient data handling
 3. **Frosty**: Advanced async library that replaces .NET's Task
 4. **Olivier**: Actor model implementation with Erlang-inspired semantics
@@ -49,12 +49,12 @@ The Fidelity Framework includes several key libraries for concurrency, which we'
 
 
 
-## Alloy: Automatic Static Resolution
+## CCS Intrinsics: Automatic Static Resolution
 
-Alloy, based on the elegant fsil library for automatic inlining of Clef select functions within .NET, is an extension library within the Fidelity Framework that provides more general static resolution of functions and types:
+CCS, drawing on principles from the elegant fsil library for automatic inlining of Clef select functions within .NET, provides native static resolution of functions and types as compiler intrinsics:
 
 ```fsharp
-// Regular F# function that Alloy automatically optimizes
+// Regular F# function that CCS automatically optimizes
 let processData (items: 'T[]) =
     items |> Array.map transformItem |> Array.sum
 // No explicit inline keyword needed
@@ -63,7 +63,7 @@ let processData (items: 'T[]) =
 let inline processData (items: 'T[]) = ...
 ```
 
-Alloy analyzes your code during compilation and automatically applies static resolution. This gives you the performance benefits of manually inlined code without littering your codebase with `inline` keywords. As a building block for other Fidelity libraries, Alloy's static resolution enables efficient compilation across the entire framework.
+CCS analyzes your code during compilation and automatically applies static resolution. This gives you the performance benefits of manually inlined code without littering your codebase with `inline` keywords. As a building block for the entire Fidelity framework, CCS's static resolution enables efficient compilation across all libraries.
 
 ## BAREWire: Efficient Memory Protocol
 
@@ -122,7 +122,7 @@ Rust achieves similar zero-copy goals through its ownership model, and the compa
 
 ## Frosty Async
 
-Building on the foundation provided by Alloy and BAREWire, Frosty is our advanced library. Frosty builds on lessons learned from [IcedTasks](https://github.com/TheAngryByrd/IcedTasks), an innovative F# library created by Jimmy Byrd, but here we reimplemented without .NET Task dependencies for native compilation:
+Building on the foundation provided by CCS intrinsics and BAREWire, Frosty is our advanced library. Frosty builds on lessons learned from [IcedTasks](https://github.com/TheAngryByrd/IcedTasks), an innovative F# library created by Jimmy Byrd, but here we reimplemented without .NET Task dependencies for native compilation:
 
 ```fsharp
 // Creating a cold task (doesn't start until someone subscribes)
@@ -143,7 +143,7 @@ let combinedAsync = frosty {
 }
 ```
 
-Through the Alloy library described above, these computation expressions are transformed at compile time into continuation-passing style, then progressively lowered to optimal machine code for your target platform. No thread pool, no runtime overhead - just direct control flow that the hardware understands.
+Through the CCS intrinsics described above, these computation expressions are transformed at compile time into continuation-passing style, then progressively lowered to optimal machine code for your target platform. No thread pool, no runtime overhead - just direct control flow that the hardware understands.
 
 ## Platform Configuration: Just Below the Waterline
 
@@ -332,7 +332,7 @@ This alignment between Clef and MLIR represents years of parallel evolution in p
 
 The Fidelity Framework represents nothing less than the liberation of Clef from the constraints of the runtime environment. By maintaining the elegant, expressive syntax that Clef developers love while revolutionizing what happens beneath the surface, we've created something truly transformative.
 
-When you write code in the Fidelity Framework, you're no longer limited by garbage collection pauses, thread pool configurations, or runtime overhead. Instead, your Clef code flows through a progressive lowering pipeline - from computation expressions to continuations, through Alloy, BAREWire, Frosty, Olivier, and finally Alex - emerging as lean, efficient machine code precisely tailored to your target hardware, with semantic intent preserved at every step.
+When you write code in the Fidelity Framework, you're no longer limited by garbage collection pauses, thread pool configurations, or runtime overhead. Instead, your Clef code flows through a progressive lowering pipeline - from computation expressions to continuations, through CCS intrinsics, BAREWire, Frosty, Olivier, and finally Alex - emerging as lean, efficient machine code precisely tailored to your target hardware, with semantic intent preserved at every step.
 
 This isn't just a performance upgrade, it's a fundamental expansion of what's possible. The same Clef code that powers your server applications can now run directly on embedded devices. The actor model concepts you apply in distributed systems can scale down to real-time applications. The memory safety you depend on remains rock-solid, but without the overhead of a runtime or monolithic garbage collector.
 

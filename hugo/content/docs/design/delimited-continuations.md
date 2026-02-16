@@ -148,8 +148,8 @@ The types themselves encode CPS structure. Frosty's async primitives make contin
 The DCont dialect in MLIR provides the target representation:
 
 ```mlir
-// Alloy async compiles to DCont operations
-dcont.func @fetchAndProcess(%url: !alloy.string) -> !alloy.data {
+// Clef async compiles to DCont operations
+dcont.func @fetchAndProcess(%url: !clef.string) -> !clef.data {
     %k1 = dcont.shift {
         %response = call @http_get_async(%url)
         dcont.resume %k1 %response
@@ -198,7 +198,7 @@ What they don't see:
 - The `tell` compiles to a non-blocking message send that doesn't capture a continuation
 - The entire actor loop compiles to a state machine with explicit continuation slots
 
-The Alloy library handles this translation. When developers import `Alloy.Actors`, they get computation expression builders that produce the right continuation structure. The Composer compiler recognizes these patterns and generates efficient native code.
+The compiler handles this translation. When developers use the `Actors` module, they get computation expression builders that produce the right continuation structure. The Composer compiler recognizes these patterns and generates efficient native code.
 
 > This is what we mean by "managing the innovation budget."
 
@@ -252,7 +252,7 @@ Beyond traditional architectures, continuation structure provides a natural fit 
 
 Delimited continuations touch every part of the Fidelity framework:
 
-**Alloy.Rx** ([AlloyRx: Native Reactivity in Fidelity](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/)) uses continuation capture for subscription callbacks. When an observable emits, it resumes the captured continuation of each subscriber.
+**Rx** ([AlloyRx: Native Reactivity in Fidelity](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/)) uses continuation capture for subscription callbacks. When an observable emits, it resumes the captured continuation of each subscriber.
 
 **BAREWire** ([Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/)) leverages continuations for zero-copy message handling. The deserialization callback is a continuation that processes the message without intermediate allocation.
 

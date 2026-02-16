@@ -142,7 +142,7 @@ let processFileAsync filename = async {
 ```mermaid
 sequenceDiagram
     participant Dev as Developer Code
-    participant Lib as Alloy.Memory.Async
+    participant Lib as CCS.Memory.Async
     participant PS²G as PS²G Analysis
     participant MLIR as MLIR Generation
     participant OS as Targeted Platform

@@ -20,13 +20,10 @@ Compiler development differs fundamentally from application development. Where a
 
 ## The Sample Under Test
 
-The `03_HelloWorldHalfCurried` sample represents a middle ground in our progressive complexity series. It exercises Clef's pipe operators, string interpolation, pattern matching on Result types, and console I/O through the Alloy library:
+The `03_HelloWorldHalfCurried` sample represents a middle ground in our progressive complexity series. It exercises Clef's pipe operators, string interpolation, pattern matching on Result types, and console I/O through compiler intrinsics:
 
 ```fsharp
 module Examples.HelloWorldHalfCurried
-
-open Alloy
-open Alloy.NativeTypes
 
 /// Demonstrates HALF-CURRIED patterns:
 /// - Pipe operator: `x |> f`
@@ -61,7 +58,7 @@ Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → N
 
 **The Program Semantic Graph (PSG)** correlates FCS's semantic information with syntactic structure through a series of nanopasses. Each pass does exactly one thing: structural construction, type integration, def-use edge creation, and finalization. This separation enables inspection and validation at every stage, with labeled intermediates emitted for debugging.
 
-**Alex** handles the transformation from PSG to MLIR. As the "Library of Alexandria" for hardware targeting, Alex implements a fan-out architecture where a single Alloy abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
+**Alex** handles the transformation from PSG to MLIR. As the "Library of Alexandria" for hardware targeting, Alex implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
 
 The critical architectural principle underlying this pipeline is that each phase should be self-contained and composable. Once FCS completes its work, all subsequent phases read exclusively from the enriched PSG - a principle that enables the bidirectional zipper implementation now central to our [coeffect and codata analysis](/docs/design/coeffects-and-codata/).
 
@@ -78,7 +75,7 @@ let formatInt (value: int) (buffer: nativeptr<byte>) (maxLength: int) : int = ..
 Gets its types resolved once during PSG construction, then that resolved information is available to every downstream pass:
 
 ```
-FUNCTION: Alloy.Console.Format.formatInt
+FUNCTION: Console.Format.formatInt
 └── Binding [formatInt] : int -> nativeptr<byte> -> int -> int
 ```
 
@@ -222,7 +219,7 @@ The nanopass architecture codifies several principles that enable functional pro
 With the nanopass architecture operational, the Composer compiler now produces native executables from Clef source. The `03_HelloWorldHalfCurried` sample compiles through the full pipeline:
 
 ```
-FUNCTION: Alloy.Console.Format.formatInt
+FUNCTION: Console.Format.formatInt
 └── Binding [formatInt] : int -> nativeptr<byte> -> int -> int
 ```
 
@@ -234,7 +231,7 @@ func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
 
 This MLIR then lowers through mlir-opt and LLVM to native machine code. The emission layer reads from the PSG's `Type` field and produces correct MLIR, with the bidirectional zipper enabling context-aware optimization decisions throughout.
 
-This foundation enables the broader vision: Alex's fan-out architecture can now target multiple platforms from the same PSG. A single Alloy call like `Time.currentTicks()` will fan out to Linux syscalls, Windows kernel calls, macOS mach APIs, or ARM register access depending on the target triple. The coeffect analysis determines whether pure computation allows aggressive optimization or whether async boundaries require continuation machinery.
+This foundation enables the broader vision: Alex's fan-out architecture can now target multiple platforms from the same PSG. A single CCS intrinsic like `Time.currentTicks()` will fan out to Linux syscalls, Windows kernel calls, macOS mach APIs, or ARM register access depending on the target triple. The coeffect analysis determines whether pure computation allows aggressive optimization or whether async boundaries require continuation machinery.
 
 ## Looking Forward: From PSG to PHG
 

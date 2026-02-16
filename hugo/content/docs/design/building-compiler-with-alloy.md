@@ -5,6 +5,7 @@ description: "How the Fidelity framework achieves deterministic memory managemen
 date: 2025-03-24T00:00:00+00:00
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+draft: true
 params:
   originally_published: 2025-03-24
   original_url: "https://speakez.tech/blog/building-firefly-with-alloy/"

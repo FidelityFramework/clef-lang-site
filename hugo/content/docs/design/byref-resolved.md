@@ -356,13 +356,13 @@ type DataProcessor() =
 
 This compilation strategy provides sophisticated memory management without runtime overhead. The compiler generates optimal RAII code based on static analysis of actor behavior patterns, with all cleanup handled through delimited continuations and scope analysis.
 
-## Using Alloy to Solve the Byref Problem Today
+## Solving the Byref Problem with the Native Type System
 
-While the full Fidelity stack represents a revolutionary approach to memory management, developers may wonder if it's possible to solve the byref problem within the constraints of the current F# compiler. The answer is yes, and our Alloy library already demonstrates a viable path forward without requiring any F# compiler modifications.
+While the full Fidelity stack represents a revolutionary approach to memory management, developers may wonder if it's possible to solve the byref problem within the constraints of the current F# compiler. The answer is yes, and the native type system already demonstrates a viable path forward without requiring any F# compiler modifications.
 
 ### Region-Based Memory Management
 
-Alloy's region-based type system using F#'s units of measure already provides a mechanism to enforce memory safety without relying on byref restrictions:
+The region-based type system using F#'s units of measure already provides a mechanism to enforce memory safety without relying on byref restrictions:
 
 ```fsharp
 // Define region types using F# units of measure
@@ -406,7 +406,7 @@ We see this design as compatible with the standard F# compiler while providing t
 
 ### Async-Safe Memory Operations
 
-One of the biggest challenges with byrefs is their incompatibility with async code. Alloy solves this by encapsulating the operation rather than the reference:
+One of the biggest challenges with byrefs is their incompatibility with async code. CCS solves this by encapsulating the operation rather than the reference:
 
 ```fsharp
 // This works with standard F# - no special compiler needed
@@ -425,7 +425,7 @@ Combined with Composer's compilation pipeline, these patterns compile down to th
 
 ## Potential F# Language Evolution
 
-While Alloy demonstrates that we can solve the byref problem with standard F# today, we also recognize the value of enhancing the F# language itself to better support these patterns. We're considering submitting an RFC (Request for Comments) to the F# language design process that would propose extensions to F#'s type system to better accommodate capability-based memory safety.
+While the native type system demonstrates that we can solve the byref problem with standard F# today, we also recognize the value of enhancing the F# language itself to better support these patterns. We're considering submitting an RFC (Request for Comments) to the F# language design process that would propose extensions to F#'s type system to better accommodate capability-based memory safety.
 
 Such an RFC would propose:
 

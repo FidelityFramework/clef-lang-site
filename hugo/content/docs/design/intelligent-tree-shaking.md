@@ -18,14 +18,12 @@ params:
 
 When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce truly minimal native executables. In the world of traditional .NET development, your "Hello World" application carries the weight of the entire runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, this overhead is unacceptable. Our solution involves a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what's actually needed while preserving the rich type information required by subsequent compiler phases.
 
-## Concrete Example: HelloWorld with Alloy
+## Concrete Example: HelloWorld with CCS Intrinsics
 
-Consider a simple Fidelity application using the Alloy standard library:
+Consider a simple Fidelity application using the native type system:
 
 ```fsharp
 module Examples.HelloWorldDirect
-
-open Alloy
 
 [<EntryPoint>]
 let main argv =
@@ -34,13 +32,13 @@ let main argv =
     0
 ```
 
-The Alloy library contains thousands of functions across console I/O, memory management, UTF-8 text processing, buffer handling, and more. Yet tree shaking ensures this simple program includes only:
+The native type system contains thousands of functions across console I/O, memory management, UTF-8 text processing, buffer handling, and more. Yet tree shaking ensures this simple program includes only:
 
-- `Console.WriteStr` and `Console.WriteStrLn` from `Alloy.Console`
+- `Console.WriteStr` and `Console.WriteStrLn` from `Console`
 - The underlying system call wrappers these functions use
-- `NativeStr` type definition (Alloy's native string representation)
+- `NativeStr` type definition (the native string representation)
 
-Everything else in Alloy - the `ReadLine` functions, the `stackBuffer` allocator, the UTF-8 encoding utilities, the Result combinators - is eliminated because our semantic reachability analysis determines they're never called from `main`.
+Everything else in the native type system - the `ReadLine` functions, the `stackBuffer` allocator, the UTF-8 encoding utilities, the Result combinators - is eliminated because our semantic reachability analysis determines they're never called from `main`.
 
 ## Tree Shaking Through Type-Preserving Analysis
 
@@ -76,7 +74,7 @@ This precision stands in contrast to the challenges facing .NET's Native AOT com
 
 > The Fidelity framework will never have to contend with these legacy challenges.
 
-By building on Clef's type system and Alloy's deterministic foundations, the compiler constructs a complete dependency graph at compile time. There's no reflection to defeat tree shaking, no dynamic instantiation to second-guess. The analysis is correct by construction.
+By building on Clef's type system and its deterministic foundations, the compiler constructs a complete dependency graph at compile time. There's no reflection to defeat tree shaking, no dynamic instantiation to second-guess. The analysis is correct by construction.
 
 Consider a typical Clef utility library with generic functions and type specializations:
 
@@ -153,7 +151,7 @@ graph TB
     style ALEX fill:#e6ffe6,stroke:#333,stroke-width:2px
 ```
 
-The critical boundary is Phase 3 - reachability analysis. Everything before Phase 3 operates on the full library graph (including all of Alloy, FSharp.Core, and user code). Everything from Phase 3 onward operates on the *narrowed* graph - only the code actually reachable from entry points. This scope narrowing is what makes expensive operations like SRTP resolution and type overlay practical.
+The critical boundary is Phase 3 - reachability analysis. Everything before Phase 3 operates on the full library graph (including all CCS intrinsics, FSharp.Core, and user code). Everything from Phase 3 onward operates on the *narrowed* graph - only the code actually reachable from entry points. This scope narrowing is what makes expensive operations like SRTP resolution and type overlay practical.
 
 1. **Type Specialization Tracking**: We trace which generic instantiations are actually used
 2. **Interface Implementation Analysis**: We determine which interface methods are called
@@ -254,12 +252,12 @@ Composer's reachability analysis understands the layered architecture of a Fidel
 ```fsharp
 type LibraryCategory =
     | UserCode        // Application code - most aggressive elimination
-    | AlloyLibrary    // Fidelity standard library
+    | CCSIntrinsics   // Fidelity native type system
     | FSharpCore      // F# runtime support
     | Other of string // Third-party libraries
 ```
 
-This classification enables targeted optimization strategies. User code receives the most aggressive pruning since we have complete visibility. Alloy library functions can be eliminated with confidence because we understand their semantic contracts. FSharp.Core functions require more conservative analysis due to their foundational role in Clef semantics.
+This classification enables targeted optimization strategies. User code receives the most aggressive pruning since we have complete visibility. CCS intrinsic functions can be eliminated with confidence because we understand their semantic contracts. FSharp.Core functions require more conservative analysis due to their foundational role in Clef semantics.
 
 The result is a library-aware pruning analysis:
 
@@ -348,7 +346,7 @@ Pruning Statistics:
 
 Library Breakdown:
   UserCode:     3 reachable /    3 total (100.0%)
-  AlloyLibrary: 8 reachable /  412 total (  1.9%)
+  CCSIntrinsics: 8 reachable /  412 total (  1.9%)
   FSharpCore:  12 reachable /  832 total (  1.4%)
 
 Reachable Symbol Summary:
@@ -356,12 +354,12 @@ Reachable Symbol Summary:
     - Examples.HelloWorldDirect.main
     - <Module>.main$cont@7
 
-  Alloy.Console:
+  Console:
     - WriteStr
     - WriteStrLn
     - writeToStdout (internal)
 
-  Alloy.NativeTypes:
+  NativeTypes:
     - NativeStr (type definition)
     - toByteSpan
 

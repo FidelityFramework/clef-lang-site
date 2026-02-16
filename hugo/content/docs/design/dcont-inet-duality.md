@@ -403,7 +403,7 @@ More importantly, these improvements compound. A workflow mixing async I/O with 
 
 ## Custom Computation Expressions
 
-The DCont/Inet duality extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This becomes particularly powerful when building domain-specific languages like our [Alloy.Rx reactive framework](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/), where multicast observables naturally compile to interaction nets while unicast observables require delimited continuations:
+The DCont/Inet duality extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This becomes particularly powerful when building domain-specific languages like our [Rx reactive framework](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/), where multicast observables naturally compile to interaction nets while unicast observables require delimited continuations:
 
 ```fsharp
 [<CompileTo(ComputationPattern.Parallel)>]

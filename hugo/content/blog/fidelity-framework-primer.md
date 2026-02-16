@@ -127,18 +127,16 @@ For developers, this means smaller binaries with only the code actually needed, 
 
 ## Familiar APIs, Native Performance
 
-Central to the Fidelity developer experience is Alloy, a standard library designed to provide BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, Alloy uses, among other things, *fat pointers*—structures that combine a raw pointer with length metadata—eliminating object headers and runtime overhead entirely.
+Central to the Fidelity developer experience is the native type system built into CCS (Clef Compiler Services), which provides BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, CCS uses, among other things, *fat pointers*—structures that combine a raw pointer with length metadata—eliminating object headers and runtime overhead entirely.
 
 ```fsharp
-open Alloy
-
 let hello() =
-    Console.Write "Enter your name: "
-    let name = Console.ReadLine()
-    Console.WriteLine $"Hello, {name}!"
+    Console.write "Enter your name: "
+    let name = Console.readln()
+    Console.writeln $"Hello, {name}!"
 ```
 
-This code looks identical to standard .NET F#, but compiles to direct system calls with stack-based string handling. The `Console.ReadLine()` returns a `NativeStr` (a 16-byte fat pointer), and the interpolated string formats into a stack buffer, with no garbage collector involvement, no heap allocations.
+This code looks identical to standard F#, but compiles to direct system calls with stack-based string handling. The `Console.readln()` returns a `NativeStr` (a 16-byte fat pointer), and the interpolated string formats into a stack buffer, with no garbage collector involvement, no heap allocations.
 
 For .NET developers, this preserves the familiar mental model while enabling native compilation. For systems programmers, it provides high-level APIs without sacrificing control over memory layout and allocation strategy.
 
@@ -217,7 +215,7 @@ For developers who appreciate Erlang's reputation for building resilient distrib
 
 ## BAREWire: Schema-Driven Memory and Communication
 
-Where Alloy provides the standard library and Olivier manages concurrency, BAREWire handles the challenge of data layout and exchange. Built on the BARE (Binary Application Record Encoding) protocol, BAREWire provides schema-driven memory mapping that enables zero-copy operations across process boundaries, network connections, and hardware interfaces.
+Where CCS provides the intrinsic type system and Olivier manages concurrency, BAREWire handles the challenge of data layout and exchange. Built on the BARE (Binary Application Record Encoding) protocol, BAREWire provides schema-driven memory mapping that enables zero-copy operations across process boundaries, network connections, and hardware interfaces.
 
 Clef's type system can describe memory layouts with sufficient precision that serialization becomes a compile-time concern rather than a runtime operation:
 
@@ -260,7 +258,7 @@ let encrypt (key: byte[]<keyBytes>) (iv: byte[]<ivBytes>) (plaintext: byte[]) =
     AesGcm.encrypt key iv plaintext
 ```
 
-Farscape leverages F#'s meta-programming capabilities, the same statically resolved type parameters (SRTPs) that power Alloy, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
+Farscape leverages F#'s meta-programming capabilities, the same statically resolved type parameters (SRTPs) that power CCS intrinsics, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
 
 This opens a path for .NET developers to access the broader native ecosystem without sacrificing safety. AI accelerator SDKs, post-quantum cryptography implementations, high-performance database drivers: all could become accessible through type-safe Clef APIs that perform identically to hand-written C bindings.
 
@@ -302,7 +300,7 @@ For developers, Fidelity offers a glimpse of what's possible when type informati
 This primer provides an overview of the Fidelity Framework. For detailed treatments of specific topics, see:
 
 - [Baker: A Key Ingredient to Composer](/docs/design/baker-saturation-engine/) — The nanopass architecture, two-tree zipper pattern, and SRTP resolution
-- [Building Composer with Alloy](/docs/design/building-compiler-with-alloy/) — The Alloy standard library, native types, fat pointers, and compilation examples from simple to complex
+- [Absorbing Alloy](/docs/design/absorbing-alloy/) — How the native type system evolved from a standalone library to compiler intrinsics
 - [Intelligent Tree-Shaking](/docs/design/intelligent-tree-shaking/) — Semantic reachability analysis, soft-delete patterns, and library boundary classification
 - [Clef Source-Based Package Management](/docs/design/clefpak-source-based-package-management/) — The `.fidproj` format, `cpk` package manager, and clefpak.dev registry
 - [Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/) — Type-safe concurrency primitives and actor supervision hierarchies
