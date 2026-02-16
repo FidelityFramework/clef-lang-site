@@ -73,7 +73,7 @@ menu:
       params:
         type: search
     - identifier: github
-      name: GitHub
+      name: Fidelity Framework GitHub Repository
       url: https://github.com/FidelityFramework
       weight: 5
       params:

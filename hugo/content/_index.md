@@ -6,7 +6,7 @@ toc: false
 
 <div class="hx:mt-6 hx:mb-8">
 {{< hextra/hero-badge link="https://github.com/FidelityFramework" >}}
-  <span>FidelityFramework</span>
+  <span>Fidelity Framework on GitHub</span>
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 </div>
