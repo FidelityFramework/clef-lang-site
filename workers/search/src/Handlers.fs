@@ -190,34 +190,45 @@ module Handlers =
                 "messages" ==> [|
                     createObj [ "role" ==> "user"; "content" ==> prompt ]
                 |]
-                "max_tokens" ==> 256
+                "max_tokens" ==> 1024
                 "temperature" ==> 0.3
             ]
 
             let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
-            // Workers AI non-streaming: try multiple response shapes
+            // GLM-4.7-Flash returns OpenAI chat completion format:
+            // { choices: [{ message: { content: "...", reasoning: "..." } }] }
             let responseText: string =
                 if isNullOrUndefined aiResult then ""
                 else
-                    // Shape 1: { response: "..." }
-                    let r: obj = try aiResult?response with _ -> null
-                    if not (isNullOrUndefined r) then string r
+                    // Shape 1: OpenAI chat completion { choices[0].message.content }
+                    let content: string =
+                        emitJsExpr aiResult """
+                            (function(r) {
+                                if (r && r.choices && r.choices[0] && r.choices[0].message) {
+                                    var msg = r.choices[0].message;
+                                    if (msg.content) return msg.content;
+                                    if (msg.reasoning) return msg.reasoning;
+                                }
+                                return null;
+                            })($0)"""
+                    if not (isNullOrUndefined content) then content
                     else
-                        // Shape 2: result is a string directly
-                        let t = emitJsExpr aiResult "typeof $0"
-                        if t = "string" then string aiResult
-                        else ""
+                        // Shape 2: { response: "..." }
+                        let r: obj = try aiResult?response with _ -> null
+                        if not (isNullOrUndefined r) then string r
+                        else
+                            // Shape 3: result is a string directly
+                            let t = emitJsExpr aiResult "typeof $0"
+                            if t = "string" then string aiResult
+                            else ""
 
             if responseText = "" then
-                // Return debug info so we can see the actual shape
-                let shape = emitJsExpr aiResult "JSON.stringify($0).substring(0, 500)"
                 return jsonResponse {|
                     query = query
                     results = topResults
                     synthesis = null
-                    error = "AI returned unexpected format"
-                    debug = shape
+                    error = "AI synthesis unavailable"
                 |} 200
             else
 
