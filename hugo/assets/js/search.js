@@ -41,6 +41,22 @@
     return el.innerHTML;
   }
 
+  /** Lightweight markdown-to-HTML for synthesis output */
+  function renderMarkdown(text) {
+    let html = escapeHtml(text);
+    // Bold: **text**
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    // Italic: *text* (but not inside already-processed bold)
+    html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+    // Inline code: `text`
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    // Paragraphs: double newline
+    html = html.replace(/\n\n+/g, "</p><p>");
+    // Single newline -> <br>
+    html = html.replace(/\n/g, "<br>");
+    return "<p>" + html + "</p>";
+  }
+
   const TYPE_LABELS = {
     blog: "Blog",
     design: "Design",
@@ -149,7 +165,7 @@
 
       const data = await resp.json();
       if (data.synthesis) {
-        synthesisContent.textContent = data.synthesis;
+        synthesisContent.innerHTML = renderMarkdown(data.synthesis);
       } else if (data.error) {
         synthesisContent.textContent = data.error;
       } else {

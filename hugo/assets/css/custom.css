@@ -310,6 +310,9 @@ code, pre, kbd {
   border-bottom: 1px solid #e5e7eb;
   padding: 0.75rem 1rem;
   background: #f9fafb;
+  max-height: 40%;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 :is(.dark) .clef-search-synthesis {
   border-bottom-color: #374151;
@@ -348,10 +351,24 @@ code, pre, kbd {
   font-size: 0.85rem;
   line-height: 1.65;
   color: #374151;
-  white-space: pre-wrap;
+}
+.clef-synthesis-content p {
+  margin: 0.25rem 0;
+}
+.clef-synthesis-content code {
+  font-size: 0.8rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.06);
+}
+.clef-synthesis-content strong {
+  font-weight: 600;
 }
 :is(.dark) .clef-synthesis-content {
   color: #d1d5db;
+}
+:is(.dark) .clef-synthesis-content code {
+  background: rgba(255, 255, 255, 0.08);
 }
 .clef-synthesis-spinner {
   display: inline-block;

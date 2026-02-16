@@ -188,40 +188,36 @@ module Handlers =
 
             let aiRequest = createObj [
                 "messages" ==> [|
+                    createObj [
+                        "role" ==> "system"
+                        "content" ==> "Respond directly and concisely. Do not include reasoning steps, analysis frameworks, or preamble. Just provide the synthesis."
+                    ]
                     createObj [ "role" ==> "user"; "content" ==> prompt ]
                 |]
-                "max_tokens" ==> 1024
+                "max_tokens" ==> 2048
                 "temperature" ==> 0.3
             ]
 
             let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
             // GLM-4.7-Flash returns OpenAI chat completion format:
-            // { choices: [{ message: { content: "...", reasoning: "..." } }] }
+            // { choices: [{ message: { content: "..." } }] }
+            // Only extract content - reasoning is internal chain-of-thought noise
             let responseText: string =
                 if isNullOrUndefined aiResult then ""
                 else
-                    // Shape 1: OpenAI chat completion { choices[0].message.content }
                     let content: string =
                         emitJsExpr aiResult """
                             (function(r) {
                                 if (r && r.choices && r.choices[0] && r.choices[0].message) {
-                                    var msg = r.choices[0].message;
-                                    if (msg.content) return msg.content;
-                                    if (msg.reasoning) return msg.reasoning;
+                                    if (r.choices[0].message.content) return r.choices[0].message.content;
                                 }
+                                if (r && r.response) return r.response;
+                                if (typeof r === 'string') return r;
                                 return null;
                             })($0)"""
                     if not (isNullOrUndefined content) then content
-                    else
-                        // Shape 2: { response: "..." }
-                        let r: obj = try aiResult?response with _ -> null
-                        if not (isNullOrUndefined r) then string r
-                        else
-                            // Shape 3: result is a string directly
-                            let t = emitJsExpr aiResult "typeof $0"
-                            if t = "string" then string aiResult
-                            else ""
+                    else ""
 
             if responseText = "" then
                 return jsonResponse {|
