@@ -75,7 +75,7 @@ module Migrate =
             printfn "=== Step 5/5: Deploying Hugo Site to Cloudflare Pages ==="
             printfn ""
 
-            let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" false verbose
+            let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
             match pagesResult with
             | Error e -> return Error $"Pages deployment failed: {e}"
             | Ok _ ->

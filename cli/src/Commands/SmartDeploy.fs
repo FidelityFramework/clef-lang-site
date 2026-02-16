@@ -222,9 +222,9 @@ module SmartDeploy =
                     printfn "Executing Pages + content sync + search index deployment..."
                     printfn ""
 
-                    // 1. Deploy Pages (critical)
+                    // 1. Deploy Pages (refresh spec module — this path triggers on go.sum/content changes)
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" false verbose
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
@@ -257,10 +257,10 @@ module SmartDeploy =
                         let! _ = deployChangedWorkers config workers verbose
                         ()
 
-                    // Always deploy pages when infra changes
+                    // Always deploy pages when infra changes (refresh spec to pick up any module updates)
                     printfn ""
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" false verbose
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
