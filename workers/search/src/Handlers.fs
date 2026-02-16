@@ -195,7 +195,7 @@ module Handlers =
                 "stream" ==> true
             ]
 
-            let! streamResponse = env.AI.run("@cf/glm-4.7-flash", aiRequest)
+            let! streamResponse = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
             // Create a TransformStream to build our SSE response
             let transformStream: obj = emitJsExpr () "new TransformStream()"
