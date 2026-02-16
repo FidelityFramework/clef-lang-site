@@ -72,7 +72,7 @@ module DeployPages =
             use httpClient = HttpHelpers.createAuthenticatedClient config.ApiToken
             let pages = PagesClient.PagesOperations(httpClient, config.AccountId)
 
-            let totalSteps = if refreshSpec then 4 else 3
+            let totalSteps = if refreshSpec then 3 else 2
             let mutable step = 0
             let nextStep label =
                 step <- step + 1
@@ -114,33 +114,8 @@ module DeployPages =
             let fileCount = Directory.GetFiles(publicDir, "*", SearchOption.AllDirectories).Length
             if verbose then printfn "        Found %d files in public directory" fileCount
 
-            // Ensure project exists
-            nextStep (sprintf "Checking Pages project: %s" projectName)
-
-            let! exists = pages.ProjectExists(projectName)
-            let! projectReady =
-                if not exists then
-                    async {
-                        printfn "        Creating project..."
-                        let! createResult = pages.CreateProject(projectName, "main")
-                        match createResult with
-                        | Error e -> return Error $"Failed to create Pages project: {e}"
-                        | Ok () ->
-                            if verbose then printfn "        Created project successfully"
-                            return Ok ()
-                    }
-                else
-                    async {
-                        if verbose then printfn "        Project exists"
-                        return Ok ()
-                    }
-
-            match projectReady with
-            | Error e -> return Error e
-            | Ok () ->
-
-            // Deploy
-            nextStep "Deploying site..."
+            // Deploy (project is created by provision step; skip existence check to avoid API auth flakes)
+            nextStep (sprintf "Deploying to Pages project: %s" projectName)
 
             let progressCallback msg = if verbose then printfn "        %s" msg else printfn "        %s" msg
             let! deployResult = pages.DeployDirectory projectName publicDir (Some "main") (Some "Deploy from CLI") None verbose progressCallback
