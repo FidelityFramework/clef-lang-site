@@ -13,13 +13,13 @@ toc: false
 
 <div class="hx:mt-8 hx:mb-8">
 {{< hextra/hero-headline >}}
-  A concurrent systems language&nbsp;<br class="sm:hx:block hx:hidden" />for heterogeneous compute
+  A concurrent systems language<br />for the AI and quantum eras
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx:mb-16">
 {{< hextra/hero-subtitle >}}
-  Clef targets CPU, GPU, NPU, FPGA, and other accelerators&nbsp;<br class="sm:hx:block hx:hidden" />with proof-carrying capabilities for safe realtime systems.
+  Clef targets CPU, GPU, NPU, FPGA, and other accelerators<br />with proof-carrying capabilities for safe realtime systems.
 {{< /hextra/hero-subtitle >}}
 </div>
 

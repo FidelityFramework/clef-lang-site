@@ -1,0 +1,42 @@
+{{ define "main" }}
+  <div class="hx:mx-auto hextra-max-page-width">
+    <article class="hx:w-full hx:break-words hx:flex hx:min-h-[calc(100vh-var(--navbar-height))] hx:min-w-0 hx:justify-center hx:pb-8">
+      <main class="hx:w-full hx:min-w-0 hx:px-6 hx:pt-4 hx:md:px-12">
+        {{ if .Title }}<h1 class="hx:mt-2 hx:text-4xl hx:font-bold hx:tracking-tight hx:text-slate-900 hx:dark:text-slate-100">{{ .Title }}</h1>{{ end }}
+        {{ with .Content }}<div class="content hx:mt-2 hx:mb-6 hx:text-lg hx:text-gray-500 hx:dark:text-gray-400">{{ . }}</div>{{ end }}
+
+        {{- $pages := partial "utils/sort-pages" (dict "page" . "by" site.Params.blog.list.sortBy "order" site.Params.blog.list.sortOrder) -}}
+        {{- $pagerSize := site.Params.blog.list.pagerSize | default 12 -}}
+        {{- $paginator := .Paginate $pages $pagerSize -}}
+
+        <div class="blog-card-grid">
+          {{- range $paginator.Pages }}
+            <a href="{{ .RelPermalink }}" class="blog-card">
+              <div class="blog-card-body">
+                {{- with .Params.tags }}
+                  <div class="blog-card-tags">
+                    {{- range first 2 . -}}
+                      <span class="blog-card-tag">{{ . }}</span>
+                    {{- end -}}
+                  </div>
+                {{- end }}
+                <h3 class="blog-card-title">{{ .LinkTitle }}</h3>
+                <p class="blog-card-desc">{{- partial "utils/page-description" . -}}</p>
+              </div>
+              <div class="blog-card-footer">
+                <time datetime="{{ .Date.Format "2006-01-02" }}">{{ partial "utils/format-date" .Date }}</time>
+                {{- with .Params.authors }}
+                  <span class="blog-card-author">{{ index . 0 }}</span>
+                {{- end }}
+              </div>
+            </a>
+          {{ end -}}
+        </div>
+
+        {{- if gt $paginator.TotalPages 1 -}}
+          {{ partial "components/blog-pager.html" $paginator }}
+        {{- end -}}
+      </main>
+    </article>
+  </div>
+{{- end -}}
