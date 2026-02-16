@@ -63,12 +63,6 @@ module DeployPages =
             Error $"hugo mod clean failed: {stderr}"
         else
 
-        // Delete vendored spec directory to ensure a completely fresh copy
-        let vendorSpecDir = Path.Combine(hugoDir, "_vendor", "github.com", "FidelityFramework", "clef-lang-spec")
-        if Directory.Exists(vendorSpecDir) then
-            if verbose then printfn "        Removing vendored spec directory..."
-            Directory.Delete(vendorSpecDir, true)
-
         printfn "        Pulling latest spec from fidelity branch (direct, no proxy)..."
         let exitCode, _, stderr =
             runProcessWithEnv "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@fidelity" hugoDir goDirectEnv verbose
