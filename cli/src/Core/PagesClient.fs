@@ -338,73 +338,54 @@ module PagesClient =
 
                     if verbose then progressCallback $"Found {files.Length} files, {allHashes.Length} unique hashes"
 
-                    // Step 2: Check which files are missing
-                    progressCallback "Checking for existing assets..."
-                    let! missingResult = this.CheckMissingAssets(jwt, allHashes)
+                    // Step 2: Upload all files in batches
+                    let filesToUpload =
+                        files
+                        |> List.map (fun f ->
+                            { Hash = f.Hash
+                              Content = File.ReadAllBytes(f.FullPath)
+                              ContentType = f.ContentType
+                              FilePath = f.RelativePath })
 
-                    match missingResult with
-                    | Error e -> return Error $"Failed to check missing assets: {e}"
-                    | Ok missingHashes ->
-
-                    if verbose then progressCallback $"{missingHashes.Length} files need uploading"
-
-                    // Step 3: Upload missing files in batches
                     let! uploadOk =
-                        if missingHashes.Length > 0 then
-                            async {
-                                progressCallback $"Uploading {missingHashes.Length} files..."
+                        async {
+                            progressCallback $"Uploading {filesToUpload.Length} files..."
 
-                                let missingHashSet = Set.ofList missingHashes
-                                let filesToUpload =
-                                    files
-                                    |> List.filter (fun f -> missingHashSet.Contains(f.Hash))
-                                    |> List.map (fun f ->
-                                        { Hash = f.Hash
-                                          Content = File.ReadAllBytes(f.FullPath)
-                                          ContentType = f.ContentType
-                                          FilePath = f.RelativePath })
+                            // Batch uploads (max 50MB or 100 files per batch)
+                            let maxBatchSize = 50L * 1024L * 1024L // 50MB
+                            let maxFilesPerBatch = 100
 
-                                // Batch uploads (max 50MB or 100 files per batch)
-                                let maxBatchSize = 50L * 1024L * 1024L // 50MB
-                                let maxFilesPerBatch = 100
+                            let rec uploadBatches (remaining: FileUpload list) (batchNum: int) =
+                                async {
+                                    match remaining with
+                                    | [] -> return Ok ()
+                                    | _ ->
+                                        let mutable batchSize = 0L
+                                        let mutable batchCount = 0
+                                        let batch, rest =
+                                            remaining
+                                            |> List.fold (fun (batch, rest) file ->
+                                                let newSize = batchSize + int64 file.Content.Length
+                                                if batchCount < maxFilesPerBatch && newSize < maxBatchSize then
+                                                    batchSize <- newSize
+                                                    batchCount <- batchCount + 1
+                                                    (file :: batch, rest)
+                                                else
+                                                    (batch, file :: rest)
+                                            ) ([], [])
+                                            |> fun (b, r) -> (List.rev b, List.rev r)
 
-                                let rec uploadBatches (remaining: FileUpload list) (batchNum: int) =
-                                    async {
-                                        match remaining with
-                                        | [] -> return Ok ()
-                                        | _ ->
-                                            // Take files up to batch limits
-                                            let mutable batchSize = 0L
-                                            let mutable batchCount = 0
-                                            let batch, rest =
-                                                remaining
-                                                |> List.fold (fun (batch, rest) file ->
-                                                    let newSize = batchSize + int64 file.Content.Length
-                                                    if batchCount < maxFilesPerBatch && newSize < maxBatchSize then
-                                                        batchSize <- newSize
-                                                        batchCount <- batchCount + 1
-                                                        (file :: batch, rest)
-                                                    else
-                                                        (batch, file :: rest)
-                                                ) ([], [])
-                                                |> fun (b, r) -> (List.rev b, List.rev r)
+                                        if verbose then
+                                            progressCallback $"Uploading batch {batchNum} ({batch.Length} files, {batchSize / 1024L}KB)..."
 
-                                            if verbose then
-                                                progressCallback $"Uploading batch {batchNum} ({batch.Length} files, {batchSize / 1024L}KB)..."
+                                        let! uploadResult = this.UploadAssetBatch(jwt, batch)
+                                        match uploadResult with
+                                        | Error e -> return Error e
+                                        | Ok () -> return! uploadBatches rest (batchNum + 1)
+                                }
 
-                                            let! uploadResult = this.UploadAssetBatch(jwt, batch)
-                                            match uploadResult with
-                                            | Error e -> return Error e
-                                            | Ok () -> return! uploadBatches rest (batchNum + 1)
-                                    }
-
-                                return! uploadBatches filesToUpload 1
-                            }
-                        else
-                            async {
-                                progressCallback "All files already uploaded"
-                                return Ok ()
-                            }
+                            return! uploadBatches filesToUpload 1
+                        }
 
                     match uploadOk with
                     | Error e -> return Error e
