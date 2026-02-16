@@ -42,6 +42,14 @@ module DeployPages =
             Error $"hugo mod get failed: {stderr}"
         else
 
+        printfn "        Updating vendor directory..."
+        let exitCode, _, stderr =
+            runProcess "hugo" "mod vendor" hugoDir verbose
+
+        if exitCode <> 0 then
+            Error $"hugo mod vendor failed: {stderr}"
+        else
+
         if verbose then
             let _, stdout, _ = runProcess "hugo" "mod graph" hugoDir false
             let specLine =
