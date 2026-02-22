@@ -192,19 +192,24 @@ Carry chain depth on Xilinx 7-series is roughly proportional to bit width; each 
 
 Traditionally, you discover this after synthesis. The STA (Static Timing Analysis) output from Vivado, generated after place-and-route, tells you whether your design met its clock constraint. If you have negative slack, you go back to your HDL, restructure your logic, re-synthesize, and check again. The feedback is accurate but late. A full synthesis-and-route cycle on even a modest design can take minutes; on a larger one, hours. The edit-compile-check loop for timing is one of the slowest feedback cycles in hardware development.
 
-The platform binding already carries the clock frequency. HelloArty's `ClockEndpoint` specifies 100 MHz, which gives a 10-nanosecond timing budget. Because the Clef Compiler Service has both the inferred widths and the clock constraint, it can estimate whether the design fits *before synthesis runs*. Vivado remains the backend: it produces the bitstream and the authoritative timing report. But the Clef frontend pre-calculates the figures that predict whether that backend pass will succeed.
+The Clef Compiler Service provides an early warning through a two-layer timing architecture:
+
+**Layer 1** is a structural depth heuristic that runs during compilation. A `DepthAnalysis` pass walks the PSG using the same semantic-edge-following traversal that drives code generation, counting weighted combinational operation depth between register boundaries. Multiplies and divides carry weight 2 (DSP slice or multi-LUT chain), adds and compares carry weight 1. When the accumulated depth exceeds a threshold, the compiler emits a `CCS0100` warning:
 
 ```
-  Estimated timing for 'step':
-    Critical path: 29-bit multiply (ticksPerMs * periodMs) → 29-bit add
-    Estimated delay: ~8.2 ns
-    Clock period: 10.0 ns (100 MHz)
-    Slack: +1.8 ns
+Behavior.clef:100: warning CCS0100: Combinational depth 12 exceeds threshold 6.
+  Chain: op_Multiply → op_Multiply → op_Multiply → op_Division → op_Subtraction → op_Division → op_Addition
 ```
 
-Compare that to the 64-bit version that violated timing by 10.5 nanoseconds. The difference isn't a clever optimization. It's the compiler using widths that match the design instead of widths borrowed from a CPU architecture.
+HelloArty's smoothstep computation produces exactly this warning at depth 12 against a threshold of 6, flagging all four channel computations at lines 100, 110, 120, and 130 of `Behavior.clef`. The chain trace shows the critical path through the operation graph — three chained multiplies feeding a divide, subtract, second divide, and final add.
 
-> This is hardware autocomplete. The compiler understands the physical implications of your design and reports them as diagnostics, the same way it reports type errors.
+**Layer 2** is Vivado's post-route WNS (Worst Negative Slack). This is the ground truth. HelloArty's smoothstep chain produces WNS = −2.635 ns at 100 MHz on Artix-7 — the design needs 12.635 ns but only has 10 ns. Layer 1's structural heuristic flagged this before synthesis ever ran.
+
+The threshold and weights are calibrated against Layer 2 ground truth. HelloArty provides the first calibration data point: weighted depth 12 corresponds to a 2.635 ns timing violation. As more designs are compiled, the heuristic sharpens.
+
+With `--warnaserror`, the CCS0100 warning promotes to an error, stopping compilation before Verilog is generated. This gives the developer the choice: fix the combinational depth (by pipelining or restructuring), or proceed to synthesis knowing the design will likely violate timing.
+
+> This is hardware autocomplete. The compiler understands the structural implications of your design and reports them as diagnostics, the same way it reports type errors.
 
 ### The DTS Connection
 
