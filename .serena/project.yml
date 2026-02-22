@@ -1,0 +1,16 @@
+name: Clef Language Site
+languages:
+- markdown
+- typescript
+- yaml
+ignored_paths: []
+excluded_tools: []
+included_optional_tools: []
+read_only: false
+ignore_all_files_in_gitignore: true
+initial_prompt: ''
+encoding: utf-8
+project_name: clef-lang-site
+base_modes:
+default_modes:
+fixed_tools: []
