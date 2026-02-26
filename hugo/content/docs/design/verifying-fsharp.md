@@ -1,49 +1,47 @@
 ---
-title: "Verifying Clef"
-linkTitle: "Verifying Clef"
-description: "From Functional Code to Verified Binaries: The Fidelity Framework Approach"
+title: "Verifying F#"
+type: blog
 date: 2025-05-11T16:59:54+06:00
-authors:
-  - SpeakEZ
-tags: ["architecture", "formal-verification", "type-safety", "embedded-systems", "MLIR", "optimization"]
-params:
-  originally_published: 2025-05-11T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/verifying-fsharp/"
-  migration_date: 2026-02-15
+description: "From Functional Code to Verified Binaries: The Fidelity Framework Approach"
+caption: Product Design
+image: images/blog/Hedgehog_Proof_Banner.png
+ogfeatured: images/blog/Hedgehog_Proof_Banner.png
+category: ["Architecture"]
+liveLink: https://users.cs.utah.edu/~regehr/papers/pldi25.pdf
+author: Houston Haynes
+submitDate: May 11, 2025
+dotnet_terms: []
+mlir_terms: ["MLIR", "optimization"]
+concepts: ["formal-verification", "type-safety", "embedded-systems"]
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-Creating software with strong correctness guarantees has traditionally forced developers to choose between practical languages and formal verification. The Fidelity Framework aims to address this challenge through an integration of Clef code, SMT proofs, and MLIR's semantic dialects.
+Creating software with strong correctness guarantees has traditionally forced developers to choose between practical languages and formal verification. The Fidelity Framework aims to address this challenge through an integration of F# code, F* proofs, and MLIR's semantic dialects.
 
 This essay explores how the Fidelity Framework builds upon the semantic verification foundations introduced in "First-Class Verification Dialects for MLIR" (Fehr et al., 2025) to create a unique pipeline designed to preserve formal verification from source code to optimized binary. The result would be a system that delivers both safety and performance, without requiring developers to become formal methods experts.
 
-## Making F* Verification Intentions Clear in Clef
+## Making F* Verification Intentions Clear in F#
 
-The journey begins with standard Clef code, enhanced with verification annotations that express formal properties:
+The journey begins with standard F# code, enhanced with verification annotations that express formal properties:
 
 ```fsharp
-// Clef code with verification annotations
-[<SMT Requires("input >= 0 && input <= 100")>]
-[<SMT Ensures("result >= 0 && result <= 10")>]
+// F# code with verification annotations
+[<F* Requires("input >= 0 && input <= 100")>]
+[<F* Ensures("result >= 0 && result <= 10")>]
 let normalizeScore (input: int) : int =
     if input < 0 then 0
     elif input > 100 then 10
     else input / 10
 ```
 
-These annotations express the developer's intent in a familiar Clef syntax, while providing the information needed for formal verification. Developers continue working in Clef rather than switching to specialized verification languages.
+These annotations express the developer's intent in a familiar F# syntax, while providing the information needed for formal verification. Developers continue working in F# rather than switching to specialized verification languages.
 
 For more complex verification scenarios, annotations can express sophisticated properties around memory safety:
 
 ```fsharp
 // Memory safety verification through annotations
-[<SMT Requires("Array.length buffer > index")>]
-[<SMT Ensures("result = buffer.[index]")>]
-[<SMT EnsuresOnException("exn is IndexOutOfRangeException")>]
+[<F* Requires("Array.length buffer > index")>]
+[<F* Ensures("result = buffer.[index]")>]
+[<F* EnsuresOnException("exn is IndexOutOfRangeException")>]
 let safeGet (buffer: 'T array) (index: int) : 'T =
     buffer.[index]
 ```
@@ -57,7 +55,7 @@ For structures that need explicit memory layouts, we can use concise layout anno
 ```fsharp
 // Memory layout with verification
 [<Layout>]
-[<SMT Ensures("memory_safe_layout")>]
+[<F* Ensures("memory_safe_layout")>]
 type ImageData = {
     Width: UInt32
     Height: UInt32
@@ -65,7 +63,7 @@ type ImageData = {
 }
 ```
 
-What makes this approach compelling is its "pre-optimization" approach—memory layout decisions are made at the Clef level, where more semantic information is available, rather than being deferred to later compilation stages. This aims to transform what would normally be an analysis problem into a mapping exercise:
+What makes this approach compelling is its "pre-optimization" approach—memory layout decisions are made at the F# level, where more semantic information is available, rather than being deferred to later compilation stages. This aims to transform what would normally be an analysis problem into a mapping exercise:
 
 ```fsharp
 // Layout definition with explicit memory configuration
@@ -79,7 +77,7 @@ type ImageBuffer = {
 }
 ```
 
-This explicit memory layout would become a critical enabler for verification by making memory access patterns explicit and verifiable, eliminating abstraction gaps between high-level Clef structures and low-level memory layouts, and supporting platform-specific verification tailored to hardware constraints.
+This explicit memory layout would become a critical enabler for verification by making memory access patterns explicit and verifiable, eliminating abstraction gaps between high-level F# structures and low-level memory layouts, and supporting platform-specific verification tailored to hardware constraints.
 
 ## F* Proof Generation: Automated Verification
 
@@ -88,9 +86,9 @@ The Fidelity Framework is designed to automatically translate F* annotations int
 ```fsharp
 // Generated F* verification (not written by hand)
 module Generated
-
+  
   // F* verification condition for normalizeScore
-  let normalize_score_verification (input: int)
+  let normalize_score_verification (input: int) 
     : Tot (result:int{result >= 0 && result <= 10})
     = requires (input >= 0 && input <= 100)
       if input < 0 then 0
@@ -98,7 +96,7 @@ module Generated
       else input / 10
 ```
 
-This translation layer is key to the Fidelity approach—developers would never need to write F* code directly. Instead, the framework performs a source-to-source transformation that preserves the original Clef logic while adding the dependent types and verification conditions that F* can process.
+This translation layer is key to the Fidelity approach—developers would never need to write F* code directly. Instead, the framework performs a source-to-source transformation that preserves the original F# logic while adding the dependent types and verification conditions that F* can process.
 
 For memory safety verification with defined layouts, the translation becomes even more powerful:
 
@@ -107,9 +105,9 @@ For memory safety verification with defined layouts, the translation becomes eve
 let get_pixel_verification (buffer:image_buffer{has_layout buffer ImageBufferLayout})
                          (x:int{0 <= x && x < buffer.width})
                          (y:int{0 <= y && y < buffer.height})
-  : Tot byte (ensures (fun result ->
+  : Tot byte (ensures (fun result -> 
       result == buffer.pixel_data.[y * buffer.width + x]))
-  =
+  = 
   // The verification can reason about memory access because
   // it knows the exact layout of the ImageBuffer structure
   buffer.pixel_data.[y * buffer.width + x]
@@ -129,10 +127,10 @@ let parseLayout =
         let! magic = pUInt32LE
         let! version = pUInt16LE
         let! fieldCount = pUInt16LE
-
+        
         // Parse field definitions
         let! fields = parray (int fieldCount) parseField
-
+        
         return {
             Magic = magic
             Version = version
@@ -142,7 +140,7 @@ let parseLayout =
 ```
 
 XParsec is designed to enable the Fidelity Framework to:
-1. Parse Clef code with layout and verification annotations
+1. Parse F# code with layout and verification annotations
 2. Extract memory layout information
 3. Generate corresponding F* verification conditions
 4. Ensure verification properties are preserved in the MLIR translation
@@ -165,12 +163,12 @@ func.func @normalizeScore(%input: i32) -> i32 {
   %c0 = arith.constant 0 : i32
   %c10 = arith.constant 10 : i32
   %c100 = arith.constant 100 : i32
-
+  
   %lt_zero = arith.cmpi slt, %input, %c0 : i32
   %gt_hundred = arith.cmpi sgt, %input, %c100 : i32
-
+  
   %div10 = arith.divsi %input, %c10 : i32
-
+  
   %result = scf.if %lt_zero -> i32 {
     scf.yield %c0 : i32
   } else {
@@ -181,13 +179,13 @@ func.func @normalizeScore(%input: i32) -> i32 {
     }
     scf.yield %temp : i32
   }
-
+  
   // Postcondition using SMT dialect
   %result_gte_zero = smt.bv.sge %result, %zero : !smt.bv<32>
   %result_lte_ten = smt.bv.sle %result, %c10 : !smt.bv<32>
   %postcondition = smt.and %result_gte_zero, %result_lte_ten : !smt.bool
   smt.assert %postcondition
-
+  
   return %result : i32
 }
 ```
@@ -212,7 +210,7 @@ When optimizations are applied to the MLIR representation, the SMT dialect ensur
 smt.assert %preserved
 ```
 
-If an optimization would violate a verified property, the SMT solver rejects the transformation, ensuring that all optimizations respect the verified constraints. (This is precisely the approach demonstrated in the PLDI paper, where the authors found five miscompilation bugs in upstream MLIR through this verification approach.)
+If an optimization would violate a verified property, the SMT solver rejects the transformation, ensuring that all optimizations respect the verified constraints. (This is precisely the approach demonstrated in the PLDI paper, where the authors found five miscompilation bugs in upstream MLIR through this verification approach.) 
 
 The translation validation method becomes a key component of the Fidelity Framework's verification process:
 
@@ -221,11 +219,11 @@ func.func @validate_transformation(%src: !mlir.operation, %tgt: !mlir.operation)
   // Extract SMT formulas representing the semantics of both operations
   %src_formula = smt.extract_semantics %src : !mlir.operation -> !smt.formula
   %tgt_formula = smt.extract_semantics %tgt : !mlir.operation -> !smt.formula
-
+  
   // Check that target refines source (preserves properties)
   %refines = smt.implies %src_formula, %tgt_formula : !smt.bool
   smt.check_sat %refines : !smt.bool
-
+  
   // Return result of verification
   %result = smt.is_sat %refines : !smt.bool
   return %result : i1
@@ -273,7 +271,7 @@ This enables verification that is sensitive to platform-specific memory constrai
 The integration of memory layout definitions with verification creates a powerful system for ensuring memory safety. When combined with the SMT dialect, this enables verification of memory access patterns:
 
 ```fsharp
-// Clef code with memory layout and verification
+// F# code with memory layout and verification
 [<Layout>]
 type ImageBuffer = {
     Width: UInt32
@@ -281,9 +279,9 @@ type ImageBuffer = {
     Pixels: Span<Byte>
 }
 
-[<SMT Requires("x >= 0 && x < image.Width")>]
-[<SMT Requires("y >= 0 && y < image.Height")>]
-[<SMT Ensures("result = image.Pixels.[y * image.Width + x]")>]
+[<F* Requires("x >= 0 && x < image.Width")>]
+[<F* Requires("y >= 0 && y < image.Height")>]
+[<F* Ensures("result = image.Pixels.[y * image.Width + x]")>]
 let getPixel (image: ImageBuffer) (x: int) (y: int) : byte =
     image.Pixels.[y * int image.Width + x]
 ```
@@ -295,28 +293,28 @@ func.func @getPixel(%image: !memref<{layout="ImageBuffer"}>, %x: i32, %y: i32) -
   // Preconditions for x and y
   %width = memref.load %image[0] : !memref<{layout="ImageBuffer"}>
   %height = memref.load %image[4] : !memref<{layout="ImageBuffer"}>
-
+  
   // Verify x is in bounds
   %zero = arith.constant 0 : i32
   %x_gte_zero = smt.bv.sge %x, %zero : !smt.bv<32>
   %x_lt_width = smt.bv.slt %x, %width : !smt.bv<32>
   %x_in_bounds = smt.and %x_gte_zero, %x_lt_width : !smt.bool
   smt.assert %x_in_bounds
-
+  
   // Verify y is in bounds
   %y_gte_zero = smt.bv.sge %y, %zero : !smt.bv<32>
   %y_lt_height = smt.bv.slt %y, %height : !smt.bv<32>
   %y_in_bounds = smt.and %y_gte_zero, %y_lt_height : !smt.bool
   smt.assert %y_in_bounds
-
+  
   // Calculate pixel offset
   %offset_y = arith.muli %y, %width : i32
   %offset = arith.addi %offset_y, %x : i32
-
+  
   // Get pixel value
   %pixels_base = memref.subview %image[8] : !memref<{layout="ImageBuffer"}> to memref<?xi8>
   %pixel = memref.load %pixels_base[%offset] : memref<?xi8>
-
+  
   // Return pixel value
   return %pixel : i8
 }
@@ -332,8 +330,8 @@ Consider this typical pattern:
 
 ```fsharp
 // Memory-safe array access without runtime checks
-[<SMT Requires("0 <= index && index < Array.length array")>]
-[<SMT Ensures("result = array.[index]")>]
+[<F* Requires("0 <= index && index < Array.length array")>]
+[<F* Ensures("result = array.[index]")>]
 let inline getElement (array: 'T[]) (index: int) : 'T =
     // No runtime bounds check needed - verified at compile time
     array.[index]
@@ -343,12 +341,12 @@ Through verification, the compiler could prove that all calls to `getElement` ar
 
 ## Example: Verified Image Processing
 
-Let's examine a complete example showing how the Fidelity Framework integrates Clef annotations, memory layouts, F* verification, and MLIR SMT dialect for a verified image processing function:
+Let's examine a complete example showing how the Fidelity Framework integrates F# annotations, memory layouts, F* verification, and MLIR SMT dialect for a verified image processing function:
 
 ```fsharp
-// Clef implementation with verification annotations
-[<SMT Requires("src.Width = dst.Width && src.Height = dst.Height")>]
-[<SMT Ensures("forall (x, y) in (0..src.Width-1, 0..src.Height-1).
+// F# implementation with verification annotations
+[<F* Requires("src.Width = dst.Width && src.Height = dst.Height")>]
+[<F* Ensures("forall (x, y) in (0..src.Width-1, 0..src.Height-1). 
            dst.GetPixel(x, y) = byte(min 255 (2 * int(src.GetPixel(x, y)))))")>]
 let brighten (src: ImageBuffer) (dst: ImageBuffer) : unit =
     for y in 0 .. int src.Height - 1 do
@@ -366,13 +364,13 @@ module Generated
 
   // Verification for brighten function
   let brighten_verification (src: image_buffer) (dst: image_buffer)
-    : Tot (ensures (fun _ ->
-             (forall (x y: int).
+    : Tot (ensures (fun _ -> 
+             (forall (x y: int). 
                 (0 <= x && x < src.width && 0 <= y && y < src.height) ==>
                 (dst.get_pixel x y = min 255 (2 * src.get_pixel x y)))))
     = requires (src.width = dst.width && src.height = dst.height)
-
-      // Implementation is translated from Clef
+      
+      // Implementation is translated from F#
       for y in 0 .. (src.height - 1) do
         for x in 0 .. (src.width - 1) do
           let pixel = src.get_pixel x y in
@@ -389,38 +387,38 @@ func.func @brighten(%src: !memref<{layout="ImageBuffer"}>, %dst: !memref<{layout
   %src_height = memref.load %src[4] : !memref<{layout="ImageBuffer"}>
   %dst_width = memref.load %dst[0] : !memref<{layout="ImageBuffer"}>
   %dst_height = memref.load %dst[4] : !memref<{layout="ImageBuffer"}>
-
+  
   %width_eq = smt.bv.eq %src_width, %dst_width : !smt.bv<32>
   %height_eq = smt.bv.eq %src_height, %dst_height : !smt.bv<32>
   %dims_match = smt.and %width_eq, %height_eq : !smt.bool
   smt.assert %dims_match
-
+  
   // Loop implementation
   %c0 = arith.constant 0 : i32
   %c1 = arith.constant 1 : i32
   %c2 = arith.constant 2 : i32
   %c255 = arith.constant 255 : i32
-
+  
   %height_minus_1 = arith.subi %src_height, %c1 : i32
   scf.for %y = %c0 to %height_minus_1 step %c1 {
     %width_minus_1 = arith.subi %src_width, %c1 : i32
     scf.for %x = %c0 to %width_minus_1 step %c1 {
       // Get source pixel
       %pixel = call @getPixel(%src, %x, %y) : (!memref<{layout="ImageBuffer"}>, i32, i32) -> i8
-
+      
       // Brighten the pixel
       %pixel_int = arith.extui %pixel : i8 to i32
       %doubled = arith.muli %pixel_int, %c2 : i32
       %clamped = arith.minsi %doubled, %c255 : i32
       %bright_pixel = arith.trunci %clamped : i32 to i8
-
+      
       // Set destination pixel
       call @setPixel(%dst, %x, %y, %bright_pixel) : (!memref<{layout="ImageBuffer"}>, i32, i32, i8) -> ()
     }
   }
-
+  
   // Postcondition verification embedded as SMT operations
-
+ 
   return
 }
 ```
@@ -431,7 +429,7 @@ Through optimization and lowering, the SMT dialect ensures that the verification
 
 The Fidelity Framework's integrated approach to verification offers several key advantages:
 
-1. **Developer Experience**: Developers work in Clef with simple annotations, not specialized verification languages
+1. **Developer Experience**: Developers work in F# with simple annotations, not specialized verification languages
 2. **Compilation-Time Verification**: All verification happens during compilation, not at runtime
 3. **Verification-Preserving Optimization**: Optimizations are verified to preserve proven properties
 4. **Zero-Cost Verification**: No runtime overhead for verification in the final binary
@@ -442,11 +440,11 @@ This approach is enabled by the combination of F*'s dependent type system, pre-o
 
 ## Toward Auto-Generated Verification
 
-While the annotation-based approach described in this article makes verification more accessible, our longer-term vision is even more ambitious: a truly idiomatic Clef development experience where verification annotations are automatically generated rather than manually written by developers.
+While the annotation-based approach described in this article makes verification more accessible, our longer-term vision is even more ambitious: a truly idiomatic F# development experience where verification annotations are automatically generated rather than manually written by developers.
 
 The explicit annotations shown throughout this article serve to elucidate the verification concepts, but they aren't necessarily the end-state developer experience we envision. The Fidelity Framework is designed with this evolution in mind, leveraging several key capabilities:
 
-1. **Pattern Recognition**: XParsec's advanced parsing capabilities can identify common Clef code patterns that imply verification properties
+1. **Pattern Recognition**: XParsec's advanced parsing capabilities can identify common F# code patterns that imply verification properties
 2. **Memory Layout Inference**: Layout definitions contain rich type information that can be analyzed to automatically generate safety properties
 3. **Contextual Verification**: Many verification conditions can be derived from the context in which functions are used
 
@@ -465,12 +463,12 @@ Already contains the necessary information to infer memory safety properties for
 
 This capability bring us to our track for building professional development tooling. We have plans for Visual Studio Code and JetBrains Rider extensions that:
 
-1. Automatically generates F* verification conditions from idiomatic Clef code
+1. Automatically generates F* verification conditions from idiomatic F# code
 2. Provides real-time visualization of verification results as developers write code
 3. Offers intelligent suggestions to make code verifiable when issues are detected
-4. Maintains traceability between Clef code, SMT proofs, and MLIR representations
+4. Maintains traceability between F# code, F* proofs, and MLIR representations
 
-Such tooling would preserve the clean, idiomatic Clef development experience while adding the power of formal verification without requiring developers to learn F* or write verbose annotations. This represents our vision for the future of verified programming: one where verification becomes an invisible yet powerful part of everyday development, rather than a specialized activity requiring formal methods expertise. It would be a true force multiplier for development teams and enable degrees of freedom in targeting an ever-wider array of hardware and systems.
+Such tooling would preserve the clean, idiomatic F# development experience while adding the power of formal verification without requiring developers to learn F* or write verbose annotations. This represents our vision for the future of verified programming: one where verification becomes an invisible yet powerful part of everyday development, rather than a specialized activity requiring formal methods expertise. It would be a true force multiplier for development teams and enable degrees of freedom in targeting an ever-wider array of hardware and systems.
 
 ## Patent-Pending Innovation
 
@@ -482,7 +480,7 @@ The patent-pending technology enables a new approach to hardware/software co-des
 
 ## The Future of Verified Programming
 
-The integration of Clef, memory layouts, F* verification, and MLIR in the Fidelity Framework represents a significant advance in making formal verification practical for everyday development. By elevating memory layout to a first-class concept that can be explicitly defined, optimized, and verified at the source level, the framework eliminates a major source of complexity in the verification process.
+The integration of F#, memory layouts, F* verification, and MLIR in the Fidelity Framework represents a significant advance in making formal verification practical for everyday development. By elevating memory layout to a first-class concept that can be explicitly defined, optimized, and verified at the source level, the framework eliminates a major source of complexity in the verification process.
 
 This approach not only simplifies verification but makes it more powerful, enabling strong guarantees about memory safety, alignment, and access patterns that would be difficult or impossible to achieve in traditional verification systems. The result would be a system that delivers both safety and performance without requiring developers to become formal methods experts.
 
