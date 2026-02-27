@@ -41,7 +41,7 @@ The promotion is recorded in the PSG as a coeffect annotation, a visible, naviga
 
 ## Verifying Memory in Practice
 
-This same transparent SMT mechanism is designed to verify concrete memory safety. If a Clef actor allocates a buffer in a Frame Arena to handle high-frequency BAREWire network data, the NTU would generate `QF_LIA` assertions verifying that no references to that buffer escape into a longer-lived scope:
+This same transparent SMT mechanism is designed to verify concrete memory safety. If a Clef actor allocates a buffer in a Frame Arena to handle high-frequency BAREWire network data, the NTU would derive `QF_LIA` assertions verifying that no references to that buffer escape into a longer-lived scope:
 
 ```fsharp
 let processNetworkFrame (arena: FrameArena) =

@@ -30,7 +30,7 @@ Dimensional consistency of an arithmetic expression reduces to linear algebra ov
 
 This is the critical distinction from dependent types. A dependent type can encode an *arbitrary predicate* over values. Checking whether two dependent types are equal may require proving an arbitrary theorem. Dimensional consistency checking requires comparing two integer vectors, a constant-time operation per base dimension.
 
-General dependent type systems risk undecidability and must rely on timeout heuristics and fuel limits during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of Z3's most well-studied, guaranteed-decidable logic fragments: **`QF_LIA`**. CCS is designed to ask Z3 to solve a bounded system of linear equations. Z3 resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses.
+General dependent type systems are subject to undecidability and may require timeout heuristics and fuel limits during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of Z3's most well-studied, guaranteed-decidable logic fragments: **`QF_LIA`**. CCS is designed to ask Z3 to solve a bounded system of linear equations. Z3 resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses.
 
 | Property | DTS | Dependent Types |
 |---|---|---|
@@ -38,14 +38,14 @@ General dependent type systems risk undecidability and must rely on timeout heur
 | Inference | Complete and principal | Incomplete; requires annotations |
 | Runtime representation | No runtime cost; metadata only | May require runtime witnesses |
 | Expressiveness | Abelian group constraints on numeric types | Arbitrary predicates over values |
-| Proof obligations | None (consistency is syntactic) | May require interactive proof |
+| Proof obligations | Derived automatically from PSG structure | May require interactive proof |
 | Compilation model | Attributes that guide code generation | Types that participate in code generation |
 
 The analogy is to regular expressions and context-free grammars. Regular expressions are a distinct formal class with distinct closure properties, distinct recognition algorithms, and distinct practical applications. DTS occupies an analogous position relative to dependent types: a distinct formal class that happens to overlap in expressive power for a specific domain but differs in every computational property that matters for practical tooling.
 
 ## Design-Time Verification: The Transparent Z3 Partner
 
-Integrating Z3 directly into CCS to handle decidable SMT proof obligations is what makes transparent verification possible. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke Z3 in the background. The NTU simultaneously acts as a Verification Condition (VC) generator for Z3. Every arithmetic operation in the PSG automatically emits a Z3 assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
+Integrating Z3 directly into CCS to handle decidable SMT proof obligations is what makes transparent verification possible. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke Z3 in the background. The NTU simultaneously acts as the proof apparatus for Z3, deriving proof obligations from the PSG's structure. Every arithmetic operation in the PSG produces a Z3 assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
 
 ### The Gravitational Force Example
 
@@ -124,6 +124,6 @@ This capability extends naturally to auto-differentiation. The dimensional algeb
 
 \[\frac{\partial f}{\partial x} : \mathbb{R}^{\langle d_2 \cdot d_1^{-1} \rangle}\]
 
-The gradient of a loss function with dimension \(\langle \text{loss} \rangle\) with respect to a parameter with dimension \(\langle d \rangle\) carries dimension \(\langle \text{loss} \cdot d^{-1} \rangle\). This follows from the abelian group structure: differentiation is division in the dimensional algebra, and division is closed in \(\mathbb{Z}^n\). The inference algorithm extends to auto-differentiation graphs without modification. In a physics-informed model where the loss function includes terms with physical units (force residuals in newtons, energy conservation violations in joules), DTS would verify that gradient accumulation respects dimensional consistency, decidably, without annotation, and at zero runtime cost.
+The gradient of a loss function with dimension \(\langle \text{loss} \rangle\) with respect to a parameter with dimension \(\langle d \rangle\) carries dimension \(\langle \text{loss} \cdot d^{-1} \rangle\). This follows from the abelian group structure: differentiation is division in the dimensional algebra, and division is closed in \(\mathbb{Z}^n\). The inference algorithm extends to auto-differentiation graphs without modification. In a physics-informed model where the loss function includes terms with physical units (force residuals in newtons, energy conservation violations in joules), DTS would verify that gradient accumulation respects dimensional consistency, decidably, without annotation, and with no runtime overhead for the verified properties.
 
 The [next article](../memory-coeffect-algebra) extends the transparent verification model from dimensional constraints to memory safety.

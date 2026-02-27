@@ -157,7 +157,7 @@ The complete pipeline, from DTS inference through DMM coeffect resolution, Z3 pr
 The culmination of this architecture occurs when the developer executes `clef build --release`. At this point, the compilation shifts from interactive design-time guidance to immutable, cryptographic certification:
 
 1. **The Final Freeze.** The PSG is locked. The boundary conditions are fixed across all target architectures (Zen 5 CPU, RDNA 3.5 GPU, XDNA 2 NPU, and Arty A7 FPGA).
-2. **The Global SMT Theorem.** CCS aggregates the Verification Conditions from the entire dependency graph into a single, comprehensive SMT-LIB2 problem.
+2. **The Global SMT Theorem.** CCS aggregates the constraints derived from the entire dependency graph into a single, comprehensive SMT-LIB2 problem.
 3. **Witness Generation.** Z3 executes a strict, global verification run. Upon a `SAT` result, proving that no dimensional bounds are exceeded, no memory lifetimes are violated, and no BAREWire layouts are breached, Z3 generates a mathematical witness.
 4. **Binary Stamping.** CCS compiles the final LLVM (or CIRCT SystemVerilog) output and cryptographically hashes the binary alongside the Z3 witness, embedding the certificate directly into a `.proofcert` file or a dedicated ELF section.
 
@@ -168,9 +168,9 @@ The certificate is designed to guarantee:
 - **Representation fidelity.** Every cross-target transfer preserves numeric precision within documented bounds.
 - **Optimization correctness.** Every MLIR transformation has been validated to preserve the verified properties of the source.
 
-### Zero-Runtime-Cost Safety
+### Static Elimination of Runtime Safety Mechanisms
 
-Because memory layout decisions are made at the Clef source level and their access patterns are strictly mapped and verified via SMT constraints, the resulting binary is designed to achieve **zero-runtime-cost memory safety**. The compiler would prove that all array accesses are safe at compile time, eliminating runtime bounds checks entirely. The DMM tracking would prove that memory lifetimes are strictly bounded, eliminating the need for a garbage collector or an OOM killer to intervene.
+Because memory layout decisions are made at the Clef source level and their access patterns are strictly mapped and verified via SMT constraints, the resulting binary is designed to impose no runtime overhead for the verified properties. The DMM tracking would prove that memory lifetimes are strictly bounded, eliminating the need for a garbage collector or an OOM killer to intervene. For stack-scoped buffers with statically known sizes, escape analysis closes the set of access sites, allowing the compiler to verify bounds at compile time and eliminate runtime bounds checks for those allocations.
 
 When a Clef `CpuOrchestrator` executes a 330-microsecond BAREWire Ethernet loop to coordinate a heterogeneous physics simulation across Zen 5, XDNA 2, and an Arty A7, the goal is for it to run at the full speed of the silicon, backed by a cryptographic guarantee that every dimension, lifetime, and transfer has been verified.
 

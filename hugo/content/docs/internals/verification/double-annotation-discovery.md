@@ -121,14 +121,14 @@ graph LR
 
 ```
 
-The Fidelity Framework applies this insight in the Clef language through **Transparent Verification**. The Clef Compiler Service (CCS) is designed to elevate the compilation architecture from a static AST to a dynamic, fully saturated Program Semantic Graph (PSG), inferring formal mathematical proofs directly from the functions and memory topologies of the code. Properties outside this decidable subset, like the deep functional correctness guarantees that F\* excels at, remain valuable candidates for explicit specification.
+The Fidelity Framework applies this insight in the Clef language through **Transparent Verification**. The Clef Compiler Service (CCS) is designed to elevate the compilation architecture from a static AST to a dynamic, fully saturated Program Semantic Graph (PSG), deriving proof obligations directly from the functions and memory topologies of the code. Properties outside this decidable subset, like the deep functional correctness guarantees that F\* excels at, remain valuable candidates for explicit specification.
 
-Building out the Native Type Universe (NTU) within CCS is the architectural change that makes this possible. The NTU is designed to use the AST as syntactic scaffolding to construct the PSG, a representation that carries enough semantic information for the compiler to generate its own proofs. The PSG will carry two categories of formal properties:
+Building out the Native Type Universe (NTU) within CCS is the architectural change that makes this possible. The NTU is designed to use the AST as syntactic scaffolding to construct the PSG, a representation that carries enough semantic information for the compiler to derive its own proof obligations. The PSG will carry two categories of formal properties:
 
-1.  **Dimensional Type Systems (DTS):** The physical units (e.g., meters, newtons) and their dynamically inferred magnitudes, encoded as constraints drawn from finitely generated abelian groups over \(\mathbb{Z}\).
+1.  **Dimensional Type System (DTS):** The physical units (e.g., meters, newtons) and their dynamically inferred magnitudes, encoded as constraints drawn from finitely generated abelian groups over \(\mathbb{Z}\).
 2.  **Deterministic Memory Management (DMM):** The lifetime coeffects (Stack, Arena, Heap) that dictate memory allocation, formalized as a coeffect discipline within the same graph.
 
-Both map to **`QF_LIA`** (Quantifier-Free Linear Integer Arithmetic), one of the most well-studied decidable logic fragments in computer science. The NTU is designed to act as an automatic Verification Condition generator, translating the structural realities of the PSG into `QF_LIA` assertions for Z3.
+Both map to **`QF_LIA`** (Quantifier-Free Linear Integer Arithmetic), one of the most well-studied decidable logic fragments in computer science. The NTU is designed to act as the proof apparatus that derives `QF_LIA` assertions from the structural realities of the PSG for Z3.
 
 ### Saturation: What the PSG Is Designed to Achieve
 
