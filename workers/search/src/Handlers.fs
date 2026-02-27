@@ -256,16 +256,30 @@ module Handlers =
             return jsonResponse result status
         }
 
-    /// POST /purge-index (auth required) — clear all indexed content
+    /// POST /purge-index (auth required) — clear all indexed content and vectors
     let handlePurgeIndex (request: Request) (env: WorkerEnv) : JS.Promise<Response> =
         promise {
             if not (verifyAuth request env) then
                 return jsonResponse {| success = false; message = "Unauthorized" |} 401
             else
 
+            // Collect all section IDs so we can purge Vectorize
+            let! idResult = env.DB.prepare("SELECT id FROM content_sections").all<obj>()
+            let ids =
+                match idResult.results with
+                | Some r -> r |> Seq.map (fun row -> string row?id) |> Seq.toArray
+                | None -> [||]
+
+            // Delete vectors in batches (Vectorize limit is 1000 per call)
+            let mutable vectorsDeleted = 0
+            for batch in ids |> Array.chunkBySize 1000 do
+                let idList = ResizeArray(batch)
+                let! _ = env.VECTORIZE.deleteByIds(idList)
+                vectorsDeleted <- vectorsDeleted + batch.Length
+
             // Delete all content_sections (triggers will clean FTS5)
             let! _ = env.DB.prepare("DELETE FROM content_sections").run<obj>()
-            return jsonResponse {| success = true; message = "Index purged" |} 200
+            return jsonResponse {| success = true; message = "Index purged"; vectorsDeleted = vectorsDeleted; sectionsDeleted = ids.Length |} 200
         }
 
     /// Handle health check endpoint

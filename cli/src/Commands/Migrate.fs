@@ -61,7 +61,7 @@ module Migrate =
             printfn "=== Step 4/5: Indexing Content for Search ==="
             printfn ""
 
-            let! indexResult = Index.execute hugoContentDir false 8787 verbose
+            let! indexResult = Index.execute hugoContentDir false false 8787 verbose
             let indexCount =
                 match indexResult with
                 | Ok n -> n
@@ -164,7 +164,7 @@ module Migrate =
             if not skipIndex then
                 printfn "=== Indexing Content for Search ==="
                 printfn ""
-                let! result = Index.execute "./hugo/content" false 8787 verbose
+                let! result = Index.execute "./hugo/content" false false 8787 verbose
                 match result with
                 | Error e -> printfn "Warning: Search indexing failed: %s" e
                 | Ok _ -> ()

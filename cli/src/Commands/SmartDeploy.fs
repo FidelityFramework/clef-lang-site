@@ -67,7 +67,7 @@ module SmartDeploy =
         }
 
     /// Sync content to R2 and reindex search — soft failures (workers may not be deployed)
-    let private syncAndIndex (config: Config.CloudflareConfig) (verbose: bool) : Async<int> =
+    let private syncAndIndex (config: Config.CloudflareConfig) (force: bool) (verbose: bool) : Async<int> =
         async {
             printfn ""
             printfn "=== Syncing Content to R2 ==="
@@ -83,7 +83,7 @@ module SmartDeploy =
 
             printfn ""
             printfn "=== Indexing Content for Search ==="
-            let! indexResult = Index.execute "./hugo/content" false 8787 verbose
+            let! indexResult = Index.execute "./hugo/content" force false 8787 verbose
             match indexResult with
             | Ok indexed -> printfn "  Indexed: %d sections" indexed
             | Error e -> printfn "  Skipped: %s" e
@@ -149,17 +149,26 @@ module SmartDeploy =
         : Async<Result<string, string>> =
         async {
             if force then
-                printfn "Force flag set — refreshing spec, building, and deploying pages"
+                printfn "Force flag set — full rebuild: workers, pages, content sync, search index"
                 printfn ""
 
+                // 1. Deploy all workers
+                let allWorkers = Set.ofList ["search"; "smart-search"; "content-sync"]
+                let! _ = deployChangedWorkers config allWorkers verbose
+
+                // 2. Deploy Pages (refresh spec module)
+                printfn ""
                 printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
                 let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
                 match pagesResult with
                 | Error e -> return Error $"Pages deployment failed: {e}"
                 | Ok url ->
 
+                // 3. Sync content + force re-index (purge + rebuild)
+                let! _ = syncAndIndex config true verbose
+
                 let workingDir = Environment.CurrentDirectory
-                saveDeployState workingDir id
+                saveDeployState workingDir (fun s -> { s with LastSyncTimestamp = Some DateTime.UtcNow })
 
                 printfn ""
                 printfn "Force deployment complete!"
@@ -244,7 +253,7 @@ module SmartDeploy =
                     | Ok _ ->
 
                     // 2. Sync + index (soft)
-                    let! syncCount = syncAndIndex config verbose
+                    let! syncCount = syncAndIndex config false verbose
 
                     saveDeployState workingDir (fun s -> { s with LastSyncTimestamp = Some DateTime.UtcNow })
 
@@ -281,7 +290,7 @@ module SmartDeploy =
 
                     // If content also changed, sync + index
                     if hasContentChanges then
-                        let! _ = syncAndIndex config verbose
+                        let! _ = syncAndIndex config false verbose
                         ()
 
                     saveDeployState workingDir id

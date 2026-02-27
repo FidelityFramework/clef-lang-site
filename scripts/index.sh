@@ -12,10 +12,15 @@ VERBOSE=""
 LOCAL=""
 PORT=""
 CONTENT_DIR=""
+FORCE=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -f|--force)
+            FORCE="--force"
+            shift
+            ;;
         -v|--verbose)
             VERBOSE="--verbose"
             shift
@@ -38,6 +43,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
+            echo "  -f, --force             Purge existing index before re-indexing"
             echo "  -v, --verbose           Enable verbose output"
             echo "  -l, --local             Use local search worker (localhost:8787)"
             echo "  -p, --port PORT         Local worker port (default: 8787, requires --local)"
@@ -53,4 +59,4 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "$PROJECT_ROOT"
-dotnet run --project cli/ClefLang.CLI.fsproj -- index $CONTENT_DIR $LOCAL $PORT $VERBOSE
+dotnet run --project cli/ClefLang.CLI.fsproj -- index $CONTENT_DIR $FORCE $LOCAL $PORT $VERBOSE

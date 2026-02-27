@@ -95,7 +95,7 @@ module Program =
             member this.Usage =
                 match this with
                 | Base _ -> "Base git ref for comparison"
-                | Force -> "Force spec refresh + build + deploy pages (no state checks)"
+                | Force -> "Full rebuild: deploy all workers, pages, sync content, purge + re-index search"
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
@@ -118,6 +118,7 @@ module Program =
     [<RequireQualifiedAccess>]
     type IndexArgs =
         | [<AltCommandLine("-d")>] Content_Dir of path: string
+        | [<AltCommandLine("-f")>] Force
         | [<AltCommandLine("-l")>] Local
         | [<AltCommandLine("-p")>] Port of int
         | [<AltCommandLine("-v")>] Verbose
@@ -126,6 +127,7 @@ module Program =
             member this.Usage =
                 match this with
                 | Content_Dir _ -> "Hugo content directory (default: ./hugo/content)"
+                | Force -> "Purge existing index before re-indexing"
                 | Local -> "Use local search worker (localhost:8787)"
                 | Port _ -> "Local worker port (default: 8787, requires --local)"
                 | Verbose -> "Enable verbose output"
@@ -344,10 +346,11 @@ module Program =
 
                 | CLIArgs.Index args ->
                     let contentDir = args.GetResult(<@ IndexArgs.Content_Dir @>, "./hugo/content")
+                    let force = args.Contains <@ IndexArgs.Force @>
                     let useLocal = args.Contains <@ IndexArgs.Local @>
                     let localPort = args.GetResult(<@ IndexArgs.Port @>, 8787)
                     let verbose = args.Contains <@ IndexArgs.Verbose @>
-                    Commands.Index.execute contentDir useLocal localPort verbose
+                    Commands.Index.execute contentDir force useLocal localPort verbose
                     |> runAsync
 
                 | CLIArgs.Purge args ->

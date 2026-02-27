@@ -71,7 +71,7 @@ module Index =
         let hash = hasher.ComputeHash(bytes)
         BitConverter.ToString(hash).Replace("-", "").Substring(0, 16).ToLowerInvariant()
 
-    /// Determine content type and URL prefix from file path
+    /// Determine content type and page URL from file path
     /// Handles both local content dirs and vendored spec paths
     let private classifyContent (baseDirs: string list) (filePath: string) : (string * string) option =
         // Normalize to forward slashes and find the relative path against any known base
@@ -85,18 +85,25 @@ module Index =
                 else None)
             |> Option.defaultValue (Path.GetFileName(filePath))
 
+        // Strip .md extension to derive the URL path from the full directory structure
+        let urlPath =
+            if relativePath.EndsWith(".md") then relativePath.Substring(0, relativePath.Length - 3)
+            else relativePath
+
         if relativePath.StartsWith("blog/") then
-            Some ("blog", "/blog/")
+            Some ("blog", $"/{urlPath}/")
         elif relativePath.StartsWith("docs/design/") then
-            Some ("design", "/docs/design/")
+            Some ("design", $"/{urlPath}/")
         elif relativePath.StartsWith("docs/internals/") then
-            Some ("internals", "/docs/internals/")
+            Some ("internals", $"/{urlPath}/")
         elif relativePath.StartsWith("docs/reference/") then
-            Some ("reference", "/docs/reference/")
+            Some ("reference", $"/{urlPath}/")
         elif relativePath.StartsWith("docs/guides/") then
-            Some ("guides", "/docs/guides/")
+            Some ("guides", $"/{urlPath}/")
         elif relativePath.StartsWith("spec/") then
-            Some ("spec", "/spec/draft/")
+            // Spec URLs use /spec/draft/ prefix instead of /spec/
+            let specPath = urlPath.Substring("spec/".Length)
+            Some ("spec", $"/spec/draft/{specPath}/")
         else
             None
 
@@ -136,8 +143,7 @@ module Index =
 
         match classifyContent baseDirs filePath with
         | None -> []
-        | Some (contentType, urlPrefix) ->
-            let pageUrl = $"{urlPrefix}{slug}/"
+        | Some (contentType, pageUrl) ->
             let sections = splitIntoSections body
 
             sections |> List.mapi (fun i (sectionTitle, sectionContent) ->
@@ -189,13 +195,28 @@ module Index =
                 None
 
     /// Execute the index command
+    /// Purge the search index via the worker's /purge-index endpoint
+    let private purgeIndex (httpClient: HttpClient) (workerUrl: string) (verbose: bool) =
+        async {
+            if verbose then printfn "  Purging existing index..."
+            use content = new StringContent("{}", Encoding.UTF8, "application/json")
+            let! response = httpClient.PostAsync($"{workerUrl}/purge-index", content) |> Async.AwaitTask
+            let! body = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+            if response.IsSuccessStatusCode then
+                printfn "  Index purged."
+            else
+                printfn "  Warning: purge-index failed: %s" body
+        }
+
     let execute
         (hugoContentDir: string)
+        (force: bool)
         (useLocal: bool)
         (localPort: int)
         (verbose: bool)
         : Async<Result<int, string>> =
         async {
+            let verbose = verbose || force
             let workerUrl, apiKey =
                 if useLocal then
                     $"http://localhost:{localPort}", "dev-local-key"
@@ -267,6 +288,9 @@ module Index =
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}")
             httpClient.Timeout <- TimeSpan.FromMinutes(5.0) // Embedding generation takes time
 
+            if force then
+                do! purgeIndex httpClient workerUrl verbose
+
             let jsonOptions = JsonSerializerOptions(PropertyNamingPolicy = JsonNamingPolicy.CamelCase)
             let batches = allSections |> List.chunkBySize 20
             let mutable totalIndexed = 0
@@ -274,6 +298,8 @@ module Index =
             let mutable totalFailed = 0
 
             for i, batch in batches |> List.indexed do
+                printf "  Batch %d/%d (%d sections)..." (i + 1) batches.Length batch.Length
+                Console.Out.Flush()
                 let payload = {| sections = batch |> Array.ofList |}
                 let json = JsonSerializer.Serialize(payload, jsonOptions)
                 use content = new StringContent(json, Encoding.UTF8, "application/json")
@@ -292,13 +318,12 @@ module Index =
                         totalIndexed <- totalIndexed + indexed
                         totalUnchanged <- totalUnchanged + unchanged
                         totalFailed <- totalFailed + failed
-                        if verbose then
-                            printfn "    Batch %d/%d: %d indexed, %d unchanged, %d failed" (i + 1) batches.Length indexed unchanged failed
+                        printfn " %d indexed, %d unchanged, %d failed" indexed unchanged failed
                     else
-                        printfn "    Batch %d/%d failed: %s" (i + 1) batches.Length responseBody
+                        printfn " failed: %s" responseBody
                         totalFailed <- totalFailed + batch.Length
                 with ex ->
-                    printfn "    Batch %d/%d error: %s" (i + 1) batches.Length ex.Message
+                    printfn " error: %s" ex.Message
                     totalFailed <- totalFailed + batch.Length
 
             printfn ""
