@@ -137,18 +137,61 @@ module Search =
                 |> Array.map (fun m -> (m.id, m.score))
         }
 
+    /// Look up section metadata from D1 for IDs not already in a result set
+    let hydrateVectorResults
+        (db: D1Database)
+        (vectorResults: (string * float) array)
+        (existingIds: Set<string>)
+        : JS.Promise<SearchResult array> =
+        promise {
+            let missingIds = vectorResults |> Array.map fst |> Array.filter (fun id -> not (existingIds.Contains(id)))
+            if missingIds.Length = 0 then return [||]
+            else
+
+            // Build parameterized IN clause
+            let placeholders = missingIds |> Array.map (fun _ -> "?") |> String.concat ", "
+            let sql =
+                $"""SELECT id, page_title, section_title, page_url, content_type, summary,
+                    substr(content, 1, 300) as snippet
+                    FROM content_sections WHERE id IN ({placeholders})"""
+
+            let stmt = db.prepare(sql)
+            let bound = stmt.bind(missingIds |> Array.map box)
+            let! result = bound.all<obj>()
+
+            let rows =
+                match result.results with
+                | Some r -> r |> Seq.toArray
+                | None -> [||]
+
+            return rows |> Array.map (fun row ->
+                {
+                    id = string row?id
+                    pageTitle = string row?page_title
+                    sectionTitle = string row?section_title
+                    pageUrl = string row?page_url
+                    contentType = string row?content_type
+                    snippet = string row?snippet
+                    score = 0.0
+                })
+        }
+
     /// Reciprocal Rank Fusion to combine BM25 and vector results
     /// RRF(d) = sum( 1 / (k + rank_i(d)) ) for each ranking i
     let reciprocalRankFusion
         (bm25Results: SearchResult array)
         (vectorResults: (string * float) array)
+        (vectorHydrated: SearchResult array)
         (k: int)
         : SearchResult array =
 
-        // Build lookup from BM25 results
+        // Build lookup from BM25 results + hydrated vector-only results
         let resultMap = System.Collections.Generic.Dictionary<string, SearchResult>()
         for r in bm25Results do
             resultMap.[r.id] <- r
+        for r in vectorHydrated do
+            if not (resultMap.ContainsKey(r.id)) then
+                resultMap.[r.id] <- r
 
         // Compute RRF scores
         let rrfScores = System.Collections.Generic.Dictionary<string, float>()

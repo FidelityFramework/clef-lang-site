@@ -145,8 +145,12 @@ module Handlers =
             let! bm25Results = bm25Promise
             let! vectorResults = vectorPromise
 
+            // Hydrate metadata for vector-only results (not found by BM25)
+            let bm25Ids = bm25Results |> Array.map (fun r -> r.id) |> Set.ofArray
+            let! vectorHydrated = Search.hydrateVectorResults env.DB vectorResults bm25Ids
+
             // Fuse results with RRF (k=60)
-            let fused = Search.reciprocalRankFusion bm25Results vectorResults 60
+            let fused = Search.reciprocalRankFusion bm25Results vectorResults vectorHydrated 60
             let topResults = fused |> Array.truncate limit
 
             let latencyMs = int (DateTime.UtcNow - startTime).TotalMilliseconds
@@ -176,7 +180,9 @@ module Handlers =
             // Hybrid search first
             let! bm25Results = Search.bm25Search env.DB query (limit * 2) None
             let! vectorResults = Search.vectorSearch env.AI env.VECTORIZE query (limit * 2)
-            let fused = Search.reciprocalRankFusion bm25Results vectorResults 60
+            let bm25Ids = bm25Results |> Array.map (fun r -> r.id) |> Set.ofArray
+            let! vectorHydrated = Search.hydrateVectorResults env.DB vectorResults bm25Ids
+            let fused = Search.reciprocalRankFusion bm25Results vectorResults vectorHydrated 60
             let topResults = fused |> Array.truncate limit
 
             if topResults.Length = 0 then
