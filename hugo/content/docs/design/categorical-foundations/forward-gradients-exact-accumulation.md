@@ -14,7 +14,7 @@ params:
 
 ## The Activation Tape Problem
 
-Reverse-mode automatic differentiation (backpropagation) has a well-known memory cost. To compute gradients during the backward pass, the system must retain intermediate activations from the forward pass. For a network with *L* layers and batch size *B*, this imposes an O(*L* · *B*) auxiliary memory requirement. The activations must persist from their creation during the forward pass until their consumption during the backward pass; their lifetime spans the entire training step.
+Reverse-mode automatic differentiation (backpropagation) has a well-known memory cost. To compute gradients during the backward pass, the system must retain intermediate activations from the forward pass. For a network with \(L\) layers and batch size \(B\), this imposes an \(O(L \cdot B)\) auxiliary memory requirement. The activations must persist from their creation during the forward pass until their consumption during the backward pass; their lifetime spans the entire training step.
 
 This is not an implementation detail. It is a structural property of reverse-mode AD. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation that the computation imposes on its environment.
 
@@ -22,9 +22,9 @@ Gradient checkpointing and other memory-reduction techniques trade compute for m
 
 ## The Forward Gradient
 
-Baydin, Pearlmutter, Syme, Wood, and Torr [1] demonstrated a different approach. The *forward gradient* is an unbiased estimate of the gradient computed via forward-mode automatic differentiation. For a random perturbation vector *v*, the forward gradient computes the directional derivative:
+Baydin, Pearlmutter, Syme, Wood, and Torr [1] demonstrated a different approach. The *forward gradient* is an unbiased estimate of the gradient computed via forward-mode automatic differentiation. For a random perturbation vector \(v\), the forward gradient computes the directional derivative:
 
-> ∇ᵥ*f*(θ) = ⟨∇*f*(θ), *v*⟩
+\[\nabla_v f(\theta) = \langle \nabla f(\theta), v \rangle\]
 
 This is evaluated in a single forward pass. There is no backward pass. There is no activation tape.
 
@@ -36,7 +36,7 @@ In the Fidelity framework's coeffect system, these two approaches have distinct 
 
 | Property | Reverse-Mode | Forward-Mode [1] |
 |---|---|---|
-| Auxiliary memory | O(*L* · *B*) | O(1) per layer |
+| Auxiliary memory | \(O(L \cdot B)\) | \(O(1)\) per layer |
 | Gradient quality | Exact (full Jacobian transpose) | Unbiased estimate (directional derivative) |
 | Activation tape | Required; lifetime spans full backward pass | Not required |
 | Escape analysis | Intermediate values escape layer scope | No intermediate values escape layer scope |
@@ -47,9 +47,9 @@ This is a verifiable compile-time property. Given a computation graph annotated 
 
 ## The Quire Connection
 
-Forward-mode computes directional derivatives via inner products. The inner product ⟨∇*f*(θ), *v*⟩ is an accumulation of products, exactly the operation the posit quire makes exact.
+Forward-mode computes directional derivatives via inner products. The inner product \(\langle \nabla f(\theta), v \rangle\) is an accumulation of products, exactly the operation the posit quire makes exact.
 
-The quire holds intermediate multiply-add results without rounding. For posit32, the quire occupies n²/2 = 512 bits = 64 bytes, exactly one cache line. Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property is significant for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
+The quire holds intermediate multiply-add results without rounding. For posit32, the quire occupies \(n^2/2 = 512\) bits = 64 bytes, exactly one cache line. Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property is significant for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
 
 The quire's coeffect profile in this context:
 
@@ -70,19 +70,19 @@ gradient_estimate: float<loss · param⁻¹>
 
 ## Dimensional Consistency Under Differentiation
 
-The third property is dimensional. The DTS framework's dimensional algebra is closed under differentiation. If *f* maps values with dimension *d*₁ to values with dimension *d*₂, then the derivative ∂*f*/∂*x* carries dimension *d*₂ · *d*₁⁻¹. This follows from the abelian group structure: differentiation is division in the dimensional algebra, and division is closed in ℤⁿ.
+The third property is dimensional. The DTS framework's dimensional algebra is closed under differentiation. If \(f\) maps values with dimension \(d_1\) to values with dimension \(d_2\), then the derivative \(\partial f / \partial x\) carries dimension \(d_2 \cdot d_1^{-1}\). This follows from the abelian group structure: differentiation is division in the dimensional algebra, and division is closed in \(\mathbb{Z}^n\).
 
 For gradient computation, this means:
 
-- The gradient of a loss function with dimension ⟨loss⟩ with respect to a parameter with dimension ⟨*d*⟩ carries dimension ⟨loss · *d*⁻¹⟩
-- Gradient accumulation across parameters with different dimensions is dimensionally constrained: a gradient with dimension ⟨newtons / meters⟩ cannot be accumulated with a gradient of dimension ⟨joules / seconds⟩ without a dimensional error
+- The gradient of a loss function with dimension \(\langle\text{loss}\rangle\) with respect to a parameter with dimension \(\langle d \rangle\) carries dimension \(\langle\text{loss} \cdot d^{-1}\rangle\)
+- Gradient accumulation across parameters with different dimensions is dimensionally constrained: a gradient with dimension \(\langle\text{N} / \text{m}\rangle\) cannot be accumulated with a gradient of dimension \(\langle\text{J} / \text{s}\rangle\) without a dimensional error
 - The chain rule preserves dimensional consistency through the computation graph; each gradient node inherits a dimension from the chain rule, verified by the same Gaussian elimination that verifies the forward pass
 
 This verification is decidable, requires no annotation beyond the physical dimensions already present in the forward computation, and has zero runtime cost. The inference algorithm from [Section 2.2 of the DTS/DMM paper](/publications/dts-dmm/) extends to auto-differentiation graphs without modification.
 
 ## Physics-Informed Loss Terms
 
-The dimensional verification has a concrete application in physics-informed neural networks [3]. A loss term that penalizes violations of Newton's second law computes *F* − *ma* and minimizes the squared residual. DTS can verify at compile time that *F*, *m*, and *a* carry dimensions ⟨newtons⟩, ⟨kg⟩, and ⟨m · s⁻²⟩ respectively, and that the subtraction *F* − *ma* is dimensionally consistent.
+The dimensional verification has a concrete application in physics-informed neural networks [3]. A loss term that penalizes violations of Newton's second law computes \(F - ma\) and minimizes the squared residual. DTS can verify at compile time that \(F\), \(m\), and \(a\) carry dimensions \(\langle\text{N}\rangle\), \(\langle\text{kg}\rangle\), and \(\langle\text{m} \cdot \text{s}^{-2}\rangle\) respectively, and that the subtraction \(F - ma\) is dimensionally consistent.
 
 This is a structural check on the loss function's definition, not a runtime constraint on the model's outputs. It ensures that the physics constraints imposed during training are dimensionally well-formed. Existing ML frameworks cannot provide this verification because dimensional information is never encoded in the type system and is not available at any stage of the compilation pipeline.
 

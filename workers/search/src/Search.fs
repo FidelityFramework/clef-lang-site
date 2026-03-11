@@ -4,7 +4,6 @@ open System
 open Fable.Core
 open Fable.Core.JsInterop
 open Fidelity.CloudEdge.D1
-open Fidelity.CloudEdge.AI.Generated
 open Fidelity.CloudEdge.Vectorize
 
 module Search =
@@ -108,7 +107,7 @@ module Search =
         }
 
     /// Generate embedding using Workers AI
-    let generateEmbedding (ai: Ai<obj>) (text: string) : JS.Promise<float array> =
+    let generateEmbedding (ai: Ai) (text: string) : JS.Promise<float array> =
         promise {
             let truncated = if text.Length > 512 then text.Substring(0, 512) else text
             let request = createObj [
@@ -121,7 +120,7 @@ module Search =
 
     /// Vector similarity search using Vectorize
     let vectorSearch
-        (ai: Ai<obj>)
+        (ai: Ai)
         (vectorize: VectorizeIndex)
         (query: string)
         (limit: int)

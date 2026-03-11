@@ -14,14 +14,14 @@ params:
 
 ## The Categorical Structure of Quantum Mechanics
 
-Quantum mechanics has been categorical since before computer scientists adopted the vocabulary. Abramsky and Coecke's work on categorical quantum mechanics [1] formalized what physicists had been using informally: quantum processes compose as morphisms in a dagger compact category, a monoidal category with a contravariant involution that captures the adjoint (conjugate transpose) operation on Hilbert spaces.
+Quantum mechanics has been categorical since before computer scientists adopted the vocabulary. Abramsky and Coecke's work on categorical quantum mechanics [1] formalized what physicists had been using informally: quantum processes compose as morphisms in a dagger compact category, a monoidal category with a contravariant involution that captures the adjoint (conjugate transpose) operation on Hilbert spaces (\(\dagger\)-compact category).
 
 In concrete terms:
 
 - **Objects** are Hilbert spaces (the state spaces of quantum systems)
 - **Morphisms** are completely positive maps (quantum channels, including unitary evolution and measurement)
-- **The dagger** (†) assigns to each morphism its adjoint: if *U* is a unitary gate, then *U*† is its conjugate transpose, satisfying *UU*† = *U*†*U* = *I*
-- **The monoidal structure** (⊗) captures tensor products: the state space of a composite quantum system is the tensor product of its components
+- **The dagger** (\(\dagger\)) assigns to each morphism its adjoint: if \(U\) is a unitary gate, then \(U^\dagger\) is its conjugate transpose, satisfying \(UU^\dagger = U^\dagger U = I\)
+- **The monoidal structure** (\(\otimes\)) captures tensor products: the state space of a composite quantum system is the tensor product of its components
 
 This is the same adjoint structure that appears in [the CDL paper's treatment of neural networks](/blog/categorical-deep-learning-adjoint-correspondence/) and in the HPC adjoint method. The forward/backward duality that unifies backpropagation with sensitivity analysis has a third instance in quantum mechanics: unitary evolution paired with its conjugate.
 

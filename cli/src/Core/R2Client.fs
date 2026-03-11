@@ -1,7 +1,6 @@
 namespace ClefLang.CLI.Core
 
 open System.Net.Http
-open System.Text.Json
 open Fidelity.CloudEdge.Management.R2
 open Fidelity.CloudEdge.Management.R2.Types
 
@@ -18,18 +17,11 @@ module R2Client =
                     let! listResult = client.R2ListBuckets(accountId, nameContains = bucketName)
                     match listResult with
                     | R2ListBuckets.OK response ->
-                        match response.result with
-                        | Some resultElement ->
-                            // Parse the result array to check for exact name match
-                            if resultElement.ValueKind = JsonValueKind.Array then
-                                let buckets = resultElement.EnumerateArray() |> Seq.toList
-                                return buckets |> List.exists (fun b ->
-                                    match b.TryGetProperty("name") with
-                                    | true, nameProp -> nameProp.GetString() = bucketName
-                                    | false, _ -> false)
-                            else
-                                return false
+                        match response.result.buckets with
+                        | Some buckets ->
+                            return buckets |> List.exists (fun b -> b.name = Some bucketName)
                         | None -> return false
+                    | R2ListBuckets.BadRequest _ -> return false
                 with
                 | _ -> return false
             }
@@ -59,6 +51,15 @@ module R2Client =
                                     return Ok ()
                                 else
                                     return Error $"Bucket creation failed: {errorMsg}"
+                        | R2CreateBucket.BadRequest failure ->
+                            let errorMsg =
+                                failure.errors
+                                |> List.map (fun e -> e.message)
+                                |> String.concat "; "
+                            if errorMsg.ToLower().Contains("already exists") then
+                                return Ok ()
+                            else
+                                return Error $"Bucket creation failed: {errorMsg}"
                 with
                 | ex when ex.Message.Contains("already exists") ->
                     return Ok ()
@@ -66,21 +67,26 @@ module R2Client =
                     return Error $"Failed to create bucket: {ex.Message}"
             }
 
-        /// List all buckets (returns JSON string for display)
+        /// List all buckets (returns comma-separated names for display)
         member this.ListBuckets() : Async<Result<string, string>> =
             async {
                 try
                     let! result = client.R2ListBuckets(accountId)
                     match result with
                     | R2ListBuckets.OK response ->
-                        match response.result with
-                        | Some resultElement -> return Ok (resultElement.GetRawText())
+                        match response.result.buckets with
+                        | Some buckets ->
+                            let names = buckets |> List.choose (fun b -> b.name) |> String.concat ", "
+                            return Ok names
                         | None -> return Ok "[]"
+                    | R2ListBuckets.BadRequest failure ->
+                        let errorMsg = failure.errors |> List.map (fun e -> e.message) |> String.concat "; "
+                        return Error $"Failed to list buckets: {errorMsg}"
                 with
                 | ex -> return Error $"Failed to list buckets: {ex.Message}"
             }
 
-        /// Get bucket details (returns JSON string for display)
+        /// Get bucket details (returns bucket name for display)
         member this.GetBucket(bucketName: string) : Async<Result<string, string>> =
             async {
                 try
@@ -88,15 +94,16 @@ module R2Client =
                     match result with
                     | R2GetBucket.OK response ->
                         if response.success then
-                            match response.result with
-                            | Some resultElement -> return Ok (resultElement.GetRawText())
-                            | None -> return Ok "{}"
+                            return Ok (response.result.name |> Option.defaultValue bucketName)
                         else
                             let errorMsg =
                                 response.errors
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to get bucket: {errorMsg}"
+                    | R2GetBucket.BadRequest failure ->
+                        let errorMsg = failure.errors |> List.map (fun e -> e.message) |> String.concat "; "
+                        return Error $"Failed to get bucket: {errorMsg}"
                 with
                 | ex -> return Error $"Failed to get bucket: {ex.Message}"
             }
@@ -108,7 +115,6 @@ module R2Client =
                     let! result = client.R2DeleteBucket(bucketName, accountId)
                     match result with
                     | R2DeleteBucket.OK response ->
-                        // Delete returns success even if response.result is None
                         if response.success then
                             return Ok ()
                         else
@@ -117,6 +123,9 @@ module R2Client =
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to delete bucket: {errorMsg}"
+                    | R2DeleteBucket.BadRequest failure ->
+                        let errorMsg = failure.errors |> List.map (fun e -> e.message) |> String.concat "; "
+                        return Error $"Failed to delete bucket: {errorMsg}"
                 with
                 | ex -> return Error $"Failed to delete bucket: {ex.Message}"
             }

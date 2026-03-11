@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +21,6 @@
   <ItemGroup>
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.Worker.Context/CloudEdge.Worker.Context.fsproj" />
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.D1/CloudEdge.D1.fsproj" />
-    <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.AI/CloudEdge.AI.fsproj" />
     <ProjectReference Include="../../../Fidelity.CloudEdge/src/Runtime/CloudEdge.Vectorize/CloudEdge.Vectorize.fsproj" />
   </ItemGroup>
 

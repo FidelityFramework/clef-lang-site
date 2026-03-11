@@ -14,11 +14,11 @@ params:
 
 ## The Representation Selection Problem
 
-IEEE 754 distributes precision uniformly across its representable range. A `float64` allocates the same number of mantissa bits to values near 1.0 as to values near 10³⁰⁰. For many computational domains, this uniformity is wasteful. Gravitational forces span roughly 10⁻¹¹ to 10³⁰ newtons. Membrane potentials range from -80 to +40 millivolts. Sensor readings cluster between 0 and 100 celsius. In each case, the majority of IEEE 754's precision budget is allocated to ranges the computation will never visit.
+IEEE 754 distributes precision uniformly across its representable range. A `float64` allocates the same number of mantissa bits to values near 1.0 as to values near \(10^{300}\). For many computational domains, this uniformity is wasteful. Gravitational forces span roughly \(10^{-11}\) to \(10^{30}\) newtons. Membrane potentials range from -80 to +40 millivolts. Sensor readings cluster between 0 and 100 celsius. In each case, the majority of IEEE 754's precision budget is allocated to ranges the computation will never visit.
 
 Gustafson and Yonemoto's posit arithmetic [1] addresses this with *tapered precision*: a variable-length regime field concentrates mantissa bits near 1.0, where most computed values reside, and reduces precision toward the extremes. The Posit Standard (2022) [2] unified the exponent size (es = 2) across all bit widths, simplifying both hardware implementation and compiler modeling.
 
-The two representations make different tradeoffs. IEEE 754 provides uniform relative error of approximately 2⁻⁵² for `float64`, independent of value magnitude. Posit32 with es = 2 provides approximately 2⁻²⁷ relative error near 1.0, degrading to approximately 2⁻⁸ at regime extremes. For computations whose values concentrate near unity, posit provides better precision per bit. For computations that span the full representable range with equal probability, IEEE 754's uniformity is the correct choice.
+The two representations make different tradeoffs. IEEE 754 provides uniform relative error of approximately \(2^{-52}\) for `float64`, independent of value magnitude. Posit32 with es = 2 provides approximately \(2^{-27}\) relative error near 1.0, degrading to approximately \(2^{-8}\) at regime extremes. For computations whose values concentrate near unity, posit provides better precision per bit. For computations that span the full representable range with equal probability, IEEE 754's uniformity is the correct choice.
 
 The question is: how does the compiler know which case applies?
 
@@ -26,19 +26,19 @@ The question is: how does the compiler know which case applies?
 
 This is where Dimensional Type Systems (DTS) enter. In the Fidelity framework's type system, every numeric value carries a dimensional annotation that survives compilation. A `float<newtons>` does not erase to `float64` during code generation; the annotation persists as an MLIR attribute through each lowering stage. This is the key distinction from approaches like F#'s Units of Measure [3], where dimensions are erased before code generation.
 
-The dimensional annotation constrains the value's semantic range. A value with dimension *newtons* in a gravitational simulation operates within the range determined by the gravitational constant (~6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻²), plausible masses, and plausible distances. This range is computable from the dimensional constraints, domain annotations, or platform binding specifications available at compile time.
+The dimensional annotation constrains the value's semantic range. A value with dimension *newtons* in a gravitational simulation operates within the range determined by the gravitational constant (\(\sim 6.674 \times 10^{-11}\;\text{m}^3\,\text{kg}^{-1}\,\text{s}^{-2}\)), plausible masses, and plausible distances. This range is computable from the dimensional constraints, domain annotations, or platform binding specifications available at compile time.
 
 Given this range, the compiler can evaluate representation candidates against a concrete criterion: worst-case relative error within the value domain.
 
-Formally, given a value *v* with dimension *d*, a value range [*a*, *b*] inferred from dimensional constraints, and a set of available representations *R* = {*r*₁, …, *r*ₖ} on target *T*, the compiler selects:
+Formally, given a value \(v\) with dimension \(d\), a value range \([a, b]\) inferred from dimensional constraints, and a set of available representations \(R = \{r_1, \ldots, r_k\}\) on target \(T\), the compiler selects:
 
-> *r** = arg min over *r* ∈ *R* of max over *x* ∈ [*a*,*b*] of |*x* − round_r(*x*)| / |*x*|
+\[r^* = \arg\min_{r \in R} \max_{x \in [a,b]} \frac{|x - \text{round}_r(x)|}{|x|}\]
 
 This is a deterministic function from dimensional constraints and target capabilities to representation choice. It is computable at compile time, and its inputs are properties of the Program Semantic Graph (PSG) that the compiler already maintains for other purposes.
 
 ## The Quire: A Coeffect Case Study
 
-The posit quire accumulator illustrates how representation selection interacts with memory management. A quire holds intermediate results of multiply-add operations without rounding; rounding occurs once, when the final result is converted back to a posit value [1]. The Posit Standard (2022) [2] defines the quire width as n²/2 bits for an n-bit posit, yielding a 512-bit accumulator for posit32.
+The posit quire accumulator illustrates how representation selection interacts with memory management. A quire holds intermediate results of multiply-add operations without rounding; rounding occurs once, when the final result is converted back to a posit value [1]. The Posit Standard (2022) [2] defines the quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32.
 
 This fixed relationship between posit precision and quire width makes compiler modeling straightforward. For posit32:
 
@@ -72,7 +72,7 @@ The quire is not a special case requiring custom compiler support. It is a value
 
 When a computation spans multiple hardware targets, values must cross target boundaries. A posit32 result computed on an FPGA may need to be consumed by IEEE 754 code running on the host CPU. The transfer has a precision cost, and DTS provides the mechanism for quantifying it.
 
-Every posit32 value within its representable range (~10⁻³⁶ to ~10³⁶) is exactly representable in `float64`, which covers 10⁻³⁰⁸ to 10³⁰⁸. The transfer from posit32 to `float64` is lossless; the compiler can prove this at compile time from the representation specifications. The reverse direction (float64 to posit32) incurs precision loss that depends on the dimensional range of the value being transferred.
+Every posit32 value within its representable range (\(\sim 10^{-36}\) to \(\sim 10^{36}\)) is exactly representable in `float64`, which covers \(10^{-308}\) to \(10^{308}\). The transfer from posit32 to `float64` is lossless; the compiler can prove this at compile time from the representation specifications. The reverse direction (float64 to posit32) incurs precision loss that depends on the dimensional range of the value being transferred.
 
 The BAREWire protocol handles the binary encoding and transport. The DTS framework handles the semantic analysis: what precision is lost, where, and whether the loss is acceptable for the computation's dimensional requirements. The language server can display this analysis as a diagnostic on any value that crosses a target boundary:
 

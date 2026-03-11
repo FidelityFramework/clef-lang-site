@@ -33,7 +33,7 @@ The general-purpose CPU is the default target. Its profile:
 | Escape Classification | x86/ARM Allocation |
 |---|---|
 | StackScoped | `memref.alloca` (stack frame) |
-| ClosureCapture(*t*) | Arena or heap, depending on closure lifetime |
+| ClosureCapture(\(t\)) | Arena or heap, depending on closure lifetime |
 | ReturnEscape | Caller-provided buffer or arena |
 | ByRefEscape | Arena with lifetime tracking |
 
@@ -53,7 +53,7 @@ computeForce: float<kg> → float<kg> → float<m> → float<newtons>
 
 The FPGA target differs from CPU in three fundamental ways: numeric representations are configurable per computation, memory is spatially distributed across the fabric, and execution is inherently parallel at the operation level.
 
-**Numeric representation:** Posit arithmetic implemented in DSP48 slices (on Xilinx targets) or equivalent multiply-accumulate blocks. The representation selection function evaluates posit widths against the dimensional range of each value. For posit32 with es = 2, the dynamic range extends to approximately 10±³⁶, with best precision near unity.
+**Numeric representation:** Posit arithmetic implemented in DSP48 slices (on Xilinx targets) or equivalent multiply-accumulate blocks. The representation selection function evaluates posit widths against the dimensional range of each value. For posit32 with es = 2, the dynamic range extends to approximately \(10^{\pm 36}\), with best precision near unity.
 
 **Quire support:** Hardware pipeline. The 512-bit quire is a single wide value mapped to FPGA fabric by the synthesis tool; the exact allocation across flip-flops, LUTs, and DSP slices is a synthesis decision, not a compiler concern. Performance is 1 cycle per FMA, matching the throughput of IEEE 754 multiply-accumulate in equivalent DSP fabric.
 
@@ -142,7 +142,7 @@ The compiler would resolve these boundaries during MLIR lowering, using the dime
 
 Section 6.6 of the DTS/DMM paper formalizes an observation that underlies the multi-target compilation strategy: each compilation stage has strictly more information than its predecessor.
 
-> *I*_source ⊂ *I*_PSG ⊂ *I*_MLIR ⊂ *I*_MLIR-opt ⊂ *I*_target ⊂ *I*_native
+\[I_{\text{source}} \subset I_{\text{PSG}} \subset I_{\text{MLIR}} \subset I_{\text{MLIR-opt}} \subset I_{\text{target}} \subset I_{\text{native}}\]
 
 At the source level, the compiler knows types and dimensions. At the PSG level, it additionally knows coeffects, escape classifications, and saturated annotations. At the MLIR level, it knows the full program structure in SSA form. At the target-specific MLIR level, it knows the hardware's capabilities, memory topology, and datapath widths.
 

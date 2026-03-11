@@ -5,7 +5,6 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fidelity.CloudEdge.Worker.Context
 open Fidelity.CloudEdge.D1
-open Fidelity.CloudEdge.AI.Generated
 open Fidelity.CloudEdge.Vectorize
 
 [<AutoOpen>]
@@ -61,13 +60,19 @@ module Types =
     type BatchIndexRequest =
         abstract member sections: IndexSectionRequest array with get
 
+    /// Cloudflare Workers AI binding
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type Ai =
+        abstract member run: model: string * input: obj -> JS.Promise<obj>
+
     /// Worker environment bindings
     [<AllowNullLiteral>]
     [<Interface>]
     type WorkerEnv =
         inherit Env
         abstract member DB: D1Database with get
-        abstract member AI: Ai<obj> with get
+        abstract member AI: Ai with get
         abstract member VECTORIZE: VectorizeIndex with get
         abstract member ALLOWED_ORIGIN: string with get
         abstract member INDEX_API_KEY: string with get

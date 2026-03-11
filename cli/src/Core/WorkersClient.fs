@@ -28,7 +28,7 @@ module WorkersClient =
 
     /// Wrapper operations for Workers management
     type WorkersOperations(httpClient: HttpClient, accountId: string) =
-        let client = WorkersClient(httpClient)
+        let client = Fidelity.CloudEdge.Management.Workers.WorkersClient(httpClient)
 
         /// Build metadata JSON for worker bindings (ES module format)
         let buildMetadataJson (metadata: WorkerMetadata) =
@@ -59,15 +59,12 @@ module WorkersClient =
                     let! result = client.WorkerSubdomainGetSubdomain(accountId)
                     match result with
                     | WorkerSubdomainGetSubdomain.OK response ->
-                        match response.success with
-                        | Some true ->
-                            match response.result with
-                            | Some resultElement ->
-                                match resultElement.TryGetProperty("subdomain") with
-                                | true, subdomainProp -> return Ok (Some (subdomainProp.GetString()))
-                                | false, _ -> return Ok None
-                            | None -> return Ok None
-                        | _ -> return Ok None
+                        if response.success then
+                            return Ok (Some response.result.subdomain)
+                        else
+                            return Ok None
+                    | WorkerSubdomainGetSubdomain.BadRequest _ ->
+                        return Ok None
                 with
                 | ex -> return Error $"Failed to get subdomain: {ex.Message}"
             }
@@ -79,6 +76,8 @@ module WorkersClient =
                     let! result = client.WorkerScriptListWorkers(accountId)
                     match result with
                     | WorkerScriptListWorkers.OK _ -> return Ok ()
+                    | WorkerScriptListWorkers.BadRequest failure ->
+                        return Error $"Failed to list workers: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to list workers: {ex.Message}"
             }
@@ -90,6 +89,8 @@ module WorkersClient =
                     let! result = client.WorkerScriptDeleteWorker(accountId, scriptName)
                     match result with
                     | WorkerScriptDeleteWorker.OK _ -> return Ok ()
+                    | WorkerScriptDeleteWorker.BadRequest failure ->
+                        return Error $"Failed to delete worker: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to delete worker: {ex.Message}"
             }
@@ -153,16 +154,16 @@ module WorkersClient =
                     let! result = client.WorkerScriptUploadWorkerModule(accountId, scriptName)
                     match result with
                     | WorkerScriptUploadWorkerModule.OK response ->
-                        match response.success with
-                        | Some true -> return Ok ()
-                        | Some false ->
+                        if response.success then
+                            return Ok ()
+                        else
                             let errorMsg =
                                 response.errors
-                                |> Option.defaultValue []
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Upload failed: {errorMsg}"
-                        | None -> return Ok ()
+                    | WorkerScriptUploadWorkerModule.BadRequest failure ->
+                        return Error $"Upload failed: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to upload worker: {ex.Message}"
             }
@@ -174,6 +175,7 @@ module WorkersClient =
                     let! result = client.WorkerVersionsListVersions(accountId, scriptName)
                     match result with
                     | WorkerVersionsListVersions.OK _ -> return Ok ()
+                    | WorkerVersionsListVersions.BadRequest _ -> return Error "Failed to list versions"
                 with
                 | ex -> return Error $"Failed to list versions: {ex.Message}"
             }
@@ -182,20 +184,20 @@ module WorkersClient =
         member this.CreateSubdomain(subdomain: string) : Async<Result<unit, string>> =
             async {
                 try
-                    let body = workersschemassubdomain.Create(subdomain)
+                    let body = ``workersschemas-subdomain``.Create(subdomain)
                     let! result = client.WorkerSubdomainCreateSubdomain(accountId, body)
                     match result with
                     | WorkerSubdomainCreateSubdomain.OK response ->
-                        match response.success with
-                        | Some true -> return Ok ()
-                        | Some false ->
+                        if response.success then
+                            return Ok ()
+                        else
                             let errorMsg =
                                 response.errors
-                                |> Option.defaultValue []
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to create subdomain: {errorMsg}"
-                        | None -> return Ok ()
+                    | WorkerSubdomainCreateSubdomain.BadRequest failure ->
+                        return Error $"Failed to create subdomain: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to create subdomain: {ex.Message}"
             }

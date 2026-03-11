@@ -30,9 +30,9 @@ Backpropagation, in this framing, is the canonical 2-cell: the morphism that tra
 
 ## The Adjoint Correspondence
 
-The CDL paper's deepest insight is that every differentiable function gives rise to an adjunction. For a function *f: A → B*, there exists a forward functor Fwd and a backward functor Bwd such that:
+The CDL paper's deepest insight is that every differentiable function gives rise to an adjunction. For a function \(f: A \to B\), there exists a forward functor Fwd and a backward functor Bwd such that:
 
-> Fwd ⊣ Bwd : Para(A) ⇌ Para(B)
+\[\text{Fwd} \dashv \text{Bwd} : \text{Para}(A) \rightleftarrows \text{Para}(B)\]
 
 This adjoint pair satisfies the triangle identities: the unit and counit compose to give the identity on each side. The forward pass and backward pass are not independent computations; they are two halves of a single algebraic structure constrained by the adjunction laws.
 
@@ -58,7 +58,7 @@ graph LR
 
 In high-performance computing, the adjoint method computes sensitivities of simulation outputs with respect to input parameters. A computational fluid dynamics solver runs forward to produce a flow field, then the adjoint solver runs backward to determine how each input parameter affects the output. The mathematical structure is identical to backpropagation: a forward functor paired with a backward functor satisfying the adjunction laws.
 
-In quantum mechanics, every unitary operator *U* has a conjugate *U†* such that *UU† = U†U = I*. This is the quantum instance of the adjoint correspondence: forward evolution paired with its inverse, constrained by unitarity (the quantum analogue of the triangle identities).
+In quantum mechanics, every unitary operator \(U\) has a conjugate \(U^\dagger\) such that \(UU^\dagger = U^\dagger U = I\). This is the quantum instance of the adjoint correspondence: forward evolution paired with its inverse, constrained by unitarity (the quantum analogue of the triangle identities).
 
 The mathematics are identical. The substrate differs.
 

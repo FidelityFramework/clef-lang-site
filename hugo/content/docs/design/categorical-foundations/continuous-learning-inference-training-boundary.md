@@ -16,7 +16,7 @@ params:
 
 Contemporary machine learning operates on a strict phase separation. Training happens on GPU clusters with large memory pools, reverse-mode automatic differentiation, and batch-oriented data pipelines. Inference happens on edge devices, mobile processors, or cloud endpoints, with frozen model weights and no gradient computation. The two phases share a model architecture but share almost nothing else: different hardware, different numeric representations, different memory profiles, different deployment infrastructure.
 
-This separation is not a mathematical requirement. It is an engineering consequence of reverse-mode AD's memory profile. Backpropagation requires the activation tape, an O(*L* · *B*) auxiliary memory buffer that stores intermediate activations from the forward pass for consumption during the backward pass. That memory obligation anchors training to high-memory hardware. Once the obligation is removed, the engineering rationale for the phase boundary weakens considerably.
+This separation is not a mathematical requirement. It is an engineering consequence of reverse-mode AD's memory profile. Backpropagation requires the activation tape, an \(O(L \cdot B)\) auxiliary memory buffer that stores intermediate activations from the forward pass for consumption during the backward pass. That memory obligation anchors training to high-memory hardware. Once the obligation is removed, the engineering rationale for the phase boundary weakens considerably.
 
 The [forward gradient entry](/blog/forward-gradients-exact-accumulation/) established that forward-mode AD eliminates the activation tape. The [posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) established that b-posits with quire accumulators provide exact gradient accumulation in a 512-bit footprint. The [target architectures entry](/blog/target-architectures-compilation-strategy/) established that spatial dataflow processors and neuromorphic hardware offer reconfigurable computation at the tile level.
 
@@ -24,9 +24,9 @@ This entry examines what happens when these three properties converge: a system 
 
 ## The Memory Argument
 
-The phase boundary rests on a resource asymmetry. Inference requires O(1) auxiliary memory per layer: the activations of the current layer, consumed immediately by the next. Training via reverse-mode requires O(*L* · *B*): every layer's activations, retained for the backward pass.
+The phase boundary rests on a resource asymmetry. Inference requires \(O(1)\) auxiliary memory per layer: the activations of the current layer, consumed immediately by the next. Training via reverse-mode requires \(O(L \cdot B)\): every layer's activations, retained for the backward pass.
 
-Forward-mode AD collapses this asymmetry. The directional derivative ⟨∇*f*(θ), *v*⟩ is computed in a single forward pass with O(1) auxiliary memory per layer, the same profile as inference. The gradient estimate is unbiased; the variance is controllable through perturbation sampling [1]. The tradeoff is statistical, not structural.
+Forward-mode AD collapses this asymmetry. The directional derivative \(\langle \nabla f(\theta), v \rangle\) is computed in a single forward pass with \(O(1)\) auxiliary memory per layer, the same profile as inference. The gradient estimate is unbiased; the variance is controllable through perturbation sampling [1]. The tradeoff is statistical, not structural.
 
 In the Fidelity framework's coeffect system, this means the escape analysis for a forward gradient pass is identical to the escape analysis for an inference pass. Every intermediate value is StackScoped. Every allocation is `memref.alloca`. No value escapes its creating scope. The compiler sees the same coeffect signature for both workloads.
 
@@ -68,7 +68,7 @@ The convergence can be stated as a coeffect property. A continuous learning syst
 
 | Property | Inference Only | Continuous Learning |
 |---|---|---|
-| Auxiliary memory | O(1) per layer | O(1) per layer |
+| Auxiliary memory | \(O(1)\) per layer | \(O(1)\) per layer |
 | Escape classification | All StackScoped | All StackScoped |
 | Gradient computation | None | Forward-mode directional derivative |
 | Accumulation | Not required | Quire (where available) or target-native |

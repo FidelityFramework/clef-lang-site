@@ -5,7 +5,6 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Fidelity.CloudEdge.Worker.Context
 open Fidelity.CloudEdge.D1
-open Fidelity.CloudEdge.AI.Generated
 
 [<AutoOpen>]
 module Types =
@@ -42,13 +41,19 @@ module Types =
         SourceCount: int
     }
 
+    /// Cloudflare Workers AI binding
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type Ai =
+        abstract member run: model: string * input: obj -> JS.Promise<obj>
+
     /// Worker environment bindings
     [<AllowNullLiteral>]
     [<Interface>]
     type WorkerEnv =
         inherit Env
         abstract member DB: D1Database with get
-        abstract member AI: Ai<obj> with get
+        abstract member AI: Ai with get
         abstract member ALLOWED_ORIGIN: string with get
 
     /// Error response

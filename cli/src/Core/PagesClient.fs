@@ -58,7 +58,7 @@ module PagesClient =
 
     /// Wrapper operations for Pages management
     type PagesOperations(httpClient: HttpClient, accountId: string) =
-        let client = PagesClient(httpClient)
+        let client = Fidelity.CloudEdge.Management.Pages.PagesClient(httpClient)
 
         /// Compute Cloudflare Pages hash: BLAKE3(base64(content) + extension), first 32 hex chars
         let computeFileHash (filePath: string) : string =
@@ -229,32 +229,37 @@ module PagesClient =
             }
 
         /// List all Pages projects
-        member this.ListProjects() : Async<Result<JsonElement option, string>> =
+        member this.ListProjects() : Async<Result<string list, string>> =
             async {
                 try
                     let! result = client.PagesProjectGetProjects(accountId)
                     match result with
                     | PagesProjectGetProjects.OK response ->
-                        return Ok response.result
+                        let names = response.result |> List.map (fun p -> p.name)
+                        return Ok names
+                    | PagesProjectGetProjects.BadRequest failure ->
+                        return Error $"Failed to list Pages projects: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to list Pages projects: {ex.Message}"
             }
 
         /// Get a project by name
-        member this.GetProject(projectName: string) : Async<Result<JsonElement option, string>> =
+        member this.GetProject(projectName: string) : Async<Result<pagesproject option, string>> =
             async {
                 try
                     let! result = client.PagesProjectGetProject(projectName, accountId)
                     match result with
                     | PagesProjectGetProject.OK response ->
                         if response.success then
-                            return Ok response.result
+                            return Ok (Some response.result)
                         else
                             let errorMsg =
                                 response.errors
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to get project: {errorMsg}"
+                    | PagesProjectGetProject.BadRequest failure ->
+                        return Error $"Failed to get project: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to get project: {ex.Message}"
             }
@@ -287,6 +292,8 @@ module PagesClient =
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to create project: {errorMsg}"
+                    | PagesProjectCreateProject.BadRequest failure ->
+                        return Error $"Failed to create project: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to create project: {ex.Message}"
             }
@@ -306,6 +313,8 @@ module PagesClient =
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to delete project: {errorMsg}"
+                    | PagesProjectDeleteProject.BadRequest failure ->
+                        return Error $"Failed to delete project: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to delete project: {ex.Message}"
             }
@@ -338,54 +347,73 @@ module PagesClient =
 
                     if verbose then progressCallback $"Found {files.Length} files, {allHashes.Length} unique hashes"
 
-                    // Step 2: Upload all files in batches
-                    let filesToUpload =
-                        files
-                        |> List.map (fun f ->
-                            { Hash = f.Hash
-                              Content = File.ReadAllBytes(f.FullPath)
-                              ContentType = f.ContentType
-                              FilePath = f.RelativePath })
+                    // Step 2: Check which files are missing
+                    progressCallback "Checking for existing assets..."
+                    let! missingResult = this.CheckMissingAssets(jwt, allHashes)
 
+                    match missingResult with
+                    | Error e -> return Error $"Failed to check missing assets: {e}"
+                    | Ok missingHashes ->
+
+                    if verbose then progressCallback $"{missingHashes.Length} files need uploading"
+
+                    // Step 3: Upload missing files in batches
                     let! uploadOk =
-                        async {
-                            progressCallback $"Uploading {filesToUpload.Length} files..."
+                        if missingHashes.Length > 0 then
+                            async {
+                                progressCallback $"Uploading {missingHashes.Length} files..."
 
-                            // Batch uploads (max 50MB or 100 files per batch)
-                            let maxBatchSize = 50L * 1024L * 1024L // 50MB
-                            let maxFilesPerBatch = 100
+                                let missingHashSet = Set.ofList missingHashes
+                                let filesToUpload =
+                                    files
+                                    |> List.filter (fun f -> missingHashSet.Contains(f.Hash))
+                                    |> List.map (fun f ->
+                                        { Hash = f.Hash
+                                          Content = File.ReadAllBytes(f.FullPath)
+                                          ContentType = f.ContentType
+                                          FilePath = f.RelativePath })
 
-                            let rec uploadBatches (remaining: FileUpload list) (batchNum: int) =
-                                async {
-                                    match remaining with
-                                    | [] -> return Ok ()
-                                    | _ ->
-                                        let mutable batchSize = 0L
-                                        let mutable batchCount = 0
-                                        let batch, rest =
-                                            remaining
-                                            |> List.fold (fun (batch, rest) file ->
-                                                let newSize = batchSize + int64 file.Content.Length
-                                                if batchCount < maxFilesPerBatch && newSize < maxBatchSize then
-                                                    batchSize <- newSize
-                                                    batchCount <- batchCount + 1
-                                                    (file :: batch, rest)
-                                                else
-                                                    (batch, file :: rest)
-                                            ) ([], [])
-                                            |> fun (b, r) -> (List.rev b, List.rev r)
+                                // Batch uploads (max 50MB or 100 files per batch)
+                                let maxBatchSize = 50L * 1024L * 1024L // 50MB
+                                let maxFilesPerBatch = 100
 
-                                        if verbose then
-                                            progressCallback $"Uploading batch {batchNum} ({batch.Length} files, {batchSize / 1024L}KB)..."
+                                let rec uploadBatches (remaining: FileUpload list) (batchNum: int) =
+                                    async {
+                                        match remaining with
+                                        | [] -> return Ok ()
+                                        | _ ->
+                                            // Take files up to batch limits
+                                            let mutable batchSize = 0L
+                                            let mutable batchCount = 0
+                                            let batch, rest =
+                                                remaining
+                                                |> List.fold (fun (batch, rest) file ->
+                                                    let newSize = batchSize + int64 file.Content.Length
+                                                    if batchCount < maxFilesPerBatch && newSize < maxBatchSize then
+                                                        batchSize <- newSize
+                                                        batchCount <- batchCount + 1
+                                                        (file :: batch, rest)
+                                                    else
+                                                        (batch, file :: rest)
+                                                ) ([], [])
+                                                |> fun (b, r) -> (List.rev b, List.rev r)
 
-                                        let! uploadResult = this.UploadAssetBatch(jwt, batch)
-                                        match uploadResult with
-                                        | Error e -> return Error e
-                                        | Ok () -> return! uploadBatches rest (batchNum + 1)
-                                }
+                                            if verbose then
+                                                progressCallback $"Uploading batch {batchNum} ({batch.Length} files, {batchSize / 1024L}KB)..."
 
-                            return! uploadBatches filesToUpload 1
-                        }
+                                            let! uploadResult = this.UploadAssetBatch(jwt, batch)
+                                            match uploadResult with
+                                            | Error e -> return Error e
+                                            | Ok () -> return! uploadBatches rest (batchNum + 1)
+                                    }
+
+                                return! uploadBatches filesToUpload 1
+                            }
+                        else
+                            async {
+                                progressCallback "All files already uploaded"
+                                return Ok ()
+                            }
 
                     match uploadOk with
                     | Error e -> return Error e
@@ -449,32 +477,36 @@ module PagesClient =
             }
 
         /// Get deployment status
-        member this.GetDeployment(projectName: string, deploymentId: string) : Async<Result<JsonElement option, string>> =
+        member this.GetDeployment(projectName: string, deploymentId: string) : Async<Result<pagesdeployment option, string>> =
             async {
                 try
                     let! result = client.PagesDeploymentGetDeploymentInfo(deploymentId, projectName, accountId)
                     match result with
                     | PagesDeploymentGetDeploymentInfo.OK response ->
                         if response.success then
-                            return Ok response.result
+                            return Ok (Some response.result)
                         else
                             let errorMsg =
                                 response.errors
                                 |> List.map (fun e -> e.message)
                                 |> String.concat "; "
                             return Error $"Failed to get deployment: {errorMsg}"
+                    | PagesDeploymentGetDeploymentInfo.BadRequest failure ->
+                        return Error $"Failed to get deployment: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to get deployment: {ex.Message}"
             }
 
         /// List deployments for a project
-        member this.ListDeployments(projectName: string) : Async<Result<JsonElement option, string>> =
+        member this.ListDeployments(projectName: string) : Async<Result<pagesdeployment list, string>> =
             async {
                 try
                     let! result = client.PagesDeploymentGetDeployments(projectName, accountId)
                     match result with
                     | PagesDeploymentGetDeployments.OK response ->
                         return Ok response.result
+                    | PagesDeploymentGetDeployments.BadRequest failure ->
+                        return Error $"Failed to list deployments: {failure.errors}"
                 with
                 | ex -> return Error $"Failed to list deployments: {ex.Message}"
             }
