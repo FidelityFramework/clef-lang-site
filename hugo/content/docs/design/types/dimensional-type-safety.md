@@ -423,7 +423,7 @@ What's new is putting these pieces together with a language designed for develop
 - [The Abstract Machine Model Paradox](/docs/design/abstract-machine-model-paradox/) - Why ownership semantics assume Von Neumann architectures
 - [Beyond Zero-Allocation](/docs/design/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model
 - [Context-Aware Compilation](/docs/design/context-aware-compilation/) - Coeffects and their role in optimization decisions
-- [Standing Art: F# Metaprogramming in Composer](https://speakez.tech/blog/standing-art-fsharp-metaprogramming-in-firefly/) - Computation expressions, active patterns, quotations, and units of measure
+- [Standing Art: Clef Metaprogramming in Composer](/docs/design/standing-art-clef-metaprogramming/) - Computation expressions, active patterns, quotations, and units of measure
 
 ---
 

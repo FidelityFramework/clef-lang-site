@@ -205,7 +205,7 @@ What was described in [The Return of the Compiler](https://speakez.tech/blog/the
 
 **Compiler Architecture & Implementation**
 - [Coeffects and Codata in Composer](/docs/design/coeffects-and-codata/) - The witness/codata approach that enables observation-based MLIR generation
-- [Standing Art: F# Metaprogramming in Composer](https://speakez.tech/blog/standing-art-fsharp-metaprogramming-in-firefly/) - How quotations, active patterns, and computation expressions enable nanopass compilation
+- [Standing Art: Clef Metaprogramming in Composer](/docs/design/standing-art-clef-metaprogramming/) - How quotations, active patterns, and computation expressions enable nanopass compilation
 - [Delimited Continuations: Fidelity's Turning Point](https://speakez.tech/blog/delimited-continuations-fidelitys-turning-point/) - Continuation-passing style as a unifying compilation strategy
 
 **Type Systems & Migration**
