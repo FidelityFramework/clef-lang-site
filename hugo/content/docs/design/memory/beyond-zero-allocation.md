@@ -148,7 +148,7 @@ sequenceDiagram
     participant OS as Targeted Platform
 
     Dev->>Lib: async <br>{ let! result = operation }
-    Lib->>PS²G: FSharp AST
+    Lib->>PS²G: Clef AST
     PS²G->>PS²G: SSA, Continuation & Coeffects
     PS²G->>MLIR: Generate TableGen for lowering
     MLIR->>OS: Optimal OS allocation<br>& LLVM Compilation

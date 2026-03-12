@@ -32,7 +32,7 @@ There is a peculiar satisfaction in watching complex machinery disappear behind 
 
 That invisibility is precisely the point. Simon Peyton Jones once observed that the measure of a good abstraction is how much it lets you forget. Sequence expressions let you forget about iteration state, about memory allocation patterns, about the machinery of resumption. You describe what values to produce; the language handles when and how.
 
-But "handles" is doing considerable work in that sentence. On .NET, sequence expressions compile to state machines that implement `IEnumerable<T>`. The runtime manages memory. Garbage collection reclaims unreachable iterators. Thread safety comes from the platform. These are capabilities F# developers take for granted because the infrastructure is already there. And within the realm of how it handles its business, it's quite elegant.
+But "handles" is doing considerable work in that sentence. On .NET, sequence expressions compile to state machines that implement `IEnumerable<T>`. The runtime manages memory. Garbage collection reclaims unreachable iterators. Thread safety comes from the platform. These are capabilities [the Clef language](https://clef-lang.com) developers take for granted because the infrastructure is already there. And within the realm of how it handles its business, it's quite elegant.
 
 For native compilation, every one of those capabilities becomes a question. Where does iteration state live? How do you resume computation after a yield? What ensures memory safety when there is no garbage collector?
 

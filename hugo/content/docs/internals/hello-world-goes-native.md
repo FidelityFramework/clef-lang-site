@@ -54,7 +54,7 @@ Composer's compilation proceeds through distinct phases, each building on the pr
 Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → Native Binary
 ```
 
-**F# Compiler Services (FCS)** provides parsing, type checking, and semantic analysis. It serves as the canonical source of F# semantics, resolving types, inferring constraints, and building the typed abstract syntax tree.
+**F# Compiler Services (FCS)** provides parsing, type checking, and semantic analysis. It serves as the canonical source of [Clef language](https://clef-lang.com) semantics, resolving types, inferring constraints, and building the typed abstract syntax tree.
 
 **The Program Semantic Graph (PSG)** correlates FCS's semantic information with syntactic structure through a series of nanopasses. Each pass does exactly one thing: structural construction, type integration, def-use edge creation, and finalization. This separation enables inspection and validation at every stage, with labeled intermediates emitted for debugging.
 
@@ -79,7 +79,7 @@ FUNCTION: Console.Format.formatInt
 └── Binding [formatInt] : int -> nativeptr<byte> -> int -> int
 ```
 
-The emission layer reads from the PSG's `Type` field and produces MLIR. For .NET developers familiar with pointer types, MLIR uses `memref` (memory reference) to represent buffers and arrays. The F# type `nativeptr<byte>` becomes `memref<?xi8>` (a dynamic-length buffer of bytes):
+The emission layer reads from the PSG's `Type` field and produces MLIR. For .NET developers familiar with pointer types, MLIR uses `memref` (memory reference) to represent buffers and arrays. The Clef type `nativeptr<byte>` becomes `memref<?xi8>` (a dynamic-length buffer of bytes):
 
 ```mlir
 func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
@@ -144,7 +144,7 @@ With the type information properly flowing through the PSG, MLIR emission become
 
 ### Discriminated Unions and Pattern Matching
 
-For .NET developers, discriminated unions (DUs) are similar to algebraic data types or tagged unions in other languages. The `Result` type in F# can be either `Ok` with a success value or `Error` with an error value.
+For .NET developers, discriminated unions (DUs) are similar to algebraic data types or tagged unions in other languages. The `Result` type in Clef can be either `Ok` with a success value or `Error` with an error value.
 
 Composer represents discriminated unions using MLIR's type system. A Result type compiles to a tagged representation where the tag indicates which case is active:
 

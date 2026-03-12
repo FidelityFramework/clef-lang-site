@@ -48,7 +48,7 @@ What makes this approach revolutionary isn't just the elimination of runtime ove
 
 ## A Tale of Four Programs
 
-To understand how Composer transforms functional elegance into native efficiency, let's follow four variations of a simple "Hello World" program. Each version introduces new challenges that reveal how the compiler handles increasingly sophisticated F# idioms - and more importantly, how Alloy's API design preserves familiar patterns while enabling native compilation.
+To understand how Composer transforms functional elegance into native efficiency, let's follow four variations of a simple "Hello World" program. Each version introduces new challenges that reveal how the compiler handles increasingly sophisticated [Clef language](https://clef-lang.com) idioms - and more importantly, how Alloy's API design preserves familiar patterns while enabling native compilation.
 
 ### Level 1: Direct Module Calls
 
@@ -81,7 +81,7 @@ func.func @main() -> i32 {
 }
 ```
 
-Each F# expression maps directly to MLIR operations. String literals become global constants with known lengths - the fat pointer representation (`!llvm.ptr` + `i64` length) appears even at this basic level.
+Each Clef expression maps directly to MLIR operations. String literals become global constants with known lengths - the fat pointer representation (`!llvm.ptr` + `i64` length) appears even at this basic level.
 
 ### Level 2: BCL-Sympathetic APIs
 
@@ -103,7 +103,7 @@ let main argv =
     0
 ```
 
-This is where Alloy's design philosophy becomes visible. Notice the API: `Console.Write`, `Console.ReadLine`, `Console.WriteLine` - these mirror the BCL's `System.Console` exactly. An F# developer glancing at this code might not even realize it's targeting native compilation. That familiarity is intentional.
+This is where Alloy's design philosophy becomes visible. Notice the API: `Console.Write`, `Console.ReadLine`, `Console.WriteLine` - these mirror the BCL's `System.Console` exactly. A Clef developer glancing at this code might not even realize it's targeting native compilation. That familiarity is intentional.
 
 The term "saturated" refers to function application: all arguments are provided at once, no partial application or currying. `Console.WriteLine $"Hello, {name}!"` is a single, fully-applied call. This matters for compilation because saturated calls map directly to function invocations without closure creation.
 
@@ -132,7 +132,7 @@ The compiler translates BCL-like syntax to native-compatible operations while pr
 
 ### Level 3: Pipelines and Native Types
 
-`03_HelloWorldHalfCurried.clef` introduces F#'s beloved pipeline operator alongside explicit native type usage:
+`03_HelloWorldHalfCurried.clef` introduces Clef's beloved pipeline operator alongside explicit native type usage:
 
 ```fsharp
 module Examples.HelloWorldHalfCurried
@@ -155,7 +155,7 @@ let main argv =
     0
 ```
 
-Two significant things happen here. First, the pipeline operator (`|>`) appears - F#'s signature syntax for flowing data through function chains. This is syntactic sugar for function application, but it represents idiomatic F# that any developer expects to work.
+Two significant things happen here. First, the pipeline operator (`|>`) appears - Clef's signature syntax for flowing data through function chains. This is syntactic sugar for function application, but it represents idiomatic Clef that any developer expects to work.
 
 Second, and more subtly, `NativeStr` appears explicitly in the type annotation. Where Level 2 hid the native types behind BCL-like APIs, Level 3 shows them directly. The `greet` function declares it takes a `NativeStr` - signaling to both the compiler and the reader that this code knows it's working with native representations.
 
@@ -178,11 +178,11 @@ func.func @hello() {
 }
 ```
 
-The pipeline compiles away entirely - it's just function calls in sequence. But the pattern validates that F#'s compositional style works with native types.
+The pipeline compiles away entirely - it's just function calls in sequence. But the pattern validates that Clef's compositional style works with native types.
 
 ### Level 4: Full Functional Flow
 
-The final version, `04_HelloWorldFullCurried.clef`, combines everything into idiomatic functional F#:
+The final version, `04_HelloWorldFullCurried.clef`, combines everything into idiomatic functional Clef:
 
 ```fsharp
 module Examples.HelloWorldFullCurried

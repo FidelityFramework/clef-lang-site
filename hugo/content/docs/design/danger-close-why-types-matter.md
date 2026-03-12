@@ -245,7 +245,7 @@ The integration of UMX with memory capabilities addresses multiple critical requ
 What makes Clef's units of measure exceptional is that they provide iron-clad safety with literally zero runtime cost. The compiler erases all unit information after types have been marshaled to the lowest level of compilation:
 
 ```fsharp
-// F# source with units - type safe at compile time
+// Clef source with units - type safe at compile time
 let calculatePower (voltage: float<volt>) (current: float<ampere>) : float<watt> =
     voltage * current
 ```

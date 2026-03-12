@@ -80,18 +80,18 @@ In mathematical terms, they show that a neural network is a morphism \(f: \mathc
 
 \[\text{Para}(\mathcal{P}) \xrightarrow{\text{forward}} \mathcal{L} \xrightarrow{\text{backward}} \text{Para}(\mathcal{P})\]
 
-Where \(\text{Para}\) is the parameterized category construction that enables gradient flow. This isn't just abstract mathematics; it's the precise structure that Fidelity implements through F#'s type system.
+Where \(\text{Para}\) is the parameterized category construction that enables gradient flow. This isn't just abstract mathematics; it's the precise structure that Fidelity implements through [the Clef language](https://clef-lang.com)'s type system.
 
-### Why F# Is the Natural Choice for This Domain
+### Why Clef Is the Natural Choice for This Domain
 
-Here's where F# reveals its unique power: it's not just another functional language; it's specifically architected to express exactly these kinds of higher-order mathematical structures while providing powerful tools for their expression. While OCaml provided F#'s functional foundation and Rust offers impressive type safety, F# has evolved unique capabilities that make it the ideal vehicle for implementing categorical deep learning:
+Here's where Clef reveals its unique power: it's not just another functional language; it's specifically architected to express exactly these kinds of higher-order mathematical structures while providing powerful tools for their expression. While OCaml provided F#'s functional foundation and Rust offers impressive type safety, Clef has evolved unique capabilities that make it the ideal vehicle for implementing categorical deep learning:
 
 #### Computation Expressions: Native Categorical Structures
 
-F#'s computation expressions aren't just syntactic sugar; they're a direct encoding of monadic and categorical patterns. Where other languages require complex type gymnastics to express categorical operations, F# makes them natural:
+Clef's computation expressions aren't just syntactic sugar; they're a direct encoding of monadic and categorical patterns. Where other languages require complex type gymnastics to express categorical operations, Clef makes them natural:
 
 ```fsharp
-// A 2-categorical morphism expressed naturally in F#
+// A 2-categorical morphism expressed naturally in Clef
 type NeuralMorphism<'Input, 'Hidden, 'Output> =
     categorical {
         // Computation expressions model the 2-category structure
@@ -110,7 +110,7 @@ type NeuralMorphism<'Input, 'Hidden, 'Output> =
 ```
 
 This directly implements the mathematical structure from the CDL paper where neural networks form a 2-category \(\mathbf{Learn}\) with:
-- Objects: Parameterized types (our F# types with measures)
+- Objects: Parameterized types (our Clef types with measures)
 - 1-morphisms: Learners (our typed functions)
 - 2-morphisms: Updates/reparameterizations (our gradient transformations)
 
@@ -118,7 +118,7 @@ This isn't possible in OCaml without extensive encoding, and Rust's ownership mo
 
 #### Units of Measure: Dimensional Analysis for Free
 
-F# goes beyond OCaml with zero-cost units of measure that naturally express the dimensional analysis inherent in physical simulations and neural architectures:
+Clef goes beyond OCaml with zero-cost units of measure that naturally express the dimensional analysis inherent in physical simulations and neural architectures:
 
 ```fsharp
 // Dimensional correctness in neural architectures
@@ -137,7 +137,7 @@ This dimensional typing ensures our categorical structures maintain physical and
 
 #### Type Providers: Bridging Abstract and Concrete
 
-F#'s type providers enable something remarkable: we can generate categorical structures from external schemas, making the abstract mathematics connect directly to real-world data:
+Clef's type providers enable something remarkable: we can generate categorical structures from external schemas, making the abstract mathematics connect directly to real-world data:
 
 ```fsharp
 // Type provider generates categorical structure from neural architecture
@@ -155,11 +155,11 @@ let categoricalModel =
 
 This capability becomes even more powerful when considering emerging standards like the [Hypergraph Interchange Format (HIF)](https://arxiv.org/html/2507.11520v1), which provides a unified JSON schema for higher-order network data.
 
-Our implementation of F#'s type providers could automatically ingest type-safe representations from HIF-compliant datasets, enabling seamless integration of complex relational data from co-authorship networks, chemical reactions, or biological interactions directly into HPC simulations and AI training pipelines. This could provide a considerable enabler for interchange of data and concepts among various academic disciplines and industry verticals.
+Our implementation of Clef's type providers could automatically ingest type-safe representations from HIF-compliant datasets, enabling seamless integration of complex relational data from co-authorship networks, chemical reactions, or biological interactions directly into HPC simulations and AI training pipelines. This could provide a considerable enabler for interchange of data and concepts among various academic disciplines and industry verticals.
 
 #### Active Patterns: Recognizing Categorical Structures
 
-F#'s active patterns let us recognize and destructure categorical patterns in ways that would require verbose visitor patterns in other languages:
+Clef's active patterns let us recognize and destructure categorical patterns in ways that would require verbose visitor patterns in other languages:
 
 ```fsharp
 // Recognize categorical patterns in neural networks
@@ -184,7 +184,7 @@ let optimize = function
 
 #### Quotations: Preserving Mathematical Semantics
 
-F#'s quotations preserve the mathematical structure of expressions, enabling us to analyze and transform categorical operations at compile time:
+Clef's quotations preserve the mathematical structure of expressions, enabling us to analyze and transform categorical operations at compile time:
 
 ```fsharp
 // Quotations preserve categorical structure for analysis
@@ -204,17 +204,17 @@ let optimizedMLIR = compileToMLIR structure
 
 #### Beyond Functional: The Engineering Bridge
 
-What sets F# apart is its pragmatic bridge to software engineering reality. We carefully and selectively extend that with specific design choices in the Fidelity framework:
+What sets Clef apart is its pragmatic bridge to software engineering reality. We carefully and selectively extend that with specific design choices in the Fidelity framework:
 
 1. **Shared Edges with .NET**: We have gone to great lengths to preserve F# idioms in our framework. By extension this will offer many "shared edges" with .NET based solutions, allowing teams currently using F# for machine learning and HPC workloads a gradual transition path with manageable source modifications, including pathways for implementing classical compute with higher integrity and efficiency.
 
-2. **Mutable Optimization**: When needed, F# allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive framework design](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) (now [absorbed into CCS](/docs/design/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
+2. **Mutable Optimization**: When needed, Clef allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive framework design](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) (now [absorbed into CCS](/docs/design/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
 
-3. **True Concurrency & Parallelism**: F#'s async expressions naturally model the parallel structure of categorical compositions, but as we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, Frosty transforms async computations into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
+3. **True Concurrency & Parallelism**: Clef's async expressions naturally model the parallel structure of categorical compositions, but as we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, Frosty transforms async computations into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
 
-4. **Interop Excellence**: Unlike Rust's complex FFI or OCaml's limited ecosystem, F# already provides frictionless interop with C/C++ libraries, but we've taken this further with our [Farscape CLI](https://speakez.tech/blog/the-farscape-bridge/) tool. As detailed in [Farscape's Modular Entry Points](https://speakez.tech/blog/farscape-modular-entry-points/), this goes beyond simple bindings; we can generate drop-in replacements for critical tools like OpenSSL that maintain perfect API compatibility while adding comprehensive safety. This means the vast ecosystem of HPC libraries--from PETSc for scientific computing to FFTW for signal processing--becomes immediately available with F#'s type safety. The categorical structures we're implementing don't exist in isolation; they seamlessly integrate with battle-tested numerical libraries that have been optimized over decades. No other functional language considers this combination: the ability to express 2-categorical morphisms while directly calling into the world's most optimized HPC kernels, all with compile-time safety guarantees and zero additional overhead.
+4. **Interop Excellence**: Unlike Rust's complex FFI or OCaml's limited ecosystem, Clef already provides frictionless interop with C/C++ libraries, but we've taken this further with our [Farscape CLI](https://speakez.tech/blog/the-farscape-bridge/) tool. As detailed in [Farscape's Modular Entry Points](https://speakez.tech/blog/farscape-modular-entry-points/), this goes beyond simple bindings; we can generate drop-in replacements for critical tools like OpenSSL that maintain perfect API compatibility while adding comprehensive safety. This means the vast ecosystem of HPC libraries--from PETSc for scientific computing to FFTW for signal processing--becomes immediately available with Clef's type safety. The categorical structures we're implementing don't exist in isolation; they seamlessly integrate with battle-tested numerical libraries that have been optimized over decades. No other functional language considers this combination: the ability to express 2-categorical morphisms while directly calling into the world's most optimized HPC kernels, all with compile-time safety guarantees and zero additional overhead.
 
-This is why F# isn't just a good choice for implementing categorical deep learning; it's the **only** language that combines the mathematical expressiveness to represent 2-categories naturally with the engineering capabilities to deploy them at scale. OCaml has the theory but lacks the ecosystem. Rust has the performance but fights the abstractions. Haskell has the categories but struggles with interop. Through close alignment to F# idioms and the unique power of the Composer compiler, the Fidelity framework uniquely and effectively bridges all these worlds.
+This is why Clef isn't just a good choice for implementing categorical deep learning; it's the **only** language that combines the mathematical expressiveness to represent 2-categories naturally with the engineering capabilities to deploy them at scale. OCaml has the theory but lacks the ecosystem. Rust has the performance but fights the abstractions. Haskell has the categories but struggles with interop. Through close alignment to F# idioms and the unique power of the Composer compiler, the Fidelity framework uniquely and effectively bridges all these worlds.
 
 ### Quantum Computing: The Natural Beneficiary
 
@@ -250,7 +250,7 @@ let quantumCategorical = categorical {
 
 This isn't "shoe-horning" quantum into our framework; the mathematical foundations of quantum mechanics **are** categorical. When physicists talk about unitarity, they're describing morphisms that compose with their adjoints to give identity. When they discuss entanglement, they're describing the monoidal structure of tensor products. The language of quantum mechanics IS the language of category theory.
 
-**The profound insight**: Our categorical foundation for unifying HPC and AI doesn't need modification for quantum; it already encompasses it. The same F# computation expressions that model neural network training can model quantum circuit evolution. The same proof systems that verify conservation laws can verify quantum unitarity. The same Universal numbers that handle HPC precision can handle quantum amplitudes. [Microsoft Research's own work to create the Q# language](https://johnazariah.github.io/2018/12/04/tale-of-two-languages.html) from F# is clear evidence of that natural alignment.
+**The profound insight**: Our categorical foundation for unifying HPC and AI doesn't need modification for quantum; it already encompasses it. The same Clef computation expressions that model neural network training can model quantum circuit evolution. The same proof systems that verify conservation laws can verify quantum unitarity. The same Universal numbers that handle HPC precision can handle quantum amplitudes. [Microsoft Research's own work to create the Q# language](https://johnazariah.github.io/2018/12/04/tale-of-two-languages.html) from F# is clear evidence of that natural alignment.
 
 This creates a unique opportunity. While others are building separate classical and quantum stacks, hoping to integrate them later, our categorical approach provides a **single unified framework** that naturally encompasses all four paradigms.
 
@@ -260,7 +260,7 @@ The Fidelity framework will be able to offer degrees of freedom by simply adding
 
 ### Implementing the Core Insight
 
-With F#'s unique capabilities established, we can now express the unified view directly:
+With Clef's unique capabilities established, we can now express the unified view directly:
 
 ```fsharp
 // The unified view: All computation as categorical morphisms
@@ -278,7 +278,7 @@ type UnifiedComputation<'Input, 'Output> = {
     Invariants: Set<CategoricalProperty>
 }
 
-// Idiomatic F# representation of the adjunction relationship
+// Idiomatic Clef representation of the adjunction relationship
 and AdjointPair<'Input, 'Output> = {
     // The unit of the adjunction: η: Id → G∘F
     Unit: 'Input -> 'Input
@@ -295,7 +295,7 @@ and AdjunctionProof =
     | UniversalProperty of bijection: Proof
     | Verified of certificate: Z3Certificate
 
-// For those who prefer mathematical notation, F# supports custom operators
+// For those who prefer mathematical notation, Clef supports custom operators
 let inline (⊣) forward backward =
     { Unit = fun x -> backward.Apply(forward.Apply x)
       Counit = fun y -> forward.Apply(backward.Apply y)
@@ -318,7 +318,7 @@ Where the forward pass \(\text{Fwd}_f\) and backward pass \(\text{Bwd}_f\) form 
 
 > The mathematics are identical. Only the ***substrate*** differs.
 
-This isn't just abstract mathematics; it's a practical blueprint for unification that F# can directly implement through its computation expressions, type providers, and quotation system. As we explored in our [Beyond Transformers](https://speakez.tech/blog/beyond-transformers/) work, the shift away from matrix multiplication opens the door to more fundamental representations. Category theory provides that representation, and F# provides the engineering vehicle.
+This isn't just abstract mathematics; it's a practical blueprint for unification that Clef can directly implement through its computation expressions, type providers, and quotation system. As we explored in our [Beyond Transformers](https://speakez.tech/blog/beyond-transformers/) work, the shift away from matrix multiplication opens the door to more fundamental representations. Category theory provides that representation, and Clef provides the engineering vehicle.
 
 ### Key CDL Principles Applied to HPC+AI
 
@@ -336,7 +336,7 @@ The CDL paper establishes four fundamental principles that Fidelity directly imp
 4. **Equivariance**: Symmetries in physics and neural architectures share mathematical roots
    \[\rho(g) \cdot f(x) = f(\rho(g) \cdot x) \quad \text{for all } g \in G\]
 
-These aren't separate implementations in Fidelity; they're different views of the same categorical structure encoded in our F# type system.
+These aren't separate implementations in Fidelity; they're different views of the same categorical structure encoded in our Clef type system.
 
 ## Universal Numbers: Solving the Numerical Problem
 
@@ -344,7 +344,7 @@ These aren't separate implementations in Fidelity; they're different views of th
 
 ### Posit Arithmetic: The Best of Both Worlds
 
-While Fidelity is firmly rooted in F#, the Universal Numbers library exists as optimized C++ code that we integrate through our compilation pipeline. This isn't a compromise; it's strategic. MLIR itself is implemented in C++, and when our F# code lowers through the compilation stack, it naturally interfaces with these high-performance numerical primitives:
+While Fidelity is firmly rooted in Clef, the Universal Numbers library exists as optimized C++ code that we integrate through our compilation pipeline. This isn't a compromise; it's strategic. MLIR itself is implemented in C++, and when our Clef code lowers through the compilation stack, it naturally interfaces with these high-performance numerical primitives:
 
 ```cpp
 // C++ Universal posit - perfect for both domains
@@ -356,9 +356,9 @@ class posit {
 };
 ```
 
-Think of this as the numerical "engine" that powers our type-safe F# abstractions. Just as you don't need to understand the assembly instructions your CPU executes, you interact with posits through F#'s elegant type system while the C++ implementation handles the bit-level arithmetic. The MLIR lowering strategy ensures this integration is seamless and efficient, with the C++ posit operations becoming direct hardware instructions rather than library calls.
+Think of this as the numerical "engine" that powers our type-safe Clef abstractions. Just as you don't need to understand the assembly instructions your CPU executes, you interact with posits through Clef's elegant type system while the C++ implementation handles the bit-level arithmetic. The MLIR lowering strategy ensures this integration is seamless and efficient, with the C++ posit operations becoming direct hardware instructions rather than library calls.
 
-### F# Type-Safe Integration
+### Clef Type-Safe Integration
 
 Building on our work with [discriminated unions](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/), we can create type-safe numerical representations that respect the categorical structure:
 
@@ -393,7 +393,7 @@ F* and Z3 provide the formal verification layer that makes the unified framework
 
 ### Proof-Carrying Code in the Hypergraph
 
-This abstract should be considered an advanced example, something that would be opt-in, going above and beyond the MISRA-C-class proofs that would ride along with most classical F# code in this framework. But it's an example of how extensible the framework can be when the use case calls for this level of specialization.
+This abstract should be considered an advanced example, something that would be opt-in, going above and beyond the MISRA-C-class proofs that would ride along with most classical Clef code in this framework. But it's an example of how extensible the framework can be when the use case calls for this level of specialization.
 
 ```fsharp
 // Hypergraph edges carry both algorithmic and numerical proofs
@@ -768,7 +768,7 @@ As we explored in our [post-transformer architectures](https://speakez.tech/blog
 
 ```fsharp
 module AutonomousVehicle =
-    // F# implementation with SMT verification annotations
+    // Clef implementation with SMT verification annotations
     [<SMT Requires("perception.Accuracy > 0.99 && perception.Latency < 10ms")>]
     [<SMT Ensures("forall obstacle in scene.Obstacles.
                   distance(cmd.Trajectory, obstacle) > safety_margin")>]
@@ -819,11 +819,11 @@ module AutonomousVehicle =
 
 ### Advanced Implementation Examples
 
-The following examples showcase the depth of verification possible within the Fidelity framework, though we emphasize these are forward-looking implementations that will evolve as we refine the integration between F#, F*, and our compilation pipeline. Importantly:
+The following examples showcase the depth of verification possible within the Fidelity framework, though we emphasize these are forward-looking implementations that will evolve as we refine the integration between Clef, F*, and our compilation pipeline. Importantly:
 
 > The extensive proof annotations shown here represent the ***maximum*** verification depth available, ***not* the minimum required**.
 
-The Fidelity framework embraces a "verification by choice" philosophy: most F# developers will write standard F# code with optional type safety features, adding verification attributes only where their domain demands it. A web application might use no proofs at all, a financial system might verify key invariants, while safety-critical aerospace systems could leverage the full depth shown below. This graduated approach means teams can adopt formal methods incrementally, starting with simple type safety and adding verification where the business value justifies the effort. The framework handles everything from casual scripting to the most stringent certification requirements, all within the same unified system.
+The Fidelity framework embraces a "verification by choice" philosophy: most Clef developers will write standard Clef code with optional type safety features, adding verification attributes only where their domain demands it. A web application might use no proofs at all, a financial system might verify key invariants, while safety-critical aerospace systems could leverage the full depth shown below. This graduated approach means teams can adopt formal methods incrementally, starting with simple type safety and adding verification where the business value justifies the effort. The framework handles everything from casual scripting to the most stringent certification requirements, all within the same unified system.
 
 #### Verified Fluid-Structure Interaction
 
@@ -837,7 +837,7 @@ module FluidStructureInteraction =
     type FluidNumber = Posit<32, 2>
     type StructureNumber = Posit<64, 3>  // Higher precision for structure
 
-    // F# implementation with SMT verification annotations
+    // Clef implementation with SMT verification annotations
     [<SMT Requires("compatible_interface(fluid, structure)")>]
     [<SMT Ensures("momentum_conserved(result.Fluid, result.Structure)")>]
     [<SMT Ensures("energy_conserved(result.Fluid, result.Structure)")>]
@@ -929,7 +929,7 @@ module QuantumChemistry =
         Variational: bool  // E_approx ≥ E_exact
     }
 
-    // F# implementation with SMT verification
+    // Clef implementation with SMT verification
     [<SMT Requires("molecule.IsValid && molecule.Electrons > 0")>]
     [<SMT Ensures("result.Energy >= exact_ground_state_energy(molecule)")>]
     [<SMT Ensures("abs(result.Energy - exact_energy) < 1e-6<Hartree>")>]
@@ -1018,7 +1018,7 @@ Building on our [discriminated unions exploration](https://speakez.tech/blog/dis
 module VerifiedKalmanFilter =
     open Universal.Posit
 
-    // F# implementation with SMT verification attributes
+    // Clef implementation with SMT verification attributes
     [<SMT Requires("positive_definite(state.Covariance)")>]
     [<SMT Ensures("positive_definite(result.Covariance)")>]
     [<SMT Ensures("result.Error <= state.Error + measurement.Noise")>]
@@ -1236,7 +1236,7 @@ This isn't a distant vision. The elements exist today:
 - **CDL** provides the theoretical underpinnings
 - **Universal** solves numerical challenges
 - **F\*/Z3** enables formal verification
-- **Fidelity** unifies the implementation through F#
+- **Fidelity** unifies the implementation through Clef
 
 Our journey considering designs toward this unified vision wasn't planned; it emerged naturally from solving real engineering problems. That these solutions align with deep mathematical principles gives us confidence we're on the right path.
 

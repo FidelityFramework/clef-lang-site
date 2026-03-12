@@ -230,7 +230,7 @@ The type system needs to see the concrete types at each call site to resolve whi
 
 ## Mandatory Inline Case 2: Escape Analysis (Memory Safety)
 
-From the fsnative specification:
+From the Clef specification:
 
 > "When a function allocates memory via `NativePtr.stackalloc` and returns a pointer, the pointer becomes invalid when the function returns (the stack frame is deallocated). Marking the function `inline` causes CCS to expand the function body at the call site, **lifting the allocation to the caller's frame**."
 

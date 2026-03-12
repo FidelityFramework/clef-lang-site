@@ -15,16 +15,16 @@ mlir_terms: ["MLIR", "optimization"]
 concepts: ["formal-verification", "type-safety", "embedded-systems"]
 ---
 
-Creating software with strong correctness guarantees has traditionally forced developers to choose between practical languages and formal verification. The Fidelity Framework aims to address this challenge through an integration of F# code, F* proofs, and MLIR's semantic dialects.
+Creating software with strong correctness guarantees has traditionally forced developers to choose between practical languages and formal verification. The Fidelity Framework aims to address this challenge through an integration of [Clef](https://clef-lang.com) code, F* proofs, and MLIR's semantic dialects.
 
 This essay explores how the Fidelity Framework builds upon the semantic verification foundations introduced in "First-Class Verification Dialects for MLIR" (Fehr et al., 2025) to create a unique pipeline designed to preserve formal verification from source code to optimized binary. The result would be a system that delivers both safety and performance, without requiring developers to become formal methods experts.
 
-## Making F* Verification Intentions Clear in F#
+## Making F* Verification Intentions Clear in Clef
 
-The journey begins with standard F# code, enhanced with verification annotations that express formal properties:
+The journey begins with standard Clef code, enhanced with verification annotations that express formal properties:
 
 ```fsharp
-// F# code with verification annotations
+// Clef code with verification annotations
 [<F* Requires("input >= 0 && input <= 100")>]
 [<F* Ensures("result >= 0 && result <= 10")>]
 let normalizeScore (input: int) : int =
@@ -33,7 +33,7 @@ let normalizeScore (input: int) : int =
     else input / 10
 ```
 
-These annotations express the developer's intent in a familiar F# syntax, while providing the information needed for formal verification. Developers continue working in F# rather than switching to specialized verification languages.
+These annotations express the developer's intent in a familiar Clef syntax, while providing the information needed for formal verification. Developers continue working in Clef rather than switching to specialized verification languages.
 
 For more complex verification scenarios, annotations can express sophisticated properties around memory safety:
 
@@ -63,7 +63,7 @@ type ImageData = {
 }
 ```
 
-What makes this approach compelling is its "pre-optimization" approach—memory layout decisions are made at the F# level, where more semantic information is available, rather than being deferred to later compilation stages. This aims to transform what would normally be an analysis problem into a mapping exercise:
+What makes this approach compelling is its "pre-optimization" approach—memory layout decisions are made at the Clef level, where more semantic information is available, rather than being deferred to later compilation stages. This aims to transform what would normally be an analysis problem into a mapping exercise:
 
 ```fsharp
 // Layout definition with explicit memory configuration
@@ -77,7 +77,7 @@ type ImageBuffer = {
 }
 ```
 
-This explicit memory layout would become a critical enabler for verification by making memory access patterns explicit and verifiable, eliminating abstraction gaps between high-level F# structures and low-level memory layouts, and supporting platform-specific verification tailored to hardware constraints.
+This explicit memory layout would become a critical enabler for verification by making memory access patterns explicit and verifiable, eliminating abstraction gaps between high-level Clef structures and low-level memory layouts, and supporting platform-specific verification tailored to hardware constraints.
 
 ## F* Proof Generation: Automated Verification
 
@@ -96,7 +96,7 @@ module Generated
       else input / 10
 ```
 
-This translation layer is key to the Fidelity approach—developers would never need to write F* code directly. Instead, the framework performs a source-to-source transformation that preserves the original F# logic while adding the dependent types and verification conditions that F* can process.
+This translation layer is key to the Fidelity approach—developers would never need to write F* code directly. Instead, the framework performs a source-to-source transformation that preserves the original Clef logic while adding the dependent types and verification conditions that F* can process.
 
 For memory safety verification with defined layouts, the translation becomes even more powerful:
 
@@ -140,7 +140,7 @@ let parseLayout =
 ```
 
 XParsec is designed to enable the Fidelity Framework to:
-1. Parse F# code with layout and verification annotations
+1. Parse Clef code with layout and verification annotations
 2. Extract memory layout information
 3. Generate corresponding F* verification conditions
 4. Ensure verification properties are preserved in the MLIR translation
@@ -271,7 +271,7 @@ This enables verification that is sensitive to platform-specific memory constrai
 The integration of memory layout definitions with verification creates a powerful system for ensuring memory safety. When combined with the SMT dialect, this enables verification of memory access patterns:
 
 ```fsharp
-// F# code with memory layout and verification
+// Clef code with memory layout and verification
 [<Layout>]
 type ImageBuffer = {
     Width: UInt32
@@ -341,10 +341,10 @@ Through verification, the compiler could prove that all calls to `getElement` ar
 
 ## Example: Verified Image Processing
 
-Let's examine a complete example showing how the Fidelity Framework integrates F# annotations, memory layouts, F* verification, and MLIR SMT dialect for a verified image processing function:
+Let's examine a complete example showing how the Fidelity Framework integrates Clef annotations, memory layouts, F* verification, and MLIR SMT dialect for a verified image processing function:
 
 ```fsharp
-// F# implementation with verification annotations
+// Clef implementation with verification annotations
 [<F* Requires("src.Width = dst.Width && src.Height = dst.Height")>]
 [<F* Ensures("forall (x, y) in (0..src.Width-1, 0..src.Height-1). 
            dst.GetPixel(x, y) = byte(min 255 (2 * int(src.GetPixel(x, y)))))")>]
@@ -370,7 +370,7 @@ module Generated
                 (dst.get_pixel x y = min 255 (2 * src.get_pixel x y)))))
     = requires (src.width = dst.width && src.height = dst.height)
       
-      // Implementation is translated from F#
+      // Implementation is translated from Clef
       for y in 0 .. (src.height - 1) do
         for x in 0 .. (src.width - 1) do
           let pixel = src.get_pixel x y in
@@ -429,7 +429,7 @@ Through optimization and lowering, the SMT dialect ensures that the verification
 
 The Fidelity Framework's integrated approach to verification offers several key advantages:
 
-1. **Developer Experience**: Developers work in F# with simple annotations, not specialized verification languages
+1. **Developer Experience**: Developers work in Clef with simple annotations, not specialized verification languages
 2. **Compilation-Time Verification**: All verification happens during compilation, not at runtime
 3. **Verification-Preserving Optimization**: Optimizations are verified to preserve proven properties
 4. **Zero-Cost Verification**: No runtime overhead for verification in the final binary
@@ -440,11 +440,11 @@ This approach is enabled by the combination of F*'s dependent type system, pre-o
 
 ## Toward Auto-Generated Verification
 
-While the annotation-based approach described in this article makes verification more accessible, our longer-term vision is even more ambitious: a truly idiomatic F# development experience where verification annotations are automatically generated rather than manually written by developers.
+While the annotation-based approach described in this article makes verification more accessible, our longer-term vision is even more ambitious: a truly idiomatic Clef development experience where verification annotations are automatically generated rather than manually written by developers.
 
 The explicit annotations shown throughout this article serve to elucidate the verification concepts, but they aren't necessarily the end-state developer experience we envision. The Fidelity Framework is designed with this evolution in mind, leveraging several key capabilities:
 
-1. **Pattern Recognition**: XParsec's advanced parsing capabilities can identify common F# code patterns that imply verification properties
+1. **Pattern Recognition**: XParsec's advanced parsing capabilities can identify common Clef code patterns that imply verification properties
 2. **Memory Layout Inference**: Layout definitions contain rich type information that can be analyzed to automatically generate safety properties
 3. **Contextual Verification**: Many verification conditions can be derived from the context in which functions are used
 
@@ -463,12 +463,12 @@ Already contains the necessary information to infer memory safety properties for
 
 This capability bring us to our track for building professional development tooling. We have plans for Visual Studio Code and JetBrains Rider extensions that:
 
-1. Automatically generates F* verification conditions from idiomatic F# code
+1. Automatically generates F* verification conditions from idiomatic Clef code
 2. Provides real-time visualization of verification results as developers write code
 3. Offers intelligent suggestions to make code verifiable when issues are detected
-4. Maintains traceability between F# code, F* proofs, and MLIR representations
+4. Maintains traceability between Clef code, F* proofs, and MLIR representations
 
-Such tooling would preserve the clean, idiomatic F# development experience while adding the power of formal verification without requiring developers to learn F* or write verbose annotations. This represents our vision for the future of verified programming: one where verification becomes an invisible yet powerful part of everyday development, rather than a specialized activity requiring formal methods expertise. It would be a true force multiplier for development teams and enable degrees of freedom in targeting an ever-wider array of hardware and systems.
+Such tooling would preserve the clean, idiomatic Clef development experience while adding the power of formal verification without requiring developers to learn F* or write verbose annotations. This represents our vision for the future of verified programming: one where verification becomes an invisible yet powerful part of everyday development, rather than a specialized activity requiring formal methods expertise. It would be a true force multiplier for development teams and enable degrees of freedom in targeting an ever-wider array of hardware and systems.
 
 ## Patent-Pending Innovation
 
@@ -480,7 +480,7 @@ The patent-pending technology enables a new approach to hardware/software co-des
 
 ## The Future of Verified Programming
 
-The integration of F#, memory layouts, F* verification, and MLIR in the Fidelity Framework represents a significant advance in making formal verification practical for everyday development. By elevating memory layout to a first-class concept that can be explicitly defined, optimized, and verified at the source level, the framework eliminates a major source of complexity in the verification process.
+The integration of Clef, memory layouts, F* verification, and MLIR in the Fidelity Framework represents a significant advance in making formal verification practical for everyday development. By elevating memory layout to a first-class concept that can be explicitly defined, optimized, and verified at the source level, the framework eliminates a major source of complexity in the verification process.
 
 This approach not only simplifies verification but makes it more powerful, enabling strong guarantees about memory safety, alignment, and access patterns that would be difficult or impossible to achieve in traditional verification systems. The result would be a system that delivers both safety and performance without requiring developers to become formal methods experts.
 

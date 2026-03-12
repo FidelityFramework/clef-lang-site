@@ -54,7 +54,7 @@ The Fidelity Framework includes several key libraries for concurrency, which we'
 CCS, drawing on principles from the elegant fsil library for automatic inlining of Clef select functions within .NET, provides native static resolution of functions and types as compiler intrinsics:
 
 ```fsharp
-// Regular F# function that CCS automatically optimizes
+// Regular Clef function that CCS automatically optimizes
 let processData (items: 'T[]) =
     items |> Array.map transformItem |> Array.sum
 // No explicit inline keyword needed
@@ -310,7 +310,7 @@ Alex handles the critical transformation of Clef code into MLIR operations withi
 // You never need to interact with this directly
 // It's part of the compilation pipeline
 let mlirTransform = mlir {
-    // F# async/task code gets transformed to MLIR operations
+    // Clef async/task code gets transformed to MLIR operations
     // These are then lowered through MLIR dialects and ultimately to machine code
     yield MLIRPrimitives.async_execute
     yield MLIRPrimitives.coroutine_suspend

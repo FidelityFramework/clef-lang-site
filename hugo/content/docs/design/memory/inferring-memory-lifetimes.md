@@ -350,9 +350,9 @@ We've completed Level 3. The Arena intrinsic is fully functional:
 - Layout specification: `NTUCompound(3)` - Base pointer, Capacity, Position
 - Full operation set: `fromPointer`, `alloc`, `allocAligned`, `remaining`, `reset`
 - Correct handling of byref parameter passing
-- Integration with FNCS type system
+- Integration with CCS type system
 
-The Arena type was originally designed in BAREWire for binary serialization scenarios but was elevated to an FNCS intrinsic when we recognized its broader applicability. This is the standing art pattern in action: a well-designed capability finding new application.
+The Arena type was originally designed in BAREWire for binary serialization scenarios but was elevated to a CCS intrinsic when we recognized its broader applicability. This is the standing art pattern in action: a well-designed capability finding new application.
 
 The path to Level 2 is clear:
 

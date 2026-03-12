@@ -17,7 +17,7 @@ params:
 > design work on the Fidelity Framework. It has been updated to reflect
 > the Clef language naming and current project structure.
 
-When we set out to build Composer, we faced a fundamental question that cuts to the heart of functional systems programming: how far down the compilation stack can we preserve the elegant abstractions that make F# powerful? Specifically, can delimited continuations - the theoretical foundation for async/await, generators, and algebraic effects - survive the journey from high-level Clef through MLIR's SSA form to executable code? And perhaps more importantly, should they?
+When we set out to build Composer, we faced a fundamental question that cuts to the heart of functional systems programming: how far down the compilation stack can we preserve the elegant abstractions that make [the Clef language](https://clef-lang.com) powerful? Specifically, can delimited continuations - the theoretical foundation for async/await, generators, and algebraic effects - survive the journey from high-level Clef through MLIR's SSA form to executable code? And perhaps more importantly, should they?
 
 This isn't just an academic exercise. The answer determines whether we can build truly functional device drivers, whether async code can run without heap allocation, and whether Clef can genuinely compete with C for embedded systems. It's a question that forces us to confront the tension between abstraction and performance, between mathematical elegance and hardware reality.
 

@@ -42,7 +42,7 @@ Functional programming languages offer something different: they encourage progr
 
 ## Program Semantic Graph as Optimizer
 
-Our original concept for the Program Semantic Graph was to create a form of "glue" layer between the various components in the symbolic and typed representations that F# Compiler Services produce. The goal of Fidelity framework (and indeed the reason for the framework's name) is to preserve types through compilation. This key precept spans everything from physics-aware calculations to memory layout for rapid zero-copy mechanics between computation units. The "tree shaking" that we perform to eliminate unused code from library source code means that only the necessary code is involved in compilation. This in itself is a form of optimization. Since we're not bound to .NET's (or java's) assembly method of application component inclusion we can build lean binaries. The PS²G is the final result of that "reachability analysis" in the computation graph that is then transformed to MLIR's front end.
+Our original concept for the Program Semantic Graph was to create a form of "glue" layer between the various components in the symbolic and typed representations that [Clef Compiler Services](https://clef-lang.com) (CCS) produce. The goal of Fidelity framework (and indeed the reason for the framework's name) is to preserve types through compilation. This key precept spans everything from physics-aware calculations to memory layout for rapid zero-copy mechanics between computation units. The "tree shaking" that we perform to eliminate unused code from library source code means that only the necessary code is involved in compilation. This in itself is a form of optimization. Since we're not bound to .NET's (or java's) assembly method of application component inclusion we can build lean binaries. The PS²G is the final result of that "reachability analysis" in the computation graph that is then transformed to MLIR's front end.
 
 But in that process we *also* found this key opportunity to optimize the compilation process from a developer perspective. With all of this symbolic and semantic information we could use that to find "natural boundaries" in code that would help to shape *how* the compiler could organize units of compilation, and make the build-over-build ergonomics of working in the Fidelity framework much better for the developer.
 
@@ -91,7 +91,7 @@ type SemanticUnit =
     | TypeCluster of FSharpEntity list
 ```
 
-As the PS²G is constructed from F# source code, it preserves the rich type information and functional programming patterns that exist in the original source. Module boundaries become first-class entities in the graph. Function composition chains become visible as connected subgraphs. Data transformation pipelines emerge as clear patterns that can be analyzed and optimized as units.
+As the PS²G is constructed from Clef source code, it preserves the rich type information and functional programming patterns that exist in the original source. Module boundaries become first-class entities in the graph. Function composition chains become visible as connected subgraphs. Data transformation pipelines emerge as clear patterns that can be analyzed and optimized as units.
 
 ## Coupling Analysis
 

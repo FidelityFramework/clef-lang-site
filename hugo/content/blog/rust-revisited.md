@@ -57,7 +57,7 @@ This creates cascading challenges:
 
 ### Clef's Unified Foundation
 
-F# has maintained a single async model since 2007, predating most language async implementations:
+[The Clef language](https://clef-lang.com) has maintained a single async model since 2007, predating most language async implementations:
 
 ```fsharp
 // Consistent async model across all contexts

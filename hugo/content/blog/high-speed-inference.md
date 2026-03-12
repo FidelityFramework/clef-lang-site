@@ -140,9 +140,9 @@ let setupDistributedInference (nodes: NetworkEndpoint list) =
     DistributedPipeline.create connections
 ```
 
-## Physics-Aware Models with F# Units of Measure
+## Physics-Aware Models with Clef Units of Measure
 
-One of the most powerful advantages of F# for inference is its zero-cost units of measure system, enabling physics-aware models that maintain dimensional correctness:
+One of the most powerful advantages of [the Clef language](https://clef-lang.com) for inference is its zero-cost units of measure system, enabling physics-aware models that maintain dimensional correctness:
 
 ```fsharp
 // Physical units for sensor fusion
@@ -161,7 +161,7 @@ One of the most powerful advantages of F# for inference is its zero-cost units o
 [<Measure>] type J = N m
 [<Measure>] type W = J / s
 
-// Non-numeric units using F# UMX
+// Non-numeric units using Clef UMX
 type [<Measure>] USD
 type [<Measure>] EUR
 type [<Measure>] BTC
@@ -638,7 +638,7 @@ The enablers of this transformation should include:
 
 1. **Discriminated Unions**: Enabling natural data structure representation of heterogeneous architectures
 2. **Zero-Copy Operations**: BAREWire potentially eliminating data movement overhead with zero-copy and efficient IPC
-3. **Physics-Aware Types**: F# UMX providing correctness guarantees at a "zero-cost" as types are erased at compile time
+3. **Physics-Aware Types**: Clef UMX providing correctness guarantees at a "zero-cost" as types are erased at compile time
 4. **Distributed Execution**: RDMA/RoCE enabling seamless scale-out with planned support for a variety of protocols and standards
 5. **Automated Conversion**: Furnace transforming existing models using world-class auto-differentiation and transformation tooling
 

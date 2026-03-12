@@ -27,7 +27,7 @@ The Fidelity Framework represents a fundamental rethinking of this dichotomy. Bu
 
 ## Compilation Without Compromise
 
-At its heart, Fidelity consists of a direct compilation pathway from Clef source code to native executables through the MLIR (Multi-Level Intermediate Representation) and, at least in early iterations, to the LLVM back end. Where Rust compiles directly to LLVM IR, Fidelity routes through MLIR to eventually access a broader range of targets: GPUs and AI accelerators, microcontrollers, FPGAs, CGRAs, and traditional CPUs. This approach shares philosophical similarities with Rust's compilation model, but with a focus on functional programming paradigms, stronger type-based guarantees, and hardware diversity, all while preserving F#'s coherent design-time ergonomics of "Python in a three piece suit".
+At its heart, Fidelity consists of a direct compilation pathway from Clef source code to native executables through the MLIR (Multi-Level Intermediate Representation) and, at least in early iterations, to the LLVM back end. Where Rust compiles directly to LLVM IR, Fidelity routes through MLIR to eventually access a broader range of targets: GPUs and AI accelerators, microcontrollers, FPGAs, CGRAs, and traditional CPUs. This approach shares philosophical similarities with Rust's compilation model, but with a focus on functional programming paradigms, stronger type-based guarantees, and hardware diversity, all while preserving [the Clef language](https://clef-lang.com)'s coherent design-time ergonomics of "Python in a three piece suit".
 
 ```mermaid
 flowchart TB
@@ -72,7 +72,7 @@ The type system is where Fidelity aims to distinguish itself. By preserving the 
 
 ### Static Dimensions via Type-Level Programming
 
-Similar to how Rust encodes constraints in its type system, Fidelity uses F#'s unit of measure system to encode dimensions and constraints at the type level, with these constraints preserved through to native code:
+Similar to how Rust encodes constraints in its type system, Fidelity uses Clef's unit of measure system to encode dimensions and constraints at the type level, with these constraints preserved through to native code:
 
 ```fsharp
 // A vector with statically known dimension
@@ -136,7 +136,7 @@ let hello() =
     Console.writeln $"Hello, {name}!"
 ```
 
-This code looks identical to standard F#, but compiles to direct system calls with stack-based string handling. The `Console.readln()` returns a `NativeStr` (a 16-byte fat pointer), and the interpolated string formats into a stack buffer, with no garbage collector involvement, no heap allocations.
+This code looks identical to standard Clef, but compiles to direct system calls with stack-based string handling. The `Console.readln()` returns a `NativeStr` (a 16-byte fat pointer), and the interpolated string formats into a stack buffer, with no garbage collector involvement, no heap allocations.
 
 For .NET developers, this preserves the familiar mental model while enabling native compilation. For systems programmers, it provides high-level APIs without sacrificing control over memory layout and allocation strategy.
 
@@ -258,7 +258,7 @@ let encrypt (key: byte[]<keyBytes>) (iv: byte[]<ivBytes>) (plaintext: byte[]) =
     AesGcm.encrypt key iv plaintext
 ```
 
-Farscape leverages F#'s meta-programming capabilities, the same statically resolved type parameters (SRTPs) that power CCS intrinsics, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
+Farscape leverages Clef's meta-programming capabilities, the same statically resolved type parameters (SRTPs) that power CCS intrinsics, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
 
 This opens a path for .NET developers to access the broader native ecosystem without sacrificing safety. AI accelerator SDKs, post-quantum cryptography implementations, high-performance database drivers: all could become accessible through type-safe Clef APIs that perform identically to hand-written C bindings.
 

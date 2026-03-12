@@ -20,9 +20,9 @@ Gerard Huet's [1997 paper](https://www.st.cs.uni-saarland.de/edu/seminare/2005/a
 
 For the .NET developer, the "floor" of abstraction is often the Intermediate Language (IL). You trust the JIT to handle the messy details of memory and registers. For the Rust or Go developer, you are accustomed to seeing the metal, but often at the cost of the expressiveness that functional programming offers.
 
-Composer seeks to lower that floor while keeping the ceiling high. SpeakEZ Technologies has take a view to bring the rich, expressive syntax of F#, with its pattern matching, higher-order functions (HOFs), and discriminated unions, and translate it into a representation that is not just "executable," but semantically complete. The Fidelity framework is the embodiment of the belief that the future of computing is not just 'full stack', but ***multi-stack***.
+Composer seeks to lower that floor while keeping the ceiling high. SpeakEZ Technologies has take a view to bring the rich, expressive syntax of [the Clef language](https://clef-lang.com), with its pattern matching, higher-order functions (HOFs), and discriminated unions, and translate it into a representation that is not just "executable," but semantically complete. The Fidelity framework is the embodiment of the belief that the future of computing is not just 'full stack', but ***multi-stack***.
 
-And the development of the Baker component within the Composer compiler exemplifies a progression tied to our vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the F# abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**; it applies semantic meaning using a model of Recipes and Ingredients.
+And the development of the Baker component within the Composer compiler exemplifies a progression tied to our vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the Clef abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**; it applies semantic meaning using a model of Recipes and Ingredients.
 
 ## The Landscape: Elaboration and Saturation
 
@@ -60,7 +60,7 @@ Before Baker even wakes up, our **Elaboration** nanopasses have already run. The
 
 ## The Nanopass Infrastructure
 
-One of the major architectural decisions that have led to many hard-forked projects in the F# ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs and while it serves its purpose it also means that "piercing the veil" is very difficult. Instead, we use a **nanopass infrastructure**, which is more stratified, more testable and easier to reason through the pipeline. This approach allows us to write focused transformations that are direct to reason about and much easier to test.
+One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs and while it serves its purpose it also means that "piercing the veil" is very difficult. Instead, we use a **nanopass infrastructure**, which is more stratified, more testable and easier to reason through the pipeline. This approach allows us to write focused transformations that are direct to reason about and much easier to test.
 
 Baker executes within the PSGSaturation stage using a **Fan-Out / Fold-In** pattern:
 
