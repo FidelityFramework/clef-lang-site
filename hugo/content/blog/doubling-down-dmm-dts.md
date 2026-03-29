@@ -2,7 +2,6 @@
 title: "Doubling Down on DMM and DTS"
 linkTitle: "DMM and DTS"
 description: "How the Fidelity Framework Enables Hardware/Software Co-design in a Multi-stack World"
-weight: 10
 date: 2026-01-23
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
