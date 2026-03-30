@@ -21,9 +21,7 @@ The computing industry stands at a fascinating juncture in 2025. After decades o
 
 Before diving into the LISP machine story, consider a striking historical parallel: the rise, fall, and resurrection of electric vehicles. In the late 1890s and early 1900s, electric cars weren't just viable; they dominated. By 1900, electric vehicles held the land speed record. In 1912 United States, 38% of automobiles were powered by electricity, with over 33,000 electric cars registered. They were the preferred choice of well-heeled urban customers, featuring luxurious interiors and sophisticated engineering.
 
-{{< img-caption "/images/blog/The_Employment_of_Women_on_the_Home_Front,_1914-1918_Q27982.jpg" "The Employment of Woment on the Home Front" >}}
-An employee of the Great Eastern Railway Company driving a battery-powered rail parcel truck somewhere in Britain c. 1914-1918 [Wikipedia]
-{{< /img-caption >}}
+{{< figure src="/images/blog/The_Employment_of_Women_on_the_Home_Front,_1914-1918_Q27982.jpg" caption="An employee of the Great Eastern Railway Company driving a battery-powered rail parcel truck somewhere in Britain c. 1914-1918 [Wikipedia]" >}}
 
 Yet by 1920, electric vehicles had virtually vanished from the market. The culprits? Henry Ford's mass-produced Model T cost three times less than a typical electric car. Gasoline's energy density provided 20-30 times the range. The electric starter eliminated hand-cranking, removing one of electric's key advantages. Infrastructure development favored gasoline distribution over electrical grids.
 
@@ -37,9 +35,7 @@ This phoenix pattern; where superior but economically disadvantaged technologies
 
 To understand where we're heading, we must first appreciate where we've been. In the 1980s, LISP wasn't just another programming language, it was *the* language of artificial intelligence. From MIT's AI Lab to Stanford's Knowledge Systems Laboratory, if you were working on AI, you were almost certainly working in LISP.
 
-{{< img-caption "/images/blog/LISP_machine_ux1200.jpg" "The Employment of Woment on the Home Front" >}}
-[The UX-1200 board from Symbolics](http://www.sun3zoo.de/en/lispboard.html). It could be plugged into a Sun VME-Bus Server. Each Lisp machine (a Sun could host up to five) needed a "world", which contained their files and programs. From the outside view this is a (300 MB and more) file.
-{{< /img-caption >}}
+{{< figure src="/images/blog/LISP_machine_ux1200.jpg" caption="[The UX-1200 board from Symbolics](http://www.sun3zoo.de/en/lispboard.html). It could be plugged into a Sun VME-Bus Server. Each Lisp machine (a Sun could host up to five) needed a \"world\", which contained their files and programs. From the outside view this is a (300 MB and more) file." >}}
 
 The dominance was staggering. By the mid-1980s, the AI industry had grown to over $1 billion annually (before adjustment for inflation), with LISP machines representing a significant portion of that market. Companies like Symbolics, LISP Machines Inc. (LMI), Texas Instruments, and Xerox commanded premium prices for their specialized hardware. A single Symbolics 3600 workstation cost $70,000-80,000 in 1983 (approximately $240,000 in 2024 dollars), yet research labs and corporations eagerly paid these prices.
 
@@ -107,9 +103,7 @@ The emergence of neuromorphic architectures represents perhaps the most radical 
 
 This spike-based computing paradigm achieves remarkable efficiency for specific workloads; Intel has demonstrated solving optimization problems 50 times faster and with 100 times less energy than conventional CPUs. The architecture excels at tasks requiring adaptation and learning, from odor recognition to robotic control, processing sensory data streams with latencies measured in microseconds.
 
-{{< img-caption "/images/blog/Loihi-2-transparent-with-die.png" "Intel Loihi 2 neuromorphic processor" >}}
-The Intel Loihi 2's exposed die reveals its 128 neuromorphic cores arranged in a mesh topology, each containing up to 8,192 neurons that communicate through 'synaptic' connections.
-{{< /img-caption >}}
+{{< figure src="/images/blog/Loihi-2-transparent-with-die.png" caption="The Intel Loihi 2's exposed die reveals its 128 neuromorphic cores arranged in a mesh topology, each containing up to 8,192 neurons that communicate through 'synaptic' connections." >}}
 
 There are many other designs that are at various stages of development. The Fraunhofer EMFT, working within the EU project NeurONN, is developing neurologically inspired computer architectures using novel 2D materials for memristor applications that are up to 330 times more efficient than current technologies in terms of switching speed, lifetime and energy consumption. [15] These neuromorphic systems encode information through coupled oscillating elements, mimicking the distributed computing and storage of biological neural networks; a vision that would have seemed familiar to LISP machine architects, who understood computation as graph transformation decades before the current echelon of advanced processors.
 

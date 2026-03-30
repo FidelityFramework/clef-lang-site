@@ -155,7 +155,7 @@ Where traditional quantum computing approaches provide statistical confidence ab
 
 The Program Hypergraph's flexible architecture enables targeting multiple quantum backends while preserving verification guarantees:
 
-{{< mermaid >}}
+```mermaid
 flowchart TD
 subgraph "Fidelity Frontend"
 PHG[Program Hypergraph<br/>Multi-way relationships preserved]
@@ -187,7 +187,7 @@ subgraph "Memory Integration"
 end
 
 style PHG fill:#f2aa72,stroke:#4f2607,stroke-width:3px
-{{< /mermaid >}}
+```
 
 ## Real-World Scenario: Financial Risk with Verified Computation
 

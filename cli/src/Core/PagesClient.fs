@@ -264,36 +264,35 @@ module PagesClient =
                 | ex -> return Error $"Failed to get project: {ex.Message}"
             }
 
-        /// Check if project exists
+        /// Check if project exists via direct API call (avoids deserialization issues in typed client)
         member this.ProjectExists(projectName: string) : Async<bool> =
             async {
                 try
-                    let! result = this.GetProject(projectName)
-                    match result with
-                    | Ok (Some _) -> return true
-                    | _ -> return false
+                    let url = $"https://api.cloudflare.com/client/v4/accounts/{accountId}/pages/projects/{projectName}"
+                    let! response = httpClient.GetAsync(url) |> Async.AwaitTask
+                    return response.IsSuccessStatusCode
                 with
                 | _ -> return false
             }
 
-        /// Create a new Pages project
+        /// Create a new Pages project via direct API call
         member this.CreateProject(projectName: string, productionBranch: string) : Async<Result<unit, string>> =
             async {
                 try
-                    let payload = PagesProjectCreateProjectPayload.Create(projectName, productionBranch)
-                    let! result = client.PagesProjectCreateProject(accountId, payload)
-                    match result with
-                    | PagesProjectCreateProject.OK response ->
-                        if response.success then
+                    let url = $"https://api.cloudflare.com/client/v4/accounts/{accountId}/pages/projects"
+                    let payload = sprintf """{"name":"%s","production_branch":"%s"}""" projectName productionBranch
+                    use content = new StringContent(payload, Encoding.UTF8, "application/json")
+                    let! response = httpClient.PostAsync(url, content) |> Async.AwaitTask
+                    let! responseBody = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+
+                    if response.IsSuccessStatusCode then
+                        return Ok ()
+                    else
+                        // Check if it's an "already exists" error — treat as success
+                        if responseBody.Contains("already exists") || responseBody.Contains("duplicates") then
                             return Ok ()
                         else
-                            let errorMsg =
-                                response.errors
-                                |> List.map (fun e -> e.message)
-                                |> String.concat "; "
-                            return Error $"Failed to create project: {errorMsg}"
-                    | PagesProjectCreateProject.BadRequest failure ->
-                        return Error $"Failed to create project: {failure.errors}"
+                            return Error $"Failed to create project: {responseBody}"
                 with
                 | ex -> return Error $"Failed to create project: {ex.Message}"
             }

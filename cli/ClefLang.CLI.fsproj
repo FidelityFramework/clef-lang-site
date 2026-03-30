@@ -33,6 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fidelity.CloudEdge.Management" Version="0.1.7" />
+    <PackageReference Include="Fidelity.CloudEdge.Management" Version="0.1.11" />
   </ItemGroup>
 </Project>

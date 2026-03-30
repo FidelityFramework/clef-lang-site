@@ -110,7 +110,7 @@ let updateNeuron (neuron: TernarySpikingNeuron) (input: float32) =
             Potential = newPotential }
 ```
 
-{{< mermaid >}}
+```mermaid
 stateDiagram-v2
     Silent --> Active: Potential > θ_active
     Active --> Spiking: Potential > θ_fire
@@ -118,7 +118,7 @@ stateDiagram-v2
     Active --> Silent: Leak below θ_active
     Silent --> Silent: Remain near rest
     Active --> Active: Integrate inputs
-{{< /mermaid >}}
+```
 
 ## Breaking the Backpropagation Dependency
 

@@ -21,7 +21,7 @@ The streaming question sits at the heart of systems programming. When data flows
 
 Rust made its choice early: ownership and borrowing, enforced at compile time, with a single memory model baked into the language. This decision has served millions of developers well. It has also created constraints that become visible when targeting the heterogeneous compute landscape emerging in 2026 and beyond.
 
-{{< youtube id="1iPWt1gvT_w" >}}
+{{< youtube 1iPWt1gvT_w >}}
 
 James Faure's analysis of Rust's architectural decisions raises questions worth examining. His critique of the borrow checker's complexity is well-founded, though his proposed solutions remain speculative. What interests us here is the underlying problem: how should a systems language handle streaming when the hardware landscape includes not just CPUs, but CGRAs, NPUs, FPGAs, and spatial dataflow accelerators?
 
