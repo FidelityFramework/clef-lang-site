@@ -59,7 +59,7 @@ let lift_force   = aircraft_mass * gravitational_acc * load_factor
 
 let shear_stress = lift_force / wing_spar_area
 // inferred: float<Pa>, range [490500, 706380000]
-
+ 
 ```
 
 The compiler propagates the ranges through the arithmetic. Multiplication of intervals multiplies the endpoints (with appropriate handling of signs). Division divides with the corresponding endpoint pairing. At the output, the computed range of `shear_stress` is [490500, 706380000]. The declared yield strength is \(2.7 \times 10^8\) Pa. The upper bound of the computed range (\(7.06 \times 10^8\)) exceeds the yield strength.
