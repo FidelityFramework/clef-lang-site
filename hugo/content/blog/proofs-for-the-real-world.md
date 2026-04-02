@@ -38,9 +38,9 @@ open Fidelity.Physics
 let gravitational_acc = 9.81<m * s^-2>
 let yield_strength    = 2.7e8<Pa>     // aluminum 7075-T6
 
-let aircraft_mass     = Range(5000.0<kg>, 80000.0<kg>)
-let load_factor       = Range(1.0, 9.0)
-let wing_spar_area    = Range(0.01<m^2>, 0.1<m^2>)
+let aircraft_mass  = (5000.0<kg>, 80000.0<kg>)
+let load_factor    = (1.0, 9.0)
+let wing_spar_area = (0.01<m^2>, 0.1<m^2>)
 ```
 
 The computation graph encodes the physics:
@@ -88,10 +88,10 @@ let confidence_z     = 2.326        // 99th percentile
 let regulatory_limit = 5.0e7<USD>   // Tier 1 capital
 
 // Portfolio-specific operating ranges
-let notional       = Range(1e4<USD>, 1e9<USD>)
-let leverage_ratio = Range(1.0, 30.0)
-let volatility     = Range(0.05, 0.80)  // annualized
-let holding_period = Range(1.0<days>, 10.0<days>)
+let notional       = (1e4<USD>, 1e9<USD>)
+let leverage_ratio = (1.0, 30.0)
+let volatility     = (0.05, 0.80)  // annualized
+let holding_period = (1.0<days>, 10.0<days>)
 ```
 
 The computation graph encodes the risk model:
@@ -137,9 +137,9 @@ let min_effective  = 10.0<mg * L^-1>
 let max_safe       = 40.0<mg * L^-1>
 
 // Protocol-specific operating ranges
-let patient_mass      = Range(40.0<kg>, 150.0<kg>)
-let dose_rate         = Range(0.5<mg * kg^-1 * hr^-1>, 5.0<mg * kg^-1 * hr^-1>)
-let infusion_duration = Range(0.5<hr>, 4.0<hr>)
+let patient_mass      = (40.0<kg>, 150.0<kg>)
+let dose_rate         = (0.5<mg * kg^-1 * hr^-1>, 5.0<mg * kg^-1 * hr^-1>)
+let infusion_duration = (0.5<hr>, 4.0<hr>)
 ```
 
 The computation graph encodes the pharmacokinetic model:
