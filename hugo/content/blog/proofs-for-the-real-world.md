@@ -326,6 +326,14 @@ let aluminum7075 = {
 
 The compiler combines these application-level declarations with the computation graph to produce safety findings without any per-function annotation. The library provides the type algebra; the application provides the constants, bounds, ranges, and computation graph; the range propagation is the verification. All compose at design time, and the proofs, where they are exact, are free.
 
+## From Findings to Certificates
+
+The design-time diagnostics shown in the examples above are not transient warnings. They are derived from Z3 proof obligations that CCS generates as it saturates the PSG. When the range analysis for `shear_stress` produces an exact finding, that finding corresponds to a resolved `QF_LIA` assertion in the PSG node. When `clef build --release` executes, those resolved assertions are aggregated into a global SMT problem, verified by Z3, and the resulting witness is cryptographically hashed alongside the compiled binary into a `.proofcert` artifact.
+
+The certificate guarantees that every range finding reported at design time holds in the compiled output. The range exceedance at G-force 3.44, the VaR breach at leverage ratio 1.27, the therapeutic window violation at dose rate 1.0 for a 40 kg patient: each is a Z3-verified constraint that survives MLIR lowering through translation validation. The [verification internals](/docs/internals/verification/) document this pipeline from PSG saturation through the cryptographic release certificate.
+
+The practical consequence is that the engineer who sees a range finding in Lattice during development can trust that the same constraint is enforced in the release binary. The proof does not exist only at design time. It ships with the artifact.
+
 ## Better Design; Safer Retults
 
 This approach satisfies proofs for a large portion of the physical computations that safety-critical engineering depends on: structural loads, thermal gradients, pressure differentials, electrical power budgets, and sensor operating envelopes. Range propagation through the computation graph produces exact safety proofs for a well-defined class of computations: straight-line arithmetic over declared ranges with monotonic operations. 
