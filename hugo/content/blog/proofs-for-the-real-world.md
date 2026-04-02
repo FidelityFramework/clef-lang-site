@@ -9,15 +9,15 @@ tags: ["Architecture", "Type Systems", "Safety", "Innovation"]
 
 ## Beyond Dimensional Consistency
 
-The [companion post](/blog/parametricity-and-dimensional-types/) established the formal lineage connecting Reynolds' abstraction theorem and Wadler's parametricity result to the Dimensional Type System's design-time verification. That lineage is one of several converging influences on the DTS design. Kennedy's Units of Measure [5] demonstrated that dimensional inference is practical in an ML-family language. Syme's work on F# [6] proved that the approach scales to production engineering. Gustafson's posit arithmetic [7] showed that numeric representation can be matched to the value ranges that dimensional analysis reveals. Wadler's contribution [1] provides the formal guarantee that the inferred types generate correct theorems. Together, these four lines of work inform a type system where dimensional annotations persist through compilation, guide representation selection, and, as this post will argue, generate physical safety proofs.
+The [companion post](/blog/parametricity-and-dimensional-types/) expanded on the formal lineage connecting Reynolds' abstraction theorem and Wadler's parametricity result to the Dimensional Type System's design-time verification. That lineage is one of several converging influences on the DTS design. Kennedy's Units of Measure [5] demonstrated that dimensional inference is practical in an ML-family language. Syme's work on F# [6] proved that the approach scales to production engineering. Gustafson's posit arithmetic [7] showed that numeric representation can be matched to the value ranges that dimensional analysis reveals. Wadler's contribution [1] provides the formal guarantee that the inferred types generate correct theorems. Together, these four lines of work inform a type system where dimensional annotations persist through compilation, guide representation selection, and, as this post will argue, generate physical safety proofs that establish a compute graph that is observent of reality.
 
-This raises a natural question: how far do the proofs extend? Dimensional consistency tells us that a force in Newtons will not be accidentally added to a velocity in meters per second. That is valuable. But a practitioner working in aerospace, finance, or clinical medicine needs more than dimensional consistency. An aerospace engineer needs to know that the shear stress on a wing spar never exceeds the yield strength of the material. A risk analyst needs to know that a portfolio's value-at-risk stays within regulatory limits. A clinician needs to know that a drug dosage stays within the therapeutic window for a given patient weight. Can the compiler derive these constraints from the computation graph?
+This raises a useful question: how far can the proofs extend without annotation? Dimensional consistency tells us that a force in Newtons will not be accidentally added to a velocity in meters per second. That is valuable. But a practitioner working in aerospace, finance, or clinical medicine needs more than dimensional consistency. An aerospace engineer needs to know that the shear stress on a wing span never exceeds the yield strength of the material. A financial risk analyst needs to know that a portfolio's value-at-risk stays within regulatory limits. A medical clinician needs to know that a drug dosage stays within the therapeutic window for a given patient weight. Can the compiler derive these constraints from the computation graph, and can it show proof that those constraints hold?
 
-The answer is yes, within well-characterized boundaries, and the mechanism is one the DTS/DMM paper already describes for a different purpose.
+The answer is yes, within well-characterized boundaries, and the mechanism is one the DTS/DMM paper already describes as foundational to Fidelity Framework's design.
 
 ## Range Propagation as Proof Machinery
 
-Section 2.6 of the DTS/DMM paper ([arXiv:2603.16437](https://arxiv.org/abs/2603.16437)) introduces a representation selection function. Given a value with a declared dimensional range, the compiler evaluates candidate numeric representations (IEEE 754, b-posit at various widths) against worst-case relative error within the range. The mechanism is interval arithmetic over the computation graph: declared ranges at the inputs propagate through arithmetic operations to produce derived ranges at the outputs.
+The DTS includes a representation selection function (detailed in Section 2.6 of the [DTS/DMM paper](https://arxiv.org/abs/2603.16437)). Given a value with a declared dimensional range, the compiler evaluates candidate numeric representations (IEEE 754, b-posit at various widths) against worst-case relative error within the range. The mechanism is interval arithmetic over the computation graph: declared ranges at the inputs propagate through arithmetic operations to produce derived ranges at the outputs.
 
 This mechanism was designed to select posit widths. It also generates safety proofs.
 
@@ -25,28 +25,33 @@ The interval arithmetic that propagates ranges through multiplication, division,
 
 ## Domain Case: Aerospace Structural Integrity
 
-The following examples illustrate how range propagation produces domain-specific safety findings. Each uses the same underlying mechanism: interval arithmetic over the computation graph, compared against a declared bound. The domains differ; the compiler's role is identical. The domain library provides the types, ranges, and physical constants. The application provides the computation graph. The compiler provides the proof.
+The following examples illustrate how range propagation produces domain-specific safety findings. Each uses the same underlying mechanism: interval arithmetic over the computation graph, compared against a declared bound. The domains differ; the compiler's role is identical. `Fidelity.Physics` provides the dimensional algebra — the measure types that make quantities type-safe. The application code declares constants, material properties, operating ranges, and the computation graph. The compiler provides the proof.
 
 ### Flight Envelope Analysis
 
-Consider a simplified structural analysis. The following values are declared with dimensional types and ranges from a `Fidelity.Physics.Aerospace` domain library:
+Consider a simplified structural analysis. `MyApplication.Aerospace` provides the measure types (`Pa`, `N`, `gForce`, etc.) that make these quantities dimensionally typed. The constants, material properties, and operating ranges are all declared in the application:
 
-```
-aircraft_mass     : float<kg>       range [5000, 80000]
-load_factor       : float<1>        range [1.0, 9.0]
-gravitational_acc : float<m * s^-2> value 9.81
-wing_spar_area    : float<m^2>      range [0.01, 0.1]
-yield_strength    : float<Pa>       value 2.7e8
+```fsharp
+open Fidelity.Physics
+
+
+let gravitational_acc = 9.81<m * s^-2>
+let yield_strength    = 2.7e8<Pa>     // aluminum 7075-T6
+
+let aircraft_mass     = Range(5000.0<kg>, 80000.0<kg>)
+let load_factor       = Range(1.0, 9.0)
+let wing_spar_area    = Range(0.01<m^2>, 0.1<m^2>)
 ```
 
 The computation graph encodes the physics:
 
-```
-lift_force   = aircraft_mass * gravitational_acc * load_factor
-             : float<N>     range [49050, 7063800]
+```fsharp
+let lift_force   = aircraft_mass * gravitational_acc * load_factor
+// inferred: float<N>, range [49050, 7063800]
 
-shear_stress = lift_force / wing_spar_area
-             : float<Pa>    range [490500, 706380000]
+let shear_stress = lift_force / wing_spar_area
+// inferred: float<Pa>, range [490500, 706380000]
+
 ```
 
 The compiler propagates the ranges through the arithmetic. Multiplication of intervals multiplies the endpoints (with appropriate handling of signs). Division divides with the corresponding endpoint pairing. At the output, the computed range of `shear_stress` is [490500, 706380000]. The declared yield strength is \(2.7 \times 10^8\) Pa. The upper bound of the computed range (\(7.06 \times 10^8\)) exceeds the yield strength.
@@ -73,28 +78,31 @@ The diagnostic tells the engineer not only that a violation exists but where in 
 
 ## Domain Case: Financial Risk Constraints
 
-The same mechanism applies to financial computation, where the "physical" constants are regulatory limits and the "material properties" are risk thresholds. A `Fidelity.Physics.Finance` domain library provides the dimensional types:
+The same mechanism applies to financial computation, where the "physical" constants are regulatory limits and the "material properties" are risk thresholds. The application opens `MuAuditApplication.Finance` for its measure types and declares everything else:
 
-```
-// Finance introduces its own measure types and regulatory constants.
-// The dimensions are not SI, but the algebra is identical.
+```fsharp
+open Fidelity.Physics.Finance
 
-notional          : float<USD>      range [1e4, 1e9]
-leverage_ratio    : float<1>        range [1.0, 30.0]
-volatility        : float<1>        range [0.05, 0.80]     // annualized
-confidence_z      : float<1>        value 2.326            // 99th percentile
-holding_period    : float<days>     range [1.0, 10.0]
-regulatory_limit  : float<USD>      value 5.0e7            // Tier 1 capital
+// Regulatory and statistical constants
+let confidence_z     = 2.326        // 99th percentile
+let regulatory_limit = 5.0e7<USD>   // Tier 1 capital
+
+// Portfolio-specific operating ranges
+let notional       = Range(1e4<USD>, 1e9<USD>)
+let leverage_ratio = Range(1.0, 30.0)
+let volatility     = Range(0.05, 0.80)  // annualized
+let holding_period = Range(1.0<days>, 10.0<days>)
 ```
 
 The computation graph encodes the risk model:
 
-```
-exposure          = notional * leverage_ratio
-                  : float<USD>      range [1e4, 3e10]
+```fsharp
+let exposure     = notional * leverage_ratio
+// inferred: float<USD>, range [1e4, 3e10]
 
-var_estimate      = exposure * volatility * confidence_z * sqrt(holding_period)
-                  : float<USD>      range [1162, 1.76e10]
+let var_estimate = exposure * volatility * confidence_z * sqrt(holding_period)
+// inferred: float<USD>, range [1162, 1.76e10]
+ 
 ```
 
 The compiler reports:
@@ -111,35 +119,38 @@ The compiler reports:
 
 The dimensional types prevent a category of error that financial systems encounter routinely: confusing notional with exposure, mixing annualized volatility with daily volatility (different time dimensions), or computing VaR in one currency and comparing against a limit denominated in another. The range propagation then adds a second layer: even when the dimensions are correct, the computation may produce values that breach regulatory thresholds at certain points in the parameter space. The compiler identifies those points.
 
-The domain library is the specification. A risk team declares its measure types (`<USD>`, `<EUR>`, `<days>`, `<years>`), its regulatory constants, and its operating ranges. The computation graph is the risk model. The compiler verifies both dimensional consistency and regulatory compliance as design-time properties of the same graph traversal.
+The computation graph is the risk model. The compiler verifies both dimensional consistency and regulatory compliance as design-time properties of the same graph traversal.
 
 ## Domain Case: Clinical Dosage Safety
 
-In clinical pharmacology, the "material property" is the therapeutic window: the range of drug concentrations that are effective without being toxic. A `Fidelity.Physics.Clinical` domain library provides the types:
+In clinical pharmacology, the "material property" is the therapeutic window: the range of drug concentrations that are effective without being toxic. The application opens `Fidelity.Physics.Clinical` for its measure types and declares the pharmacokinetic constants, therapeutic bounds, and protocol-specific operating ranges:
 
-```
-// Clinical dimensions include mass-per-volume concentrations
-// and mass-per-body-mass dosage rates.
+```fsharp
+open Fidelity.Physics.Clinical
 
-patient_mass      : float<kg>       range [40.0, 150.0]
-dose_rate         : float<mg * kg^-1 * hr^-1>  range [0.5, 5.0]
-infusion_duration : float<hr>       range [0.5, 4.0]
-clearance_rate    : float<hr^-1>    value 0.15
-volume_dist       : float<L * kg^-1> value 0.25
+// Drug-specific pharmacokinetic properties
+let clearance_rate = 0.15<hr^-1>
+let volume_dist    = 0.25<L * kg^-1>
 
-// Therapeutic window: the safety constraint
-min_effective     : float<mg * L^-1> value 10.0
-max_safe          : float<mg * L^-1> value 40.0
+// Therapeutic window (the safety constraint)
+let min_effective  = 10.0<mg * L^-1>
+let max_safe       = 40.0<mg * L^-1>
+
+// Protocol-specific operating ranges
+let patient_mass      = Range(40.0<kg>, 150.0<kg>)
+let dose_rate         = Range(0.5<mg * kg^-1 * hr^-1>, 5.0<mg * kg^-1 * hr^-1>)
+let infusion_duration = Range(0.5<hr>, 4.0<hr>)
 ```
 
 The computation graph encodes the pharmacokinetic model:
 
-```
-total_dose        = dose_rate * patient_mass * infusion_duration
-                  : float<mg>       range [10, 3000]
+```fsharp
+let total_dose = dose_rate * patient_mass * infusion_duration
+// inferred: float<mg>, range [10, 3000]
 
-peak_concentration = total_dose / (volume_dist * patient_mass)
-                   : float<mg * L^-1>  range [0.4, 300]
+let peak_concentration = total_dose / (volume_dist * patient_mass)
+// inferred: float<mg * L^-1>, range [0.4, 300]
+ 
 ```
 
 The compiler reports two findings:
@@ -160,19 +171,19 @@ The compiler reports two findings:
 
 The dimensional types catch a class of clinical error that dimensional analysis was originally designed to prevent: confusing mg/kg (dose per body mass) with mg/L (plasma concentration), or applying a dose rate in mg/kg/hr to a duration in minutes without converting. These errors have caused patient harm in practice. The range propagation adds the therapeutic window check: the computation is dimensionally correct, but the dosage at certain combinations of patient mass, rate, and duration falls outside the safe range. The compiler identifies the specific parameter combinations.
 
-Note that the compiler does not know pharmacology. It knows dimensional types, declared ranges, and interval arithmetic. The pharmacological knowledge is encoded in the domain library's type declarations and range specifications. The clinical team that builds the `Fidelity.Physics.Clinical` library is making design-time decisions about which quantities to type, which ranges to declare, and which bounds to enforce. Those decisions are the domain expertise. The compiler's contribution is propagating their consequences through the computation graph exhaustively and exactly.
+Note that the compiler does not know pharmacology. It knows dimensional types, declared ranges, and interval arithmetic. The pharmacological knowledge is encoded in the application's constants, therapeutic bounds, and range declarations. `Fidelity.Physics.Clinical` contributes only the measure types that make those declarations dimensionally safe. The compiler's contribution is propagating the consequences through the computation graph exhaustively and exactly.
 
 ## The Common Pattern
 
-The three cases (aerospace, finance, clinical) share a single underlying mechanism. The domains differ in their dimensional vocabularies, their physical constants, and their safety bounds. The compiler's role is identical in all three: propagate ranges through the computation graph, compare the result against declared bounds, report findings with traces and confidence levels.
+An aerospace engineer, a risk analyst, and a clinical pharmacologist all receive the same class of compiler guarantee from the same toolchain. The three cases share a single underlying mechanism. The domains differ in their dimensional vocabularies. The physical constants, safety bounds, and operating ranges are all application concerns. The compiler's role is identical in all three: propagate ranges through the computation graph, compare the result against declared bounds, report findings with traces and confidence levels.
 
-This is the key architectural point. `Fidelity.Physics` is not a physics library in the narrow sense. It is a framework for declaring dimensional types, value ranges, and constraint bounds in any domain where quantities compose through arithmetic operations. The "physics" in the name refers to the formal structure (dimensional analysis, interval arithmetic, monotonic propagation), not to the application domain. A financial risk model and a structural analysis both use the same compiler machinery; they differ only in the domain library that declares the types and bounds.
+`Fidelity.Physics` provides dimensional algebra, not domain knowledge. Each sub-namespace (`Aerospace`, `Finance`, `Clinical`) declares the measure types that make a domain's quantities type-safe. The constants, material properties, regulatory limits, therapeutic windows, and operating ranges belong to the application. A financial risk model and a structural analysis both use the same compiler machinery. They differ in the measure types they import and in the constants and ranges they declare.
 
 ## The Mechanism Is Not New; the Application Is
 
-The observation here is not that interval arithmetic is novel. It has been studied extensively in the numerical analysis literature since Moore's foundational work in the 1960s. What is new is the integration with dimensional types and the computation graph.
+The engineer declares constants, bounds, and operating ranges using the measure types that `Fidelity.Physics` provides. The compiler propagates them automatically, compares against declared bounds automatically, and produces diagnostics automatically. No manual interval tracking. No separate verification step.
 
-In conventional interval arithmetic, ranges are manually specified by the engineer and manually propagated through the computation. In the Fidelity framework, the dimensional type system provides the declared ranges (through `Fidelity.Physics` range declarations or explicit annotations), and the compilation graph provides the structure through which ranges propagate. The propagation is automatic. The comparison against physical bounds is automatic. The diagnostic is automatic.
+Interval arithmetic itself is not novel; it has been studied extensively since Moore's foundational work in the 1960s. What is new is the integration with dimensional types and the computation graph. In conventional interval arithmetic, ranges are manually specified and manually propagated. In the Fidelity framework, the compilation graph provides the structure through which ranges propagate, and the DTS ensures that every propagation step is dimensionally consistent.
 
 The same PSG node that carries a dimensional annotation (`<Pa>`) and a representation selection hint (posit32, bias at 1 MPa) also carries a propagated range ([490500, 706380000]). The three are computed by the same elaboration and saturation process. Dimensional consistency, representation adequacy, and physical range safety are three views of the same graph traversal.
 
@@ -185,6 +196,7 @@ A first-order function with declared input ranges produces output ranges determi
 ```fsharp
 let computeStress (load : float<N>) (area : float<m^2>) : float<Pa> =
     load / area
+     
 ```
 
 The range of the output is the range of the numerator divided by the range of the denominator. When this function is called from a higher-order context, the compiler inlines the range propagation:
@@ -193,6 +205,7 @@ The range of the output is the range of the numerator divided by the range of th
 let safetyEnvelope (massRange : Range<kg>) (gRange : Range<1>) =
     let liftRange = massRange * g * gRange
     computeStress liftRange sparArea
+ 
 ```
 
 The function `computeStress` has a known computation graph (a single division). Its range behavior is deterministic: output range equals input range divided by input range. The call from `safetyEnvelope` passes a derived range (the product of mass, gravitational acceleration, and G-force ranges) into `computeStress`, and the range propagation continues through the function boundary without interruption.
@@ -210,6 +223,7 @@ let fullAnalysis mass gForce sparArea yieldStrength =
     // Compiler derives: range of safetyMargin
     // If lower bound < 0, the design is unsafe at some operating point
     // The specific operating point is derivable from the graph
+     
 ```
 
 The safety margin's range is computed from the chain of operations. If the lower bound is negative, the compiler reports the specific combination of input values that produces a negative margin. This is not a test; it is a proof over the declared operating envelope.
@@ -222,11 +236,11 @@ The compiler's range analysis produces exact bounds (no false positives, no fals
 
 **No control flow.** The computation is a straight-line sequence of arithmetic operations. There are no branches, no conditionals, no pattern matches that would split the range into cases. The range at every node is determined by a single arithmetic path from the inputs.
 
-**All inputs are range-declared.** Every leaf value in the computation graph has a declared range (from `Fidelity.Physics` defaults, from explicit annotation, or from a physical constant with a known value). There are no unranged inputs whose range defaults to the full representable interval.
+**All inputs are range-declared.** Every leaf value in the computation graph has a declared range or a known value (from explicit annotation, from a constant declaration, or from a material property). There are no unranged inputs whose range defaults to the full representable interval.
 
 When all three conditions hold, the range analysis is a proof: the output is guaranteed to lie within the computed range for all inputs within the declared ranges. The compiler reports this as "range analysis confidence: exact."
 
-Many physical computations satisfy all three conditions. Structural analysis, thermal analysis, fluid dynamics boundary conditions, and sensor fusion pipelines are typically straight-line arithmetic over declared physical ranges. The proofs are free for the same reason dimensional consistency is free: the computation graph determines the result.
+Structural analysis, thermal analysis, fluid dynamics boundary conditions, sensor fusion pipelines, and electrical power budgets are typically straight-line arithmetic over declared physical ranges. They satisfy all three conditions. For these computations, the proofs are free for the same reason dimensional consistency is free: the computation graph determines the result.
 
 ## Where Range Propagation Is Conservative
 
@@ -254,7 +268,7 @@ The diagnostic distinguishes between exact findings (proofs) and conservative fi
 
 ## The Revised Tier Boundary
 
-The [formal verification entry](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/) in the categorical foundations series defined Tier 1 as dimensional consistency, escape classification, allocation verification, and capability checking. Range consistency and physical safety constraint checking belong in Tier 1 as well, when the computation satisfies the exactness conditions above.
+The Fidelity framework's [formal verification design](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/) defined Tier 1 as dimensional consistency, escape classification, allocation verification, and capability checking. Range consistency and physical safety constraint checking belong in Tier 1 as well, when the computation satisfies the exactness conditions above.
 
 The revised Tier 1 coverage:
 
@@ -269,66 +283,56 @@ The revised Tier 1 coverage:
 
 The last two rows use the same mechanism. The difference is what the computed range is compared against: a representation's dynamic range (for representation selection) or a physical property's value (for safety checking). The comparison target determines whether the finding is "use posit32" or "the wing breaks at G-force 3.44." The propagation is identical.
 
-Tier 2 (scoped assertions) is needed only when the range analysis is conservative and the engineer requires a tighter bound. Tier 3 (full SMT proof generation) is needed for properties that range propagation cannot express: convergence, termination of iterative procedures, and correctness of algorithms whose safety depends on control flow, not arithmetic bounds.
+For the majority of safety-critical arithmetic, the engineer writes no proof code and no verification annotations. The compiler does the work at Tier 1. Tier 2 (scoped assertions) is needed only when the range analysis is conservative and the engineer requires a tighter bound. Tier 3 (full SMT proof generation) is needed for properties that range propagation cannot express: convergence, termination of iterative procedures, and correctness of algorithms whose safety depends on control flow, not arithmetic bounds.
 
-The [verification internals documentation](/docs/internals/verification/) traces the design path that led to this tier structure, including the evaluation and eventual departure from F*'s dependent type approach. The coeffect algebra that emerged from that departure is precisely what makes range propagation composable: the same algebraic structure that tracks escape classification and memory lifetimes also tracks value ranges through the computation graph. The path from dependent types to coeffect algebra to silicon is documented there in full; the present discussion extends the consequences of that design into physical safety constraints.
+The coeffect algebra that emerged from evaluating and departing from F*'s dependent type approach is precisely what makes range propagation composable: the same algebraic structure that tracks escape classification and memory lifetimes also tracks value ranges through the computation graph. The [verification internals](/docs/internals/verification/) cover this design path in full.
 
 ## Implications for Domain Libraries
 
-The `Fidelity.Physics` library's role is to provide the dimensional vocabulary, the physical constants, and the range declarations that the compiler consumes. Building a domain library is, in effect, the initial design of types for the domain. The library author makes the design-time decisions: which quantities are dimensionally typed, what their operating ranges are, and what bounds constitute safety constraints. The compiler enforces the consequences of those decisions across every computation that uses the library.
+The `Fidelity.Physics` library's role is to provide the dimensional vocabulary that makes a domain's quantities type-safe. Building a domain library is declaring which measure types exist and how they compose. The application then uses those types to declare its own constants, material properties, safety bounds, and operating ranges. The compiler enforces the consequences across every computation.
 
 Three domain libraries illustrate the pattern:
 
 ```fsharp
 module Fidelity.Physics.Aerospace =
-    [<Measure>] type gForce                           // dimensionless load factor
-    let maxServiceLoad = { Lower = 1.0<1>; Upper = 3.8<1> }
-    let maxUltimateLoad = { Lower = 1.0<1>; Upper = 5.7<1> }
-    let cabinPressure = { Lower = 0.75e5<Pa>; Upper = 1.05e5<Pa> }
-    let altitudeRange = { Lower = 0.0<m>; Upper = 13716.0<m> }
+    [<Measure>] type gForce     // dimensionless load factor
+    [<Measure>] type knot       // nautical miles per hour
 
 module Fidelity.Physics.Finance =
     [<Measure>] type USD
     [<Measure>] type EUR
     [<Measure>] type days
     [<Measure>] type years
-    let tradingDaysPerYear = 252.0<days * years^-1>
-    let tier1CapitalFloor = 5.0e7<USD>
-    let maxLeverageRatio = { Lower = 1.0<1>; Upper = 30.0<1> }
 
 module Fidelity.Physics.Clinical =
     [<Measure>] type mg
     [<Measure>] type hr
-    [<Measure>] type L                                // volume
-    let therapeuticWindow drug = {
-        MinEffective = drug.MinConcentration           // float<mg * L^-1>
-        MaxSafe = drug.MaxConcentration                // float<mg * L^-1>
-    }
+    [<Measure>] type L        // volume
+     
 ```
 
-Each library declares its own dimensional vocabulary. Each declares its own operating ranges. Each declares its own safety bounds. The compiler treats all three identically: propagate the ranges, compare against the bounds, report the findings. The domain expertise is in the library; the verification is in the compiler.
+Each library declares its own dimensional vocabulary. The application declares everything else: constants, bounds, and ranges for the specific design or protocol under analysis. The compiler treats all domains identically: propagate the application's ranges through the computation graph, compare against the application's bounds, report the findings. The dimensional algebra is in the library; everything else is in the application; the verification is in the compiler.
 
-A domain library for structural materials would declare:
+An aerospace application would use these types to declare its own material properties:
 
 ```fsharp
-module Fidelity.Physics.Materials =
-    let aluminum7075 = {
-        YieldStrength = 2.7e8<Pa>
-        UltimateStrength = 5.7e8<Pa>
-        Density = 2810.0<kg * m^-3>
-        ThermalExpansion = 23.6e-6<K^-1>
-    }
+let aluminum7075 = {
+    YieldStrength = 2.7e8<Pa>
+    UltimateStrength = 5.7e8<Pa>
+    Density = 2810.0<kg * m^-3>
+    ThermalExpansion = 23.6e-6<K^-1>
+}
 ```
 
-The compiler combines these declarations with the computation graph to produce safety findings without any per-function annotation. The domain library is the specification; the computation graph is the implementation; the range propagation is the verification. All three compose at design time, and the proofs, where they are exact, are free.
+The compiler combines these application-level declarations with the computation graph to produce safety findings without any per-function annotation. The library provides the type algebra; the application provides the constants, bounds, ranges, and computation graph; the range propagation is the verification. All compose at design time, and the proofs, where they are exact, are free.
 
-## The Honest Boundary
+## Better Design; Safer Retults
 
-Range propagation through the computation graph produces exact safety proofs for a well-defined class of computations: straight-line arithmetic over declared ranges with monotonic operations. This class includes a large fraction of the physical computations that safety-critical engineering depends on: structural loads, thermal gradients, pressure differentials, electrical power budgets, and sensor operating envelopes.
+This approach satisfies proofs for a large portion of the physical computations that safety-critical engineering depends on: structural loads, thermal gradients, pressure differentials, electrical power budgets, and sensor operating envelopes. Range propagation through the computation graph produces exact safety proofs for a well-defined class of computations: straight-line arithmetic over declared ranges with monotonic operations. 
 
 The class does not include computations whose safety depends on control flow, iterative convergence, or runtime-dependent data. For those, the compiler produces conservative warnings that may require Tier 2 annotation to resolve. The boundary between "free proof" and "requires annotation" is determined by the computation's structure, not by the engineer's diligence. The compiler knows which case applies and reports accordingly.
 
-The deeper point is that the DTS/DMM paper's representation selection mechanism and the safety constraint mechanism are the same mechanism applied to different comparands. The infrastructure for safety checking was present from the beginning; it was designed for representation selection and deployed for that purpose. Extending it to physical safety constraints requires no new machinery, only the recognition that a range bound compared against a material property is the same operation as a range bound compared against a numeric format's dynamic range.
+The deeper point is that representation selection and safety constraint checking are the same mechanism applied to different comparands. The infrastructure for safety checking was present in the DTS from the beginning; it was designed for representation selection and deployed for that purpose. Extending it to physical safety constraints requires no new machinery, only the recognition that a range bound compared against a material property is the same operation as a range bound compared against a numeric format's dynamic range.
 
 The four influences on this design each contribute a specific element. Kennedy's Units of Measure showed that dimensional inference is practical in a production language. Syme's F# proved it scales. Gustafson's posit arithmetic connected dimensional ranges to numeric representation selection, creating the interval propagation machinery. Wadler's parametricity result provides the formal guarantee that the propagated types generate correct theorems. Range propagation extends these theorems from dimensional consistency into the physical, financial, and clinical constraints that the types were designed to represent.
 
