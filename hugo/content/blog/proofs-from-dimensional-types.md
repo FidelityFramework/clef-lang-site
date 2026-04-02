@@ -67,7 +67,7 @@ The convergence of these two contributions in one researcher's body of work is n
 
 ## Implications for DTS
 
-The [DTS paper](https://arxiv.org/abs/2603.16437)'s Section 2.2 (dimensional inference) derives its soundness from parametricity without naming it directly. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
+The [DTS paper](https://arxiv.org/abs/2603.16437)'s Section 2.2 (dimensional inference) derives its soundness from parametricity. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
 
 In short, the full summary of Clef's innovation stems from:
 
