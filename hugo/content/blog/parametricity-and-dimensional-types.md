@@ -41,7 +41,7 @@ In more concrete terms: it does not matter whether the compiler checks dimension
 
 The DTS paper's information accrual principle (Section 6.6) states that each compilation stage has strictly more information than its predecessor. Parametricity is the mechanism that ensures this accrual is monotonic: dimensional information established at an early stage cannot be contradicted at a later stage, because the later stage's transformations are parametric in the dimensions.
 
-## Free Theorems for the Fidelity Framework
+## Free Theorem Cascade in the Fidelity Framework
 
 Several properties that the DTS paper establishes as design-time verification results are, in Wadler's terminology, free theorems. They cost nothing beyond the type declarations that the programmer provides (or that the inference engine derives):
 
@@ -53,7 +53,7 @@ Several properties that the DTS paper establishes as design-time verification re
 
 **Grade preservation in geometric algebra.** The PHG paper (arXiv:2603.17627) introduces grade as a dimension axis within the DTS abelian group framework. Grade preservation through training, the theorem that forward-mode autodiff with quire-exact accumulation preserves the structural zeros of the Cayley table, is a free theorem of the grade-annotated type. The grade variable is polymorphic; operations that are parametric in grade cannot introduce grade corruption.
 
-## The Relationship to Reynolds
+## The Connection to Reynolds
 
 Wadler's paper is explicitly an accessible reformulation of Reynolds' abstraction theorem. Reynolds proved in 1983 that types can be read as relations: a type denotes not just a set of values but a relation between different interpretations of the type. Polymorphic functions must preserve these relations. Wadler showed that this relational reading generates useful theorems for specific types.
 
@@ -65,7 +65,7 @@ Parametricity provides the guarantee that the suspension and resumption are dime
 
 The convergence of these two contributions in one researcher's body of work is not coincidental. Both are consequences of taking types seriously as specifications of program behavior: types determine what continuations can capture (Reynolds 1972), and types determine what theorems functions satisfy (Reynolds 1983, Wadler 1989).
 
-## Implications for the DTS Paper
+## Implications for DTS
 
 The DTS paper's Section 2.2 (dimensional inference) derives its soundness from parametricity without naming it directly. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
 
