@@ -21,6 +21,15 @@ The DTS includes a representation selection function (detailed in Section 2.6 of
 
 This mechanism was designed to select posit widths. It also generates safety proofs.
 
+`Fidelity.Physics` supplies the type that makes this possible. Alongside its measure type declarations, it provides a generic `Range` type:
+
+```fsharp
+type Range<[<Measure>] 'T, [<Measure>] 'U> =
+    Range of lower: 'T<'U> * upper: 'T<'U>
+```
+
+Both type parameters are measures in the abelian group algebra. `Range` is what distinguishes a pair of propagation bounds from an ordinary pair of values. When the application writes `Range(5000.0<kg>, 80000.0<kg>)`, the compiler knows to propagate that interval through every arithmetic operation in the computation graph.
+
 The interval arithmetic that propagates ranges through multiplication, division, addition, and subtraction is deterministic, bounded-time, and closed under the same operations that dimensional types are closed under. When the compiler propagates a range through a computation graph and the output range exceeds a declared bound, the violation is a design-time finding. No annotation is required beyond the input ranges and the material property that defines the bound. The computation graph determines the rest.
 
 ## Domain Case: Aerospace Structural Integrity
@@ -34,13 +43,12 @@ Consider a simplified structural analysis. `MyApplication.Aerospace` provides th
 ```fsharp
 open Fidelity.Physics
 
-
 let gravitational_acc = 9.81<m * s^-2>
 let yield_strength    = 2.7e8<Pa>     // aluminum 7075-T6
 
-let aircraft_mass  = (5000.0<kg>, 80000.0<kg>)
-let load_factor    = (1.0, 9.0)
-let wing_spar_area = (0.01<m^2>, 0.1<m^2>)
+let aircraft_mass  = Range(5000.0<kg>, 80000.0<kg>)
+let load_factor    = Range(1.0, 9.0)
+let wing_spar_area = Range(0.01<m^2>, 0.1<m^2>)
 ```
 
 The computation graph encodes the physics:
@@ -88,10 +96,10 @@ let confidence_z     = 2.326        // 99th percentile
 let regulatory_limit = 5.0e7<USD>   // Tier 1 capital
 
 // Portfolio-specific operating ranges
-let notional       = (1e4<USD>, 1e9<USD>)
-let leverage_ratio = (1.0, 30.0)
-let volatility     = (0.05, 0.80)  // annualized
-let holding_period = (1.0<days>, 10.0<days>)
+let notional       = Range(1e4<USD>, 1e9<USD>)
+let leverage_ratio = Range(1.0, 30.0)
+let volatility     = Range(0.05, 0.80)  // annualized
+let holding_period = Range(1.0<days>, 10.0<days>)
 ```
 
 The computation graph encodes the risk model:
@@ -137,9 +145,9 @@ let min_effective  = 10.0<mg * L^-1>
 let max_safe       = 40.0<mg * L^-1>
 
 // Protocol-specific operating ranges
-let patient_mass      = (40.0<kg>, 150.0<kg>)
-let dose_rate         = (0.5<mg * kg^-1 * hr^-1>, 5.0<mg * kg^-1 * hr^-1>)
-let infusion_duration = (0.5<hr>, 4.0<hr>)
+let patient_mass      = Range(40.0<kg>, 150.0<kg>)
+let dose_rate         = Range(0.5<mg * kg^-1 * hr^-1>, 5.0<mg * kg^-1 * hr^-1>)
+let infusion_duration = Range(0.5<hr>, 4.0<hr>)
 ```
 
 The computation graph encodes the pharmacokinetic model:
@@ -289,7 +297,7 @@ The coeffect algebra that emerged from evaluating and departing from F*'s depend
 
 ## Implications for Domain Libraries
 
-The `Fidelity.Physics` library's role is to provide the dimensional vocabulary that makes a domain's quantities type-safe. Building a domain library is declaring which measure types exist and how they compose. The application then uses those types to declare its own constants, material properties, safety bounds, and operating ranges. The compiler enforces the consequences across every computation.
+`Fidelity.Physics` provides the dimensional vocabulary: measure types and the `Range<'T, 'U>` generic introduced earlier. Building a domain library is declaring which measure types exist and how they compose. The application then uses those types, along with `Range`, to declare its own constants, material properties, safety bounds, and operating ranges. The compiler enforces the consequences across every computation.
 
 Three domain libraries illustrate the pattern:
 
