@@ -67,7 +67,7 @@ The convergence of these two contributions in one researcher's body of work is n
 
 ## Implications for DTS
 
-The DTS paper's Section 2.2 (dimensional inference) derives its soundness from parametricity without naming it directly. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
+The [DTS paper](https://arxiv.org/abs/2603.16437)'s Section 2.2 (dimensional inference) derives its soundness from parametricity without naming it directly. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
 
 In short, the full summary of Clef's innovation stems from:
 
@@ -75,8 +75,6 @@ In short, the full summary of Clef's innovation stems from:
 2. **Wadler's free theorems**: specific types generate specific theorems about all functions of that type.
 3. **DTS inference**: dimensional types generate dimensional consistency theorems about all functions whose types the DTS infers.
 4. **Persistence**: compilation passes that are parametric in dimensional annotations preserve the inferred dimensional consistency, by the same reasoning that Wadler's map-commutation theorem follows from parametricity.
-
-This chain is implicit in the DTS paper. This entry makes it implicit while and update to the whitepaper on arXiv is in review.
 
 ## The Deeper Pattern
 
@@ -92,8 +90,8 @@ This is the formal content of the claim that verification is a compilation bypro
 
 [3] J. C. Reynolds, "The discoveries of continuations," *Lisp and Symbolic Computation*, vol. 6, pp. 233-248, 1993.
 
-[4] H. Haynes, "Dimensional Type Systems and Deterministic Memory Management: Design-Time Semantic Preservation in Native Compilation," arXiv:2603.16437, 2026.
+[4] H. Haynes, "Dimensional Type Systems and Deterministic Memory Management: Design-Time Semantic Preservation in Native Compilation," [arXiv:2603.16437](https://arxiv.org/abs/2603.16437), 2026.
 
-[5] H. Haynes, "The Program Hypergraph: Multi-Way Relational Structure for Geometric Algebra, Spatial Compute, and Physics-Aware Compilation," arXiv:2603.17627, 2026.
+[5] H. Haynes, "The Program Hypergraph: Multi-Way Relational Structure for Geometric Algebra, Spatial Compute, and Physics-Aware Compilation," [arXiv:2603.17627](https://arxiv.org/abs/2603.17627), 2026.
 
 [6] T. Petricek, D. Orchard, and A. Mycroft, "Coeffects: A calculus of context-dependent computation," in *Proceedings of the 19th ACM SIGPLAN International Conference on Functional Programming*, pp. 123-135, 2014.
