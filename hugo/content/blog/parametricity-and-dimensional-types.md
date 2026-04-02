@@ -1,6 +1,6 @@
 ---
-title: "How Proofs are 'Free' with Dimensional Types"
-linkTitle: "Free Proofs in Dimensional Types"
+title: "'Free' Proofs from Dimensional Types"
+linkTitle: "'Free' Proofs from Dimensional Types"
 description: "How Wadler's Free Theorems Provide the Formal Foundation for Design-Time Dimensional Verification"
 date: 2026-03-31
 authors: ["Houston Haynes"]
