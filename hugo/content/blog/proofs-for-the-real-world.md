@@ -38,13 +38,18 @@ The following examples illustrate how range propagation produces domain-specific
 
 ### Flight Envelope Analysis
 
-Consider a simplified structural analysis. `MyApplication.Aerospace` provides the measure types (`Pa`, `N`, `gForce`, etc.) that make these quantities dimensionally typed. The constants, material properties, and operating ranges are all declared in the application:
+Consider a simplified structural analysis. `Fidelity.Physics` provides the measure types, derived measures like `Pa`, and universal constants like `gravitational_acc`. The application declares its own material properties and operating ranges:
 
 ```fsharp
 open Fidelity.Physics
+// Fidelity.Physics provides:
+//   [<Measure>] type kg
+//   [<Measure>] type m
+//   [<Measure>] type s
+//   [<Measure>] type Pa = kg * m^-1 * s^-2
+//   let gravitational_acc = 9.81<m * s^-2>
 
-let gravitational_acc = 9.81<m * s^-2>
-let yield_strength    = 2.7e8<Pa>     // aluminum 7075-T6
+let yield_strength = 2.7e8<Pa>     // aluminum 7075-T6
 
 let aircraft_mass  = Range(5000.0<kg>, 80000.0<kg>)
 let load_factor    = Range(1.0, 9.0)
@@ -86,10 +91,16 @@ The diagnostic tells the engineer not only that a violation exists but where in 
 
 ## Domain Case: Financial Risk Constraints
 
-The same mechanism applies to financial computation, where the "physical" constants are regulatory limits and the "material properties" are risk thresholds. The application opens `MuAuditApplication.Finance` for its measure types and declares everything else:
+The same mechanism applies to financial computation, where the "physical" constants are regulatory limits and the "material properties" are risk thresholds. `Fidelity.Physics.Finance` provides the currency and time measure types. The application declares its regulatory constants and portfolio-specific operating ranges:
 
 ```fsharp
 open Fidelity.Physics.Finance
+// Fidelity.Physics.Finance provides:
+//   [<Measure>] type USD
+//   [<Measure>] type EUR
+//   [<Measure>] type days
+//   [<Measure>] type years
+//   let tradingDaysPerYear = 252.0<days * years^-1>
 
 // Regulatory and statistical constants
 let confidence_z     = 2.326        // 99th percentile
@@ -131,10 +142,16 @@ The computation graph is the risk model. The compiler verifies both dimensional 
 
 ## Domain Case: Clinical Dosage Safety
 
-In clinical pharmacology, the "material property" is the therapeutic window: the range of drug concentrations that are effective without being toxic. The application opens `Fidelity.Physics.Clinical` for its measure types and declares the pharmacokinetic constants, therapeutic bounds, and protocol-specific operating ranges:
+In clinical pharmacology, the "material property" is the therapeutic window: the range of drug concentrations that are effective without being toxic. `Fidelity.Physics.Clinical` provides the clinical measure types and derived concentration dimensions. The application declares pharmacokinetic constants, therapeutic bounds, and protocol-specific operating ranges:
 
 ```fsharp
 open Fidelity.Physics.Clinical
+// Fidelity.Physics.Clinical provides:
+//   [<Measure>] type mg
+//   [<Measure>] type hr
+//   [<Measure>] type L
+//   [<Measure>] type concentration = mg * L^-1
+//   [<Measure>] type doseRate = mg * kg^-1 * hr^-1
 
 // Drug-specific pharmacokinetic properties
 let clearance_rate = 0.15<hr^-1>
