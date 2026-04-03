@@ -458,3 +458,13 @@ At SpeakEZ, we believe this approach, making the complex simple and the theoreti
 The future of distributed trust isn't just about better algorithms or faster hardware; it's about programming languages and frameworks that make correct implementation the path of least resistance. With Clef and the Fidelity Framework, that future is here today.
 
 *This article was originally written in 2021 and has since been updated to reflect recent Fidelity platform development.*
+
+## Update: April 2026
+
+This post demonstrates that Clef's type system can encode cryptographic protocol invariants at compile time. The technique is sound and the `FieldElement<'Curve>` abstraction is parametric by design. The choice of secp256k1 Schnorr signatures as the worked example reflects the state of practice in 2021, when Schnorr adoption via Bitcoin's Taproot activation was the progressive direction in threshold cryptography.
+
+That choice now requires qualification. On March 30, 2026, Google Quantum AI [published resource estimates](https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/) demonstrating that secp256k1 ECDLP can be solved in approximately 9 minutes on a fast-clock cryptographically relevant quantum computer with fewer than 500,000 physical qubits. Independently, [Cain et al. (arXiv:2603.28627)](https://arxiv.org/abs/2603.28627) showed that neutral-atom architectures with as few as 10,000 atomic qubits could achieve the same result over days. Schnorr signatures on secp256k1, like all ECDLP-based schemes, are quantum-vulnerable by this mechanism.
+
+The type-level encoding demonstrated here transfers directly to post-quantum primitives. The "Future Directions" section above anticipated this with its `DilithiumScheme` variant, now standardized as ML-DSA (FIPS 204). SpeakEZ's [QuantumCredential and KeyStation](https://speakez.tech/portfolio/quantumcredential/) patent applications implement exactly this transition: ML-DSA signatures and ML-KEM key encapsulation, with QRNG-sourced entropy generated in an air-gapped hardware domain. The type-level safety discipline described in this post is the compilation substrate for that work.
+
+The broader context for how the CRQC landscape has shifted, and its implications for verification infrastructure, is developed in the SpeakEZ research entry [Zero Knowledge Proofs: Verification as Product](https://speakez.tech/research/zk-proof-ledger/). The formal foundations for the decidable fragment within which these proofs operate are expanded in [Building Proofs for the Real World](/blog/proofs-for-the-real-world/) and ["Free" Proofs from Dimensional Types](/blog/proofs-from-dimensional-types/).
