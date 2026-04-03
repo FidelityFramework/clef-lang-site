@@ -72,9 +72,9 @@ The compiler propagates the ranges through the arithmetic. Multiplication of int
 The compiler reports this without any safety assertion from the programmer:
 
 ```
-⚠ Range exceedance: shear_stress upper bound 7.06e8 <Pa>
+⚠ Range exceeded: shear_stress upper bound 7.06e8 <Pa>
   exceeds yield_strength 2.70e8 <Pa>
-  Violation occurs when load_factor > 3.44
+  Occurs when load_factor > 3.44
   (derived from computation graph)
 
   Trace:
@@ -127,9 +127,9 @@ let var_estimate = exposure * volatility * confidence_z * sqrt(holding_period)
 The compiler reports:
 
 ```
-⚠ Range exceedance: var_estimate upper bound 1.76e10 <USD>
+⚠ Range exceeded: var_estimate upper bound 1.76e10 <USD>
   exceeds regulatory_limit 5.0e7 <USD>
-  Violation occurs when leverage_ratio > 1.27 at max volatility
+  Occurs when leverage_ratio > 1.27 at max volatility
   (derived from computation graph)
 
   Dimensional consistency: verified ✓
@@ -181,13 +181,13 @@ let peak_concentration = total_dose / (volume_dist * patient_mass)
 The compiler reports two findings:
 
 ```
-⚠ Range exceedance: peak_concentration upper bound 300 <mg * L^-1>
+⚠ Range exceeded: peak_concentration upper bound 300 <mg * L^-1>
   exceeds max_safe 40.0 <mg * L^-1>
-  Violation occurs when dose_rate > 1.0 at patient_mass = 40 kg,
+  Occurs when dose_rate > 1.0 at patient_mass = 40 kg,
   infusion_duration = 4.0 hr
   (derived from computation graph)
 
-⚠ Range deficiency: peak_concentration lower bound 0.4 <mg * L^-1>
+⚠ Below range: peak_concentration lower bound 0.4 <mg * L^-1>
   below min_effective 10.0 <mg * L^-1>
   Sub-therapeutic when dose_rate < 1.25 at patient_mass = 150 kg,
   infusion_duration = 0.5 hr
@@ -282,7 +282,7 @@ The analysis becomes conservative (may report violations that cannot actually oc
 In each of these cases, the compiler reports the confidence level alongside the finding:
 
 ```
-⚠ Potential range exceedance: thermal_stress upper bound 3.1e8 <Pa>
+⚠ Potential range exceeded: thermal_stress upper bound 3.1e8 <Pa>
   may exceed yield_strength 2.7e8 <Pa>
   Range analysis confidence: conservative
     (branch at line 47 widens interval; actual range may be narrower)
@@ -355,7 +355,7 @@ The compiler combines these application-level declarations with the computation 
 
 The design-time diagnostics shown in the examples above are not transient warnings. They are derived from Z3 proof obligations that CCS generates as it saturates the PSG. When the range analysis for `shear_stress` produces an exact finding, that finding corresponds to a resolved `QF_LIA` assertion in the PSG node. When `clef build --release` executes, those resolved assertions are aggregated into a global SMT problem, verified by Z3, and the resulting witness is cryptographically hashed alongside the compiled binary into a `.proofcert` artifact.
 
-The certificate guarantees that every range finding reported at design time holds in the compiled output. The range exceedance at G-force 3.44, the VaR breach at leverage ratio 1.27, the therapeutic window violation at dose rate 1.0 for a 40 kg patient: each is a Z3-verified constraint that survives MLIR lowering through translation validation. The [verification internals](/docs/internals/verification/) document this pipeline from PSG saturation through the cryptographic release certificate.
+The certificate guarantees that every range finding reported at design time holds in the compiled output. The range exceeded at G-force 3.44, the VaR breach at leverage ratio 1.27, the therapeutic window boundary at dose rate 1.0 for a 40 kg patient: each is a Z3-verified constraint that survives MLIR lowering through translation validation. The [verification internals](/docs/internals/verification/) document this pipeline from PSG saturation through the cryptographic release certificate.
 
 The practical consequence is that the engineer who sees a range finding in Lattice during development can trust that the same constraint is enforced in the release binary. The proof does not exist only at design time. It ships with the artifact.
 
