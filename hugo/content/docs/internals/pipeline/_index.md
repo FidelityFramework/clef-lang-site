@@ -3,4 +3,4 @@ title: Compiler Pipeline
 weight: 10
 ---
 
-The Composer compiler's internal stages: Baker type resolution, nanopass lowering, PSG saturation, hypergraph construction, tree shaking, and graph coloring.
+The internal stages of Composer: Baker type resolution and PSG construction, hypergraph-based intermediate representation, and the optimization passes (tree shaking, graph coloring, proof-aware compilation) that shape the code before it reaches MLIR.

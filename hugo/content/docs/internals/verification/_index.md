@@ -1,8 +1,8 @@
 ---
 title: Transparent Verification
-weight: 41
+weight: 15
 sidebar:
-  open: true
+  open: false
 ---
 
 The Fidelity Framework includes tooling in development designed to eliminate the annotation burden that has historically made formal verification impractical for systems programming. Instead of requiring developers to write theorems, the Clef Compiler Service (CCS) is designed to derive proof obligations directly from the code's dimensional constraints and memory topologies, transparently, at design time, backed by the Z3 SMT solver.

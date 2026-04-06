@@ -11,9 +11,13 @@ The compilation path starts in Clef Compiler Services (CCS), which produces an A
 
 The articles below document each stage of this process, from the front-end through to silicon.
 
+### [Concepts](concepts/)
+
+Foundational ideas that inform the Composer compiler's design: nanopass architecture, coeffect and codata systems, referential transparency analysis, and the sequence expression compilation model.
+
 ### [Compiler Pipeline](pipeline/)
 
-The internal stages of Composer: Baker type resolution and PSG construction, nanopass lowering through composable transformations, hypergraph-based intermediate representation, and the optimization passes (tree shaking, graph coloring) that shape the code before it reaches MLIR. Also covers the Alloy build system, referential transparency analysis, and the sequence expression compilation model.
+The internal stages of Composer: Baker type resolution and PSG construction, hypergraph-based intermediate representation, and the optimization passes (tree shaking, graph coloring, proof-aware compilation) that shape the code before it reaches MLIR.
 
 ### [Transparent Verification](verification/)
 

@@ -1,5 +1,5 @@
 ---
-title: Hardware Architecture
+title: On Hardware
 weight: 60
 ---
 

@@ -1,6 +1,6 @@
 ---
-title: "Static and Dynamic Library Binding in the Fidelity framework"
-linkTitle: "Library Binding"
+title: "Static and Dynamic FFI Binding in the Fidelity framework"
+linkTitle: "C & Cpp Binding"
 description: "Cornerstone to Clef as a Systems Programming Language"
 date: 2025-05-16T16:59:54+06:00
 authors: ["Houston Haynes"]
