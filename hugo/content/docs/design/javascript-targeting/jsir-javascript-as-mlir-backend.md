@@ -7,9 +7,11 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 ---
 
-On April 6, 2026, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. The announcement arrived as a single post on the LLVM Discourse, authored by Zhixun Tan of Google's compiler team. JSIR is an out-of-tree MLIR dialect that represents JavaScript with full AST fidelity, supporting lossless round-trip conversion between JavaScript source, ESTree AST, and MLIR ops. Google has used it in production internally for Hermes bytecode decompilation, JavaScript deobfuscation, and malicious code detection.
+The Fidelity framework is designed to target hardware natively. So why are we so cheerful about having a runtime target?
 
-For most compiler projects, this is an interesting research result. For Clef and the Fidelity framework, it is a structural inflection point.
+Because Cloudflare Workers run JavaScript, and Workers are how Fidelity deploys actors to the edge. Until now, the JavaScript compilation path was separate from the rest of the framework. On April 6, 2026, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. The announcement arrived as a single post on the LLVM Discourse, authored by Zhixun Tan of Google's compiler team. JSIR is an out-of-tree MLIR dialect that represents JavaScript with full AST fidelity, supporting lossless round-trip conversion between JavaScript source, ESTree AST, and MLIR ops. Google has used it in production internally for Hermes bytecode decompilation, JavaScript deobfuscation, and malicious code detection.
+
+For a framework that has been maintaining a separate JavaScript pipeline as a necessary compromise, this is not just an interesting research result. It is a structural inflection point.
 
 ## The Problem JSIR Solves
 

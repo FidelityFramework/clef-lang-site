@@ -7,13 +7,15 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 ---
 
-## The Day JavaScript Became a Backend
+## Why Are We Cheerful About a Runtime Target?
 
-On April 6, 2026, Google published an RFC to upstream JSIR into MLIR. For most compiler projects this is an interesting research result. For the Fidelity framework, it changes the shape of the entire deployment story.
+The Fidelity framework is designed to target hardware natively. CPUs, GPUs, FPGAs, spatial accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the whole point of the framework. So why is a *JavaScript* target cause for celebration?
 
-Until now, Clef's compilation to JavaScript has been the odd one out. Every other target (CPUs, GPUs, FPGAs, spatial accelerators) travels through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. JavaScript was the exception. It took a separate path, compiled through Fable, maintained independently, verified independently. Two compilers sharing a front-end and nothing else.
+Because Cloudflare Workers run JavaScript, and Workers are how Fidelity deploys actors to the edge. Until now, the JavaScript path was the odd one out. It went through Fable on a separate compilation path, maintained independently, verified independently. Two compilers sharing a front-end and nothing else.
 
-JSIR eliminates that split. JavaScript becomes a backend in the same sense that LLVM is a backend. One source, one middle-end, one set of verification passes, two (or more) output formats. The [technical details](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) are worth reading if you want to understand how JSIR's ops map to Alex's dialect infrastructure and where the trust boundaries fall. This post is about what the unification means in practice.
+On April 6, 2026, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and out the other side as JavaScript rather than native code. One source, one middle-end, one set of verification passes, multiple output formats.
+
+The [technical details](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) are worth reading if you want to understand how JSIR's ops map to Alex's dialect infrastructure and where the trust boundaries fall. This post is about what the unification means in practice.
 
 ## Why This Matters for Cloudflare Workers
 
