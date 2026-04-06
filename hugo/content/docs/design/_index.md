@@ -12,6 +12,7 @@ The articles are organized into focused sub-sections:
 - **[Memory Model](/docs/design/memory/)** — region-based allocation, ownership, lifetime inference, and deterministic cleanup
 - **[Type System](/docs/design/types/)** — the Native Type Universe, dimensional type safety, and type representation across execution models
 - **[Concurrency](/docs/design/concurrency/)** — delimited continuations, interaction nets, and the async compilation strategy
+- **[JavaScript Targeting](/docs/design/javascript-targeting/)** — JSIR, MLIR-based JavaScript emission, and type safety across the erasure boundary
 
 General design articles covering topics like metaprogramming, verification, inlining, posit arithmetic, and the broader structural decisions behind Clef remain at this level.
 
