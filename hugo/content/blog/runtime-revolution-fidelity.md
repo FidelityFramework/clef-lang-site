@@ -7,15 +7,15 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 ---
 
-The Fidelity framework is primarily designed to directly target hardware. You konw the acronyms: CPUs, GPUs, FPGAs, MCUs, NPUs, other accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the primary concern of the framework. 
+The Fidelity framework is primarily designed to target hardware in the most direct manner possible. You know the acronyms: CPUs, GPUs, FPGAs, MCUs, NPUs, and other accelerators too. Every compilation target goes through Alex (the "Library of Alexandria"), our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. It is the heard of our framework. 
 
-So why is a *JavaScript* target cause for celebration?
+So why is a *JavaScript* target cause for excitement?
 
-This ***is*** a special case. We have an afinity for Cloudflare's "cloud edge" model. It's fast, it's cheap, and their security story is solid. As with all of their tooling Cloudflare Workers run on JavaScript V8 isolates, and Workers are how we plan to deploy workloaads to that cloud edge. 
+We have to admit, this *is* a special case. We have an affinity for Cloudflare's cloud edge model for its scale, utility, speed and security. Cloudflare Workers execute in V8 isolates, so JavaScript is the deployment format for edge workloads on their platform.
 
-Until this development, we thought we'd be using a separate JavaScript path with F# and the Fable compiler. Two compilers sharing some syntactic sympathies and diverging behind the scenes.
+Until this development, we thought we'd be using a separate JavaScript path with F# and the Fable compiler. That would mean Composer for native targeting, and Fable for Cloudflare workloads; two compilers sharing some syntactic sympathies and diverging behind the scenes.
 
-But recently, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. The Multi-Level Intermeiate Representation is the central strata for the Fidelity framework's compilation path. So while we were looking at LLVM for certain 'legacy' targets and other back ends to carry to specific types of processors, the introduction of a JavaScript pathway thorugh MLIR was a pleasant surprise. For our purposes, JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and to a dedicated "BackEnd" via JavaScript to be packaged for various uses. One source, one middle-end, one set of verification passes, multiple output formats.
+But recently, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. As mentioned above, using Multi-Level Intermeiate Representation is the central strata for the Fidelity framework's compilation path. So while we were looking at LLVM for certain 'legacy' targets and other back ends to carry to specific types of processors, the introduction of a JavaScript pathway thorugh MLIR was a pleasant surprise. For our purposes, JSIR places JavaScript inside the same lowering pathway that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and to a dedicated "BackEnd" via JavaScript to be packaged for various uses. 
 
 The [technical details](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) are worth reading if you want to understand how JSIR's ops map to Alex's dialect infrastructure and where the trust boundaries fall. This post is about what the unification means in practice.
 
