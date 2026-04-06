@@ -7,7 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 ---
 
-The Fidelity framework is primarily designed to target hardware in the most direct manner possible. You know the acronyms: CPUs, GPUs, FPGAs, MCUs, NPUs, and other accelerators too. Every compilation target goes through Alex (the "Library of Alexandria"), our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. It is the heard of our framework. 
+The Fidelity framework is primarily designed to target hardware in the most direct manner possible. You know the acronyms: CPUs, GPUs, FPGAs, MCUs, NPUs, and other accelerators too. Every compilation target goes through Alex (the "Library of Alexandria"), our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. It is the heart of our framework. 
 
 So why is a *JavaScript* target cause for excitement?
 
