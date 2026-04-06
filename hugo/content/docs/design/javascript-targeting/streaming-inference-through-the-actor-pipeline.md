@@ -104,3 +104,68 @@ The entire path from inference output to client display is specified at design t
 The runtime does not check dimensions. It does not validate schemas. It does not negotiate representations. It does not inspect frame structure. It runs the code the compiler emitted, which is correct because the compiler verified the specification that the code implements.
 
 The DTS paper states the principle formally: "Decidability is not a property the framework discovers; it is a property the framework enforces through the structure of its type language." The streaming inference pipeline is the distributed systems application of that principle. The compiler enforces structure. The runtime inherits reliability. The wire format bridges the gap where the compiler's jurisdiction ends and the runtime's begins.
+
+## Where This Architecture Has Limits
+
+The design-time guarantees cover type safety, schema identity, and dimensional consistency of the streaming path. They do not cover the operational concerns that arise from deploying streams across distributed infrastructure.
+
+### Backpressure
+
+Tell-first semantics mean the container does not wait for acknowledgment between tokens. If the container produces tokens faster than the Worker can relay or the client can consume, frames accumulate in the WebSocket send buffer. TCP flow control provides coarse-grained backpressure at the transport level, but it operates on byte volume, not on frame boundaries. A slow client causes the Worker's outbound buffer to grow until the runtime intervenes.
+
+Cloudflare Workers have memory limits per isolate. A sustained backpressure situation can cause the Worker to exceed its memory budget and be evicted. The BAREWire frame format does not address this. Backpressure is a runtime concern that the compiler cannot verify. The practical mitigation is rate limiting at the container: the container tracks how many unacknowledged frames are in flight and pauses generation when the count exceeds a threshold. This requires a feedback channel from the Worker to the container, which inverts the tell-first model for flow control while preserving it for data delivery.
+
+### Ordering and Reconnection
+
+TCP guarantees in-order delivery on a single connection. A stream of token frames arrives in the order the container sent them as long as the WebSocket connection remains open. If the connection drops mid-stream, the ordering guarantee disappears. The client reconnects and receives a new WebSocket connection. Frames sent before the disconnect are lost unless the Worker buffered them.
+
+Durable Objects have persistent state. A Worker could maintain a stream ledger: correlation ID, last acknowledged frame index, buffered frames pending delivery. On reconnection, the client sends its last received frame index, and the Worker replays from the ledger. This adds complexity. The BAREWire frame format supports it (the correlation ID and index field in each `Token` frame provide the necessary bookkeeping), but the replay logic is application code, not a property the compiler can verify.
+
+For applications where dropped tokens are acceptable (interactive chat where the user can re-query), the simpler approach is to abandon the stream on disconnect and let the client issue a new request. For applications where every token matters (clinical decision support, financial computation), the stream ledger pattern is necessary. The choice is an architectural decision that belongs to the developer.
+
+### Cold Start Latency
+
+The streaming architecture assumes the container is already running when the first token request arrives. In practice, the first request to a cold container incurs startup latency: container image pull, runtime initialization, model loading. For a BitNet model, the model loading step may take seconds. The client experiences a long delay before the first token, followed by rapid streaming once the model is warm.
+
+This is not specific to BAREWire or the Fidelity framework. Every containerized inference deployment faces the same cold start problem. The mitigations are standard: pre-warming containers, keeping a minimum replica count, using smaller model formats that load quickly. The BAREWire frame format does not affect cold start latency. It affects what happens after the first token is generated.
+
+### Payload Boundaries
+
+A typical token frame is 18 bytes. Cloudflare Workers support WebSocket messages up to 1 MB. For token streaming, the frame size is never a concern. For other inference outputs, the frame size may matter.
+
+An embedding vector (1024 float64 values) is 8 KB per frame. A batch of embeddings could approach the WebSocket message limit. A `StreamError` frame with a detailed diagnostic message is unlikely to exceed the limit but is unbounded in principle. The BAREWire frame header encodes the length, so the receiver always knows the frame size before reading the payload. But if a single frame exceeds the WebSocket message limit, the Worker must fragment it, which breaks the one-frame-per-WebSocket-message assumption.
+
+The practical response is to keep inference outputs within the frame size budget. For autoregressive token streaming, this is naturally satisfied. For bulk outputs (embeddings, logits, attention maps), the discriminated union should define a chunked variant that splits the output across multiple frames, each within the size limit. The compiler cannot enforce this because the payload size depends on the model's output, which is a runtime value. The developer must design the discriminated union with the transport constraints in mind.
+
+### Non-Autoregressive Models
+
+The streaming architecture is motivated by autoregressive generation: each token is produced sequentially and can be delivered as it is generated. Not all inference models produce output this way.
+
+A classification model produces a single output. An embedding model produces a single vector. A regression model produces a single value. For these models, the BAREWire frame format still works. The response is a single frame rather than a stream. The correlation ID still ties request to response. The schema identity still holds. But the streaming infrastructure (the token-by-token relay through the Worker, the client-side accumulation, the `StreamEnd` sentinel) is unnecessary overhead. A single request/response frame pair is simpler and more appropriate.
+
+The discriminated union handles both patterns naturally:
+
+```fsharp
+type InferenceResponse =
+    | Token of text: string * index: int         // autoregressive streaming
+    | StreamEnd of totalTokens: int              // stream termination
+    | StreamError of message: string             // error in either mode
+    | Classification of label: string * confidence: float   // single response
+    | Embedding of values: float array           // single response
+```
+
+The compiler verifies all cases. The BAREWire schema covers all tags. The Worker relays whatever frames arrive. The distinction between streaming and single-response is a property of which tags the container actually sends, not a property of the frame format or the transport layer.
+
+### What Testing Must Cover
+
+The design-time guarantees establish that every frame is typed, every schema is derived from verified types, and every cross-substrate serialization is structurally consistent. Testing must cover everything else:
+
+**Latency under load.** How many concurrent inference streams can a single Worker relay before response times degrade? This depends on the Worker's compute budget per request, V8's scheduling behavior, and the container's throughput.
+
+**Reconnection behavior.** If the stream ledger pattern is used, do replayed frames arrive correctly? Does the client handle duplicate frames if the ledger's last-acknowledged index is stale?
+
+**Memory pressure.** Under sustained backpressure, does the Worker stay within its memory budget? Does the container's rate limiting engage before the Worker is evicted?
+
+**Model-specific output.** Does the model produce tokens within the expected size range? Does the discriminated union cover all output cases the model can produce?
+
+These are the concerns that the compiler's type system cannot express. They require integration testing, load testing, and operational monitoring. The compiler removed the structural failure modes. Testing validates the operational characteristics that remain.
