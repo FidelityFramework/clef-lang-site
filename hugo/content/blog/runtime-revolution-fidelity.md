@@ -1,5 +1,5 @@
 ---
-title: "A Runtime Revolution (sort of) for Fidelity"
+title: "A Runtime Revolution, *sort of*..."
 linkTitle: "Runtime Revolution"
 description: "Google's JSIR Dialect Brings Cloud Edge Targeting and More to Our Framework"
 date: 2026-04-06
