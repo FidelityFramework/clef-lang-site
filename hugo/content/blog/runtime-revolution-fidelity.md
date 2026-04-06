@@ -1,7 +1,7 @@
 ---
 title: "A Runtime Revolution, sort of..."
 linkTitle: "Runtime Revolution"
-description: "Google's JSIR Dialect Brings Cloud Edge Targeting and More to Our Framework"
+description: "Google's JSIR Dialect Brings Cloud Edge Targeting and More to Fidelity Framework"
 date: 2026-04-06
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
