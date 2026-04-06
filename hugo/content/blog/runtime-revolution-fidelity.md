@@ -7,9 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 ---
 
-## Why Are We Cheerful About a Runtime Target?
-
-The Fidelity framework is designed to target hardware natively. CPUs, GPUs, FPGAs, spatial accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the primary concern of the framework. 
+The Fidelity framework is primarily designed to directly target hardware. You konw the acronyms: CPUs, GPUs, FPGAs, MCUs, NPUs, other accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the primary concern of the framework. 
 
 So why is a *JavaScript* target cause for celebration?
 
@@ -17,7 +15,7 @@ This ***is*** a special case. We have an afinity for Cloudflare's "cloud edge" m
 
 Until this development, we thought we'd be using a separate JavaScript path with F# and the Fable compiler. Two compilers sharing some syntactic sympathies and diverging behind the scenes.
 
-But recently, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. As the Multi-Level Intermeiate Language is the central strata for the Fidelity framework's compilation path, the introduction of a JavaScript pathway thorugh MLIR was a revelation. JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and out the other side as JavaScript. One source, one middle-end, one set of verification passes, multiple output formats.
+But recently, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. The Multi-Level Intermeiate Representation is the central strata for the Fidelity framework's compilation path. So while we were looking at LLVM for certain 'legacy' targets and other back ends to carry to specific types of processors, the introduction of a JavaScript pathway thorugh MLIR was a pleasant surprise. For our purposes, JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and to a dedicated "BackEnd" via JavaScript to be packaged for various uses. One source, one middle-end, one set of verification passes, multiple output formats.
 
 The [technical details](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) are worth reading if you want to understand how JSIR's ops map to Alex's dialect infrastructure and where the trust boundaries fall. This post is about what the unification means in practice.
 
@@ -58,6 +56,8 @@ What changed is confidence. The JavaScript that runs at the edge was produced by
 ## Looking Forward
 
 The [posit arithmetic design](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) describes how the DTS selects numeric representations based on dimensional range analysis. On native targets, this means tapered precision concentrated where the computation operates. On JavaScript, it means IEEE 754 float64 every time. The compiler surfaces this divergence as a design-time diagnostic so the developer can make informed decisions about what computation belongs at the edge and what belongs on native hardware.
+
+JSIR also opens a path beyond Workers. The [WREN stack](/blog/wren-stack/) uses Partas.Solid components rendered in a system WebView, with native Clef logic communicating over BAREWire through a local WebSocket. Today, Partas.Solid compiles F# to JavaScript through Fable for the front-end layer. With JSIR in the pipeline, that front-end JavaScript could be produced by Composer through the same verified middle-end as the native backend. The WREN stack's WebView layer and its native layer would both be compiled from the same source, through the same passes, with the same BAREWire schema derivation governing the messages between them. The front-end/backend boundary becomes another instance of the cross-substrate pattern that JSIR makes structural.
 
 The three articles in the [JavaScript targeting section](/docs/design/javascript-targeting/) cover the technical foundations: how JSIR unifies the pipeline, how verified properties carry through to emission, and how BAREWire enables streaming inference from containers through Workers to clients. This post is the invitation to read them.
 
