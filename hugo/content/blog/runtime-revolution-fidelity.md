@@ -9,11 +9,15 @@ tags: ["Architecture", "Innovation", "Design"]
 
 ## Why Are We Cheerful About a Runtime Target?
 
-The Fidelity framework is designed to target hardware natively. CPUs, GPUs, FPGAs, spatial accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the whole point of the framework. So why is a *JavaScript* target cause for celebration?
+The Fidelity framework is designed to target hardware natively. CPUs, GPUs, FPGAs, spatial accelerators. Every compilation target goes through Alex, our MLIR middle-end, where dimensional verification, escape analysis, and BAREWire schema derivation all happen in one place. That is the primary concern of the framework. 
 
-Because Cloudflare Workers run JavaScript, and Workers are how Fidelity deploys actors to the edge. Until now, the JavaScript path was the odd one out. It went through Fable on a separate compilation path, maintained independently, verified independently. Two compilers sharing a front-end and nothing else.
+So why is a *JavaScript* target cause for celebration?
 
-On April 6, 2026, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and out the other side as JavaScript rather than native code. One source, one middle-end, one set of verification passes, multiple output formats.
+This ***is*** a special case. We have an afinity for Cloudflare's "cloud edge" model. It's fast, it's cheap, and their security story is solid. As with all of their tooling Cloudflare Workers run on JavaScript V8 isolates, and Workers are how we plan to deploy workloaads to that cloud edge. 
+
+Until this development, we thought we'd be using a separate JavaScript path with F# and the Fable compiler. Two compilers sharing some syntactic sympathies and diverging behind the scenes.
+
+But recently, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR. As the Multi-Level Intermeiate Language is the central strata for the Fidelity framework's compilation path, the introduction of a JavaScript pathway thorugh MLIR was a revelation. JSIR places JavaScript inside the same dialect infrastructure that every other Clef target already uses. That means the JavaScript path can now go through Alex, through the same verification passes, through the same BAREWire schema derivation, and out the other side as JavaScript. One source, one middle-end, one set of verification passes, multiple output formats.
 
 The [technical details](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) are worth reading if you want to understand how JSIR's ops map to Alex's dialect infrastructure and where the trust boundaries fall. This post is about what the unification means in practice.
 
@@ -23,7 +27,7 @@ The Fidelity framework deploys actors to two substrates. Native actors run as OS
 
 The critical question has always been: can you trust that the native serializer and the JavaScript deserializer agree on the byte layout? In the Fable-based architecture, that agreement was verified by testing. If the two compilers disagreed about field order in a discriminated union, the mismatch showed up at runtime, in production.
 
-With JSIR in Alex, both serializers derive from the same BAREWire dialect ops. The pipeline forks after the schema is derived, not before. Cross-substrate compatibility becomes a structural property of the compiler rather than a property discovered by testing. The [design-time specification article](/docs/design/javascript-targeting/design-time-spec-runtime-reliability/) walks through each verified property and how it behaves after emission to JavaScript.
+With JSIR in Alex, both serializers derive from the same BAREWire dialect ops. The pipeline forks after the schema is derived, not before. Cross-substrate compatibility becomes a structural property of the compiler as opposed to after-build validation using standard testing. The [design-time specification article](/docs/design/javascript-targeting/design-time-spec-runtime-reliability/) walks through each verified property and how it behaves after emission to JavaScript.
 
 ## BAREWire at the Wire Boundary
 
