@@ -276,9 +276,9 @@ module Handlers =
                 | Some r -> r |> Seq.map (fun row -> string row?id) |> Seq.toArray
                 | None -> [||]
 
-            // Delete vectors in batches (Vectorize limit is 1000 per call)
+            // Delete vectors in batches (Vectorize limit is 100 per call)
             let mutable vectorsDeleted = 0
-            for batch in ids |> Array.chunkBySize 1000 do
+            for batch in ids |> Array.chunkBySize 100 do
                 let idList = ResizeArray(batch)
                 let! _ = env.VECTORIZE.deleteByIds(idList)
                 vectorsDeleted <- vectorsDeleted + batch.Length
