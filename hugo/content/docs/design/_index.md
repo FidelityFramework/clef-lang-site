@@ -1,5 +1,5 @@
 ---
-title: Design Rationale
+title: Design
 weight: 3
 sidebar:
   open: false
