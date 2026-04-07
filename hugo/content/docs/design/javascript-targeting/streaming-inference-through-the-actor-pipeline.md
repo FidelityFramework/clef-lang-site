@@ -93,9 +93,9 @@ The entire path from inference output to client display is specified at design t
 
 **Dimensional consistency**: the inference model's output types were verified at compile time, as described in the [decidability sweet spot](/docs/internals/verification/decidability-sweet-spot/). The DTS rejected every program that could produce dimensionally inconsistent results. The runtime does not check dimensions.
 
-**BAREWire schema**: derived at design time from the verified `InferenceResponse` discriminated union. Enforced at runtime by byte layout, not by validation code. The receiver does not inspect field names. It reads positions determined by the compiled schema.
+**BAREWire schema**: derived at design time from the verified `InferenceResponse` type definition. Enforced at runtime by byte layout, not by validation code. The receiver does not inspect field names. It reads positions determined by the compiled schema.
 
-**Frame structure**: fixed at design time by the discriminated union definition. Self-enforcing at runtime because the tag-to-layout mapping is compiled into both the serializer and the deserializer.
+**Frame structure**: fixed at design time by the type definition. Self-enforcing at runtime because the tag-to-layout mapping is compiled into both the serializer and the deserializer.
 
 **Cross-substrate compatibility**: guaranteed at design time by shared MLIR ops, following the pipeline unification described in [the JSIR article](../jsir-javascript-as-mlir-backend/). The container's native serializer and the Worker's JavaScript deserializer both derived from the same BAREWire dialect ops. Byte-identical output is a structural property of the pipeline, not a property verified by testing.
 
@@ -143,7 +143,7 @@ The streaming architecture is motivated by autoregressive generation: each token
 
 A classification model produces a single output. An embedding model produces a single vector. A regression model produces a single value. For these models, the BAREWire frame format still works. The response is a single frame rather than a stream. The correlation ID still ties request to response. The schema identity still holds. But the streaming infrastructure (the token-by-token relay through the Worker, the client-side accumulation, the `StreamEnd` sentinel) is unnecessary overhead. A single request/response frame pair is simpler and more appropriate.
 
-The discriminated union handles both patterns naturally:
+The type definition handles both patterns naturally:
 
 ```fsharp
 type InferenceResponse =
@@ -166,6 +166,6 @@ The design-time guarantees establish that every frame is typed, every schema is 
 
 **Memory pressure.** Under sustained backpressure, does the Worker stay within its memory budget? Does the container's rate limiting engage before the Worker is evicted?
 
-**Model-specific output.** Does the model produce tokens within the expected size range? Does the discriminated union cover all output cases the model can produce?
+**Model-specific output.** Does the model produce tokens within the expected size range? Does the response type cover all output cases the model can produce?
 
 These are the concerns that the compiler's type system cannot express. They require integration testing, load testing, and operational monitoring. The compiler removed the structural failure modes. Testing validates the operational characteristics that remain.
