@@ -67,7 +67,7 @@ The container does not wait for acknowledgment between tokens. It generates, ser
 
 The Worker receives BAREWire frames from the container and forwards them over WebSocket. The Worker is a protocol adapter. It does not buffer the full response. Each BAREWire frame from the container becomes a WebSocket frame to the client. The streaming is transparent: the Worker relays frames as they arrive.
 
-The Worker's JavaScript is compiled through JSIR as described in the [JSIR article](../jsir-javascript-as-mlir-backend/). The BAREWire deserializer and WebSocket serializer both derived from the same MLIR ops in the shared middle-end. The Worker does not inspect the payload. It reads the frame header, determines the length, and forwards.
+The Worker's JavaScript is compiled through JSIR as described in [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/). The BAREWire deserializer and WebSocket serializer both derived from the same MLIR ops in the shared middle-end. The Worker does not inspect the payload. It reads the frame header, determines the length, and forwards.
 
 ## Contrast with Conventional Streaming
 
@@ -77,7 +77,7 @@ In the SSE/JSON pattern, the client must parse each message to determine its typ
 
 In the BAREWire pattern, the discriminated union is the schema. Adding a new case (`| StreamMetrics of latency: float<ms>`, tag 3) produces a new tag. Existing clients that do not know tag 3 reject it at the frame level before any handler code executes. Renaming a field changes nothing on the wire because fields are positional, not named. Removing a case changes the tag mapping, which changes the schema, which breaks the schema identity check. Every structural change is visible at the type level, verified at compile time, and enforced at the wire level.
 
-The schema identity proxy described in the [JSIR article](../jsir-javascript-as-mlir-backend/) holds for every frame in the stream, not just the first one. A stream of 500 token frames is 500 independently typed, independently parseable messages, each carrying the same schema guarantee.
+The [schema identity proxy](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) holds for every frame in the stream, not just the first one. A stream of 500 token frames is 500 independently typed, independently parseable messages, each carrying the same schema guarantee.
 
 ## Multiplexing and Correlation
 
@@ -97,9 +97,9 @@ The entire path from inference output to client display is specified at design t
 
 **Frame structure**: fixed at design time by the type definition. Self-enforcing at runtime because the tag-to-layout mapping is compiled into both the serializer and the deserializer.
 
-**Cross-substrate compatibility**: guaranteed at design time by shared MLIR ops, following the pipeline unification described in [the JSIR article](../jsir-javascript-as-mlir-backend/). The container's native serializer and the Worker's JavaScript deserializer both derived from the same BAREWire dialect ops. Byte-identical output is a structural property of the pipeline, not a property verified by testing.
+**Cross-substrate compatibility**: guaranteed at design time by shared MLIR ops, following the [pipeline unification](../jsir-javascript-as-mlir-backend/#what-jsir-changes) described in the JSIR article. The container's native serializer and the Worker's JavaScript deserializer both derived from the same BAREWire dialect ops. Byte-identical output is a structural property of the pipeline, not a property verified by testing.
 
-**Representation selection**: decided at design time from dimensional range analysis, as detailed in the [posit arithmetic design](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/). On the native container, the compiler selected the optimal numeric format. On the JavaScript Worker, the representation is IEEE 754 float64. The [JSIR article](../jsir-javascript-as-mlir-backend/) describes the representation fidelity diagnostic that surfaces this divergence at design time.
+**Representation selection**: decided at design time from dimensional range analysis, as detailed in the [posit arithmetic design](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/). On the native container, the compiler selected the optimal numeric format. On the JavaScript Worker, the representation is IEEE 754 float64. The [Representation Fidelity section](../jsir-javascript-as-mlir-backend/#representation-fidelity-across-substrates) of the JSIR article describes the diagnostic that surfaces this divergence at design time.
 
 The runtime does not check dimensions. It does not validate schemas. It does not negotiate representations. It does not inspect frame structure. It runs the code the compiler emitted, which is correct because the compiler verified the specification that the code implements.
 

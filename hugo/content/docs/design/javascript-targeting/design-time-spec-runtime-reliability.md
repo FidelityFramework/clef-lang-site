@@ -33,7 +33,7 @@ The verification is not wasted. The escape analysis in Alex catches lifetime err
 
 ## BAREWire Schema Derivation
 
-When actors communicate across substrate boundaries, the BAREWire schema is derived from the verified types, records, and structured data definitions that constitute the actor's message contract. The JSIR article describes how schema identity serves as a proxy for dimensional agreement. The key property for JavaScript targeting is that the schema derivation happens in Alex, before the pipeline forks.
+When actors communicate across substrate boundaries, the BAREWire schema is derived from the verified types, records, and structured data definitions that constitute the actor's message contract. The [Schema Identity section](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) of the JSIR article describes how schema identity serves as a proxy for dimensional agreement. The key property for JavaScript targeting is that the schema derivation happens in Alex, before the pipeline forks.
 
 The native serializer (via LLVM) and the JavaScript deserializer (via JSIR) both derive from the same BAREWire dialect ops. The byte layout is identical because both lowering paths consumed the same IR representation. A Worker receiving a BAREWire frame from a native container reads the same byte positions that the container wrote. Cross-substrate serialization compatibility is a structural property of the shared middle-end, not a property that must be tested across substrate pairs.
 
@@ -47,7 +47,7 @@ The DTS compilation chain links dimension to range, range to representation, rep
 
 On JavaScript via JSIR, the representation selection step runs and produces a trivial result. JavaScript's `Number` type is IEEE 754 float64. There is no posit arithmetic, no fixed-point, no tapered precision. The dimensional range analysis executes, and the answer is always the same. The representation selection machinery fires and has nothing to decide.
 
-The range analysis is not wasted. The compiler knows the dimensional range of every value on the JavaScript path. It knows that float64 provides uniform precision across that range rather than the tapered precision that a posit format would provide. The JSIR article describes the representation fidelity diagnostic that surfaces when an actor deploys cross-substrate:
+The range analysis is not wasted. The compiler knows the dimensional range of every value on the JavaScript path. It knows that float64 provides uniform precision across that range rather than the tapered precision that a posit format would provide. The [Representation Fidelity section](../jsir-javascript-as-mlir-backend/#representation-fidelity-across-substrates) of the JSIR article describes the diagnostic that surfaces when an actor deploys cross-substrate:
 
 ```
 TorqueActor deploys to both native (x86_64) and edge (Cloudflare Worker):
