@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Formal Methods", "Z3", "Type Systems"]
 params:
   originally_published: 2026-02-25
-  original_url: "https://speakez.tech/blog/automatic-verification-in-clef-lang/"
   migration_date: 2026-02-25
 ---
 

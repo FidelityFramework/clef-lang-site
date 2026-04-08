@@ -265,19 +265,37 @@ The compiler's range analysis produces exact bounds (no false positives, no fals
 
 When all three conditions hold, the range analysis is a proof: the output is guaranteed to lie within the computed range for all inputs within the declared ranges. The compiler reports this as "range analysis confidence: exact."
 
+Stated in Hoare logic, the analysis discharges the triple:
+
+$$
+\{\,\forall i.\; \mathit{input}_i \in \mathit{declared\_range}_i\,\}
+\quad
+\mathit{computation\_graph}
+\quad
+\{\,\mathit{output} \in \mathit{computed\_range} \;\wedge\; \mathit{computed\_range} \subseteq \mathit{safe\_bound}\,\}
+$$
+
+The declared input ranges are the precondition. The straight-line arithmetic is the command. The propagated output range is the strongest postcondition derivable from those preconditions and the operations. The bound check is an application of the consequence rule: if the computed range implies the declared safety bound, the triple is valid, and Z3 discharges that implication as a `QF_LIA` obligation. Range propagation, in this reading, is forward strongest-postcondition computation over the PSG.
+
 Structural analysis, thermal analysis, fluid dynamics boundary conditions, sensor fusion pipelines, and electrical power budgets are typically straight-line arithmetic over declared physical ranges. They satisfy all three conditions. For these computations, the proofs are free for the same reason dimensional consistency is free: the computation graph determines the result.
 
 ## Where Range Propagation Is Conservative
 
-The analysis becomes conservative (may report violations that cannot actually occur) in four specific cases:
+The analysis becomes conservative (may report violations that cannot actually occur) in cases that fall into two distinct categories. The distinction matters: the first category is resolved by Tier 2 annotations the engineer writes locally; the second is resolved by Tier 3 lemmas that the compiler instantiates from a growing library. They are not the same kind of gap.
 
-**Branching control flow.** When a computation branches on a runtime condition, the range at the join point is the union of the ranges from both branches. The union may be wider than the actual range because the compiler does not know which branch will execute. For physical computations where branches correspond to operating regimes (subsonic vs. supersonic, laminar vs. turbulent), the union is often the correct range. But for branches that narrow the range (e.g., clamping a value), the conservative analysis may report a violation that the clamp prevents.
+### Resolved at Tier 2 by an annotation
 
-**Iteration with runtime-dependent bounds.** A loop whose iteration count depends on runtime data produces a range that the compiler must compute by fixed-point iteration over the interval. For bounded loops (whose bounds the coeffect system verifies), this converges. For unbounded loops, the range is not statically determinable.
+**Branching control flow with narrowing.** When a computation branches on a runtime condition, the range at the join point is the union of the ranges from both branches. For branches that correspond to operating regimes (subsonic vs. supersonic, laminar vs. turbulent), the union is the correct range. But for branches that narrow the range — a clamp, a saturation, a guarded reciprocal — the conservative analysis may report a violation that the clamp itself prevents. The engineer resolves this by inserting a range assertion at the join point. In Hoare logic this is the conjunction rule: instead of carrying `{Q₁ ∨ Q₂}` forward as the postcondition of the branch, the engineer asserts `{bound}` and Z3 discharges `bound ⊆ Q₁ ∧ bound ⊆ Q₂` as a `QF_LIA` obligation. The asserted bound then becomes the precondition for the rest of the graph, and propagation continues.
 
-**External inputs.** Values that enter from outside the compilation boundary (sensor readings, API responses, user input) carry only their declared range. The compiler cannot verify that the external source respects the declared range. The analysis is sound with respect to the declaration; it is not sound with respect to the actual source.
+**Bounded loops with linear invariants.** A loop whose iteration count depends on runtime data produces a range that the compiler must compute by fixed-point iteration over the interval. For bounded loops with a linear invariant, the engineer states the invariant as an annotation and Z3 discharges the Hoare while rule: the invariant holds initially, is preserved by each iteration, and implies the postcondition on exit. This stays inside the `QF_LIA` fragment and remains a Tier 2 obligation.
 
-**Wide-interval transcendentals.** The sine of a wide interval is [-1, 1]. The exponential of a wide interval is [0, infinity). For computations that pass through transcendental functions with wide input ranges, the output range may be too wide for useful constraint checking. For narrow intervals around a specific operating point, the transcendental range propagation is precise.
+**External inputs.** Values that enter from outside the compilation boundary (sensor readings, API responses, user input) carry only their declared range. The compiler cannot verify that the external source respects the declared range. The analysis is sound with respect to the declaration; it is not sound with respect to the actual source. This is a boundary condition rather than a tier issue — the declaration is the contract.
+
+### Resolved at Tier 3 by a parameterized lemma
+
+**Wide-interval transcendentals.** The sine of a wide interval is `[-1, 1]`. The exponential of a wide interval is `[0, ∞)`. The naive interval rule for these functions is too coarse for useful constraint checking. The right resolution is not an annotation — the engineer cannot honestly assert a tighter range without invoking a real-analysis fact. The right resolution is a lemma in `Fidelity.Lemmas.Mathematics`, parameterized over the interval, proved once in Rocq, and instantiated automatically by the compiler from the specific interval values in the PSG. The Tier 2 discharge confirms that the concrete interval satisfies the lemma's precondition; the lemma supplies the tighter postcondition. The compiler reports a conservative finding today because the relevant lemma is not yet in the library, not because the approach cannot express it.
+
+**Loops with nonlinear or transcendental invariants.** A loop whose invariant requires reasoning beyond `QF_LIA` — convergence of an iterative solver, monotonic decrease of a Lyapunov function, a fixed-point bound on a nonlinear recurrence — is a Tier 3 obligation. The lemma is parameterized over the recurrence and the operating interval; the instantiation comes from the PSG. As with the transcendental case, the conservative diagnostic today is an honest acknowledgment that the relevant lemma is not yet available, not a structural limitation.
 
 In each of these cases, the compiler reports the confidence level alongside the finding:
 
@@ -289,7 +307,7 @@ In each of these cases, the compiler reports the confidence level alongside the 
   Consider: add range assertion or narrow input range declaration
 ```
 
-The diagnostic distinguishes between exact findings (proofs) and conservative findings (warnings). The engineer can tighten a conservative finding into an exact one by adding a range assertion at the branch point, which narrows the interval and may allow the analysis to discharge the constraint. This is the transition from Tier 1 (automatic) to Tier 2 (annotated), and it occurs only when the automatic analysis is insufficient.
+The diagnostic distinguishes between exact findings (proofs) and conservative findings (warnings). For the first category above, the engineer tightens the finding into an exact one by adding a Tier 2 annotation. For the second, the resolution arrives when the relevant lemma lands in `Fidelity.Lemmas.Mathematics`; from that point forward, every program whose PSG annotations fall within the lemma's parameter types is instantiable for free. The conservative region shrinks as the lemma library grows.
 
 ## The Revised Tier Boundary
 
@@ -308,7 +326,7 @@ The revised Tier 1 coverage:
 
 The last two rows use the same mechanism. The difference is what the computed range is compared against: a representation's dynamic range (for representation selection) or a physical property's value (for safety checking). The comparison target determines whether the finding is "use posit32" or "the wing breaks at G-force 3.44." The propagation is identical.
 
-For the majority of safety-critical arithmetic, the engineer writes no proof code and no verification annotations. The compiler does the work at Tier 1. Tier 2 (scoped assertions) is needed only when the range analysis is conservative and the engineer requires a tighter bound. Tier 3 (full SMT proof generation) is needed for properties that range propagation cannot express: convergence, termination of iterative procedures, and correctness of algorithms whose safety depends on control flow, not arithmetic bounds.
+For the majority of safety-critical arithmetic, the engineer writes no proof code and no verification annotations. The compiler does the work at Tier 1. Tier 2 (scoped assertions) is needed only when the range analysis is conservative in a way a local annotation can resolve — a clamp at a join point, a linear loop invariant. Tier 3 is needed for properties that range propagation cannot express: convergence, termination of iterative procedures, transcendental bounds, and correctness of algorithms whose safety depends on control flow rather than arithmetic. Tier 3 lemmas in `Fidelity.Lemmas.Mathematics` are parameterized over interval bounds and instantiated by the compiler from the Tier 2 facts already present in the PSG. The marginal cost of a new lemma is the proof itself; instantiation is automatic. This is the same flywheel pattern that the formal verification design applies to cryptographic protocols, and it is why the conservative region shrinks monotonically as the library grows.
 
 The coeffect algebra that emerged from evaluating and departing from F*'s dependent type approach is precisely what makes range propagation composable: the same algebraic structure that tracks escape classification and memory lifetimes also tracks value ranges through the computation graph. The [verification internals](/docs/internals/verification/) cover this design path in full.
 
