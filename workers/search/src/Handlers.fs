@@ -207,19 +207,37 @@ module Handlers =
             let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
 
             // GLM-4.7-Flash returns OpenAI chat completion format:
-            // { choices: [{ message: { content: "..." } }] }
-            // Only extract content - reasoning is internal chain-of-thought noise
+            //   { choices: [{ message: { content, reasoning_content? } }] }
+            // GLM models may emit chain-of-thought as <think>...</think> blocks
+            // inline within `content`, or as a separate `reasoning_content` field.
+            // The extractor below handles both shapes:
+            //   1. Strip any <think>...</think> blocks from content
+            //   2. If the stripped content is non-empty, return it
+            //   3. Otherwise fall back to reasoning_content (some flash modes
+            //      put the entire answer there when content is empty)
+            //   4. Final fallbacks: legacy `response` field and raw string
             let responseText: string =
                 if isNullOrUndefined aiResult then ""
                 else
                     let content: string =
                         emitJsExpr aiResult """
                             (function(r) {
+                                var stripThink = function(s) {
+                                    if (typeof s !== 'string') return '';
+                                    return s.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                                };
                                 if (r && r.choices && r.choices[0] && r.choices[0].message) {
-                                    if (r.choices[0].message.content) return r.choices[0].message.content;
+                                    var msg = r.choices[0].message;
+                                    var stripped = stripThink(msg.content || '');
+                                    if (stripped.length > 0) return stripped;
+                                    if (msg.reasoning_content) {
+                                        var rc = stripThink(msg.reasoning_content);
+                                        if (rc.length > 0) return rc;
+                                    }
+                                    if (msg.content) return msg.content;
                                 }
-                                if (r && r.response) return r.response;
-                                if (typeof r === 'string') return r;
+                                if (r && r.response) return stripThink(r.response) || r.response;
+                                if (typeof r === 'string') return stripThink(r) || r;
                                 return null;
                             })($0)"""
                     if not (isNullOrUndefined content) then content

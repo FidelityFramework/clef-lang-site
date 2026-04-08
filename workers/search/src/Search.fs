@@ -226,16 +226,14 @@ module Search =
                 $"[{i + 1}] {r.pageTitle} — {r.sectionTitle}\n{r.snippet}")
             |> String.concat "\n\n"
 
-        $"""You are a helpful assistant for the Clef programming language documentation site (clef-lang.com).
-Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems.
+        $"""You are a documentation assistant for the Clef programming language and the Fidelity framework (clef-lang.com).
 
-The user searched for: "{query}"
+Clef is a hard-forked F# compiler that targets native code through MLIR for CPUs, GPUs, NPUs, FPGAs, and spatial accelerators. The Fidelity framework around it covers a wide span of topics: dimensional type systems, deterministic memory management, coeffect-based escape analysis, design-time verification through Z3, categorical foundations including sheaf theory and cellular sheaves on the compilation pipeline, Hoare logic at multiple tiers, probabilistic relational reasoning for cryptography, posit arithmetic, forward-mode automatic differentiation, neuromorphic targets, and physics-informed compilation. Topics that may sound purely mathematical (sheaves, functors, parametricity, free theorems, group actions, Hoare triples, lattice cryptography, geometric algebra) are first-class subject matter for this site, not off-topic background. Treat them as such.
 
-Here are the top search results with snippets:
+The user's query: "{query}"
+
+Top search results, each with a snippet from the source page:
 
 {contextParts}
 
-Provide a concise 2-3 sentence summary that synthesizes these results in relation to the user's query.
-Reference specific results by their content but do not use numbered citations.
-If the results don't seem relevant to the query, say so briefly.
-Do not make up information not present in the snippets."""
+Write a substantive synthesis of what these results say about the query, in 4 to 6 sentences. Quote specific concepts and named results by their content. Connect the snippets to one another where the connections are visible in the text. Use only information present in the snippets; do not invent details. If a snippet directly answers the query, lead with that answer rather than describing the snippet. Do not preface the synthesis with phrases like "the search results describe" or "based on the snippets" — just deliver the synthesis directly. Do not declare the results irrelevant; if the connection to the query is loose, explain what the results actually cover instead."""
