@@ -34,7 +34,7 @@ The CDL paper's deepest insight is that every differentiable function gives rise
 
 \[\text{Fwd} \dashv \text{Bwd} : \text{Para}(A) \rightleftarrows \text{Para}(B)\]
 
-This adjoint pair satisfies the triangle identities: the unit and counit compose to give the identity on each side. The forward pass and backward pass are not independent computations; they are two halves of a single algebraic structure constrained by the adjunction laws.
+This adjoint pair satisfies the triangle identities: the unit and counit compose to give the identity on each side. The forward pass and backward pass form two halves of a single algebraic structure, constrained by the adjunction laws.
 
 This observation is not specific to neural networks. The same adjoint structure appears in three domains that have historically been treated as separate disciplines:
 
@@ -75,6 +75,8 @@ Concretely, the DTS/DMM paper ([arXiv, forthcoming](/publications/dts-dmm/)) est
 2. **Escape analysis as coeffect propagation.** The lifetime ordering (stack < arena < heap < static) and its interaction with escape classification (Section 3.2) is a coeffect discipline in the sense of Petricek et al. [6]. The CDL paper's parameterized category construction provides the 2-categorical context in which this discipline operates.
 
 3. **Semantic preservation through compilation.** The PSG's five-stage compilation pipeline (Section 2.3) preserves annotations through lowering. In categorical terms, each compilation stage is a functor that preserves the relevant structure. The claim that "dimensions never influence control flow" is a statement about the functor's properties: it preserves the forward/backward adjunction while changing the representation.
+
+   The same claim has a precise reading on the compilation sheaf developed in [the compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/). The structure maps \(D(s_1 < s_2)\) of the compilation sheaf must satisfy the compositionality equation \(D(s_0 < s_1) \,;\, D(s_1 < s_2) = D(s_0 < s_2)\) for any chain of compilation stages. This is the categorical statement of "dimensions never influence control flow": each lowering pass is a structure map that preserves the annotation bundles, and consecutive lowerings compose to give the same result as a direct lowering. The CDL adjunction Fwd ⊣ Bwd applies at this level: the forward functor is the structure map going up the compilation poset (each lowering refines the annotation), and the backward functor is its adjoint going down (each restriction recovers the annotation that was present at the higher level). The dual-pass architecture is the witnessing mechanism that confirms the adjoint pair is well-defined at every edge of the compilation poset.
 
 ## What This Does Not Mean
 

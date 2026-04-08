@@ -99,11 +99,13 @@ AMD's XDNA 2 NPU, present in Strix Halo processors, represents a spatial dataflo
 
 **The set-constraint problem:** Mapping operations to tiles requires co-locating sets of operations, configuring sets of DMA routes, and partitioning sets of columns into spatial workload contexts. These are constraints over *sets* of nodes, not binary relationships. The [DTS/DMM paper's future work](/publications/dts-dmm/) identifies this as the motivation for a Program Hypergraph (PHG) generalization that would make set-constraints first-class.
 
+In the cohomological framing developed in the [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/), the tile-mapping problem is an \(H^0\) computation on the hypergraph poset: does a global section of the co-location sheaf exist that satisfies all joint constraints simultaneously? A graph (1-dimensional cell complex) can carry only \(H^0\) and \(H^1\) of a sheaf, while a hypergraph treated as a bipartite poset (vertices below their incident hyperedges) is a higher-dimensional cell complex whose cohomology lives in degrees a graph cannot represent. Joint resource constraints in kernel fusion and spatial tile placement generate cocycles in those higher degrees, which is the categorical reason binary edges are insufficient. The new algorithm for computing sheaf cohomology on arbitrary finite posets (arXiv:2502.15476) provides the infrastructure the PHG solver would use to determine whether a consistent tile assignment exists and to identify the obstruction class when it does not.
+
 **Cross-target transfer:** Values cross the shared DDR5 boundary between the NPU and the host CPU. This boundary is lower-latency than PCIe (shared memory, no serialization) but introduces coherency considerations that the coeffect system must track.
 
 ## Neuromorphic: Event-Driven Computation
 
-Neuromorphic targets (Intel Loihi 2 is the reference architecture in our analysis) operate on fundamentally different principles. Computation is event-driven: neurons fire when their membrane potential crosses a threshold, and the resulting spikes propagate through a configured network topology. There is no instruction stream, no program counter, and no conventional memory hierarchy.
+Neuromorphic targets (Intel Loihi 2 is the reference architecture in our analysis) operate on different principles from the targets above. Computation is event-driven: neurons fire when their membrane potential crosses a threshold, and the resulting spikes propagate through a configured network topology. There is no instruction stream, no program counter, and no conventional memory hierarchy.
 
 **Numeric representation:** Fixed-point for neuron state variables. Membrane potentials, synaptic weights, and spike timing variables use integer or fixed-point representations with bit widths determined by the neuromorphic core's datapath. The representation selection function evaluates `fixed<24,signed>` and similar formats against dimensional range requirements.
 
@@ -138,6 +140,10 @@ Each boundary has a distinct transfer cost, bandwidth constraint, and precision 
 
 The compiler would resolve these boundaries during MLIR lowering, using the dimensional range analysis to determine whether a specific precision conversion is acceptable for the computation's requirements. The [DTS/DMM paper](/publications/dts-dmm/) formalizes this as cross-target transfer fidelity analysis (Section 4.4), and the [posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) provides the detailed example for the CPU ↔ FPGA case.
 
+In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and the inverse structure map exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel: information about the source stalk that does not survive into the target stalk, quantified by the dimensional range analysis. The fidelity score is a measure of how much of the source stalk the structure map preserves. This framing makes precise what the score is computing: not "quality" in the abstract, but the kernel size of a specific stalk-to-stalk homomorphism.
+
+Each lowering pass within a single target is itself an application of Hoare's *consequence rule* over the compilation sheaf's annotations. If the precondition (the stalk at the higher-level dialect) is preserved by the lowering pass, and the postcondition (the stalk at the lower-level dialect) is implied by what the higher-level dialect promised, then the lowering is sound and the dual-pass discharge confirms it. The [decidability sweet spot document](/docs/internals/verification/decidability-sweet-spot/) develops this Hoare-logic reading of the dual-pass architecture in detail.
+
 ## The Information Accrual Principle
 
 Section 6.6 of the DTS/DMM paper formalizes an observation that underlies the multi-target compilation strategy: each compilation stage has strictly more information than its predecessor.
@@ -149,6 +155,8 @@ At the source level, the compiler knows types and dimensions. At the PSG level, 
 The principle: decisions that can be deferred to later stages should be, because later stages have strictly more information. Representation selection is deferred to the target-specific MLIR stage because that is where the target's numeric capabilities are known. Allocation strategy is deferred to MLIR emission because that is where the target's memory topology is known. Cache alignment is determined during final lowering because that is where microarchitectural parameters are available.
 
 DTS annotations survive through the early stages precisely to enable these late-stage decisions. Had dimensions been erased at the source level (as in F#'s Units of Measure), representation selection and transfer fidelity analysis would be impossible at the point where they can be made with full context.
+
+The information accrual principle is the *monotone sheaf condition* on the compilation poset. A sheaf in which stalks can only grow (or remain the same) as one moves up the base poset is a monotone sheaf, and the structure maps of such a sheaf are inclusions or refinements rather than arbitrary morphisms. The Fidelity compilation sheaf is monotone in this sense: each lowering pass adds annotations rather than removing them, and the structure map at each edge of the compilation poset is an inclusion of the prior stalk into the next. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the dual-pass architecture as the witnessing mechanism for global sections of this monotone sheaf, and the consequence rule applied at every lowering pass is what makes the verification compose across the pipeline.
 
 ## Current Status
 

@@ -66,7 +66,7 @@ q: Quire (exact accumulator)
   Lifetime: loop scope (lines 3-5), no escape detected
 ```
 
-The quire is not a special case requiring custom compiler support. It is a value with dimensional, allocation, and capability properties that the existing DTS+DMM framework handles through its standard inference and coeffect machinery.
+The quire is a value with dimensional, allocation, and capability properties that the existing DTS+DMM framework handles through its standard inference and coeffect machinery, with no custom compiler support required.
 
 ## Cross-Target Transfer Fidelity
 
@@ -91,6 +91,8 @@ Transfer (x86_64 → xilinx): float64 → posit32
 ```
 
 The suggestion to rescale is itself a dimensional operation. The compiler knows the conversion factor and can verify that the rescaled computation remains dimensionally consistent. This guidance is possible only because the dimensional annotation survives to the point where representation selection and transfer analysis occur.
+
+In the sheaf-theoretic framing developed in [the compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/), representation selection is a global section optimization on the representation sheaf: which assignment of representations to PSG nodes minimizes total worst-case relative error while remaining globally coherent with respect to the transfer boundary structure maps? The argmin formulation above is the local objective at each node; the global section condition is what ties the local choices together so that values flowing across target boundaries arrive in formats that the receiving target can handle without additional precision loss. Cross-target transfer fidelity is structure map evaluation: a lossless transfer is an isomorphism of stalks (the source representation embeds exactly into the target representation), and a lossy transfer is a structure map with a non-trivial kernel (information about the source value that does not survive into the target value). The fidelity score is a measure of how much of the source stalk the structure map preserves, quantified by the dimensional range analysis.
 
 ## The Complementarity
 

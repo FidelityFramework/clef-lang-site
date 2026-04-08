@@ -49,6 +49,12 @@ The categorical compatibility between our software infrastructure and quantum co
 
 These constraints are hardware limitations, not software limitations. They are being actively addressed by the quantum computing community through improved qubit designs, better error correction codes, and alternative physical substrates (trapped ions, photonic systems, topological qubits). Progress is real but incremental.
 
+The cellular sheaf framework developed in [the compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) gives a precise vocabulary for what quantum error correction is doing, and it identifies a research direction that the framework's structure makes tractable to pursue. Gate errors in a quantum circuit produce local inconsistencies in the circuit sheaf: the stalk at a noisy gate carries an error component that is not consistent with what the structure maps from upstream and downstream gates expect. This is a non-trivial \(H^1\) obstruction to extending the local stalks into a global section over the entire circuit. Quantum error correction codes are algorithms for resolving these obstruction classes by encoding logical qubits in many physical qubits and computing syndromes that identify which obstruction class is present. The surface code and other topological codes are, in this reading, algorithms for finding cocycle witnesses that kill specific \(H^1\) classes of the noisy circuit sheaf.
+
+This framing positions QEC as a target the framework's existing machinery is structurally aligned with. The compilation sheaf already supports stalks of arbitrary categories, structure maps that may have non-trivial kernels, and a dual-pass discharge mechanism that witnesses global sections at every edge of the compilation poset. A quantum target would slot into this machinery as another stalk category (qubit states with completely positive maps as morphisms), and the QEC layer would slot in as a Tier 3-style library of parameterized lemmas: each code (surface code, color code, bivariate bicycle code) would be a parameterized cocycle witness that the compiler instantiates against the specific noise model and connectivity of the target hardware. The lemma library does not yet exist, and writing it would require collaboration between formal methods researchers, quantum information theorists, and hardware specialists. The compilation poset, the dual-pass discharge mechanism, and the parameterized-lemma infrastructure are already in place. The framing names a concrete research target rather than a generic gesture toward "quantum support."
+
+This does not change what current hardware can do. The 1,000 physical qubits per logical qubit ratio is what it takes to compute syndromes reliably at current error rates, and improving that ratio is hardware work, not framework work. The contribution of the cohomological framing is that it gives the framework a place to *put* the QEC layer when the hardware is ready, with the same compositional discipline that governs every other tier of verification, rather than treating quantum compilation as a separate mathematical regime requiring its own infrastructure.
+
 ## What "Quantum-Ready" Means
 
 Given the hardware maturity gap, what does it mean for a software framework to be "quantum-ready"? The answer is modest but specific.
@@ -90,7 +96,7 @@ For the Fidelity framework specifically:
 
 **Long-term.** The categorical foundation provides the theoretical guarantee that quantum targets compose with classical targets through the same algebraic structure. The infrastructure built for classical multi-target compilation transfers to quantum/classical hybrid systems without architectural rework.
 
-This timeline is not a prediction of quantum hardware progress; it is a statement about when the framework's quantum capabilities become practically useful, conditional on hardware developments outside our control.
+This timeline marks when the framework's quantum capabilities become practically useful, conditional on hardware developments outside our control. It does not predict those developments.
 
 ## References
 

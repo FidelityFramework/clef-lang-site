@@ -16,7 +16,7 @@ params:
 
 Contemporary machine learning operates on a strict phase separation. Training happens on GPU clusters with large memory pools, reverse-mode automatic differentiation, and batch-oriented data pipelines. Inference happens on edge devices, mobile processors, or cloud endpoints, with frozen model weights and no gradient computation. The two phases share a model architecture but share almost nothing else: different hardware, different numeric representations, different memory profiles, different deployment infrastructure.
 
-This separation is not a mathematical requirement. It is an engineering consequence of reverse-mode AD's memory profile. Backpropagation requires the activation tape, an \(O(L \cdot B)\) auxiliary memory buffer that stores intermediate activations from the forward pass for consumption during the backward pass. That memory obligation anchors training to high-memory hardware. Once the obligation is removed, the engineering rationale for the phase boundary weakens considerably.
+This separation is an engineering consequence of reverse-mode AD's memory profile. Backpropagation requires the activation tape, an \(O(L \cdot B)\) auxiliary memory buffer that stores intermediate activations from the forward pass for consumption during the backward pass. That memory obligation anchors training to high-memory hardware. Once the obligation is removed, the engineering rationale for the phase boundary weakens considerably.
 
 The [forward gradient entry](/blog/forward-gradients-exact-accumulation/) established that forward-mode AD eliminates the activation tape. The [posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) established that b-posits with quire accumulators provide exact gradient accumulation in a 512-bit footprint. The [target architectures entry](/blog/target-architectures-compilation-strategy/) established that spatial dataflow processors and neuromorphic hardware offer reconfigurable computation at the tile level.
 
@@ -75,7 +75,7 @@ The convergence can be stated as a coeffect property. A continuous learning syst
 | Weight update | None | Local, scoped to parameter |
 | Representation | Target-selected | Same (representational continuity) |
 
-The two signatures differ only in the presence of gradient computation and weight updates. Both additions are local, bounded, and stack-eligible. The coeffect system treats continuous learning as inference with two additional annotations, not as a fundamentally different workload class.
+The two signatures differ only in the presence of gradient computation and weight updates. Both additions are local, bounded, and stack-eligible. The coeffect system treats continuous learning as inference with two additional annotations, within the same workload class.
 
 This is the formal content of the claim: the DTS/DMM model, combined with forward-mode AD and target-aware representation selection, provides a framework where the inference/training boundary is a coeffect configuration, not an infrastructure partition.
 
@@ -105,13 +105,17 @@ The inference tiles and learning tiles share the same model weights (via shared 
 
 The Composer's tile assignment determines the ratio of inference to learning tiles. This ratio is a deployment parameter, not an architectural constraint. An application that needs rapid adaptation allocates more tiles to learning. An application that needs maximum throughput allocates more to inference. The coeffect system verifies that both allocations are resource-valid.
 
+In the sheaf-theoretic framing developed in the [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/), the spatial partition is a sheaf on the tile grid poset. The poset is the spatial reachability relation between tiles; the stalks are tile-local weight states; the structure maps are the DMA routes that propagate weight updates from one tile to another. The global section condition is that all tiles maintain consistent weight state. A spatial deployment is correct precisely when its tile-local states form a global section of this sheaf, meaning that any two tiles holding the same model parameter hold the same value modulo the latency of the most recent DMA propagation.
+
+The optimizer feedback loop (CPU computes a weight update from gradient estimates, then distributes the updated weights back to all tiles) is a global section re-establishment on this sheaf. The optimizer has found a new weight assignment, and the assignment must propagate coherently to all tiles according to the structure maps before the inference and learning tiles can resume operation against a consistent reference. A distributed weight update that violates the global section condition produces inconsistent tile states and breaks the consistency the spatial partition relies on. The framework's role here is to detect such violations at the structure-map level, where the cost of repair is local, rather than at the tile-state level, where divergence has already propagated.
+
 ## Limitations and Honest Scoping
 
 The forward gradient's variance scales with parameter count [1]. For very large models (billions of parameters), the statistical cost of forward-mode may exceed the memory savings, even with exact quire accumulation reducing numerical noise to zero. Variance reduction techniques (multiple perturbation vectors, antithetic sampling) add computational overhead that partially offsets the memory advantage.
 
 The spatial partition model assumes that the learning workload fits within the tile grid's capacity. For large models, the tile count may be insufficient to simultaneously serve inference and gradient computation at acceptable throughput. The model applies most naturally to moderate-sized networks deployed on spatial hardware, not to frontier-scale language models.
 
-STDP and other local learning rules are not equivalent to gradient descent. They approximate gradient-based learning under specific conditions but produce different dynamics for deep networks. The claim is not that neuromorphic continuous learning replaces backpropagation for all workloads; it is that the DTS/DMM model can express both, and the coeffect system provides a formal framework for reasoning about their resource requirements and correctness properties.
+STDP and other local learning rules approximate gradient descent under specific conditions but produce different dynamics for deep networks. The claim here is that the DTS/DMM model can express both neuromorphic continuous learning and backpropagation-based training, and the coeffect system provides a formal framework for reasoning about their resource requirements and correctness properties. Neither workload replaces the other for every use case.
 
 The channels-last layout and spatial partitioning depend on the XDNA 2 architecture's specific capabilities. Other spatial dataflow processors may have different tile sizes, connectivity topologies, and DMA configurations. The model generalizes to the extent that the underlying hardware supports independent tile configuration and shared memory access; the specifics of tile assignment are target-dependent.
 

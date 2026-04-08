@@ -16,7 +16,7 @@ params:
 
 Reverse-mode automatic differentiation (backpropagation) has a well-known memory cost. To compute gradients during the backward pass, the system must retain intermediate activations from the forward pass. For a network with \(L\) layers and batch size \(B\), this imposes an \(O(L \cdot B)\) auxiliary memory requirement. The activations must persist from their creation during the forward pass until their consumption during the backward pass; their lifetime spans the entire training step.
 
-This is not an implementation detail. It is a structural property of reverse-mode AD. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation that the computation imposes on its environment.
+This is a structural property of reverse-mode AD, not an implementation detail. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation that the computation imposes on its environment.
 
 Gradient checkpointing and other memory-reduction techniques trade compute for memory, recomputing activations during the backward pass to avoid storing them. These techniques reduce the constant factor but do not change the fundamental structure: reverse-mode AD requires either storing or recomputing intermediate values.
 
@@ -90,6 +90,10 @@ For gradient computation, this means:
 
 This verification is decidable, requires no annotation beyond the physical dimensions already present in the forward computation, and has zero runtime cost. The inference algorithm from [Section 2.2 of the DTS/DMM paper](/publications/dts-dmm/) extends to auto-differentiation graphs without modification.
 
+In the sheaf-theoretic framing developed in the [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/), the chain rule's preservation of dimensional consistency is the global section condition on the differentiation sheaf. The computation graph is a finite directed acyclic poset; the stalks at each node are dimensional annotation bundles in \(\mathbb{Z}^n\); the structure maps at each edge are the chain rule applications that derive the gradient annotation at the downstream node from the gradient annotation at the upstream node. A consistent dimensional assignment across the entire gradient graph is exactly a global section of this sheaf. The Tier 1 verification described above is the witnessing mechanism: Gaussian elimination over the structure-map equations decides whether the global section exists, and if so produces the principal one.
+
+The O(1) auxiliary memory profile of forward-mode AD has a parallel sheaf reading on the escape classification sheaf. The escape classification at each node carries a lifetime ordering (stack < arena < heap < static), and the structure maps are the lifetime-promotion rules that propagate constraints from use sites back to creation sites. When every intermediate value in a forward-mode pass is StackScoped (no escape, no activation tape), the escape classification sheaf has trivial \(H^1\): there is no obstruction to extending each layer's local section to a global section over the entire forward pass, because every value's lifetime is contained within its creating scope and no structure map needs to widen any classification. Reverse-mode AD's activation tape produces the opposite situation: intermediate values must outlive their creating scopes to be available during the backward pass, which forces lifetime promotions and creates non-trivial \(H^1\) obstructions that the escape classification sheaf must resolve through arena allocation. The "memory profile" difference between forward-mode and reverse-mode is, in this reading, a difference in the cohomology of the escape classification sheaf.
+
 ## Physics-Informed Loss Terms
 
 The dimensional verification has a concrete application in physics-informed neural networks [3]. A loss term that penalizes violations of Newton's second law computes \(F - ma\) and minimizes the squared residual. DTS can verify at compile time that \(F\), \(m\), and \(a\) carry dimensions \(\langle\text{N}\rangle\), \(\langle\text{kg}\rangle\), and \(\langle\text{m} \cdot \text{s}^{-2}\rangle\) respectively, and that the subtraction \(F - ma\) is dimensionally consistent.
@@ -130,7 +134,7 @@ The quire's exact accumulation eliminates one source of numerical error but does
 
 The dimensional verification for physics-informed loss terms is sound but narrow: it catches dimensional inconsistencies in the loss function's definition, not errors in the model's learned representations. A dimensionally consistent loss term can still produce a model that makes incorrect predictions; dimensional correctness is necessary but not sufficient for physical fidelity.
 
-These limitations are real and should inform expectations. The contribution is not that forward gradients + quires + DTS solve machine learning; it is that three independently valuable properties compose naturally within the PSG, and the composition can be verified at compile time.
+These limitations are real and should inform expectations. The contribution here is that three independently valuable properties (forward gradients, quires, and DTS) compose naturally within the PSG, and the composition can be verified at compile time. The framework does not claim to solve machine learning; it claims that this specific composition is sound and useful for the workloads where the composition's properties matter.
 
 ## References
 
