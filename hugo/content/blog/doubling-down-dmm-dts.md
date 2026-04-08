@@ -114,7 +114,7 @@ The allocation strategy is not a type parameter that forces source-level duplica
 
 DTS makes dimensional constraints intrinsic to the type system. This extends F#'s Units of Measure from an erasable annotation to a preserved semantic property that survives compilation.
 
-To situate this precisely: the type-theoretic spectrum runs from simple types at one end to Martin-Lof's intuitionistic type theory (MLTT) at the other. MLTT provides full dependent types with propositions-as-types; the foundation for Agda, Coq, Lean, and the theoretical ancestor of F\*. In that lineage, any proposition can be expressed as a type, and any proof is a program. The power is immense; the cost is that type checking can require arbitrary computation, and solver interaction may not terminate.
+To situate this precisely: the type-theoretic spectrum runs from simple types at one end to Martin-Lof's intuitionistic type theory (MLTT) at the other. MLTT provides full dependent types with propositions-as-types; the foundation for Agda, Coq, Lean, and the theoretical ancestor of F\*. In that lineage, any proposition can be expressed as a type, and any proof is a program. The power is immense; the cost is that type *inference* and proof search are undecidable in general, so the developer carries the burden of supplying annotations and interactive proof terms wherever the solver cannot reach.
 
 DTS occupies a specific, well-understood position on this spectrum:
 
@@ -124,7 +124,7 @@ DTS occupies a specific, well-understood position on this spectrum:
 | Phantom types / F# UoM | Type-level tags, abelian group algebra | Always decidable | Erased |
 | Refinement types (Liquid Haskell) | Predicates from decidable SMT theories | Always decidable | Erased |
 | **DTS (Fidelity)** | **Predicates from decidable SMT theories** | **Always decidable** | **Preserved** |
-| Dependent types (F\*, Agda, Coq) | Arbitrary propositions-as-types | May not terminate | N/A (extraction) |
+| Dependent types (F\*, Agda, Coq) | Arbitrary propositions-as-types | Inference / proof search undecidable | N/A (extraction) |
 
 In their original form, F#'s Units of Measure (including the FSharp.UMX extension library) are phantom type parameters. They constrain the type checker but erase before code generation because the .NET runtime cannot represent them. By contrast, our DTS materializes these phantom types as structured refinements that persist through the compiler's intermediate representation. The pivotal restriction, inherited from the Liquid Haskell tradition, is that each dimensional category maps to a decidable SMT theory: physical unit algebra maps to abelian group theory, memory space compatibility to enum sorts, width constraints to bitvector theory, and so on. Because each theory is decidable, the solver always terminates with a definitive answer; no fuel heuristics, no "unknown" results, no divergence.
 

@@ -29,11 +29,11 @@ Dimensional consistency of an arithmetic expression reduces to linear algebra ov
 
 This is the critical distinction from dependent types. A dependent type can encode an *arbitrary predicate* over values. Checking whether two dependent types are equal may require proving an arbitrary theorem. Dimensional consistency checking requires comparing two integer vectors, a constant-time operation per base dimension.
 
-General dependent type systems are subject to undecidability and may require timeout heuristics and fuel limits during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of Z3's most well-studied, guaranteed-decidable logic fragments: **`QF_LIA`**. CCS is designed to ask Z3 to solve a bounded system of linear equations. Z3 resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses.
+General dependent type systems have decidable type checking when the developer supplies the type, but type *inference* and proof search are undecidable, which is why production systems built on them require manual annotations, fuel limits, and timeout heuristics during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of Z3's most well-studied, guaranteed-decidable logic fragments: **`QF_LIA`**. CCS is designed to ask Z3 to solve a bounded system of linear equations. Z3 resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses.
 
 | Property | DTS | Dependent Types |
 |---|---|---|
-| Type checking | Decidable (linear algebra over \(\mathbb{Z}\)) | Undecidable in general |
+| Type inference | Decidable (linear algebra over \(\mathbb{Z}\)) | Undecidable in general |
 | Inference | Complete and principal | Incomplete; requires annotations |
 | Runtime representation | No runtime cost; metadata only | May require runtime witnesses |
 | Expressiveness | Abelian group constraints on numeric types | Arbitrary predicates over values |
