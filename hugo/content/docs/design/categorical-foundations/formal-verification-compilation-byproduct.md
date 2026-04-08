@@ -78,7 +78,9 @@ The annotation cost is modest: one attribute per property, attached to the funct
 
 ### Tier 3: Full SMT Proof Generation
 
-For regulated domains that require certification artifacts (DO-178C for avionics, ISO 26262 for automotive, FIPS 140-3 for cryptographic modules, IEC 62443 for industrial security), the Fidelity framework targets full SMT proof generation. The design-time phase uses Z3 over the QF_LIA theory for dimensional and coeffect verification; the compile-time phase uses MLIR's SMT dialect for translation validation. For domains requiring dependent-type proofs, integration with F* or similar proof assistants is a candidate path.
+For regulated domains that require certification artifacts (DO-178C for avionics, ISO 26262 for automotive, FIPS 140-3 for cryptographic modules, IEC 62443 for industrial security), the Fidelity framework targets full SMT proof generation. The design-time phase uses Z3 over the QF_LIA theory for dimensional and coeffect verification; the compile-time phase uses MLIR's SMT dialect for translation validation.
+
+For obligations that exceed quantifier-free integer arithmetic, the framework's discharge strategy depends on the obligation's logical character. Range propagation, bounds proofs, and bit-pattern reasoning remain in QF_LIA / QF_BV and stay with Z3, which is sound and complete on those fragments. Probabilistic obligations (rejection-sampling termination, support-equality of uniform distributions over lattice cosets) live in a restricted probabilistic fragment that is also Z3-discharged because the underlying distributions live in the same abelian group fragment. Probabilistic relational obligations (the indistinguishability arguments at the heart of cryptographic proofs) are handled by a separate probabilistic relational Hoare logic (pRHL) type checker, with Z3 still discharging the arithmetic leaves of each derivation. The pRHL rule library is proved once in Rocq and consulted as a foundational dependency only at this final layer. The trusted computing base for the framework's range, coeffect, and probabilistic verification is therefore Z3 alone; Rocq enters the TCB only when probabilistic relational reasoning is required.
 
 At this tier, the compiler would generate machine-readable certificates as compilation byproducts. A certificate would contain:
 
@@ -90,6 +92,10 @@ At this tier, the compiler would generate machine-readable certificates as compi
 This is the distinction identified in our earlier analysis of proof-carrying compilation: the hyperedge defines the proof's scope ("these operations, on this tile, under these constraints"), the proof is an external artifact (a document the auditor reads and the certification body evaluates), and the compiler generates the obligation and the evidence. Three distinct roles, three distinct outputs.
 
 The annotation cost at this tier is significant. The engineer must declare the properties to be certified, provide sufficient type-level information for the solver to discharge the obligations, and review the generated certificates for correctness. This cost is justified only in domains where regulatory compliance requires it.
+
+### A Note on Tier Counts
+
+The three tiers above (compilation byproducts, scoped assertions, full proof generation) are organized by *annotation cost and adoption surface*. A separate but compatible decomposition organizes the same verification space by *logical fragment and decision procedure*: Tier 1 is dimensional/escape consistency over \(\mathbb{Z}^n\) decided by Gaussian elimination, Tier 2 is QF_LIA / QF_BV decided by Z3, Tier 3 is the restricted probabilistic fragment over distributions on lattice cosets also decided by Z3, and Tier 4 is probabilistic relational Hoare logic discharged by a pRHL type checker against a Rocq-proved foundational rule library. The four-tier logical decomposition is a finer refinement of this document's third tier, and the trusted computing base for the first three logical tiers is Z3 alone. The [compilation sheaf document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats both decompositions as views of a single underlying structure: the four logical tiers are four sheaves over the same compilation poset, distinguished by their stalk categories.
 
 ## The Graduated Adoption Model
 
@@ -150,6 +156,6 @@ Tier 1 verification (compilation byproducts) is architectural: the PSG computes 
 
 Tier 2 verification (scoped assertions) requires SMT solver integration. The Z3 solver is available; the integration with the Clef attribute syntax and the PSG's coefficient infrastructure is in design. The attribute syntax shown in this entry is design-target, not yet implemented.
 
-Tier 3 verification (full proof generation) requires SMT proof generation and, for dependent-type proofs, potential integration with proof assistants such as F*. Certificate generation in standards-compliant formats adds additional engineering surface. This is the most distant layer. The architecture accommodates it; the implementation is future work.
+Tier 3 verification (full proof generation) requires SMT proof generation, the restricted probabilistic fragment for distributional reasoning, and the pRHL type checker with its Rocq-proved foundational rule library for relational obligations. Certificate generation in standards-compliant formats adds additional engineering surface. This is the most distant layer. The architecture accommodates it; the implementation is future work.
 
 The graduated model is deliberate. Each tier delivers value independently. Tier 1 is useful for every program. Tier 2 is useful for safety-conscious engineering teams. Tier 3 is useful for regulated industries. An engineering team can begin with Tier 1 and add tiers as their domain requires, without rewriting their codebase or changing their development workflow.

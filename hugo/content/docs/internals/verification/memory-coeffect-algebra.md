@@ -54,6 +54,22 @@ let processNetworkFrame (arena: FrameArena) =
 
 Z3 proves the lifetime inequality mathematically. The goal is to achieve memory safety without runtime garbage collection, reference counting, or manual lifetime annotations like Rust's tick syntax (`'a`).
 
+## The Coeffect Check as a Tier 2 Hoare Assertion
+
+The lifetime promotion check has a precise reading in Hoare logic, and naming it that way clarifies how the coeffect system fits the broader verification stack.
+
+The lifetime ordering on coeffect classifications (stack < arena < heap < static) is a finite lattice. For each value \(v\) in the PSG, the framework derives a tentative classification from the binding site (typically StackScoped if the binding is local), and for each use site \(\text{use}_i\) it computes the lifetime the use requires. The promotion rule states that if \(\lambda_{\text{required}}(v, \text{use}_i) > \lambda_{\text{tentative}}(v)\) for any use \(i\), the value is promoted. Read as a Hoare triple, the check is \(\{P\}\, C\, \{Q\}\) where \(P\) is "the value is at lifetime \(\lambda_{\text{tentative}}\)," \(C\) is the use sequence in the function body, and \(Q\) is "every use's required lifetime is \(\le\) the value's actual lifetime." The promotion is what makes the postcondition true. The check that the resulting program satisfies the triple is a QF_LIA obligation over the lattice ordering: a single linear inequality per use site, decided by Z3.
+
+This places memory coeffect verification one tier above dimensional consistency in the framework's verification stack. Dimensional types are Tier 1 (free, parametricity, abelian-group equality). The coeffect lattice check is Tier 2 (QF_LIA over a finite lattice, decided by Z3 in microseconds). Both run during PSG elaboration; both are zero-annotation in the common case; both are sound and complete on their respective fragments. The [decidability sweet spot](../decidability-sweet-spot) document treats the design-time pass as weakest-precondition computation and the compile-time re-discharge as the consequence rule, and the same framing applies here: the elaboration computes the weakest coeffect that satisfies all use sites, and each MLIR lowering re-verifies that the lowered representation preserves the coeffect annotation.
+
+## A Sister Sheaf: Access as Coeffect
+
+The coeffect framework as described above tracks *what context the computation requires from its environment*: a stack frame, an arena, a closure environment. A natural extension of the same algebra tracks *who is permitted to execute the computation*: a capability, an access right, an authorization token. The two questions are formally similar (both ask "what does the environment supply?") and both fit the same lattice-ordered Hoare-triple discharge.
+
+Beckmann and Setzer's recent access Hoare logic [(arXiv:2511.01754)](https://arxiv.org/abs/2511.01754) develops the assertional layer for the access-discipline question. Where memory coeffects ensure that a buffer's lifetime fits the scope of every use, access coeffects would ensure that a key share's authorization fits the privilege of every operation. The two systems share a base poset (the compilation pipeline) and a discharge mechanism (Z3 over a finite lattice), and they differ in their stalk category: memory coeffects carry lifetime ordering, access coeffects carry capability ordering. In the [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/), this is the precise statement that memory and access verification are *different sheaves over the same compilation poset*, checked by the same dual-pass machinery without interfering with one another.
+
+The framework currently implements memory coeffects, with capability tracking through the same mechanism for hardware-target capabilities (does the target support exact accumulation, posit arithmetic, the relevant memory regions). Access discipline as a first-class verification target is an adjacent extension that the existing coeffect machinery already supports structurally. The engineering work would lie in choosing the right capability vocabulary and writing the lemma library that gives the discharge actionable diagnostics, rather than in extending the underlying decision procedure.
+
 ## The Push, Bounded, and Poll Models
 
 Developers will interact with the coeffect system through three models that form a spectrum analogous to type annotation in ML-family languages:

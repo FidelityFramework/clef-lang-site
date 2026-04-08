@@ -68,6 +68,16 @@ gradient_estimate: float<loss · param⁻¹>
   └─ Memory:  no activation tape, no escape, fully stack-eligible
 ```
 
+## The Quire as a Tier 2 Loop Invariant
+
+The quire's exactness guarantee has a precise reading in Hoare logic, and stating it that way clarifies what verification can establish at compile time and what it cannot.
+
+The accumulation loop that computes \(\langle \nabla f(\theta), v \rangle\) maintains an invariant at every iteration: the accumulated value occupies at most \(n^2/2\) bits (512 bits for posit32). The invariant is the loop's precondition, the loop body preserves it, and the loop's exit delivers a postcondition that the final value is the exact sum of the products with no intermediate rounding. In Hoare's sequential composition rule, the invariant is the assertion \(P\) for which \(\{P \wedge B\}\, C\, \{P\}\) is established locally, and the conclusion \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\) is the proof that the loop achieves the postcondition the next computation depends on.
+
+The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le n^2/2\) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property; the framework derives it from the layer's parameter count, the posit width, and the quire width, which are all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
+
+The Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) is the structural reason the same invariant can be checked at every lowering pass: each lowering is a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair that survives the functor's action. In sheaf-theoretic language, the quire invariant is a section of the accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the broader compositional story; here it is enough to note that the quire's exactness is a verifiable property at every stage from PSG to native binary, not only at the high-level mathematical specification.
+
 ## Dimensional Consistency Under Differentiation
 
 The third property is dimensional. The DTS framework's dimensional algebra is closed under differentiation. If \(f\) maps values with dimension \(d_1\) to values with dimension \(d_2\), then the derivative \(\partial f / \partial x\) carries dimension \(d_2 \cdot d_1^{-1}\). This follows from the abelian group structure: differentiation is division in the dimensional algebra, and division is closed in \(\mathbb{Z}^n\).
