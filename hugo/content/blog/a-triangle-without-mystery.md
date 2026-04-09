@@ -17,7 +17,7 @@ The Fidelity framework's Dimensional Type System is our starting point, and has 
 
 Operations propagate annotations: addition requires equal vectors, multiplication adds vectors, division subtracts. Dimensional consistency reduces to a system of linear equations over \(\mathbb{Z}\), decided in polynomial time by Gaussian elimination. The result is either a consistent assignment or a contradiction. The engineer never writes a proof, because the inference is complete and principal. This is the Tier 1 fragment of the framework's verification architecture, and the [post on free proofs from dimensional types](/blog/proofs-from-dimensional-types/) makes the parametricity argument explicit.
 
-The dimensional system has another structure that the parametricity story does not emphasize. The annotations live on every node of the Program Semantic Graph, on every operation in every MLIR dialect the program is lowered through, and on the residual evidence in the binary. The lowering passes are required to preserve them, and the dual-pass architecture can re-discharge this requirement at each pass via Z3.
+The dimensional system has another structure that the parametricity story does not emphasize. The annotations live on every node of the Program Semantic Graph, on every operation in every MLIR dialect the program is lowered through, and on the residual evidence in the binary. The lowering passes are required to preserve them, and our design for a dual-pass architecture can re-discharge this requirement at each pass.
 
 The compilation pipeline has an ordered structure that turns out to carry significant meaning in the mathematical framing introduced in the corners that follow. The stages form a chain: source < PSG < high-level MLIR < mid-level MLIR < low-level MLIR < binary. Each stage carries its \(\mathbb{Z}^n\)-valued annotation bundle, and each lowering pass translates annotations from one stage to the next. The property the dual-pass architecture enforces is referenced as "*compositionality*": two consecutive lowerings produce the same annotations as one direct lowering. 
 
@@ -65,7 +65,7 @@ The three corners are three instances of the same structure:
 
 |  | Base poset | Target category | Compositionality |
 |---|---|---|---|
-| **DTS** | Compilation pipeline | \(\mathbb{Z}^n\)-annotation bundles | Enforced by dual-pass / Z3 |
+| **DTS** | Compilation pipeline | \(\mathbb{Z}^n\)-annotation bundles | Enforced by dual-pass |
 | **Tarau** | One point | Types and isomorphisms (Root-mediated) | Automatic; base is trivial |
 | **Cellular sheaves** | Arbitrary finite poset (hypergraph membership) | Application-determined stalks | Theorem: check edges of Hasse diagram |
 
@@ -116,7 +116,7 @@ let c_at_t = fun t ->
 let peak_concentration = c_at_t infusion_time
 ```
 
-For the linear and ratio-of-linear parts of this calculation, Tier 1 range propagation produces an exact bound from the input ranges and Z3 discharges the comparison against `min_effective` and `max_safe` cleanly. At the `exp(-elim_rate * t)` term, the analysis switches modes. The argument `-elim_rate * t` lies in a known interval (negative, with bounds derived from the elimination-rate and infusion-time ranges), and the framework's generic interval rule for `exp` returns the conservative bound \([0, +\infty)\). Propagating that through the rest of the calculation produces a `peak_concentration` bound wide enough to overlap both the sub-therapeutic region below `min_effective` and the toxic region above `max_safe`, and the compiler surfaces the result as a conservative finding rather than a clean verdict. The bound is sound (the true concentration always lies inside it) and it is wider than the therapeutic window needs.
+For the linear and ratio-of-linear parts of this calculation, Tier 1 range propagation produces an exact bound from the input ranges and a proof tool discharges the comparison against `min_effective` and `max_safe` cleanly. At the `exp(-elim_rate * t)` term, the analysis switches modes. The argument `-elim_rate * t` lies in a known interval (negative, with bounds derived from the elimination-rate and infusion-time ranges), and the framework's generic interval rule for `exp` returns the conservative bound \([0, +\infty)\). Propagating that through the rest of the calculation produces a `peak_concentration` bound wide enough to overlap both the sub-therapeutic region below `min_effective` and the toxic region above `max_safe`, and the compiler surfaces the result as a conservative finding rather than a clean verdict. The bound is sound (the true concentration always lies inside it) and it is wider than the therapeutic window needs.
 
 The cohomological reading is that the global-section problem on the range-propagation sheaf has an uncharacterized \(H^1\) obstruction at the `exp` node: the local data on the upstream side (the interval for the exponent) and the local data on the downstream side (the interval the result needs to fall into) cannot be glued into a globally consistent assignment without additional structure. The engineering reading, which is what the prescriber actually needs, is that the compiler is telling the framework precisely which Tier 3 lemma is missing from `Fidelity.Lemmas.Mathematics` for this calculation. Specifically: a parameterized lemma of the shape
 
