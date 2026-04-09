@@ -41,7 +41,7 @@ The dimensional system has another structure that the parametricity story does n
 
 Read this as a functor. The base poset is the compilation pipeline: source < PSG < high-level MLIR < mid-level MLIR < low-level MLIR < binary. The target category is the category of \(\mathbb{Z}^n\)-valued annotation bundles and the homomorphisms that preserve them. The functor sends each compilation stage to its annotation bundle and each lowering pass to the structure map that translates annotations across the pass. Compositionality, meaning that two consecutive lowerings produce the same annotations as one direct lowering, is the property the dual-pass architecture enforces.
 
-## Corner Three: Cellular Sheaves on Finite Posets
+## Corner Three: Cellular Sheaves
 
 The third corner introduces the term that does most of the heavy lifting in the rest of the post: the [*sheaf*](https://en.wikipedia.org/wiki/Sheaf_(mathematics)). Sheaves originated in algebraic topology in the 1940s and acquired their modern abstract form in the work of Alexander Grothendieck. The recent paper on cellular sheaves on finite posets ([arXiv:2502.15476](https://arxiv.org/abs/2502.15476)) treats them as a working tool for compositional information flow, with the abstract apparatus stripped down to what an engineer can use directly. Their definition: a cellular sheaf on a finite poset \(P\) attaches a *stalk* (a value, a set, an algebraic structure) to each element of \(P\), together with *structure maps* \(D(s_1 < s_2)\) for each ordered pair, satisfying the compositionality equation
 
@@ -73,7 +73,7 @@ The cellular sheaf framework is the general case in which the base may be any fi
 
 This is why the Program Hypergraph is necessary. The PSG carries every constraint that can be represented as a relationship between two operations and discharges them through the dual-pass architecture cleanly, but the joint constraints that arise once three or more operations need to agree on a shared resource live in cohomology groups the PSG's one-dimensional structure cannot reach. It would be a mistake to flatten those joint constraints into pairwise edges. The structure would then lose the agreement that has to hold across all participants at once. The PHG's hyperedges are the structure that holds the more complex agreements together.
 
-## How the Triangle Informs Engineering
+## Informing Engineering
 
 Recognizing the three corners as instances of one structure means that infrastructure built for any one of them transfers, in principle, to the other two.
 
@@ -139,7 +139,7 @@ The cohomological reading is that the obstructions to a globally consistent anno
 
 The reason any of this matters in practice is that in most cases none of it surfaces at the engineer's desk. The math is what justifies the tooling, and the tooling in Composer and Clef is what makes the math invisible to the engineer who only wanted to write a clinical dosing calculation or a fused FPGA kernel. A clinical engineer writes a one-compartment infusion model in plain F# with `Fidelity.Physics.Clinical` measure types and gets either a clean `peak_concentration` bound that fits the therapeutic window or a conservative finding that names the lemma the framework's library still needs. A spatial-compute engineer writes a kernel fusion that shares an on-chip buffer across three operations and gets either a fused schedule that respects every joint constraint or a diagnostic that points at the specific constraint the schedule cannot honor. In both cases the engineer reasons in the vocabulary of their domain, and the categorical machinery underneath earns its place precisely by staying out of view. The cohomological diagnosis is the framework's way of explaining *to itself*, in terms its own verification stack can act on, what to do at the moments the engineer's tools need help. The engineer's experience is that the tools work, the diagnostics are specific, and the cases where they need to consult the lemma library directly are rare and well-isolated.
 
-## What the Triangle Suggests
+## Leading Indications
 
 A triangle in mathematics is rarely the end of a story. It usually signals a fourth corner waiting to be identified: some object that ties the three together from above, or some application that requires all three at once.
 
