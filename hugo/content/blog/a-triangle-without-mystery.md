@@ -19,7 +19,7 @@ Operations propagate annotations: addition requires equal vectors, multiplicatio
 
 The dimensional system has another structure that the parametricity story does not emphasize. The annotations live on every node of the Program Semantic Graph, on every operation in every MLIR dialect the program is lowered through, and on the residual evidence in the binary. The lowering passes are required to preserve them, and the dual-pass architecture can re-discharge this requirement at each pass via Z3.
 
-The compilation pipeline has an ordered structure that turns out to carry significant meaning in the mathematical framing introduced in the corners that follow. The stages form a chain: source < PSG < high-level MLIR < mid-level MLIR < low-level MLIR < binary. Each stage carries its \(\mathbb{Z}^n\)-valued annotation bundle, and each lowering pass translates annotations from one stage to the next. The property the dual-pass architecture enforces is referenced as "*compositionality*": two consecutive lowerings produce the same annotations as one direct lowering. Anyone that has done functional programming understands how to use *composition* as a tool in building up application structure. As we discovered, this condition is the defining equation of a larger mathematical structure, and it connects the framework's engineering to results we didn't expect when the pipeline was first designed.
+The compilation pipeline has an ordered structure that turns out to carry significant meaning in the mathematical framing introduced in the corners that follow. The stages form a chain: source < PSG < high-level MLIR < mid-level MLIR < low-level MLIR < binary. Each stage carries its \(\mathbb{Z}^n\)-valued annotation bundle, and each lowering pass translates annotations from one stage to the next. The property the dual-pass architecture enforces is referenced as "*compositionality*": two consecutive lowerings produce the same annotations as one direct lowering. 
 
 <p style="text-align: center; margin: 2em 0;">
   <img src="/images/Commutative_diagram_for_morphism.svg"
@@ -28,6 +28,8 @@ The compilation pipeline has an ordered structure that turns out to carry signif
 </p>
 
 *The classic category theory diagram: three objects, two morphisms \(f\) and \(g\), and the composite morphism \(g \circ f\) that the category laws require to exist whenever \(f\) and \(g\) are end-to-end. Every object also carries an identity arrow from itself back to itself, often omitted from the diagram for clarity.*
+
+Anyone who has done functional programming already has the intuition for composition: \(g \circ f\) means running \(f\) then \(g\) gives the same result as running the combined operation directly. The pipeline's compositionality condition is the same equation applied to *annotation-preserving transformations* rather than to values, and as we discovered, that condition is the defining equation of a larger mathematical structure that connects the framework's engineering to results we didn't expect when the pipeline was first designed.
 
 ## Corner Two: Tarau's Groupoid
 
