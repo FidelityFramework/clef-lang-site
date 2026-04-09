@@ -87,9 +87,13 @@ From the Dimensional Type System, the engineering payoff is the *dual-pass witne
 
 From Tarau, the engineering payoff is the *Root discipline*: a single canonical type through which all encoders pass, with isomorphisms guaranteeing round-trip consistency. The framework's use of \(\mathbb{Z}^n\) as the canonical representation for dimensional information is a Root in exactly Tarau's sense. Every dimensional annotation, regardless of which physical or mathematical domain it originates in, gets translated to a vector in \(\mathbb{Z}^n\), and the round trip from a domain-specific type to \(\mathbb{Z}^n\) and back is an isomorphism by construction. The Tarau discipline is what makes the compilation poset's structure maps composable in the first place.
 
-From cellular sheaves, the engineering payoff is the *cohomological diagnosis* of two situations the framework already encounters in its design. The first is a conservative range finding from Tier 2 propagation, and the cleanest place to ground it is the constraint-resolution problem at the heart of clinical decision support: given a patient's state (weight, age, organ function, current vitals) and a clinical indication, find a dosing regime that satisfies every safety constraint simultaneously and stays inside the therapeutic window. 
+From cellular sheaves, the engineering payoff is the *cohomological diagnosis* of two situations the framework already encounters in its design. The first is a conservative range finding from Tier 2 propagation, and the cleanest place to ground it is the constraint-resolution problem at the heart of clinical decision support.
 
-Below is an example that relates to a problem we're solving for a healthcare client - the kind of workload our framework's verification stack is designed to address. This example is for a dosing calculation for a continuous infusion whose plasma concentration the prescriber needs to keep above the minimum effective level and below the toxic threshold across the full duration of the infusion:
+Here is an example that relates to a problem we're solving for a healthcare client - the kind of workload our framework's verification stack is designed to address. 
+
+> Given a patient's state (weight, age, organ function, current vitals) and a clinical indication, find a dosing regime that satisfies every safety constraint simultaneously and stays inside the therapeutic window. 
+
+This example is for a dosing calculation for a continuous infusion whose plasma concentration the prescriber needs to keep above the minimum effective level and below the toxic threshold across the full duration of the infusion:
 
 ```fsharp
 open Fidelity.Physics.Clinical
