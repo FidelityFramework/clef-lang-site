@@ -63,7 +63,7 @@ The downstream impact extends beyond quantum simulation into classical processin
 
 For regulated industries like finance and aerospace, these precision-induced deviations represent an existential challenge. Regulatory compliance requires not just statistical confidence but mathematical proof of correctness - impossible to achieve when the underlying numerical representation systematically introduces uncontrolled errors. This is where Fidelity's posit arithmetic becomes transformative: by concentrating precision exactly where quantum amplitudes naturally reside, we can provide mathematical guarantees about simulation fidelity that current IEEE-754-based approaches simply cannot match.
 
-Current quantum simulation efforts frequently encounter these precision-induced deviations from unitarity, leading to non-physical results that compromise algorithm fidelity. This numerical degradation compounds through multi-qubit systems, making large-scale quantum emulation unreliable for verification purposes. The Fidelity framework finally resolves this fundamental limitation by combining posit arithmetic's quantum-optimized precision with F* verification to provide mathematical proofs of simulation fidelity - transforming quantum emulation from a statistical approximation into a mathematically verifiable computational method.
+Current quantum simulation efforts frequently encounter these precision-induced deviations from unitarity, leading to non-physical results that compromise algorithm fidelity. This numerical degradation compounds through multi-qubit systems, making large-scale quantum emulation unreliable for verification purposes. The Fidelity framework finally resolves this fundamental limitation by combining posit arithmetic's quantum-optimized precision with Clef verification to provide mathematical proofs of simulation fidelity - transforming quantum emulation from a statistical approximation into a mathematically verifiable computational method.
 
 ## Beyond QIR: Building on Early Experiments
 
@@ -72,7 +72,7 @@ The Quantum Intermediate Representation (QIR) Alliance and Microsoft's Q# deserv
 Where QIR and Q# laid groundwork, the Fidelity framework extends far beyond their initial scope through several critical innovations:
 
 - **Posit arithmetic** for quantum amplitude representation, providing superior precision near quantum superposition states compared to IEEE-754
-- **Proof-carrying compilation** via F* integration, enabling mathematical verification of quantum circuit correctness
+- **Proof-carrying compilation** via Clef integration, enabling mathematical verification of quantum circuit correctness
 - **Strongly-typed memory mapping** through our patented BAREWire protocol, ensuring zero-copy data exchange via CXL between quantum emulation and classical processing
 - **Program Hypergraph architecture** that naturally represents quantum-classical boundaries as hyperedges
 
@@ -126,21 +126,21 @@ The same quantum algorithm can be compiled with different emphasis depending on 
 
 ## Proof-Carrying Quantum Computation
 
-Beyond executing quantum algorithms, Fidelity's architecture enables proof-carrying quantum computation through our integration of F* verification, posit arithmetic, and strongly-typed memory protocols. F* annotations over regular Clef functions can generate mathematical proofs about error bounds and structural correctness while tracking precision guarantees throughout quantum emulation.
+Beyond executing quantum algorithms, Fidelity's architecture enables proof-carrying quantum computation through our integration of Clef verification, posit arithmetic, and strongly-typed memory protocols. Clef's verification annotations over regular Clef functions can generate mathematical proofs about error bounds and structural correctness while tracking precision guarantees throughout quantum emulation.
 
 ```fsharp
-// F* proves structural correctness and tracks error bounds
+// Clef proves structural correctness and tracks error bounds
 [<SMT Requires("qubits <= maxSystemQubits")>]
 [<SMT Requires("depth <= maxCircuitDepth")>]
 [<SMT Ensures("result.errorBound < physicalQuantumError")>]
 let quantumEmulationWithProofs (circuit: QuantumCircuit) (initialState: QubitState[]) =
-    // F* proves the circuit is structurally valid
+    // Clef proves the circuit is structurally valid
     let validatedCircuit = QuantumCircuit.validate circuit
 
     // Posit arithmetic maintains precision near |0⟩ and |1⟩ states
     let positState = QuantumEmulation.executeWithPosit32_2 validatedCircuit initialState
 
-    // F* tracks accumulated error through gate operations
+    // Clef tracks accumulated error through gate operations
     let errorBound = PositAnalysis.computeAccumulatedError circuit
 
     // BAREWire enables zero-copy transfer with type preservation
@@ -165,9 +165,9 @@ PHG --> CFG
 PHG --> DFG
 end
 subgraph "Verification Layer"
-    CFG --> FSTAR[F* Verification<br/>Proof Generation]
+    CFG --> CLEF[Clef Verification<br/>Proof Generation]
     DFG --> POSIT[Posit Arithmetic<br/>Precision Tracking]
-    FSTAR --> PROOF[Proof-Carrying IR]
+    CLEF --> PROOF[Proof-Carrying IR]
     POSIT --> PROOF
 end
 
@@ -202,11 +202,10 @@ This represents a genuine quantum opportunity, but with a twist - financial regu
 
 ### The Proof-Carrying Solution
 
-Our approach leverages the full Fidelity stack - PHG for representation, posit arithmetic for precision, F* for verification, and BAREWire for zero-copy data movement:
+Our approach leverages the full Fidelity stack - PHG for representation, posit arithmetic for precision, Clef for verification, and BAREWire for zero-copy data movement:
 
 ```fsharp
 // Financial risk calculation with formal verification
-[<SMT Requires("portfolio.positions.Length > 0")>]
 [<SMT Requires("scenarios.Length <= maxQuantumAmplitudes")>]
 [<SMT Ensures("result.confidence >= 0.95")>]
 [<SMT Ensures("result.positErrorBound < regulatoryThreshold")>]
@@ -222,7 +221,7 @@ let calculatePortfolioRisk (portfolio: Portfolio) (market: MarketData) =
             let oracle = TailRiskOracle.construct portfolio.scenarios
             let amplifiedSamples = QuantumAmplification.execute oracle
 
-            // F* tracks error accumulation through posit operations
+            // Clef tracks error accumulation through posit operations
             let errorBound = PositArithmetic.getAccumulatedError amplifiedSamples
 
             // BAREWire zero-copy transfer to classical analysis
@@ -235,11 +234,11 @@ let calculatePortfolioRisk (portfolio: Portfolio) (market: MarketData) =
     // Generate risk metrics with proof certificate
     { VaR95 = RiskMetrics.calculateValueAtRisk tailRiskScenarios
       ExpectedShortfall = RiskMetrics.calculateExpectedShortfall tailRiskScenarios
-      ProofCertificate = F*.generateVerificationCertificate ()
+      ProofCertificate = DischargeObligations()
       ErrorBounds = PositArithmetic.getErrorAnalysis () }
 ```
 
-For regulatory compliance, the proven emulation path using posit arithmetic provides mathematical certainty about error bounds, while BAREWire enables zero-copy data transfer between quantum emulation and classical analysis phases. The F* verification system generates proof certificates that demonstrate compliance with regulatory accuracy requirements.
+For regulatory compliance, the proven emulation path using posit arithmetic provides mathematical certainty about error bounds, while BAREWire enables zero-copy data transfer between quantum emulation and classical analysis phases. The Clef verification system generates proof certificates that demonstrate compliance with regulatory accuracy requirements.
 
 ### Why Our Approach Exceeds Early Experiments
 
@@ -258,7 +257,7 @@ Our immediate priorities leverage the unique capabilities of the Fidelity framew
 
 1. **Refine PHG Architecture**: Continue evolving the Program Hypergraph to better capture quantum-classical boundaries
 2. **Enhance Posit Integration**: Optimize posit arithmetic specifically for quantum amplitude representation
-3. **Strengthen Proof Generation**: Extend F* verification to cover more quantum algorithm patterns
+3. **Strengthen Proof Generation**: Extend Clef verification to cover more quantum algorithm patterns
 4. **Validate BAREWire Performance**: Demonstrate zero-copy advantages for quantum-classical data exchange
 
 ### Medium-Term Evolution
@@ -294,7 +293,7 @@ These aren't incremental improvements - they represent a different class of capa
 
 Quantum optionality in the Fidelity framework builds respectfully on early experiments like QIR and Q# while extending far beyond their initial vision. Through the convergence of Program Hypergraph architecture, posit arithmetic, proof-carrying compilation, and strongly-typed zero-copy protocols, we've created a framework that doesn't just prepare for quantum computing - it makes it verifiable, precise, and practical.
 
-The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional Von Neumann architectures and emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and F*'s verification capabilities, we offer something no other framework provides: quantum computation you can trust.
+The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional Von Neumann architectures and emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and Clef's verification capabilities, we offer something no other framework provides: quantum computation you can trust.
 
 This isn't about competing with early quantum experiments - it's about building on their lessons to create something fundamentally more capable. Where QIR provided a bridge, Fidelity provides a highway - with guard rails (proofs), traffic optimization (posits), and express lanes (zero-copy CXL).
 
