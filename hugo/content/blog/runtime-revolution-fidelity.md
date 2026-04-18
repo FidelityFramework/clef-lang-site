@@ -101,4 +101,4 @@ Credit where it's due: "JavaScript you can be proud of" is [Fable's tagline](htt
 
 ## A Principled Compromise
 
-For a framework designed around native compilation, the idea that JavaScript could become just another backend, reached through the same dialect infrastructure and subject to the same verification passes, is genuinely exciting. The compiler would stop treating it differently, and the resulting JavaScript would be the kind we are proud to deliver alongside any of our other framework artifacts into a high-stakes environment.
+For a framework designed around native compilation, the idea that JavaScript could become just another backend, reached through the same dialect infrastructure and subject to a subset of verification passes, is genuinely exciting to us. The convergence onto our tool chain has both performance and security positives, and the resulting JavaScript would be the kind we are proud to deliver alongside our other framework artifacts into any high-stakes environment.
