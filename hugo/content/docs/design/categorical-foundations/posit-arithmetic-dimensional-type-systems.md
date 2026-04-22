@@ -20,6 +20,8 @@ Gustafson and Yonemoto's posit arithmetic [1] addresses this with *tapered preci
 
 The two representations make different tradeoffs. IEEE 754 provides uniform relative error of approximately \(2^{-52}\) for `float64`, independent of value magnitude. Posit32 with es = 2 provides approximately \(2^{-27}\) relative error near 1.0, degrading to approximately \(2^{-8}\) at regime extremes. For computations whose values concentrate near unity, posit provides better precision per bit. For computations that span the full representable range with equal probability, IEEE 754's uniformity is the correct choice.
 
+Jonnalagadda, Thotli, and Gustafson's bounded posit (b-posit) [4] constrains the regime field so that decode and encode circuits match IEEE 754 in area and latency while preserving posit's tapered-precision accuracy. With the hardware gap closed, the choice between IEEE 754 and a posit variant becomes purely an accuracy-range question within the dimensional range the value actually occupies, which is the question dimensional annotations let the compiler answer.
+
 The question is: how does the compiler know which case applies?
 
 ## Dimensional Annotations as Range Constraints
@@ -102,7 +104,7 @@ The complementarity is structural. Posit arithmetic presupposes that the compile
 
 Posits without dimensional range analysis require manual representation selection; the engineer must know the value distribution and choose the posit width accordingly. DTS without domain-matched representations can verify dimensional consistency but cannot exploit it for precision optimization. Combined in the PSG, the compiler selects representations automatically, tracks their memory and lifetime requirements, verifies cross-target transfer fidelity, and surfaces the complete analysis at design time.
 
-The [DTS/DMM paper](/publications/dts-dmm/) provides the formal treatment. Sections 2.6 (representation selection), 3.5 (quire as coeffect case study), and 5.5 (posit arithmetic in related work) contain the complete analysis. This entry provides the practitioner-facing summary.
+The [DTS/DMM paper](/publications/dts-dmm/) provides the formal treatment. Sections 2.6 (representation selection), 3.5 (quire as coeffect case study), and 5.6 (posit arithmetic in related work) contain the complete analysis. This entry provides the practitioner-facing summary.
 
 ## References
 
@@ -111,3 +113,5 @@ The [DTS/DMM paper](/publications/dts-dmm/) provides the formal treatment. Secti
 [2] Posit Working Group, "Standard for Posit Arithmetic (2022)," posithub.org, 2022.
 
 [3] A. Kennedy, "Types for Units-of-Measure: Theory and Practice," in *Central European Functional Programming School*, Springer LNCS 6299, 2009.
+
+[4] A. A. Jonnalagadda, R. Thotli, and J. L. Gustafson, "Closing the Gap Between Float and Posit Hardware Efficiency," arXiv:2603.01615, 2026.
