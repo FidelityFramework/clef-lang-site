@@ -28,22 +28,30 @@ Baydin, Pearlmutter, Syme, Wood, and Torr [1] demonstrated a different approach.
 
 This is evaluated in a single forward pass. There is no backward pass. There is no activation tape.
 
-The gradient estimate is unbiased: its expectation over random perturbation vectors equals the true gradient. The variance depends on the perturbation distribution and can be controlled through standard variance reduction techniques. The tradeoff is statistical: exact gradients via reverse-mode vs. unbiased estimates via forward-mode, with the forward approach eliminating the memory obligation entirely.
+The single-tangent gradient estimate is unbiased: its expectation over random perturbation vectors equals the true gradient. The variance scales with parameter count, because the expected cosine similarity between a random direction and the true gradient decays at \(O(1/n)\) in dimension \(n\). Flügel, Coquelin, Weiel, Debus, Streit, and Götz [4] extended the method to \(K\) simultaneous tangents aggregated by orthogonal projection onto their spanned subspace:
+
+\[P_U(\nabla f) = V (V^\top V)^{-1} V^\top \nabla f, \qquad V = [v_1 \mid \cdots \mid v_K]\]
+
+The Gram-matrix inverse \((V^\top V)^{-1}\) corrects for non-orthogonal sampling, yielding the best subspace approximation of \(\nabla f\) in \(\mathrm{span}(V)\). When \(K = n\) the projection recovers the exact gradient; for moderate \(K\) the approximation quality increases monotonically, at a compute cost of \(O(K \cdot \mathrm{ops}(f))\). Perturbing layer activations rather than weights reduces variance further, because activations live in lower-dimensional spaces than the weight tensors upstream of them.
+
+The tradeoff is statistical: exact gradients via reverse-mode vs. projected estimates via forward-mode. The forward approach eliminates the memory obligation entirely, and \(K\) tunes the quality of the projection at linear compute cost.
 
 ## The Coeffect Signature
 
 In the Fidelity framework's coeffect system, these two approaches have distinct signatures:
 
-| Property | Reverse-Mode | Forward-Mode [1] |
+| Property | Reverse-Mode | Forward-Mode [1, 4] |
 |---|---|---|
-| Auxiliary memory | \(O(L \cdot B)\) | \(O(1)\) per layer |
-| Gradient quality | Exact (full Jacobian transpose) | Unbiased estimate (directional derivative) |
+| Auxiliary memory | \(O(L \cdot B)\) | \(O(K)\) per layer, independent of \(L\) and \(B\) |
+| Gradient quality | Exact (full Jacobian transpose) | Subspace projection; exact at \(K = n\), monotone in \(K\) |
 | Activation tape | Required; lifetime spans full backward pass | Not required |
 | Escape analysis | Intermediate values escape layer scope | No intermediate values escape layer scope |
 
 The forward-mode signature is significant for the escape analysis described in [Section 3.2 of the DTS/DMM paper](/publications/dts-dmm/). When no intermediate values escape their creating scope, every allocation is stack-eligible. The escape classification for every intermediate value is *StackScoped*; the allocation strategy is `memref.alloca`; the lifetime bound is the lexical scope of the layer computation.
 
 This is a verifiable compile-time property. Given a computation graph annotated with AD mode, the Fidelity framework's lifetime analysis can confirm that forward-mode imposes no lifetime obligations beyond the current layer's scope. The coeffect system does not need heuristics or runtime checks; it follows from the structure of forward-mode evaluation.
+
+The multi-tangent extension preserves this property. \(K\) tangent vectors propagate alongside each primal value within a layer's forward computation, and the activity-perturbation variant injects fresh tangents at each layer's activation. Each tangent's lifetime is bounded by its layer's scope; none escape, so our stack-eligibility proof is unchanged in structure, widened only by the constant factor \(K\).
 
 ## The Quire Connection
 
@@ -61,10 +69,11 @@ The quire's lifetime aligns with the forward gradient's memory profile. Both are
 
 ```
 gradient_estimate: float<loss · param⁻¹>
-  AD mode: forward (Baydin et al. [1])
-  Accumulation: Quire (exact, single rounding)
-  ├─ x86_64:  stack, 64 bytes, ~50 cycles/fma, O(1) auxiliary memory
-  ├─ xilinx:  512-bit fabric pipeline, 1 cycle/fma, O(1) auxiliary
+  AD mode:      forward, K tangents (Baydin et al. [1]; Flügel et al. [4])
+  Accumulation: K independent quires (exact, single rounding each)
+  Aggregation:  K×K Gram inverse, O(K²·n) dominated by O(K·ops(f))
+  ├─ x86_64:  stack, 64·K bytes, ~50 cycles/fma, O(K) auxiliary memory
+  ├─ xilinx:  K × 512-bit fabric pipelines, 1 cycle/fma, O(K) auxiliary
   └─ Memory:  no activation tape, no escape, fully stack-eligible
 ```
 
@@ -128,7 +137,7 @@ This connection between DTS (which provides the dimensional range), posit arithm
 
 ## Current Status and Limitations
 
-The forward gradient method has known limitations. The variance of the gradient estimate increases with parameter count, and variance reduction techniques add computational overhead. For very large models, the statistical cost may exceed the memory savings. The optimal tradeoff between reverse-mode and forward-mode is an empirical question that depends on model architecture, hardware memory constraints, and acceptable training time.
+The forward gradient method has known limitations. Single-tangent variance grows with parameter count as the expected cosine similarity between a random direction and the true gradient decays at \(O(1/n)\) in dimension \(n\). Flügel et al. [4] mitigate this with \(K\)-tangent orthogonal projection and report a practical ceiling around a factor of two over backpropagation for moderate \(K\) on realistic workloads. For very large models, the statistical cost of small \(K\) may still exceed the memory savings, and scaling \(K\) toward \(n\) surrenders the compute advantage that motivated forward-mode in the first place. The optimal tradeoff between reverse-mode and forward-mode is an empirical question that depends on model architecture, hardware memory constraints, and acceptable training time.
 
 The quire's exact accumulation eliminates one source of numerical error but does not address the statistical noise inherent in the forward gradient estimate. The combination reduces *numerical* error to zero (via exact accumulation) while accepting *statistical* error (from the directional derivative estimate). Whether this tradeoff is favorable depends on the specific workload.
 
@@ -143,3 +152,5 @@ These limitations are real and should inform expectations. The contribution here
 [2] Posit Working Group, "Standard for Posit Arithmetic (2022)," posithub.org, 2022.
 
 [3] M. Raissi, P. Perdikaris, and G. E. Karniadakis, "Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations," *Journal of Computational Physics*, vol. 378, pp. 686-707, 2019.
+
+[4] K. Flügel, D. Coquelin, M. Weiel, C. Debus, A. Streit, and M. Götz, "Beyond Backpropagation: Optimization with Multi-Tangent Forward Gradients," arXiv:2410.17764v2, 2026.
