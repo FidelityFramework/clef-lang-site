@@ -14,7 +14,9 @@ params:
 
 ## The Representation Selection Problem
 
-IEEE 754 distributes precision uniformly across its representable range. A `float64` allocates the same number of mantissa bits to values near 1.0 as to values near \(10^{300}\). For many computational domains, this uniformity is wasteful. Gravitational forces span roughly \(10^{-11}\) to \(10^{30}\) newtons. Membrane potentials range from -80 to +40 millivolts. Sensor readings cluster between 0 and 100 celsius. In each case, the majority of IEEE 754's precision budget is allocated to ranges the computation will never visit.
+IEEE 754 was ratified in 1985, and nearly every numeric computation written since has passed through it. The standard answered a real question about reproducibility across hardware vendors, and answered it well enough that four decades of software have been built on top of it. The design choices it accepted in 1985 have begun to show their limits on workloads that emerged long after: high-performance computing at extreme dynamic range, machine learning at distributions concentrated near zero.
+
+The design allocates precision uniformly across the representable range. A `float64` gives the same number of mantissa bits to values near 1.0 as to values near \(10^{300}\). For many computational domains this uniformity is wasteful. Gravitational forces span roughly \(10^{-11}\) to \(10^{30}\) newtons. Membrane potentials range from -80 to +40 millivolts. Sensor readings cluster between 0 and 100 celsius. In each case, the majority of IEEE 754's precision budget is allocated to ranges the computation will never visit.
 
 Gustafson and Yonemoto's posit arithmetic [1] addresses this with *tapered precision*: a variable-length regime field concentrates mantissa bits near 1.0, where most computed values reside, and reduces precision toward the extremes. The Posit Standard (2022) [2] unified the exponent size (es = 2) across all bit widths, simplifying both hardware implementation and compiler modeling.
 
@@ -26,7 +28,7 @@ The question is: how does the compiler know which case applies?
 
 ## Dimensional Annotations as Range Constraints
 
-This is where Dimensional Type Systems (DTS) enter. In the Fidelity framework's type system, every numeric value carries a dimensional annotation that survives compilation. A `float<newtons>` does not erase to `float64` during code generation; the annotation persists as an MLIR attribute through each lowering stage. This is the key distinction from approaches like F#'s Units of Measure [3], where dimensions are erased before code generation.
+This is where Dimensional Type Systems (DTS) enter. In the Fidelity framework's type system, every numeric value carries a dimensional annotation that survives compilation. A `float<newtons>` does not reify to `float64` during code generation; the annotation persists as an MLIR attribute through each lowering stage. This is the key distinction from approaches like F#'s Units of Measure [3], where dimensions are erased before code generation.
 
 The dimensional annotation constrains the value's semantic range. A value with dimension *newtons* in a gravitational simulation operates within the range determined by the gravitational constant (\(\sim 6.674 \times 10^{-11}\;\text{m}^3\,\text{kg}^{-1}\,\text{s}^{-2}\)), plausible masses, and plausible distances. This range is computable from the dimensional constraints, domain annotations, or platform binding specifications available at compile time.
 

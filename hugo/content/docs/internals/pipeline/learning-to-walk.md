@@ -20,11 +20,11 @@ Many programmer's first program prints "Hello, World!" to the console. It's a ri
 
 What that single line conceals holds the key to a new world.
 
-Beginners often start with procedural or "imperative" thinking; that code executes top to bottom, left to right. We show them that `Console.write "Hello"` does exactly what it says. We don't mention that the compiler many times will read their code in a different order and emitt instructions in an arrangement that bears little resemblance to what they typed.
+Beginners often start with procedural or "imperative" thinking; that code executes top to bottom, left to right. We show them that `Console.write "Hello"` does exactly what it says. We don't mention that the compiler many times will read their code in a different order and emit instructions in an arrangement that bears little resemblance to what they typed.
 
 > We don't mention this machinery because most of the time it doesn't matter, at least not ***at first***.
 
-This entry outlines how Fidelity walks its unique Program Semantic Graph to generate MLIR. The walk was inspired by Tomas Petricek's work on coeffects, where the requirements a computation places on its environment are tracked alongside what that computation does. The approach draws on Huet's zipper for navigation, MLKit's semantic edge following for dependency resolution, and the nanopass tradition for phase separation. What emerges is a unique traversal that looks nothing like reading code, yet produces the computation exactly as the code intended.
+This entry outlines how Fidelity walks its unique Program Semantic Graph to generate MLIR. Parsing, name resolution, and type checking sit upstream of this traversal and are inherited from F# Compiler Services as a deliberate part of our surgical fork; the article picks up below that boundary, where the enriched PSG hands off to MLIR generation. The walk was inspired by Tomas Petricek's work on coeffects, where the requirements a computation places on its environment are tracked alongside what that computation does. The approach draws on Huet's zipper for navigation, MLKit's semantic edge following for dependency resolution, and the nanopass tradition for phase separation. What emerges is a unique traversal that looks nothing like reading code, yet produces the computation exactly as the code intended.
 
 ## Four Ways to Say Hello
 
@@ -43,7 +43,7 @@ The first sample compiles in about 20 lines of MLIR. The fourth requires over 10
 
 When you read code, you often will start at the top and work your way down. When you evaluate code, you compute arguments before passing them to functions. When you analyze dependencies, you trace from uses back to definitions. When you emit machine code, you must define values before using them.
 
-These four orders rarely align.
+These four orders rarely align. Evaluation, dependency, and emission generally align with one another by construction in any well-designed compiler. Source order is the asymmetric one, the order our walk reconciles against the others.
 
 ```mermaid
 flowchart TD
@@ -125,7 +125,7 @@ In Fidelity, the coeffect model pervades the architecture. Before the zipper beg
 
 These are all computed *before* traversal. The zipper observes them. It doesn't compute them.
 
-This is the "passive zipper" model. The traversal is purely navigational. All decisions about ordering, about emission strategy, about what depends on what, were made during PSG construction. The walk simply witnesses those decisions and emits accordingly.
+This is the "passive zipper" model. The traversal is purely navigational. Within the PSG traversal, all decisions about ordering, about emission strategy, about what depends on what, were made during PSG construction. The walk simply witnesses those decisions and emits accordingly.
 
 ```mermaid
 flowchart LR
@@ -236,7 +236,7 @@ flowchart TB
 
 They deserve their own entry. For now, it's worth noting that Sample 4's compilation complexity exceeds the other three combined, and the output is still just "Hello, World."
 
-The coeffects for closures, capture analysis, escape analysis, environment layout, are computed before the zipper walks. But those coeffects require understanding that `prefix` is captured, that the closure escapes its creation scope, that the environment must outlive the call to `greet`. This is analysis the earlier samples didn't need.
+The coeffects for closures, capture analysis, escape analysis, environment layout, are computed before the zipper walks. But those coeffects require understanding that `prefix` is captured, that the closure escapes its creation scope, that the environment must outlive the call to `greet`. This is analysis the earlier samples didn't need. Some closure-related lowering decisions, environment-allocation strategy under specific target constraints among them, arrive later in the MLIR pipeline rather than at this traversal.
 
 ## Standing Art
 
