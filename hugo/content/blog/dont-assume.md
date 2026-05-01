@@ -1,7 +1,7 @@
 ---
 title: "Don't Assume All Proofs Are Bulletproof"
-linkTitle: "Don't Assume"
-description: "How Cryptographic Security Proofs Depend on Their Threat Models in the Post-Quantum Transition"
+linkTitle: "Don't Assume All Proofs Are Bulletproof"
+description: "Cryptographic Proofs Depend on Their Threat Models, For Better and For Worse"
 date: 2026-04-30
 authors: ["Houston Haynes"]
 tags: ["Cryptography", "Foundations", "Post-Quantum"]
