@@ -22,7 +22,7 @@ Recent work by Aram Hăvărneanu on adjoint classical logic with uniform mode co
 
 {{< x user="aramh" id="2053874165795405860" >}}
 
-Encountering this work prompted a reconsideration of how the Fidelity Framework describes the connections between its four verification tiers. 
+Encountering this work prompted deeper consideration of how the Fidelity Framework describes the connections between its four verification tiers. 
 
 The system introduces mode-uniform shift operators (↑ and ↓) that provide explicit, typed coercions between modes in a preorder. The shift \(\uparrow^{k}_{m}\, A\) lifts a value at mode \(k\) to mode \(m\) when \(m \geq k\), and the dual \(\downarrow^{m}_{k}\, A\) projects in the opposite direction. The interesting structural feature is that exponentials are derived rather than primitive: \(!A\) becomes \(\downarrow\uparrow A\) and \(?A\) becomes \(\uparrow\downarrow A\), with the shift discipline doing the work that linear logic traditionally assigns to exponential connectives.
 
