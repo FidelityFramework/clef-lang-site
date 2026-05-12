@@ -131,7 +131,7 @@ With mode shifts as first-class structure, Baker would elaborate this transition
 
 Z3 would discharge this entire formula as a single conjunctive constraint. The mode shifts would be visible in the formula's structure (the shift obligations are explicit), but they would not require separate verification machinery. The shift discipline would ensure the formula is well-formed according to Hăvărneanu's composition laws, and the SMT dialect would ensure Z3 can solve it efficiently.
 
-For the existing HelloArty target, this extension would be invisible at the source code level. The dimensional type checking, width inference, and combinational depth analysis all operate within Tier 1's structural verification, with no tier transitions required. The mode shift infrastructure would exist but would not engage because the computation does not demand it. This would be the right behavior: the extension would add capability for computations that need multiple tiers without imposing overhead on computations that don't.
+For the existing [HelloArty](https://github.com/FidelityFramework/HelloArty) target, this extension would be invisible at the source code level. The dimensional type checking, width inference, and combinational depth analysis all operate within Tier 1's structural verification, with no tier transitions required. The mode shift infrastructure would exist but would not engage because the computation does not demand it. This would be the right behavior: the extension would add capability for computations that need multiple tiers without imposing overhead on computations that don't.
 
 ## The Verification Cell Complex
 
@@ -147,7 +147,7 @@ What would be new here is not the mathematical formalism but its predictive powe
 
 ## Boundary and Scope
 
-This extension is not foundational to the framework's current operation. HelloArty compiles and synthesizes without mode shift infrastructure. The dimensional type system, the Mealy machine model, the two-layer timing analysis, all of these operate within Tier 1's structural verification and don't require explicit tier transitions. The framework as it exists today is sound, complete within its current scope, and demonstrates the architectural patterns that the mode shift extension would build on.
+This extension is not foundational to the framework's current operation. [HelloArty](https://github.com/FidelityFramework/HelloArty) compiles and synthesizes without mode shift infrastructure. The dimensional type system, the Mealy machine model, the two-layer timing analysis, all of these operate within Tier 1's structural verification and don't require explicit tier transitions. The framework as it exists today is sound, complete within its current scope, and demonstrates the architectural patterns that the mode shift extension would build on.
 
 What mode shifts could add is the ability to express computations that span multiple verification tiers without losing the compositionality guarantees that the dual-pass architecture provides. This would become important for the framework's longer trajectory: clinical decision support requires Tier 3 for probabilistic safety properties, cryptographic verification requires Tier 4 for relational reasoning, and physics-informed AI training requires both. Each of these applications produces computations where some portions fall naturally within Tier 1 or Tier 2 decidability while other portions require higher-tier verification.
 
