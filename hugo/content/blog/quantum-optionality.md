@@ -73,7 +73,7 @@ Where QIR and Q# laid groundwork, the Fidelity framework extends far beyond thei
 
 - **Posit arithmetic** for quantum amplitude representation, providing superior precision near quantum superposition states compared to IEEE-754
 - **Proof-carrying compilation** via Clef integration, enabling mathematical verification of quantum circuit correctness
-- **Strongly-typed memory mapping** through our patented BAREWire protocol, ensuring zero-copy data exchange via CXL between quantum emulation and classical processing
+- **Strongly-typed memory mapping** through our patented BAREWire protocol, ensuring zero-copy data exchange between quantum emulation and classical processing
 - **Program Hypergraph architecture** that naturally represents quantum-classical boundaries as hyperedges
 
 These capabilities position Fidelity not just as another quantum IR, but as a comprehensive framework for verified, high-performance quantum-classical computing that operates well beyond the power envelope of early experiments.
@@ -94,45 +94,15 @@ The PHG's hyperedges naturally capture quantum phenomena that traditional graphs
 
 This preservation of semantic richness enables the compiler to make intelligent decisions about quantum-classical partitioning without losing critical relationship information.
 
-### Dynamic Flow Adaptation
-
-The PHG's most powerful capability is its ability to fluidly transition between control flow and data flow representations - crucial for targeting both Von Neumann architectures and emerging quantum processors:
-
-```fsharp
-// PHG enables gradient-based compilation for different architectures
-let compileForArchitecture (phg: ProgramHypergraph) (target: CompilationTarget) =
-    match target with
-    | ClassicalCPU ->
-        // Emphasize control flow for sequential quantum emulation
-        phg
-        |> PHG.emphasizeControlFlow 0.9
-        |> EmulationCodeGen.generateSequentialExecution
-
-    | QuantumProcessor ->
-        // Emphasize data flow for parallel quantum circuit execution
-        phg
-        |> PHG.emphasizeDataFlow 0.9
-        |> QuantumCodeGen.generateCircuitLayout
-
-    | HybridSystem ->
-        // Analyze hyperedges to determine optimal partitioning
-        let analysis = PHG.analyzeQuantumClassicalBoundaries phg
-        phg
-        |> PHG.partitionByComputationalCharacteristics analysis
-        |> HybridCodeGen.generateHeterogeneousExecution
-```
-
-The same quantum algorithm can be compiled with different emphasis depending on the target architecture: control flow emphasis for CPU execution enables efficient sequential quantum emulation, while data flow emphasis for quantum processors generates optimal quantum circuits.
-
 ## Proof-Carrying Quantum Computation
 
 Beyond executing quantum algorithms, Fidelity's architecture enables proof-carrying quantum computation through our integration of Clef verification, posit arithmetic, and strongly-typed memory protocols. Clef's verification annotations over regular Clef functions can generate mathematical proofs about error bounds and structural correctness while tracking precision guarantees throughout quantum emulation.
 
 ```fsharp
 // Clef proves structural correctness and tracks error bounds
-[<SMT Requires("qubits <= maxSystemQubits")>]
-[<SMT Requires("depth <= maxCircuitDepth")>]
-[<SMT Ensures("result.errorBound < physicalQuantumError")>]
+[<Requires("qubits <= maxSystemQubits")>]
+[<Requires("depth <= maxCircuitDepth")>]
+[<Ensures("result.errorBound < physicalQuantumError")>]
 let quantumEmulationWithProofs (circuit: QuantumCircuit) (initialState: QubitState[]) =
     // Clef proves the circuit is structurally valid
     let validatedCircuit = QuantumCircuit.validate circuit
@@ -149,7 +119,7 @@ let quantumEmulationWithProofs (circuit: QuantumCircuit) (initialState: QubitSta
     (classicalResult, ProofCertificate errorBound)
 ```
 
-Where traditional quantum computing approaches provide statistical confidence about results, our proof-carrying approach provides mathematical certainty about structural correctness and bounded error guarantees. This distinction becomes crucial in regulated industries where compliance requires demonstrable correctness rather than probabilistic assurance.
+Where traditional quantum computing approaches provide statistical confidence about results, our proof-carrying approach provides mathematical certainty about structural correctness and bounded error guarantees. This distinction becomes crucial in regulated industries where compliance requires demonstrable correctness.
 
 ### Direct Backend Integration via PHG
 
@@ -180,7 +150,7 @@ subgraph "Backend Selection"
 end
 
 subgraph "Memory Integration"
-    BARE[BAREWire Protocol<br/>Zero-Copy CXL]
+    BARE[BAREWire Protocol<br/>Zero-Copy]
     EMUL -.->|Strongly Typed| BARE
     QHARDWARE -.->|Type-Safe Transfer| BARE
     MIXED -.->|Unified Memory| BARE
@@ -206,9 +176,9 @@ Our approach leverages the full Fidelity stack - PHG for representation, posit a
 
 ```fsharp
 // Financial risk calculation with formal verification
-[<SMT Requires("scenarios.Length <= maxQuantumAmplitudes")>]
-[<SMT Ensures("result.confidence >= 0.95")>]
-[<SMT Ensures("result.positErrorBound < regulatoryThreshold")>]
+[<Requires("scenarios.Length <= maxQuantumAmplitudes")>]
+[<Ensures("result.confidence >= 0.95")>]
+[<Ensures("result.positErrorBound < regulatoryThreshold")>]
 let calculatePortfolioRisk (portfolio: Portfolio) (market: MarketData) =
     // Classical preparation - correlation matrix computation
     let correlations = FinancialMath.computeCorrelationMatrix market
@@ -246,48 +216,8 @@ This example demonstrates capabilities far beyond what QIR or basic Q# could ach
 
 1. **Posit arithmetic** maintains precision through complex financial calculations where IEEE-754 would lose significant digits
 2. **Proof generation** provides regulatory compliance that statistical quantum results cannot
-3. **Zero-copy CXL transfer** via BAREWire eliminates the memory bottleneck between quantum emulation and classical analysis
+3. **Zero-copy transfer** via BAREWire eliminates the memory bottleneck between quantum emulation and classical analysis
 4. **PHG architecture** seamlessly transitions between control flow (data preparation) and data flow (quantum simulation)
-
-## The Path Forward: Building on Foundations
-
-### Near-Term Focus
-
-Our immediate priorities leverage the unique capabilities of the Fidelity framework:
-
-1. **Refine PHG Architecture**: Continue evolving the Program Hypergraph to better capture quantum-classical boundaries
-2. **Enhance Posit Integration**: Optimize posit arithmetic specifically for quantum amplitude representation
-3. **Strengthen Proof Generation**: Extend Clef verification to cover more quantum algorithm patterns
-4. **Validate BAREWire Performance**: Demonstrate zero-copy advantages for quantum-classical data exchange
-
-### Medium-Term Evolution
-
-As quantum hardware matures, our foundation enables advanced capabilities:
-
-- **Hybrid Execution Strategies**: PHG-guided partitioning between proven emulation and quantum hardware
-- **Precision-Aware Compilation**: Use posit error tracking to determine optimal quantum-classical boundaries
-- **Verified Quantum Algorithms**: Ship quantum code with mathematical proof certificates
-- **Hardware Calibration**: Use proven emulation to improve quantum hardware fidelity
-
-### Long-Term Vision
-
-The convergence of our technologies positions Fidelity uniquely:
-
-- **Industry Standard for Verified Quantum**: Proof-carrying quantum computation becomes the norm
-- **Unified Classical-Quantum Development**: Single codebase targets both paradigms optimally
-- **Precision-Optimized Execution**: Automatic selection of representation (IEEE/Posit) based on algorithm needs
-- **Zero-Copy Quantum-Classical Pipelines**: BAREWire eliminates data movement overhead
-
-## Engineering Advantages Over Early Approaches
-
-Where QIR focused on basic quantum-classical integration, Fidelity provides:
-
-1. **Mathematical Verification**: Not just execution, but proof of correctness
-2. **Precision Management**: Posit arithmetic tailored for quantum's unique needs
-3. **Memory Efficiency**: Patented zero-copy protocols eliminate transfer overhead
-4. **Architectural Flexibility**: PHG enables fluid adaptation between control and data flow
-
-These aren't incremental improvements - they represent a different class of capability that moves quantum computing from experimental to production-ready.
 
 ## Conclusion
 
@@ -295,7 +225,7 @@ Quantum optionality in the Fidelity framework builds respectfully on early exper
 
 The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional Von Neumann architectures and emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and Clef's verification capabilities, we offer something no other framework provides: quantum computation you can trust.
 
-This isn't about competing with early quantum experiments - it's about building on their lessons to create something fundamentally more capable. Where QIR provided a bridge, Fidelity provides a highway - with guard rails (proofs), traffic optimization (posits), and express lanes (zero-copy CXL).
+This isn't about competing with early quantum experiments - it's about building on their lessons to create something fundamentally more capable. Where QIR provided a bridge, Fidelity provides a highway - with guard rails (proofs), traffic optimization (posits), and express lanes (zero-copy through direct transfer mechanisms like CXL).
 
 The future of quantum-classical computing requires more than just integration - it demands verification, precision, and performance. Through our comprehensive approach combining cutting-edge computer science with practical engineering, Fidelity delivers all three. We honor the pioneers who blazed the trail while pushing forward into territory they could only imagine.
 
