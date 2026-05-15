@@ -223,7 +223,7 @@ This example demonstrates capabilities far beyond what QIR or basic Q# could ach
 
 Quantum optionality in the Fidelity framework builds respectfully on early experiments like QIR and Q# while extending far beyond their initial vision. Through the convergence of Program Hypergraph architecture, posit arithmetic, proof-carrying compilation, and strongly-typed zero-copy protocols, we've created a framework that doesn't just prepare for quantum computing - it makes it verifiable, precise, and practical.
 
-The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional Von Neumann architectures and emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and Clef's verification capabilities, we offer something no other framework provides: quantum computation you can trust.
+The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional architectures *and* emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and Clef's verification capabilities, we offer something no other framework provides: quantum computation you can trust.
 
 This isn't about competing with early quantum experiments - it's about building on their lessons to create something fundamentally more capable. Where QIR provided a bridge, Fidelity provides a highway - with guard rails (proofs), traffic optimization (posits), and express lanes (zero-copy through direct transfer mechanisms like CXL).
 
