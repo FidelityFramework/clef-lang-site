@@ -19,7 +19,7 @@ The quantum computing landscape in 2025 presents both promising advances and sob
 
 This vision document examines how [the Clef language](https://clef-lang.com)'s functional basis, combined with our forward-looking Program Hypergraph (PHG) architecture and interaction net foundations, creates a natural path for future quantum-classical integration. While we recognize that fault-tolerant quantum computers remain on the horizon (expert consensus suggests 2030 ± 2 years), we believe in preparing architectural foundations that could adapt to quantum acceleration when specific use cases demonstrate genuine advantage.
 
-## The Current Quantum Reality
+## An Emerging Quantum Reality
 
 Before exploring integration possibilities, it's important to acknowledge where quantum computing stands today. Government agencies are leading concrete deployments, with the U.S. Department of Defense awarding contracts like IonQ's $54.5 million Air Force Research Lab project. Financial institutions, particularly JPMorgan Chase with their dedicated quantum team, have achieved specific milestones like demonstrating Certified Quantum Randomness on Quantinuum's 56-qubit system.
 
@@ -64,6 +64,20 @@ The downstream impact extends beyond quantum simulation into classical processin
 For regulated industries like finance and aerospace, these precision-induced deviations represent an existential challenge. Regulatory compliance requires not just statistical confidence but mathematical proof of correctness - impossible to achieve when the underlying numerical representation systematically introduces uncontrolled errors. This is where Fidelity's posit arithmetic becomes transformative: by concentrating precision exactly where quantum amplitudes naturally reside, we can provide mathematical guarantees about simulation fidelity that current IEEE-754-based approaches simply cannot match.
 
 Current quantum simulation efforts frequently encounter these precision-induced deviations from unitarity, leading to non-physical results that compromise algorithm fidelity. This numerical degradation compounds through multi-qubit systems, making large-scale quantum emulation unreliable for verification purposes. The Fidelity framework finally resolves this fundamental limitation by combining posit arithmetic's quantum-optimized precision with Clef verification to provide mathematical proofs of simulation fidelity - transforming quantum emulation from a statistical approximation into a mathematically verifiable computational method.
+
+---
+
+## Update: April 2026
+
+The landscape described above has changed materially since this post was written.
+
+On March 30, 2026, two independent results collapsed the resource estimates for cryptographically relevant quantum computers. Google Quantum AI published [revised ECDLP circuit compilations](https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/) requiring fewer than 1,200 logical qubits and 90 million Toffoli gates to break 256-bit elliptic curve cryptography, executable on fewer than 500,000 physical qubits. The same day, [Cain et al. (arXiv:2603.28627)](https://arxiv.org/abs/2603.28627), a collaboration between Oratomic, Caltech, and UC Berkeley, demonstrated that high-rate qLDPC codes on reconfigurable neutral-atom architectures bring ECC-256 within reach of as few as 10,000 atomic qubits. The "100-to-1,000 physical qubits per logical qubit" estimate cited in this post has been substantially undercut by these codes achieving approximately 30% encoding rates. The "2030 ± 2 years" timeline for fault-tolerant quantum computers is no longer the operative planning constraint; Google's own 2029 deadline is a migration lead-time target, not a hardware arrival prediction.
+
+The QIR critique in this post also warrants context. Subsequent work has re-routed QIR-lineage approaches through MLIR, which addresses the static single-assignment concerns that motivated our original assessment. The Fidelity framework's commitment to MLIR as the compilation substrate, and to Appel's SSI formulation as the correct foundation for program analysis, remains unchanged.
+
+The architectural choices described here, building for quantum optionality within a verified compilation framework, remain sound. The urgency of those choices has increased. Our current assessment of the CRQC landscape and its implications for the Fidelity framework's verification architecture is developed in the SpeakEZ research entry [Zero Knowledge Proofs: Verification as Product](https://speakez.tech/research/zk-proof-ledger/). The formal substrate for the decidable fragment discussed here is expanded in [Building Proofs for the Real World](/blog/proofs-for-the-real-world/) and ["Free" Proofs from Dimensional Types](/blog/proofs-from-dimensional-types/).
+
+---
 
 ## Beyond QIR: Building on Early Experiments
 
@@ -225,16 +239,6 @@ Quantum optionality in the Fidelity framework builds respectfully on early exper
 
 The PHG's ability to fluidly transition between control flow and data flow representations ensures we can target both traditional architectures *and* emerging quantum processors from the same semantic foundation. Combined with posit arithmetic's superior precision for quantum amplitudes and Clef's verification capabilities, we offer something no other framework provides: quantum computation you can trust.
 
-This isn't about competing with early quantum experiments - it's about building on their lessons to create something fundamentally more capable. Where QIR provided a bridge, Fidelity provides a highway - with guard rails (proofs), traffic optimization (posits), and express lanes (zero-copy through direct transfer mechanisms like CXL).
+The future of quantum-classical computing requires more than just integration - it demands verification, precision, and performance. Through our comprehensive approach combining principaled computer science with practical engineering, Fidelity delivers all three. 
 
-The future of quantum-classical computing requires more than just integration - it demands verification, precision, and performance. Through our comprehensive approach combining cutting-edge computer science with practical engineering, Fidelity delivers all three. We honor the pioneers who blazed the trail while pushing forward into territory they could only imagine.
 
-## Update: April 2026
-
-The landscape described above has changed materially since this post was written.
-
-On March 30, 2026, two independent results collapsed the resource estimates for cryptographically relevant quantum computers. Google Quantum AI published [revised ECDLP circuit compilations](https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/) requiring fewer than 1,200 logical qubits and 90 million Toffoli gates to break 256-bit elliptic curve cryptography, executable on fewer than 500,000 physical qubits. The same day, [Cain et al. (arXiv:2603.28627)](https://arxiv.org/abs/2603.28627), a collaboration between Oratomic, Caltech, and UC Berkeley, demonstrated that high-rate qLDPC codes on reconfigurable neutral-atom architectures bring ECC-256 within reach of as few as 10,000 atomic qubits. The "100-to-1,000 physical qubits per logical qubit" estimate cited in this post has been substantially undercut by these codes achieving approximately 30% encoding rates. The "2030 ± 2 years" timeline for fault-tolerant quantum computers is no longer the operative planning constraint; Google's own 2029 deadline is a migration lead-time target, not a hardware arrival prediction.
-
-The QIR critique in this post also warrants context. Subsequent work has re-routed QIR-lineage approaches through MLIR, which addresses the static single-assignment concerns that motivated our original assessment. The Fidelity framework's commitment to MLIR as the compilation substrate, and to Appel's SSI formulation as the correct foundation for program analysis, remains unchanged.
-
-The architectural choices described here, building for quantum optionality within a verified compilation framework, remain sound. The urgency of those choices has increased. Our current assessment of the CRQC landscape and its implications for the Fidelity framework's verification architecture is developed in the SpeakEZ research entry [Zero Knowledge Proofs: Verification as Product](https://speakez.tech/research/zk-proof-ledger/). The formal substrate for the decidable fragment discussed here is expanded in [Building Proofs for the Real World](/blog/proofs-for-the-real-world/) and ["Free" Proofs from Dimensional Types](/blog/proofs-from-dimensional-types/).
