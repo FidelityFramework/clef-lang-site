@@ -57,7 +57,7 @@ After 100 operations - IEEE error: 2.512e-28
 After 100 operations - Posit error: 1.000e-30
 ```
 
-This precision difference has profound implications for quantum-classical integration. In quantum computing, unitarity preservation is not merely desirable - it's mathematically required. When IEEE-754 precision loss causes amplitude normalization to drift from 1.0, the quantum state becomes non-physical, leading to cascading errors in probability calculations, measurement outcomes, and entanglement fidelity evaporates.
+This precision difference has direct, measurable implications for quantum-classical integration. In quantum computing, unitarity preservation is not merely desirable - it's mathematically required. When IEEE-754 precision loss causes amplitude normalization to drift from 1.0, the quantum state becomes non-physical, leading to cascading errors in probability calculations, measurement outcomes, and entanglement fidelity evaporates.
 
 The downstream impact extends beyond quantum simulation into classical processing. Financial risk calculations that rely on quantum amplitude amplification for tail-risk sampling become unreliable when amplitude precision degrades. Cryptographic protocols that depend on quantum random number generation lose their security guarantees when the underlying quantum states deviate from theoretical predictions. Even hybrid quantum-classical optimization algorithms become unstable as precision errors accumulate across the quantum-classical interface.
 
