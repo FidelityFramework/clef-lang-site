@@ -11,7 +11,7 @@ For the current state and the ways to engage now, see [Getting Started](/docs/gu
 
 ## A Deeper Dive - arXiv Pre-Prints
 
-Beneath the entries on this site around design sits a foundational sequence of preprints, formal treatments of key ideas and concepts this site describes in prose.
+Beneath the entries on this site around design sits a foundational sequence of preprints, formal treatments of key ideas and concepts this site carries through the design, compiler internals and reference materials.
 
 1. **[Dimensional Type Systems and Deterministic Memory Management](https://arxiv.org/abs/2603.16437).** (DTS+DMM) The foundation, and the reason Clef needs no `unsafe` escape hatch: memory safety is settled at build time. Kennedy-style dimensional types make the code self-describing, so the annotation a developer reads to understand a value is the one the compiler reads to fix its numeric representation and memory layout. Those annotations survive multi-stage MLIR lowering, so representation and deterministic allocation resolve together, as coeffects of our program semantic graph.
 2. **[The Program Hypergraph](https://arxiv.org/abs/2603.17627).** (PHG) Clifford algebra is the shared language of classical geometry and quantum gates, and its geometric product carries a Cayley table that runs 85 to 95% structurally zero. Our hypergraph makes grade a dimension axis in the type system, so the compiler derives the non-zero Cayley entries from type signatures alone and eliminates the rest before code generation. The same grade and hyperedge structure that prunes a physics kernel is designed to carry unitarity and multi-qubit gates in a quantum-classical setting.
