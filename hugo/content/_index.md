@@ -25,7 +25,7 @@ toc: false
 
 <div class="hx:mb-16">
 {{< hextra/hero-button text="Read the Spec" link="spec" >}}
-{{< hextra/hero-button text="Get Started" link="docs/guides" style="alt" >}}
+{{< hextra/hero-button text="Follow the Work" link="docs/guides" style="alt" >}}
 </div>
 
 {{< hextra/feature-grid >}}
