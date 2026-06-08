@@ -13,7 +13,7 @@ draft: false
 > Part of the Constrained Machine Learning section. This article establishes
 > the contribution the section is built on, the Adaptive Domain Model, and the
 > utility argument that motivates the effort. The full type-theoretic case is
-> made in the [ADM pre-print](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}) and is not re-prosecuted here; what follows is a
+> made in the [ADM pre-print](https://arxiv.org/abs/2603.18104) and is not re-prosecuted here; what follows is a
 > highlight reel sufficient to ground the discussion, with the pre-print cited
 > for the argument in full. The section as a whole is speculative: the
 > constellation described is a research program, not a shipped system. The
