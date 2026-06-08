@@ -10,15 +10,6 @@ tags: ["machine-learning", "language-model", "formal-verification", "compilation
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. The three commitments that
-> carry a language component when the ADM type scaffold cannot apply are set
-> out in [*A Scaffold for Constrained Models*]({{< ref "scaffold-for-constrained-models" >}});
-> this article takes up the first of them in practice: how the model is
-> actually built and tuned. The status remains speculative. Nothing here is
-> built, and the open questions are marked as they arise.
-
-## What "constrained" means, precisely
-
 A model can be constrained in three senses, and the section's argument depends on keeping them apart. It can be constrained in its idiom, having learned to write Clef the way a fluent practitioner would. It can be constrained in its accent, having had the imperative and dynamically-typed reflexes of its training corpus suppressed. And it can be constrained in its output, held to syntactically valid, semantically elaborable Clef by machinery that does not depend on the weights at all. The first two live inside the model and are shaped by tuning. The third lives outside it and is guaranteed by the compiler. A useful constrained model needs all three, and the strongest sense, the one that carries an actual guarantee, is the one outside the weights.
 
 This article works through the build in that order: the two tuning problems that shape idiom and accent, the taxonomy that keeps the damping from harming the framework's own machinery, and the deterministic layer that supplies the guarantee.

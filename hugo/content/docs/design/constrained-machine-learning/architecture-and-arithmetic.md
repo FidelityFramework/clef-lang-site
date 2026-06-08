@@ -10,15 +10,6 @@ tags: ["machine-learning", "adaptive-domain-models", "posit-arithmetic", "archit
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. The program rests on three
-> commitments, named in [*A Scaffold for Constrained Models*]({{< ref "scaffold-for-constrained-models" >}});
-> two of them, a derived architecture and precise arithmetic, are the subject
-> here, because they are really one decision: the architecture determines what
-> the arithmetic has to protect. Speculative throughout; the experiments named
-> here are not yet run.
-
-## The architecture is reasoned out, not searched for
-
 The section index attributes the architectural half of this program to Buchanan, Pai, Wang, and Ma's [*Principles and Practice of Deep Representation Learning*](https://ma-lab-berkeley.github.io/deep-representation-learning-book/). The single idea worth restating before building on it: a network layer is one step of an optimization algorithm. The algorithm descends an information-theoretic objective, the coding rate, whose minimization drives a representation toward a union of low-dimensional, mutually incoherent subspaces. The attention block emerges as the step that compresses the representation against those subspaces; the feed-forward block emerges as the step that sparsifies. The architecture is the unrolled optimizer, and the resulting [CRATE](https://github.com/Ma-Lab-Berkeley/CRATE) family, now with a causal variant for sequences, has a closed-form reason for every block it contains.
 
 The consequence that matters here is accountability of parameters. A black-box transformer offers no principled account of which weights do what, so the only way to make it smaller is to prune after training and measure what broke. A derived architecture inverts this. You instantiate the blocks the objective requires and no others, and the representation the trained model carries is, by the derivation, a set of separated subspaces. There is a known answer to the question "what is this part of the model doing," and the answer is the same for every model of the family.

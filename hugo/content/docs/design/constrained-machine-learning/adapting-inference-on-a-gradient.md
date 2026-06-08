@@ -10,17 +10,6 @@ tags: ["machine-learning", "adaptive-domain-models", "data-sovereignty", "compil
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. The rest of the section
-> argues for a constellation of typed domain models with a porous language
-> node and builds that node up from its architecture to the type machinery
-> inside it. This article is the adoption side of the same idea: how an
-> organization works with a model that exists today and adapts along a
-> gradient toward one built to fit the constellation. The framing borrows the
-> strategy the compiler already uses for its backends. Speculative in its
-> details; the strategy is not.
-
-## The strategy is the one the compiler already uses
-
 Clef targets LLVM for CPU and native code today, and it does so deliberately and provisionally. LLVM is the pragmatic backend: mature, available now, and the fastest route to a real running artifact. It also carries baggage, an instruction-selection model and a set of assumptions Clef would not choose if it were designing the lowering from scratch, and the framework's longer arc contemplates novel backends that shed that baggage where doing so buys enough to justify the work. The point is not that LLVM is wrong. It is that LLVM is a *stage*: load-bearing now, deliberately temporary, used behind a stable interface so that the backend can be substituted underneath without disturbing everything above it.
 
 The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model of the rest of this section is the novel backend with none of it. The interface between the language node and the typed constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.

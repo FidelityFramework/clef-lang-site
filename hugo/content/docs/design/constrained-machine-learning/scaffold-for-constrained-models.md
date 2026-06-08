@@ -10,18 +10,6 @@ tags: ["machine-learning", "adaptive-domain-models", "formal-verification", "arc
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. The case for the typed
-> domain models and the division of labor they enable is made in
-> [*Adaptive Domain Models*]({{< ref "why-adaptive-domain-models" >}}); this
-> article takes up the one node of the constellation that cannot wear a domain
-> type, the language model itself. Nothing described here is built. What
-> follows is where the framework leads when its commitments are followed into
-> that node. The conclusions are held lightly; they could reshape
-> how the loss in a deep model is computed, and they could be wrong. The open
-> questions are marked as they arise.
-
-## The one node that cannot wear a type
-
 The [*Adaptive Domain Models*]({{< ref "why-adaptive-domain-models" >}}) article established the contribution and the division of labor: typed domain models carry their structure exactly and run on simple hardware, and the language model is the porous node that interfaces with the unstructured world and routes to them. That division leaves one node to account for. The typed models are correct by construction because their domains have structure known before training. The language node has no such structure to type, because the prior structure of language admits no compact formal specification, which is the precise boundary the [ADM pre-print](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), draws around its own method.
 
 That boundary is usually read as a limit on ADM. Read the other way, it is a specification for the language node. It says exactly what is missing in the language case, the formal prior the typed models rely on, and forces the question this article answers: with the type scaffold unavailable, what carries the weight instead?

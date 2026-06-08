@@ -10,18 +10,6 @@ tags: ["machine-learning", "adaptive-domain-models", "formal-verification", "arc
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. This article establishes
-> the contribution the section is built on, the Adaptive Domain Model, and the
-> utility argument that motivates the effort. The full type-theoretic case is
-> made in the [ADM pre-print](https://arxiv.org/abs/2603.18104) and is not re-prosecuted here; what follows is a
-> highlight reel sufficient to ground the discussion, with the pre-print cited
-> for the argument in full. The section as a whole is speculative: the
-> constellation described is a research program, not a shipped system. The
-> articles can be read in any order; this one is the natural place to start
-> for the motivation.
-
-## The contribution, stated plainly
-
 The Adaptive Domain Model is a learned model whose weights carry the structure of their domain as a type-level invariant. Where a domain has structure known with certainty before any training example arrives, a conserved grade, a physical dimension, an equivariance under a known group, that structure is expressed in the type system, enforced during training, and discharged by a verifier, so that the trained model holds the structure exactly rather than approximately. This is the contribution the section rests on, and it is argued in full in the ADM pre-print. The purpose here is to recall enough of it to motivate what follows, not to make the case again.
 
 The contrast that defines it is with the dominant paradigm. A monolithic transformer learns whatever structure it acquires from data alone, as a statistical regularity with no formal status, true on average over the training distribution and subject to drift everywhere else. An ADM does not learn the structure it is given; it is built to obey it, and learns only what remains once the known structure is fixed. The difference is between a model that might have discovered that physical quantities have consistent dimensions, and a model in which a dimensional inconsistency cannot be represented.

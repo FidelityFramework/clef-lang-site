@@ -10,17 +10,6 @@ tags: ["machine-learning", "automatic-differentiation", "posit-arithmetic", "eff
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section. The efficiency thesis,
-> that building and adapting a model this way should be orders of magnitude
-> cheaper than the standard pipeline, and that the saving is structural rather
-> than a tuning trick, is stated in [*A Scaffold for Constrained Models*]({{< ref "scaffold-for-constrained-models" >}});
-> this article is where it is paid for. It depends on the
-> [derived architecture]({{< ref "architecture-and-arithmetic" >}}) being
-> genuinely low-rank and on its arithmetic being precise. Speculative; the
-> effective-rank measurement that decides the claim is not yet run.
-
-## The accounting reverse-mode assumes
-
 Reverse-mode automatic differentiation, the backpropagation that trains essentially every large model, earns its dominance by amortizing a single backward pass over an arbitrary number of parameters. Compute the loss forward, sweep the gradient backward once, and every parameter receives its derivative from that one sweep. The cost is the activation tape: every intermediate value computed on the forward pass must be stored, because the backward pass needs it. For a large model over a long sequence the tape is the dominant memory cost of training.
 
 That accounting rests on two assumptions. The parameter space is large and unstructured, so amortizing one backward pass over all of it is the efficient choice. And the arithmetic is cheap and noisy, so storing and reloading activations is acceptable and the gradient need only be approximately right. A derived architecture on precise arithmetic violates both assumptions, and violating them changes which mode of differentiation the accounting favors.

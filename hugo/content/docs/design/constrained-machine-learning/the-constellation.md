@@ -10,17 +10,6 @@ tags: ["machine-learning", "adaptive-domain-models", "architecture", "formal-ver
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section, and its keystone. Other
-> articles treat the language component on its own: how it is
-> [tuned]({{< ref "building-the-model" >}}), what it is
-> [made of]({{< ref "architecture-and-arithmetic" >}}), and why it is
-> [cheap to adapt]({{< ref "forward-mode-and-adaptation" >}}). This article
-> asks the question the section exists to answer: how does that component sit
-> among the typed domain models of the ADM constellation, and what does the
-> arrangement buy that neither part has alone? Speculative throughout.
-
-## The constellation, and the citizen that wears no type
-
 The [Adaptive Domain Models paper](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), describes a constellation of domain models, each typed by the structure of its domain. A model of rigid-body kinematics carries the grade types of projective geometric algebra; a model of spacetime dynamics carries the Lorentz structure of spacetime algebra; a dimensional finance model carries currency dimensions and the fractional-time dimension of volatility. Each is correct by construction in its domain, and each exchanges values with the others through a shared substrate that preserves those types.
 
 A language component cannot be a citizen of that kind. The prior structure of language admits no compact formal specification, so there is no grade to type and no invariant to discharge. The entire section to this point has been an argument that this does not exile the language component from the constellation; it changes the terms of its membership. The component is precise by construction, through the [arithmetic]({{< ref "architecture-and-arithmetic" >}}), and bounded by the compiler, through the [constraint layer]({{< ref "building-the-model" >}}), and it shares the substrate, the provenance discipline, and the numeric format of every typed model around it. It is a citizen that wears no type but observes every other law. The right image for it is a porous node.

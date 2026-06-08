@@ -10,21 +10,6 @@ tags: ["machine-learning", "language-model", "memory-model", "formal-verificatio
 draft: false
 ---
 
-> Part of the Constrained Machine Learning section, and the one that postulates
-> a frontier rather than bounding a single language node. Where other articles build and bound
-> a language node, this one asks a different kind of question: what happens
-> when the framework's type-theoretic contribution, the
-> [negative and fractional types](https://arxiv.org/abs/2606.04352) developed for the memory model, is turned on
-> the internals of a model itself? The answer sketched here is a piece of
-> design theory, not an engineering recipe. It proposes that a type long
-> understood as a memory-management construct is also a statement about
-> reversible computation inside a learned model, and it treats that proposal
-> as a research opportunity worth pursuing precisely because the field has not
-> yet asked type theory to do this work. Speculative throughout; the open
-> questions are the point, not a caveat.
-
-## A type with two readings
-
 The negative and fractional types were developed for a concrete purpose: reasoning about memory, lifetimes, and reversible allocation in the Clef memory model. A negative type, in that setting, is the additive adjoint of a value, the formal trace of something given back, and the discipline lets the compiler reason about allocation and reclamation as exact inverses rather than as a runtime bookkeeping convention.
 
 This article advances a claim that is larger than the engineering use that follows from it. A type that expresses exact reversibility is not only a memory-management construct. It is a statement about computation, that a step can be undone exactly, and a learned model is full of steps. The thesis of this article is that the negative type has a second reading, as a design-time assertion that a piece of a model's computation is reversible with proven exactness, and that this reading opens a line of work the field has not pursued: using type theory not to verify a model after it is built, but to shape what the model is, by making reversibility a property the type system carries and the compiler exploits.
