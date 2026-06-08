@@ -67,7 +67,7 @@ The discriminating question for every example is whether the JavaScript is autho
 
 Everything above shapes what the model prefers. None of it guarantees what the model emits, and for a language model none of it can. The guarantee comes from a deterministic layer that sits outside the weights entirely, exactly as the scaffold article described.
 
-A grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own grammar, holds the sampler to syntactically valid Clef regardless of the model's habits. The grammar guarantees syntax; tuning shapes idiom; preference tuning removes the accent; and the labor is split cleanly across the three. Composer, the Clef compiler, then extends the guard in two distinct roles:
+A grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own grammar, would hold the sampler to syntactically valid Clef regardless of the model's habits. The grammar would guarantee syntax; tuning would shape idiom; preference tuning would remove the accent; and the labor is split cleanly across the three. Composer, the Clef compiler, then extends the guard in two distinct roles:
 
 ```fsharp
 // Role one: Composer as decoding filter. A sample that does not elaborate
@@ -83,7 +83,7 @@ let rec authorUnderCheck (model: Model) (goal: Spec) (attempt: ClefSource) : Pro
     | Error diags -> authorUnderCheck model goal (model.revise goal attempt diags)
 ```
 
-The second role is what pass two trains: the propose-check-revise reflex, on trajectories where the grammar guarantees a syntactically valid proposal and the compiler or language server supplies the semantic verdict the model acts on. This is the agentic extension of compiler-as-constraint, and it lands on a model whose imperative accent is already gone, so the revisions it proposes are already in the right idiom. The constellation article later in this section returns to this loop as the mechanism by which the language component is bounded by the typed domain models around it.
+The second role is what pass two trains: the propose-check-revise reflex, on trajectories where the grammar guarantees a syntactically valid proposal and the compiler or language server supplies the semantic verdict the model acts on. This is the agentic extension of compiler-as-constraint, and it lands on a model whose imperative accent is already gone, so the revisions it proposes are already in the right idiom. The constellation article returns to this loop as the mechanism by which the language component is bounded by the typed domain models around it.
 
 ## Where the model runs, and the honest friction
 
@@ -95,18 +95,12 @@ The scaffold article committed the architecture to precise arithmetic, and that 
 
 Both tuning passes run as low-rank adaptation, which keeps the trainable dimension small, keeps tuning CPU-feasible, and keeps the forward-mode path of the [efficiency article]({{< ref "forward-mode-and-adaptation" >}}) tractable. Pass one is merged into the weights to produce a stable functional base, a model that thinks in ML-family terms and changes rarely. Pass two stays a swappable adapter carrying Clef idiom, grammar awareness, and the tool reflexes, and it is the artifact that iterates and warm-rotates as the language evolves. That boundary keeps the two passes from conflating across time, not merely within a single run.
 
-The version-record discipline from ADM carries over even though the language model holds no grade certificate. A signed record of base-checkpoint hash, adapter provenance, tuning recipe, and data provenance, with warm rotation swapping adapters, makes the tuned model a well-behaved citizen of the constellation and a clean prior source for distillation. It wears no ADM type, but it observes the same provenance discipline as everything that does, which is the first concrete sense in which it is adjacent to the constellation rather than foreign to it.
+The version-record discipline from [ADM](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}) carries over even though the language model holds no grade certificate. A signed record of base-checkpoint hash, adapter provenance, tuning recipe, and data provenance, with warm rotation swapping adapters, makes the tuned model a well-behaved citizen of the constellation and a clean prior source for distillation. It wears no ADM type, but it observes the same provenance discipline as everything that does, which is the first concrete sense in which it is adjacent to the constellation rather than foreign to it.
 
 ## Open questions
 
 Whether the damping-first order holds in practice, or whether the pass-two replay is insufficient to prevent accent re-import, is an empirical question the contrastive catalog is designed to answer.
 
-Whether a dense small base quantized to four-bit retains enough of the instilled idiom to be useful, or whether the substrate must move to b-posit before the model is sharp, is the question the next article takes up directly.
+Whether a dense small base quantized to four-bit retains enough of the instilled idiom to be useful, or whether the substrate must move to b-posit before the model is sharp, is the question the architecture and arithmetic article takes up directly.
 
 Whether the propose-check-revise loop converges efficiently, or whether the model spends too many compiler round-trips per accepted program, is measurable once the tool-trajectory dataset exists.
-
-## References
-
-Internal: the opener, [*Why Adaptive Domain Models Change the Inference Problem*]({{< ref "why-adaptive-domain-models" >}}); the scaffold article, [*A Scaffold for Constrained Models*]({{< ref "scaffold-for-constrained-models" >}}); the [architecture and arithmetic]({{< ref "architecture-and-arithmetic" >}}), [forward-mode]({{< ref "forward-mode-and-adaptation" >}}), and [constellation]({{< ref "the-constellation" >}}) articles in this section.
-
-External: the Negative Preference Optimization line of work on model unlearning, including the reference-free variant; the BitNet b1.58 technical report and inference framework for the native-ternary route.
