@@ -1,7 +1,7 @@
 ---
 title: "Building the Constrained Language Model"
 linkTitle: "Building the Model"
-description: "Two tuning passes, a damping taxonomy that protects the compiler's own output, and a constraint layer that lives outside the weights"
+description: "How a language model is tuned to write Clef, with valid output enforced outside its weights"
 date: 2026-06-08T00:02:00+00:00
 weight: 3
 authors:
@@ -10,11 +10,11 @@ tags: ["machine-learning", "language-model", "formal-verification", "compilation
 draft: false
 ---
 
-A model can be constrained in three senses, and the section's argument depends on keeping them apart. It can be constrained in its idiom, having learned to write Clef the way a fluent practitioner would. It can be constrained in its accent, having had the imperative and dynamically-typed reflexes of its training corpus suppressed. And it can be constrained in its output, held to syntactically valid, semantically elaborable Clef by machinery that does not depend on the weights at all. The first two live inside the model and are shaped by tuning. The third lives outside it and is guaranteed by the compiler. A useful constrained model needs all three, and the strongest sense, the one that carries an actual guarantee, is the one outside the weights.
+From our design perspective, we see that most of a language node's work is ordinary language: it reads natural-language intent, reasons in a domain's own vocabulary, a clinician's terminology, a statute's clauses, an analyst's terms of art, and answers in prose a person reads. One path through it is different. When the node hands work to a typed domain model, it has to produce structured Clef, and that Clef has to be well-formed. Teaching a model to emit Clef cleanly, while the rest of what it does stays conversation, is the subject here.
 
-This article works through the build in that order: the two tuning problems that shape idiom and accent, the taxonomy that keeps the damping from harming the framework's own machinery, and the deterministic layer that supplies the guarantee.
+On that path the model is constrained in three senses. Its idiom, writing Clef the way a fluent practitioner would. Its accent, the imperative and dynamically-typed reflexes of its training corpus, suppressed. And its output, held to syntactically valid Clef by a grammar derived from Clef's own, a static artifact that stands at the boundary on its own. The first two are shaped by tuning, inside the model. The third is imposed by that grammar, which the build produces and the runtime carries forward.
 
-## Two tuning problems that must be kept apart
+## Instilling and damping, kept apart
 
 Instilling Clef and removing the inherited accent are different problems, and conflating them defeats both. Instilling is supervised learning: show the model idiomatic Clef and it learns the distribution. Removing the accent is a preference problem, because the base model already holds high probability mass on imperative loops, dynamic typing, exceptions as control flow, null, and class hierarchies, and adding Clef examples competes with that mass without removing it. A single combined objective makes the two gradients work against each other, the instilling gradient pushing toward Clef while the preference gradient pulls away from the accent, and they partially cancel. They belong in distinct passes.
 
@@ -52,29 +52,25 @@ type JsExampleRole =
 
 *Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and typed handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
 
-The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the precise opposite of the goal. This taxonomy is the part of the build most specific to a compiler-aware model, and it has no analog in general code tuning.
+The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the precise opposite of the goal.
 
-## The constraint layer, outside the weights
+## What constrains the output, and when
 
-Everything above shapes what the model prefers. None of it guarantees what the model emits, and for a language model none of it can. The guarantee comes from a deterministic layer that sits outside the weights entirely, exactly as the scaffold article described.
+Tuning shapes what the model prefers; the grammar guarantees the form it emits. At runtime the grammar does that work: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node deploys on the grammar alone.
 
-A grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own grammar, would hold the sampler to syntactically valid Clef regardless of the model's habits. The grammar would guarantee syntax; tuning would shape idiom; preference tuning would remove the accent; and the labor is split cleanly across the three. Composer, the Clef compiler, then extends the guard in two distinct roles:
+Semantic correctness is a separate matter, and the build settles it. During tuning, Composer is the teacher: the model proposes Clef, the compiler elaborates it or hands back diagnostics, the model revises, and producing elaborable Clef becomes a trained reflex the model carries into deployment.
 
 ```fsharp
-// Role one: Composer as decoding filter. A sample that does not elaborate
-// is rejected before it is ever returned. The compiler is the acceptance test.
-let accept (sample: ClefSource) : Result<Program, Diagnostics> =
-    Composer.elaborate sample
-
-// Role two: Composer as tool call. The model invokes it, reads diagnostics,
-// and revises. This is the propose-check-revise loop pass two trains.
-let rec authorUnderCheck (model: Model) (goal: Spec) (attempt: ClefSource) : Program =
+// Build time only. The compiler is the teacher here:
+// the model proposes Clef, Composer elaborates it or returns diagnostics,
+// and the model revises until elaborable Clef is a learned reflex.
+let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Program =
     match Composer.elaborate attempt with
     | Ok program  -> program
-    | Error diags -> authorUnderCheck model goal (model.revise goal attempt diags)
+    | Error diags -> trainAuthoring model goal (model.revise goal attempt diags)
 ```
 
-The second role is what pass two trains: the propose-check-revise reflex, on trajectories where the grammar guarantees a syntactically valid proposal and the compiler or language server supplies the semantic verdict the model acts on. This is the agentic extension of compiler-as-constraint, and it lands on a model whose imperative accent is already gone, so the revisions it proposes are already in the right idiom. The constellation article returns to this loop as the mechanism by which the language component is bounded by the typed domain models around it.
+The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the typed models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
 
 ## Where the model runs, and the honest friction
 
@@ -84,7 +80,7 @@ The scaffold article committed the architecture to precise arithmetic, and that 
 
 ## Deployment as a constellation citizen
 
-Both tuning passes run as low-rank adaptation, which keeps the trainable dimension small, keeps tuning CPU-feasible, and keeps the forward-mode path of the [efficiency article]({{< ref "forward-mode-and-adaptation" >}}) tractable. Pass one is merged into the weights to produce a stable functional base, a model that thinks in ML-family terms and changes rarely. Pass two stays a swappable adapter carrying Clef idiom, grammar awareness, and the tool reflexes, and it is the artifact that iterates and warm-rotates as the language evolves. That boundary keeps the two passes from conflating across time, not merely within a single run.
+Both passes run as low-rank adaptation, which keeps the trainable dimension small, keeps tuning CPU-feasible, and keeps the forward-mode path of the [efficiency article]({{< ref "forward-mode-and-adaptation" >}}) tractable. Pass one is merged into the weights to produce a stable functional base, a model that thinks in ML-family terms and changes rarely. Pass two stays a swappable adapter carrying Clef idiom, grammar awareness, and the tool reflexes, and it is the artifact that iterates and warm-rotates as the language evolves. That boundary keeps the two passes from conflating across time, not merely within a single run.
 
 The version-record discipline from [ADM](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), carries over even though the language model holds no grade certificate. A signed record of base-checkpoint hash, adapter provenance, tuning recipe, and data provenance, with warm rotation swapping adapters, makes the tuned model a well-behaved citizen of the constellation and a clean prior source for distillation. It wears no ADM type, but it observes the same provenance discipline as everything that does, which is the first concrete sense in which it is adjacent to the constellation rather than foreign to it.
 
@@ -94,4 +90,4 @@ Whether the damping-first order holds in practice, or whether the pass-two repla
 
 Whether a dense small base quantized to four-bit retains enough of the instilled idiom to be useful, or whether the substrate must move to b-posit before the model is sharp, is the question the architecture and arithmetic article takes up directly.
 
-Whether the propose-check-revise loop converges efficiently, or whether the model spends too many compiler round-trips per accepted program, is measurable once the tool-trajectory dataset exists.
+Whether the propose-check-revise training converges efficiently, or whether it needs too many compiler round-trips per accepted program during tuning, is measurable once the tool-trajectory dataset exists.

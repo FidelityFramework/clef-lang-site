@@ -1,7 +1,7 @@
 ---
 title: "A Scaffold for Constrained Language Models"
 linkTitle: "A Scaffold for Constrained Models"
-description: "Deriving the architecture, sharpening the arithmetic, and moving the guarantees outside the weights"
+description: "The three commitments that carry a language model where the ADM type scaffold does not reach"
 date: 2026-06-08T00:01:00+00:00
 weight: 2
 authors:
@@ -16,7 +16,7 @@ That boundary is usually read as a limit on ADM. Read the other way, it is a spe
 
 The answer is not chosen freely. It is what the framework's existing commitments produce when they are pointed at a domain without a formal prior. Clef already insists that structure be carried through compilation, that arithmetic be precise, and that guarantees come from the toolchain rather than from trust in the source. Follow those three commitments into the territory of generative models and they land on a specific architecture: the structure is derived rather than searched, the arithmetic is precise rather than approximate, and the guarantees are moved outside the weights into deterministic machinery the framework already owns. None of these is a substitute for the ADM type discipline. Each is what that discipline's underlying commitments imply once the type-level scaffold itself is unavailable.
 
-What this arrangement produces, and the reason it is worth a section rather than a footnote, is a claim about cost. Building and adapting a model this way should be orders of magnitude cheaper than the standard deep-learning pipeline, and the saving is not a tuning trick. It is structural. A derived architecture has few enough meaningful degrees of freedom that the gradient can be obtained by propagating tangents forward through them, in place of storing an activation tape and sweeping a backward graph over a parameter cloud most of which does no identifiable work. The emergent loss is computed over the degrees of freedom that the architecture's own derivation exposes, and there are far fewer of them than an unstructured model carries. The efficiency is what falls out when the loss is computed over structure instead of over an undifferentiated parameter space. The body of this article traces how the three commitments produce that result, and marks where the result could fail to hold.
+What this arrangement produces is a claim about cost. Building and adapting a model this way should be orders of magnitude cheaper than the standard deep-learning pipeline, and the saving is not a tuning trick. It is structural. A derived architecture has few enough meaningful degrees of freedom that the gradient can be obtained by propagating tangents forward through them, in place of storing an activation tape and sweeping a backward graph over a parameter cloud most of which does no identifiable work. The emergent loss is computed over the degrees of freedom that the architecture's own derivation exposes, and there are far fewer of them than an unstructured model carries. The efficiency is what falls out when the loss is computed over structure instead of over an undifferentiated parameter space.
 
 ## A derived architecture, not a searched one
 
@@ -34,7 +34,7 @@ For interpretability that blur is tolerable. For a component meant to sit adjace
 
 This is the first place the language-model component rejoins the rest of the framework. It stops being the one piece that runs on a foreign numeric format and lives in the same b-posit world as everything else.
 
-There is an honest hazard here, and the section names it rather than burying it. Posit precision is not uniform; it is densest near magnitude one and tapers toward the extremes. Whether that taper aligns with where the rate-reduction objective places its numerical stress during training is an empirical question about the interaction of two specific designs, and it is one of the experiments this program must run before the synthesis can be called real.
+There is an honest hazard here. Posit precision is not uniform; it is densest near magnitude one and tapers toward the extremes. Whether that taper aligns with where the rate-reduction objective places its numerical stress during training is an empirical question about the interaction of two specific designs, and it is one of the experiments this program must run before the synthesis can be called real.
 
 ## Forward-mode over a low-rank structure
 
@@ -48,7 +48,7 @@ The open question is the tangent count itself. The cost scales with the number o
 
 ## The guarantees live outside the weights
 
-Everything above improves the probabilistic substrate. None of it supplies a guarantee, and for a language model none of it should pretend to. The guarantees this section can honestly offer live outside the weights entirely, in deterministic machinery the framework already owns.
+Everything above improves the probabilistic substrate. The guarantee lives outside the weights entirely, in deterministic machinery the framework already owns.
 
 A grammar-constrained decoder, driven by a grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of what the weights prefer. This is a deterministic guard over a probabilistic model, and it splits the labor cleanly:
 

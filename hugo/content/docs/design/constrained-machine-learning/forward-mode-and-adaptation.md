@@ -1,7 +1,7 @@
 ---
 title: "Forward-Mode and Low-Rank Adaptation"
 linkTitle: "Forward-Mode Efficiency"
-description: "Where the orders-of-magnitude efficiency claim is paid for: gradients taken over a derived structure instead of an undifferentiated parameter space"
+description: "How forward-mode gradients over a low-rank derived structure make building and adapting cheaper"
 date: 2026-06-08T00:04:00+00:00
 weight: 5
 authors:
@@ -43,7 +43,7 @@ The forward-propagated tangent is itself a long accumulation, and its quality is
 
 The payoff is sharpest exactly where this section's models are built and rebuilt. The [building article]({{< ref "building-the-model" >}}) commits the tuning to low-rank adaptation throughout: a stable functional base with a swappable Clef adapter over it, the adapter warm-rotating as the language evolves. A low-rank adapter is a natural fit for multi-tangent forward-mode, because the adapter's trainable space is already low-rank by construction, so the tangent set that spans it is small for a reason independent of the architecture's own rank. Adapting the model means taking gradients over the adapter's handful of dimensions, in a few storage-free forward passes, instead of taping activations through the entire base for a backward sweep.
 
-Distillation has the same shape. Distilling from a teacher into a student adapter, or refreshing the Clef adapter against an evolved grammar, is a low-rank fine-tuning operation, and it is the operation this section performs most often. These are precisely the regimes where a few storage-free forward passes cost less than a full reverse-mode pass with its tape, and they are the regimes the constellation lives in, because a constellation of domain models plus a language component is rebuilt and re-adapted far more often than it is trained from scratch.
+Distillation has the same shape. Distilling from a teacher into a student adapter, or refreshing the Clef adapter against an evolved grammar, is a low-rank fine-tuning operation, the one performed most often in practice. These are precisely the regimes where a few storage-free forward passes cost less than a full reverse-mode pass with its tape, and they are the regimes the constellation lives in, because a constellation of domain models plus a language component is rebuilt and re-adapted far more often than it is trained from scratch.
 
 The deeper point is that the over-parameterization the scaffold article flagged is partly an artifact of reverse-mode itself. Reverse-mode's amortization rewards piling on parameters, since more parameters cost nothing extra per backward pass, so the incentive runs toward larger models. Forward-mode over a derived low-rank structure removes that incentive from the other side: there is no amortization bonus for extra parameters, and the cost scales with the structure's rank, so the economic pressure runs toward keeping the structure tight. The efficiency argument and the precision argument and the parameter-economy argument are three views of one decision.
 

@@ -1,7 +1,7 @@
 ---
 title: "Adapting Inference on a Gradient"
 linkTitle: "Adapting Inference on a Gradient"
-description: "Adaptation is a continuum, not a switch: the same staged-substitution strategy the compiler uses for its backends, applied to the model behind a stable interface, from a standing model run today to one built to fit the constellation"
+description: "How an organization moves from a rented model to a purpose-built one in staged substitutions behind a stable interface"
 date: 2026-06-08T00:07:00+00:00
 weight: 8
 authors:
@@ -12,9 +12,9 @@ draft: false
 
 Clef targets LLVM for CPU and native code today, and it does so deliberately and provisionally. LLVM is the pragmatic backend: mature, available now, and the fastest route to a real running artifact. It also carries baggage, an instruction-selection model and a set of assumptions Clef would not choose if it were designing the lowering from scratch, and the framework's longer arc contemplates novel backends that shed that baggage where doing so buys enough to justify the work. The point is not that LLVM is wrong. It is that LLVM is a *stage*: load-bearing now, deliberately temporary, used behind a stable interface so that the backend can be substituted underneath without disturbing everything above it.
 
-The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model of the rest of this section is the novel backend with none of it. The interface between the language node and the typed constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
+The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model the later rungs reach is the novel backend, clean of all of it. The interface between the language node and the typed constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
 
-This article walks the four rungs, shows the interface that stays fixed across all of them, and traces two quantities up the ladder: latency, the speed to first useful token, and velocity, the compounding flywheel that each rung hands to the next. Underneath both runs the question the audience for this technology actually asks first, which is where their data goes.
+Four rungs, one interface fixed across all of them, and two quantities traced up the ladder: latency, the speed to first useful token, and velocity, the compounding flywheel that each rung hands to the next. Underneath both runs the question the audience for this technology actually asks first, which is where their data goes.
 
 ## The interface is the invariant
 
@@ -36,32 +36,35 @@ type DomainModel<'Request, 'Response> =
       /// BAREWire schema for zero-copy interchange across the wire.
       wire        : BareSchema<'Request, 'Response> }
 
-/// The language node's contract. It proposes Clef under the grammar, and the
-/// constellation checks and routes. The model behind `propose` is the variable.
+/// The language node's contract. It proposes Clef under the grammar; the
+/// Olivier domain actors receive the request over BAREWire. The model behind
+/// `propose` is the variable.
 type LanguageNode =
-    { /// Propose Clef source for a goal. Grammar-constrained at decode time.
-      propose     : Goal -> Async<ClefSource>
-      /// Revise against compiler or domain-model diagnostics.
-      revise      : Goal -> ClefSource -> Diagnostics -> Async<ClefSource> }
+    { /// Propose a Clef request for a goal. Grammar-constrained at decode time.
+      propose : Goal -> Async<ClefRequest>
+      /// Revise against a dimensional mismatch surfaced at the message fabric.
+      revise  : Goal -> ClefRequest -> Mismatch -> Async<ClefRequest> }
 
-/// The routing loop is identical at every rung. Propose under grammar,
-/// elaborate through Composer, dispatch typed calls to domain models,
-/// revise on failure. Nothing here knows which model `node` wraps.
-let rec satisfy (node: LanguageNode) (registry: DomainModel<_,_> list) (goal: Goal) =
+/// The routing loop is identical at every rung. Propose under grammar, send the
+/// request to the Olivier actors over BAREWire, revise on a contract mismatch.
+/// The grammar holds syntax at decode; the BAREWire contract, known to both
+/// sides by construction, holds dimensional fit; the loop works the same
+/// whichever model `node` wraps.
+let rec satisfy (node: LanguageNode) (registry: DomainActor list) (goal: Goal) =
     async {
-        let! source = node.propose goal
-        match Composer.elaborate source with
-        | Error diags ->
-            let! revised = node.revise goal source diags
-            return! satisfy node registry goal   // bounded retry elided
-        | Ok program ->
-            // Elaborated program dispatches typed requests to domain models.
-            // Each call is correct by construction or rejected at the type level.
-            return Composer.run program registry
+        let! request = node.propose goal
+        match registry |> send request with          // BAREWire structured contract
+        | Mismatch m ->
+            let! _ = node.revise goal request m
+            return! satisfy node registry goal       // bounded retry elided
+        | Satisfied result ->
+            // The request reached an actor whose contract it honored;
+            // each call is correct by construction.
+            return result
     }
 ```
 
-The two things that make this surface stable are the two the section has already argued for. The grammar-constrained decoder guarantees the proposal is syntactically valid Clef regardless of the model, so the boundary never receives malformed input. And Composer's elaboration is the semantic acceptance test, so the boundary never passes malformed output to the typed models. The language model may be a rented black box or a model you built; the membrane around it is the same either way. That is the whole reason the substitution strategy works.
+The contract at the boundary is what makes this surface stable. The grammar-constrained decoder holds the node's proposal to syntactically valid Clef regardless of which model proposes it. Across the boundary the request reaches the Olivier domain actors over BAREWire, a fixed-layout contract both ends were built to read, carrying its meaning in the layout itself. Structured binary records have moved between programs this way since long before machine learning, and BAREWire carries that settled discipline to the inter-actor boundary, with the domain's dimensional annotations in the contract, so a mismatch surfaces at the message fabric. The language model may be a rented black box or one you built; the contract around it holds either way, and that is the whole reason the substitution strategy works.
 
 ## Rung one: adapt what exists now
 
