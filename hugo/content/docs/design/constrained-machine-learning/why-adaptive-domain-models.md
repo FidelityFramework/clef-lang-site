@@ -45,7 +45,7 @@ let exponential (g: BlockGenerator) : BlockTransform =
 
 **The obligations are tiered and discharged, not asserted.** Structure that is decidable is discharged automatically at the appropriate tier; structure that is not is carried as an explicit obligation to a relational backend, with the faithfulness of each result recorded rather than assumed. The model does not merely claim its invariants; it carries the evidence that they hold, into the running artifact.
 
-That is the reel, and the pre-print proves it.
+That is the reel, with the pre-print establishing the foundation. We expand on that design approach here.
 
 ## Why this produces better inference
 
