@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Every compiler must eventually answer a fundamental question: how do you represent "the rest of the computation"? In imperative languages, this question rarely surfaces explicitly. The call stack handles it through it's own instrumentation, and programmers rarely think about what happens after the current statement. But in languages that embrace computation expressions as Clef does, this question moves from implicit mechanism to explicit design decision.
 
 For the Fidelity framework, this question became a turning point. The realization that delimited continuations form the connective tissue between Clef's async expressions, the actor model, and our native compilation strategy transformed how we approach the entire compiler architecture. What began as an implementation detail became a significant organizing principle.
@@ -57,11 +52,11 @@ reset (fun () ->
 )
 ```
 
-The transformation looks verbose, but it reveals something profound:
+The transformation looks verbose, but it reveals the underlying structure:
 
 > async expressions are syntax sugar over delimited continuations.
 
-The `let!` keyword hides the explicit continuation capture that happens underneath. As we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this transformation enables Clef's elegant async syntax to compile to native code with deterministic memory management.
+The `let!` keyword hides the explicit continuation capture that happens underneath. As we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this transformation enables Clef's async syntax to compile to native code with deterministic memory management.
 
 ## Actors as Sugared Continuations
 
@@ -120,7 +115,7 @@ async.Bind(fetchData(), fun a ->
 
 Each `Bind` call is a continuation capture. The second argument to `Bind` (namely `fun a -> ...`) is literally "what to do with the result." The builder orchestrates how these continuations compose, whether they sequence (like async) or fan out (like query).
 
-This mechanism is central to Fidelity's compilation strategy. The Composer compiler recognizes computation expression patterns and routes them through appropriate MLIR dialects. Sequential patterns flow through DCont; parallel patterns flow through Inet. The computation expression syntax that developers write maps to optimized native execution patterns.
+This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and route them through the appropriate MLIR dialects. Sequential patterns flow through DCont; parallel patterns flow through Inet. The computation expression syntax that developers write maps to optimized native execution patterns.
 
 ## Frosty: Platform-Aware Continuation Compilation
 
@@ -206,7 +201,7 @@ Delimited continuations are a sophisticated concept with substantial theoretical
 
 ## The Turning Point
 
-Why do we call this Fidelity's "turning point"? (other than the obvious pun) Because recognizing the centrality of delimited continuations reframed our entire approach.
+Why do we call this Fidelity's "turning point"? Because recognizing the centrality of delimited continuations reframed our entire approach.
 
 Before this recognition, we treated async, actors, and computation expressions as separate features requiring separate compilation strategies. The async builder was one thing; the actor model was another; computation expressions were a third. Each had its own MLIR lowering path, its own optimization considerations, its own edge cases.
 
@@ -280,26 +275,24 @@ The deeper lesson from Fidelity's turning point is architectural: choose unifyin
 
 For developers, this means writing natural Clef code (async expressions, computation expressions, actor behaviors) while benefiting from a unified compilation strategy. For the framework, it means that improvements to continuation handling propagate across all features that use them. For the ecosystem, it demonstrates that programming language abstractions can serve as practical compilation targets, not just mathematical curiosities.
 
-The pun in our title is intentional: delimited continuations are about "turning points" in computation, places where control flow can be captured and resumed. For Fidelity, recognizing their importance was itself a turning point in how we approach the entire framework.
-
 ---
 
 ## Further Reading
 
-- [Why F# Is A Natural Fit for MLIR](https://speakez.tech/blog/why-fsharp-is-a-natural-fit-for-mlir/) — SSA as functional programming and the compilation advantage
-- [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/) — Platform-aware async through delimited continuations
-- [The Continuation Preservation Paradox](https://speakez.tech/blog/the-continuation-preservation-paradox/) — How deep can continuations survive in compilation?
-- [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/) — The actor model's role in modern distributed systems
-- [Seeking Referential Transparency](https://speakez.tech/blog/seeking-referential-transparency/) — How the PHG chooses between interaction nets and delimited continuations
-- [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) — How computation expressions decompose into fundamental patterns
-- [A Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/) — Bridging native and edge actors through shared semantics
-- [Baker: A Key Ingredient to Composer](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) — The zipper-based correlation pipeline
-- [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) — Temporal program graphs and dataflow compilation strategies
-- [Advent of Neuromorphic AI](https://speakez.tech/blog/advent-of-neuromorphic-ai/) — Spike-based computing and post-Von Neumann hardware targets
+- [Why F# Is A Natural Fit for MLIR](https://speakez.tech/blog/why-fsharp-is-a-natural-fit-for-mlir/): SSA as functional programming and the compilation advantage
+- [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/): Platform-aware async through delimited continuations
+- [The Continuation Preservation Paradox](https://speakez.tech/blog/the-continuation-preservation-paradox/): How deep can continuations survive in compilation?
+- [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/): The actor model's role in modern distributed systems
+- [Seeking Referential Transparency](https://speakez.tech/blog/seeking-referential-transparency/): How the PHG chooses between interaction nets and delimited continuations
+- [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/): How computation expressions decompose into fundamental patterns
+- [A Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/): Bridging native and edge actors through shared semantics
+- [Baker: A Key Ingredient to Composer](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/): The zipper-based correlation pipeline
+- [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/): Temporal program graphs and dataflow compilation strategies
+- [Advent of Neuromorphic AI](https://speakez.tech/blog/advent-of-neuromorphic-ai/): Spike-based computing and post-Von Neumann hardware targets
 
 ### Academic Papers
 
-- [SSA is Functional Programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) — Appel (1998)
-- [A Monadic Framework for Delimited Continuations](https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/jfp-revised.pdf) — Dybvig, Peyton Jones, Sabry (JFP 2007)
-- [The F# Asynchronous Programming Model](https://tomasp.net/academic/papers/async/async.pdf) — Syme, Petricek, Lomov (PADL 2011)
-- [The F# Computation Expression Zoo](https://tomasp.net/academic/papers/computation-zoo/computation-zoo.pdf) — Petricek, Syme (PADL 2014)
+- [SSA is Functional Programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf), Appel (1998)
+- [A Monadic Framework for Delimited Continuations](https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/jfp-revised.pdf), Dybvig, Peyton Jones, Sabry (JFP 2007)
+- [The F# Asynchronous Programming Model](https://tomasp.net/academic/papers/async/async.pdf), Syme, Petricek, Lomov (PADL 2011)
+- [The F# Computation Expression Zoo](https://tomasp.net/academic/papers/computation-zoo/computation-zoo.pdf), Petricek, Syme (PADL 2014)

@@ -1,7 +1,7 @@
 ---
 title: "The Advent of Neuromorphic AI"
 date: 2025-08-21T10:00:00+06:00
-description: "How Fidelity Framework Can Unlock The Potential Of New Intelligent Hardware"
+description: "How our Fidelity framework targets the multi-state capabilities of neuromorphic and reconfigurable hardware"
 tags: ["Architecture", "Design", "Innovation"]
 authors: ["Houston Haynes"]
 params:
@@ -10,22 +10,15 @@ params:
   migration_date: 2026-03-29
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Transformers have delivered broad capabilities, and their energy consumption scales with that reach. The human brain operates on roughly 20 watts, processing large volumes of information through sparse, event-driven spikes, at least as we currently understand it. Current AI systems consume thousands of watts to support narrow inference capabilities, forcing dense matrix operations through every computation. That gap is the starting point for this design.
 
-> The "AI industrial complex" in its current form is ***not* sustainable**.
+Spiking Neural Networks (SNNs) take a different path, one that neuromorphic processors have begun to realize in silicon. Despite decades of research and steady hardware progress, SNNs remain difficult to train and deploy. As with many algorithmic methods, efficient and accurate gradient calculation has been the constant challenge. For those who have worked in the field for years, the core question is how to compute gradients through discrete, non-differentiable spike events.
 
-While transformers have delivered remarkable capabilities, their energy consumption and computational demands reveal a fundamental inefficiency: we're fighting against nature's design principles. The human brain operates on roughly 20 watts, processing massive volumes of information through sparse, event-driven spikes. (at least, as we currently understand it today) Current AI systems consume thousands of watts to support narrow inference capabilities, forcing dense matrix operations through every computation. This disparity isn't just inefficient; it suggests we're missing something fundamental about intelligence itself.
+This post works through a convergence of three ideas: ternary number systems, forward-mode gradient computation, and spiking neural processing. Coupled with our Fidelity framework design, they bring heterogeneous architectures into a single coherent compilation target. We theorize that this combination lets the multi-state hardware already in silicon do work the current binary algorithms leave on the table.
 
-Spiking Neural Networks (SNNs) offer a radically different path, one that neuromorphic processors have begun to realize in silicon. Yet despite decades of research and impressive hardware developments, SNNs remain frustratingly difficult to train and deploy. As with many algorithmic methods, efficient and accurate gradient calculation has been a constant challenge. For those that have been working in the field for decades, the core question in addressing SNNs surround how to compute gradients through discrete, non-differentiable spike events.
+## Ternary Representation: Beyond Binary States
 
-This document explores an unexpected convergence of ideas that may finally reveal the astounding potential of neuromorphic computing. It's a story that connects several unique, yet proven ideas: ternary number systems, a breakthrough in gradient computation, and new designs in "spiking" neural processing. Coupled with SpeakEZ's unique Fidelity framework design, revolutionary solutions will bring heterogeneous architectures into a manageable and coherent platform. The implications reach beyond any single hardware innovation to suggest a fundamental shift in how we can build intelligent systems.
-
-## The Ternary Revelation: Beyond Binary Thinking
-
-Modern spiking neural network algorithms, as described in the Multi-Plasticity Synergy Learning (MPSL) framework[^2], are shown to operate on a binary principle despite running on far more capable hardware. The Leaky Integrate-and-Fire equation from the paper defines spike generation as:
+Modern spiking neural network algorithms, as described in the Multi-Plasticity Synergy Learning (MPSL) framework[^2], operate on a binary principle despite running on far more capable hardware. The Leaky Integrate-and-Fire equation from the paper defines spike generation as:
 
 \[
 S^{t,l} = \Theta(U^{t,l} - V_{th}) = \begin{cases}
@@ -34,17 +27,17 @@ S^{t,l} = \Theta(U^{t,l} - V_{th}) = \begin{cases}
 \end{cases}
 \]
 
-This binary representation; spike (1) or silent (0); has been the algorithmic convention in neuromorphic computing, not because of hardware limitations, but due to historical precedent and the mathematical challenges of training. Some neuromorphic processors like Intel's Loihi 2 actually support graded spikes with up to 32-bit payloads, programmable neuron models, and thousands of states per neuron. This is a radical shift that completely outstrips the current theoretical conventions. Even the sophisticated MPSL framework, which innovatively combines multiple learning mechanisms (Spatio-Temporal Backpropagation or STBP for gradient-based learning, Hebbian plasticity for correlation-based local learning, and Self-Backpropagation or SBP for local feedback without explicit gradients), constrains itself to binary representations despite the hardware's richer capabilities.
+This binary representation, spike (1) or silent (0), has been the algorithmic convention in neuromorphic computing, not because of hardware limitations, but due to historical precedent and the mathematical challenges of training. Some neuromorphic processors like Intel's Loihi 2 support graded spikes with up to 32-bit payloads, programmable neuron models, and thousands of states per neuron. The hardware already runs ahead of the theoretical conventions. Even the MPSL framework, which combines multiple learning mechanisms (Spatio-Temporal Backpropagation or STBP for gradient-based learning, Hebbian plasticity for correlation-based local learning, and Self-Backpropagation or SBP for local feedback without explicit gradients), constrains itself to binary representations despite the hardware's richer capabilities.
 
 ### Lessons from Biology
 
-Neuroscience tells us that biological neurons exhibit far richer dynamics, which is a subtle but significant contributor to the model. Between rest and firing, neurons spend significant time in distinct computational regimes, actively processing information without generating spikes. This isn't merely noise or inefficiency; it's a computational feature that binary SNNs completely miss.
+Biological neurons exhibit richer dynamics, and that detail contributes to the model. Between rest and firing, neurons spend time in distinct computational regimes, processing information without generating spikes. A binary SNN cannot represent that intermediate processing at all.
 
-Consider what happens in the binary model: a neuron accumulating toward threshold carries critical temporal information about recent inputs, yet this information vanishes the moment we sample its state. If the membrane potential is at 0.9 × threshold, the binary representation sees only "0"; identical to a neuron at rest. This discretization throws away precisely the information that makes temporal processing powerful.
+Consider what happens in the binary model. A neuron accumulating toward threshold carries temporal information about recent inputs, and that information vanishes the moment we sample its state. If the membrane potential is at 0.9 × threshold, the binary representation sees only "0", identical to a neuron at rest. This discretization discards the temporal information that drives spike-timing computation.
 
 ### The Computational Regime Model
 
-The notion is to distinguish between the continuous membrane potential dynamics and the discrete computational regimes that neurons occupy. Biological neurons don't just have voltage levels; they have distinct operational modes based on their membrane potential:
+Our encoding separates the continuous membrane potential dynamics from the discrete computational regimes that neurons occupy. Biological neurons carry a continuous voltage, and they also occupy distinct operational modes based on that voltage:
 
 - **Silent/Resting**: Near the resting potential (typically -70mV), the neuron is minimally responsive, with leak currents dominating
 - **Active/Integrating**: Depolarized but below firing threshold (between -55mV and -40mV), actively accumulating and processing inputs
@@ -68,37 +61,33 @@ This preserves critical information about neurons actively integrating inputs (\
 
 ### Leveraging New Hardware
 
-This observation leads to our key innovation: expanding the algorithmic state space to match hardware capabilities. While the MPSL paper advances the field through multiple learning mechanisms, it follows the algorithmic convention of binary spike representation, leaving hardware capabilities untapped. Our ternary encoding leverages the multi-level states these processors already support.
+This observation leads to our core design choice: expand the algorithmic state space to match what the hardware already supports. The MPSL paper advances the field through multiple learning mechanisms, and it follows the convention of binary spike representation, which leaves multi-level hardware states unused. Our ternary encoding targets the multi-level states these processors already provide.
 
-This isn't a hardware modification; it's simply using the hardware as it was designed. Intel's Loihi 2 can represent 4096 states per neuron, SambaNova's RDU can reconfigure for arbitrary word-level operations, and we're finally going to use these capabilities. The active state (-1) captures neurons that are actively integrating inputs but haven't yet reached firing threshold, preserving temporal context that binary algorithms discard.
+This requires no hardware modification. It uses the hardware as designed. Intel's Loihi 2 can represent 4096 states per neuron, and SambaNova's RDU can reconfigure for arbitrary word-level operations. The active state (-1) captures neurons that are integrating inputs but have not yet reached firing threshold, preserving the temporal context that binary algorithms discard.
 
 ```fsharp
-// Clear separation of continuous dynamics and discrete states
 type TernarySpikingNeuron = {
-    Potential: Posit<16, 1>      // Continuous membrane potential
-    RestingPotential: float32    // Baseline (e.g., -70mV)
-    ActiveThreshold: float32      // Activation begins (e.g., -55mV)
-    FiringThreshold: float32      // Spike generation (e.g., -40mV)
-    State: TernaryState          // Discrete computational regime
+    Potential: Posit<16, 1>      // continuous membrane potential
+    RestingPotential: float32    // baseline (-70mV)
+    ActiveThreshold: float32     // activation begins (-55mV)
+    FiringThreshold: float32     // spike generation (-40mV)
+    State: TernaryState          // discrete computational regime
 }
 
-// State mapping based on potential regions
 let computeState (potential: Posit<16,1>) (neuron: TernarySpikingNeuron) =
     match Posit.toFloat32 potential with
     | p when p >= neuron.FiringThreshold -> Spiking   // +1
     | p when p >= neuron.ActiveThreshold -> Active    // -1
     | _ -> Silent                                      // 0
 
-// Accumulation happens in continuous domain
 let updateNeuron (neuron: TernarySpikingNeuron) (input: float32) =
-    // Continuous dynamics (Leaky Integrate-and-Fire)
+    // Leaky Integrate-and-Fire, continuous domain
     let leak = (neuron.Potential - neuron.RestingPotential) * leakRate
     let newPotential = neuron.Potential - leak + Posit.fromFloat32 input
 
-    // Discrete state for communication
     let newState = computeState newPotential neuron
 
-    // Reset only after spike
+    // reset only after spike
     match newState with
     | Spiking ->
         { neuron with
@@ -130,78 +119,67 @@ The MPSL paper, like virtually all modern SNN training approaches, relies on sur
 \frac{\partial S^{t,l}}{\partial U^{t,l}} \approx u'(U^{t,l}, V_{th})
 \]
 
-This approximation; replacing the undefined gradient with a smooth surrogate function; is a mathematical fiction that introduces instability and limits learning efficiency. Every major SNN training method (STBP, BPTT, even the innovative MPSL approach) depends on this workaround. We pretend the spike function is smooth when it fundamentally isn't.
+This approximation replaces the undefined gradient with a smooth surrogate function. The substitution introduces instability and limits learning efficiency, because the spike function it stands in for is not smooth. Every major SNN training method depends on this workaround, including STBP, BPTT, and the MPSL approach.
 
-#### The Forward Gradient Revolution
+#### The Forward Gradient Approach
 
-Recent breakthrough work by Baydin, Pearlmutter, Siskind and Syme[^1] demonstrates a revolutionary alternative that eliminates this fiction entirely. Their forward gradient method computes unbiased gradient estimates using only forward-mode automatic differentiation:
+Work by Baydin, Pearlmutter, Siskind and Syme[^1] gives an alternative that removes the surrogate entirely. The forward gradient method computes unbiased gradient estimates using only forward-mode automatic differentiation:
 
 \[
 g(\theta) = (\nabla f(\theta) \cdot v) v
 \]
 
-Where \(v\) is a random perturbation vector. This formula has profound implications for SNNs:
+Where \(v\) is a random perturbation vector. This formula has direct consequences for SNNs:
 
 1. **No surrogate needed**: The directional derivative \(\nabla f(\theta) \cdot v\) can be computed exactly even for discrete spike functions
-2. **Single forward pass**: Eliminates the entire backward propagation phase
-3. **Proven unbiased**: Mathematically guaranteed to converge to the true gradient in expectation
+2. **Single forward pass**: Removes the entire backward propagation phase
+3. **Unbiased estimator**: Its expectation equals the true gradient, so it converges in expectation rather than on any single pass
 4. **2x speedup**: The paper demonstrates training neural networks up to twice as fast as backpropagation
 
-### Why This Changes Everything for SNNs
+### What Forward Gradients Resolve for SNNs
 
-The forward gradient approach solves the exact problem that has plagued SNN training. Where the MPSL framework must resort to rectangular surrogate functions (Equation 7 in their paper), forward gradients handle discrete transitions naturally:
+The forward gradient approach addresses the problem at the center of SNN training. Where the MPSL framework resorts to rectangular surrogate functions (Equation 7 in their paper), forward gradients handle discrete transitions directly:
 
 ```fsharp
-// Forward gradient captures state transition sensitivities
 let computeStateGradient (potential: Posit<16,1>) (thresholds: Thresholds) =
-    // Directional derivative exists at transition boundaries
+    // directional derivative exists at transition boundaries
     let perturbation = samplePerturbation()
     let perturbedPotential = potential + perturbation
 
-    // State change detection (no surrogate needed!)
     let originalState = computeState potential thresholds
     let perturbedState = computeState perturbedPotential thresholds
 
-    // Exact gradient through discrete transition
     if originalState <> perturbedState then
-        perturbation  // Sensitivity at boundary
+        perturbation  // sensitivity at boundary
     else
-        Posit.zero   // No transition
+        Posit.zero   // no transition
 
-// Training with exact gradients through discrete states
 let trainTernarySNN (network: SpikingNetwork) =
-    // Sample random perturbation with posit precision
     let v = samplePerturbation<Posit<16,1>>()
 
-    // Single forward pass computes output AND directional derivative
-    // Even though spike function is discrete!
+    // single forward pass over a discrete spike function
     let output, directional =
         Furnace.ForwardMode.evaluateWithDerivative network v
 
-    // Unbiased gradient estimate
-    let forwardGradient = directional * v
-
-    // Update using local plasticity rules
+    let forwardGradient = directional * v  // unbiased estimate
     updateSynapticWeights forwardGradient
 ```
 
-> The takeaway: **discreteness *doesn't* break directional derivatives**.
-
-When a perturbation causes a state transition (Silent → Active, Active → Spiking), the derivative captures that sensitivity exactly. When it doesn't, the derivative is zero. The expectation over random perturbations recovers complete gradient information without any approximation.
+Discreteness does not break the directional derivative. When a perturbation causes a state transition (Silent → Active, Active → Spiking), the derivative captures that sensitivity exactly. When it does not, the derivative is zero. The expectation over random perturbations recovers the full gradient with no surrogate term.
 
 ## Biological Plausibility Through Global Signals
 
-The forward gradient paper notes something remarkable: this approach can be interpreted as "feedback of a single global scalar quantity that is identical for all computation nodes"[^1]. This maps naturally to biological neuromodulatory systems:
+The forward gradient paper notes that this approach can be interpreted as "feedback of a single global scalar quantity that is identical for all computation nodes"[^1]. That maps onto biological neuromodulatory systems:
 
 - Dopamine for reward signaling
 - Serotonin for mood regulation
 - Acetylcholine for attention modulation
 
-Combined with the MPSL framework's multiple plasticity mechanisms[^2], this creates a biologically plausible learning system that doesn't force the algorithm into a "backpropagation corner", which is by its nature implausible in biological neural networks.
+Combined with the MPSL framework's multiple plasticity mechanisms[^2], this gives a learning system whose global scalar feedback has a biological analog, where the weight-transport that backpropagation requires has none.
 
 ### Hebbian Plasticity Through State Transitions
 
-The forward gradient approach naturally combines with local Hebbian rules based on our ternary state transitions:
+The forward gradient approach combines with local Hebbian rules keyed to our ternary state transitions:
 
 \[
 \Delta w_{ij} = \eta \cdot (\nabla f \cdot v) \cdot P(\text{State}_j | \text{State}_i)
@@ -212,21 +190,18 @@ Where weight updates depend on state transition probabilities:
 - **Active → Spiking**: Hebbian reinforcement
 - **Spiking → Silent**: Refractory adjustment
 
-This directly enhances the MPSL framework's multi-plasticity approach, where they already combine STBP, Hebbian, and SBP mechanisms. Our ternary states provide richer transition information for these learning rules to exploit:
+This extends the MPSL framework's multi-plasticity approach, which already combines STBP, Hebbian, and SBP mechanisms. Our ternary states give these learning rules more transition information to work with:
 
 ```fsharp
-// Forward gradient weight update - mathematically principled
 let updateSynapticWeights (network: SpikingNetwork) (weight: Posit<16,1>) =
-    // Sample perturbation vector
     let v = sampleGaussian<Posit<16,1>>()
 
-    // Compute directional derivative (exact, not surrogate!)
+    // directional derivative, no surrogate term
     let directional = computeDirectionalDerivative network v
 
-    // Forward gradient is unbiased estimate of true gradient
-    let gradient = directional * v
+    let gradient = directional * v  // unbiased estimate
 
-    // Combine with state transition probabilities
+    // weight by state-transition probability
     match (preState, postState) with
     | (Silent, Active) ->
         weight + learningRate * gradient * potentiationFactor
@@ -239,7 +214,7 @@ let updateSynapticWeights (network: SpikingNetwork) (weight: Posit<16,1>) =
 
 ## Posits: The Natural Language of Membrane Dynamics
 
-The Leaky Integrate-and-Fire equation from the MPSL paper reveals why posit arithmetic is ideal for SNNs:
+The Leaky Integrate-and-Fire equation from the MPSL paper shows why posit arithmetic suits SNNs:
 
 \[
 U^{t,l} = \rho_m(U^{t-1,l} - S^{t-1,l}V_{th}) + I^{t,l}
@@ -257,63 +232,55 @@ Posit arithmetic's variable precision naturally matches these requirements:
 - **Exact accumulation via quire**: No rounding errors during integration
 
 ```fsharp
-// Membrane potential dynamics with posit arithmetic
 let computeMembranePotential (current: Posit<32,2>) (input: Posit<32,2>) =
-    use quire = Quire<32, 512>.Zero  // Exact accumulation
+    use quire = Quire<32, 512>.Zero  // exact accumulation
 
-    // Decay current potential
-    quire.AddProduct(current, decayRate)
+    quire.AddProduct(current, decayRate)  // decay current potential
 
-    // Accumulate weighted inputs (no rounding errors!)
+    // weighted inputs accumulate without intermediate rounding
     for synapse in activeSynapses do
         quire.AddProduct(synapse.Weight, synapse.Input)
 
-    quire.ToPosit()  // Single rounding at the end
+    quire.ToPosit()  // single rounding at the end
 ```
 
 ## Integration with Furnace Auto-Differentiation
 
-[The Furnace library](https://github.com/fsprojects/Furnace), originally developed as 'DiffSharp' by the same team behind the forward gradient breakthrough (Syme, Baydin, Pearlmutter and Siskind), provides the perfect foundation for implementing forward-mode SNNs:
+[The Furnace library](https://github.com/fsprojects/Furnace), originally developed as 'DiffSharp' by the same team behind the forward gradient work (Syme, Baydin, Pearlmutter and Siskind), gives us the forward-mode AD foundation for SNNs:
 
 ```fsharp
 module Furnace.Neuromorphic =
-    // Leverage existing forward-mode AD infrastructure
     let trainSpikingNetwork (network: TernarySpikingNetwork) (data: SensorData) =
-        // Forward gradient computation in a single pass
         let forwardGradient = furnace {
-            // Random perturbation for unbiased gradient estimation
             let! v = sampleStandardNormal network.ParameterShape
 
-            // Forward pass computes both output and directional derivative
-            // No backward pass needed!
+            // single forward pass yields output and directional derivative
             let! output, directional =
                 ForwardMode.evaluateWithDirectional network data v
 
-            // Forward gradient theorem: E[g] = ∇f
-            return directional * v
+            return directional * v  // E[g] = ∇f
         }
 
-        // Update weights using local plasticity rules
         network.UpdateWeights forwardGradient
 ```
 
-This approach achieves what the forward gradient paper demonstrated: training neural networks "without backpropagation" while being "computationally competitive"[^1], often achieving 2x speedup over traditional methods.
+This reuses what the forward gradient paper demonstrated: training neural networks "without backpropagation" while remaining "computationally competitive"[^1], with up to 2x speedup over backpropagation.
 
-## The Untapped Silicon Potential
+## Hardware Capabilities Already in Silicon
 
-Modern neuromorphic processors and Coarse-Grained Reconfigurable Architectures (CGRAs) already possess the capabilities needed for our approach; they're just waiting for the right software to unlock their potential.
+Modern neuromorphic processors and Coarse-Grained Reconfigurable Architectures (CGRAs) already carry the capabilities our approach depends on. What they lack is software that targets them.
 
-Intel's Loihi 2, far from being limited to binary spikes, actually supports:
+Intel's Loihi 2 is not limited to binary spikes. It supports:
 - **Graded spikes** with up to 32-bit integer payloads
 - **Programmable neuron models** via microcode that can implement arbitrary dynamics
 - **Up to 4096 states per neuron**, not just spike/no-spike
 - **Ternary weight matrices** already demonstrated in recent implementations
 
-IBM's TrueNorth, BrainChip's Akida, and other neuromorphic processors similarly offer programmable models and multi-bit communications. The limitation has never been the silicon; it's been our algorithms.
+IBM's TrueNorth, BrainChip's Akida, and other neuromorphic processors similarly offer programmable models and multi-bit communications. The limit has been the algorithms, not the silicon.
 
-#### CGRAs: The Perfect Platform for Adaptive Intelligence
+#### CGRAs for Adaptive Topologies
 
-Coarse-Grained Reconfigurable Architectures from companies like NextSilicon and SambaNova offer even more flexibility:
+Coarse-Grained Reconfigurable Architectures from companies like NextSilicon and SambaNova offer further flexibility:
 
 | Platform | Architecture | Key Advantage for SNNs |
 |----------|-------------|------------------------|
@@ -321,9 +288,9 @@ Coarse-Grained Reconfigurable Architectures from companies like NextSilicon and 
 | SambaNova RDU | Reconfigurable at each clock cycle | Can morph between neural and conventional processing dynamically |
 | General CGRAs | Word-level reconfigurable arrays | Natural fit for ternary representations and posit arithmetic |
 
-As SambaNova describes it, their RDU is "an array of compute and memory on chip" that can be reconfigured to match the exact computational pattern needed. This makes CGRAs ideal for:
-- **Ternary state machines** that can be efficiently mapped to word-level operations
-- **Posit arithmetic** implementations using the flexible compute units
+As SambaNova describes it, their RDU is "an array of compute and memory on chip" that can be reconfigured to match the computational pattern needed. This suits CGRAs to:
+- **Ternary state machines** that map to word-level operations
+- **Posit arithmetic** implementations on the reconfigurable compute units
 - **Dynamic network topologies** that adapt during runtime
 - **Mixed conventional/neuromorphic** workloads in the same chip
 
@@ -345,14 +312,12 @@ In practice, CGRA and neuromorphic processors rarely operate as the sole compone
 - **PCIe accelerators**: Accelerator cards working within host systems
 - **Edge hybrids**: Low-power neuromorphic/CGRA units paired with DSPs or microcontrollers
 
-The Fidelity framework's design, particularly the Composer Hypergraph as a "control flow to data flow" tranformer would make it uniquely suited for these heterogeneous deployments:
+Our Fidelity framework design, and the Composer Hypergraph in particular, treats this as a "control flow to data flow" transformation, which is what these heterogeneous deployments need:
 
 ```fsharp
-// Platform-agnostic neuromorphic compilation
 [<CompileToNeuromorphic>]
 let neuromorphicCore (neurons: TernarySpikingNeuron array) =
     neuromorphic {
-        // Configure for available neuromorphic target
         let! target = detectNeuromorphicPlatform()
 
         match target with
@@ -377,45 +342,40 @@ let neuromorphicCore (neurons: TernarySpikingNeuron array) =
 
 ### Platform-Specific Implementation Strategies
 
-The beauty of our approach is how naturally this future design will map to numerous hardware architectures:
+As we currently conceive it, our approach maps this design across several hardware architectures:
 
 **On Neuromorphic Processors (Loihi 2)**:
 ```fsharp
-// Direct mapping to Loihi 2's programmable neurons
 [<CompileToLoihi>]
 let ternaryNeuronLoihi (state: int32) (input: int32) =
-    // Loihi 2 supports up to 4096 states - we use just 3
-    // Maps to microcode on neuromorphic cores
+    // Loihi 2 carries up to 4096 states; we use 3, as microcode
     match state with
-    | -1 -> processActive input         // State 0-1365
-    | 0  -> processSilent input        // State 1366-2730
-    | 1  -> processSpike input         // State 2731-4095
+    | -1 -> processActive input         // state 0-1365
+    | 0  -> processSilent input         // state 1366-2730
+    | 1  -> processSpike input          // state 2731-4095
 ```
 
 **On CGRAs (SambaNova RDU, NextSilicon Maverick)**:
 ```fsharp
-// CGRA implementation leverages word-level reconfiguration
 [<CompileToCGRA>]
 let ternaryNeuronCGRA (neurons: TernaryNeuron array) =
     cgra {
-        // Configure processing elements for ternary operations
         let! pe_array = allocatePEs (neurons.Length)
 
-        // Runtime reconfiguration based on state distribution
         for pe in pe_array do
-            pe.ConfigureForTernary()  // Word-level ternary ops
-            pe.SetPositPrecision(16, 1)  // Native posit support
+            pe.ConfigureForTernary()     // word-level ternary ops
+            pe.SetPositPrecision(16, 1)  // native posit support
 
-        // Dataflow automatically optimized by platform
+        // dataflow scheduled by the platform
         return dataflowProcess neurons
     }
 ```
 
-CGRAs are particularly powerful here because they can:
-- Reconfigure arithmetic units for posit operations dynamically
+CGRAs fit here because they can:
+- Reconfigure arithmetic units for posit operations at runtime
 - Adapt dataflow patterns based on spike density
-- Seamlessly transition between neural and conventional processing
-- Implement the forward gradient computation in parallel across PEs
+- Move between neural and conventional processing on the same fabric
+- Run the forward gradient computation in parallel across PEs
 
 Each learning mechanism operates on appropriate hardware:
 - **STBP (Spatio-Temporal Backpropagation)**: Gradient-based learning that propagates errors through both space (layers) and time (timesteps)
@@ -432,9 +392,9 @@ W^l = \sum_{i=1}^{3} \lambda_i W_i^l
 
 Where \(\lambda_i\) are adaptively learned mixing coefficients, optimized through local feedback using forward gradients, not global backpropagation.
 
-## Revolutionary Performance Projections
+## Performance Projections
 
-The convergence of ternary representations, forward gradient training, and advanced acceleration hardware promises unprecedented efficiency gains over both conventional approaches and existing binary SNNs:
+We project the following efficiency gains from combining ternary representations, forward gradient training, and acceleration hardware, measured against both conventional approaches and existing binary SNNs:
 
 | Metric | GPU (A100) | Binary SNN (Multi-Plasticity)[^2] | Ternary + Forward Gradient | Improvement vs GPU |
 |--------|------------|-----------------------------------|---------------------------|-------------------|
@@ -442,20 +402,20 @@ The convergence of ternary representations, forward gradient training, and advan
 | Power (Training) | 400W | 100W | 2-10W | **40-200x** |
 | Latency (per spike) | 10μs | 1μs | 10-100ns | **100-10000x** |
 | Training passes | 2 (fwd+bwd) | 2 (fwd+bwd) | 1 (fwd only) | **2x** |
-| Gradient accuracy | N/A | Surrogate | Exact | **Mathematically honest** |
+| Gradient accuracy | N/A | Surrogate | Exact | **No surrogate term** |
 | Information preserved | N/A | Binary states | Ternary states | **50% more** |
-| Biological correspondence | None | Medium | High | **Paradigm shift** |
+| Biological correspondence | None | Medium | High | **Higher** |
 
 *Note: Performance varies by neuromorphic processor and deployment configuration.*
 
 The forward gradient approach demonstrated 2x speedup over backpropagation in conventional networks[^1]. For SNNs, the advantage is even greater since we eliminate the surrogate gradient approximation entirely.
 
-## Roadmap: From Vision to Silicon
+## Roadmap
 
 ### Phase 1: Foundation
-- Implement ternary SNN models in Fidelity framework
+- Implement ternary SNN models in our Fidelity framework
 - Integrate forward gradient training via Furnace
-- Develop neuromorphic backend for Composer compiler
+- Develop a neuromorphic backend for our Composer compiler
 - Demonstrate MNIST/CIFAR-10 benchmarks
 
 ### Phase 2: Hardware Integration
@@ -476,25 +436,25 @@ The forward gradient approach demonstrated 2x speedup over backpropagation in co
 - High-throughput inference systems
 - Continuous learning systems
 
-## The Strategic Opportunity
+## Where Our Framework Fits
 
-The convergence of these technologies reveals an extraordinary opportunity: the hardware is already here, waiting for the right algorithms to unlock its potential. Current neuromorphic software treats advanced processors as if they were simple binary spike generators, using only a fraction of their capabilities. Similarly, CGRAs from NextSilicon and SambaNova are often programmed with conventional approaches that don't leverage their reconfigurable nature. Our framework would change this by:
+The hardware is already here, and current software addresses only part of it. Current neuromorphic software treats these processors as binary spike generators, using a fraction of their states. CGRAs from NextSilicon and SambaNova are often programmed with conventional approaches that do not use their reconfigurable structure. Our framework targets this gap by:
 
-1. **Utilizing existing hardware features**: Ternary states map naturally to the multi-bit spikes and programmable neurons already in silicon
-2. **Eliminating algorithmic bottlenecks**: Forward gradients remove the surrogate gradient fiction that has limited SNN training
-3. **Providing unified abstractions**: [Clef](https://clef-lang.com) code that compiles efficiently to both neuromorphic and CGRA targets
+1. **Using existing hardware features**: Ternary states map to the multi-bit spikes and programmable neurons already in silicon
+2. **Removing the surrogate approximation**: Forward gradients replace the surrogate gradient that has limited SNN training
+3. **Providing one compilation target**: [Clef](https://clef-lang.com) code that compiles to both neuromorphic and CGRA backends
 
 ### Platform-Specific Advantages
 
 **For Neuromorphic Processors (Intel, IBM, BrainChip)**:
-- Finally use the full state space (4096 states, not just 2)
-- Leverage graded spikes for richer information encoding
-- Implement true online learning without backpropagation
+- Use the full state space (4096 states, not just 2)
+- Encode richer information through graded spikes
+- Run online learning without backpropagation
 
 **For CGRAs (NextSilicon, SambaNova)**:
-- Natural word-level operations for ternary representations
+- Word-level operations for ternary representations
 - Runtime reconfiguration for adaptive neural topologies
-- Seamless integration of neural and conventional processing
+- Neural and conventional processing on the same fabric
 
 **For Heterogeneous Systems**:
 - Neuromorphic cores for spiking dynamics
@@ -502,32 +462,28 @@ The convergence of these technologies reveals an extraordinary opportunity: the 
 - CPU for orchestration and control flow
 - All unified through BAREWire's zero-copy communication
 
-### Why This Convergence Matters Now
+### Why These Pieces Line Up Now
 
-The hardware ecosystem has reached a critical point where multiple platforms; neuromorphic processors, CGRAs, and heterogeneous systems; all have the capabilities needed for advanced SNNs. What's been missing is the software layer that can:
-- Train these networks without mathematical compromises
-- Deploy across diverse hardware without rewriting
-- Utilize the full capabilities of modern silicon
+Three classes of platform now carry the capabilities advanced SNNs need: neuromorphic processors, CGRAs, and heterogeneous systems that combine them. The remaining gap is the software layer, one that can:
+- Train these networks without the surrogate gradient approximation
+- Deploy across diverse hardware without a rewrite per target
+- Address the full state space and precision of modern silicon
 
-The Fidelity framework with forward gradient training provides exactly this missing piece.
+Our Fidelity framework, with forward gradient training, is the design we are building to fill that gap.
 
-## Unlocking Today's & Tomorrow's Silicon
+## Today's and Tomorrow's Silicon
 
-The intelligent chip revolution isn't waiting for new hardware; it's waiting for software that can unleash the capabilities already available. Neuromorphic chips have multiple states per neuron, but we've been using just two. CGRA solutions can reconfigure every clock cycle, but we've been treating them like fixed architectures. The hardware industry has delivered remarkable capabilities; now it's time for algorithms to catch up.
+The gating constraint is software, not new silicon. Neuromorphic chips carry multiple states per neuron, and the field's algorithms have used two. CGRAs can reconfigure every clock cycle, and conventional programming treats them as fixed architectures. The hardware is in place, and the algorithms have room to catch up.
 
-Our novel approach to ternary spiking neural networks, converging with forward gradient training, and existing classical hardware integration represents more than incremental progress; it's about finally using what we've built. By embracing nature's organizing principles and matching them to silicon's actual capabilities, we can achieve the efficiency gains that neuromorphic computing has long promised.
+We theorize that combining ternary spiking neural networks with forward gradient training, on the classical hardware that already ships, addresses the surrogate gradient problem that has held SNN training back. We have found no other representative implementation of this combination in the standing literature we have reviewed. Matching the encoding to the multi-state hardware is what recovers the efficiency that neuromorphic computing has projected for years.
 
-The mathematical foundations are now clear:
-- **Ternary modeling** leverages the multi-state capabilities already in neuromorphic processors and CGRAs, capturing distinct computational regimes of biological neurons
-- **Forward gradients** provide exact training without the surrogate approximations that have limited the field
-- **Posit arithmetic** maps naturally to the word-level operations of CGRAs and programmable precision of neuromorphic chips
-- **Existing hardware** from Intel, IBM, BrainChip, NextSilicon, and SambaNova is ready today
+The pieces this rests on:
+- **Ternary modeling** targets the multi-state capabilities already in neuromorphic processors and CGRAs, capturing distinct computational regimes of biological neurons
+- **Forward gradients** train without the surrogate approximations that have constrained the field
+- **Posit arithmetic** maps to the word-level operations of CGRAs and the programmable precision of neuromorphic chips
+- **Existing hardware** from Intel, IBM, BrainChip, NextSilicon, and SambaNova is available today
 
-The Fidelity framework bridges the gap between hardware capability and algorithmic reality. Our control-flow to data-flow compilation, forward gradient training powered by Furnace, and platform-agnostic approach create the software foundation that can finally free the potential of neuromorphic and reconfigurable hardware.
-
-The future of neuromorphic computing isn't just about building new silicon; it's also about finding ways to fully employ this remarkable silicon to its fullest, world-changing potential.
-
-*Let's unlock true intelligence with The Fidelity Framework.*
+Our control-flow to data-flow compilation, forward gradient training through Furnace, and platform-agnostic backend are the layer that connects this hardware capability to a working SNN. That is where our current interest lies, and we will keep building the design toward the heterogeneous targets the rest of this post names as the work continues.
 
 ---
 

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Most Clef developers take type inference for granted. You write `let x = 5` and the compiler knows it's an integer. You don't annotate every binding; you let the compiler figure out what it can from context. This small convenience accumulates into something significant: code that expresses intent without drowning in declarations.
 
 From early days we held a vision of bringing this notion to Fidelity framework's memory management story. Early explicit arena-passing code we'd written was correct, but it felt like a poor fit compared to what we knew of the idiomatic Clef design-time experience. Our early experiments had too much overhead that existed only to satisfy the compiler.
@@ -75,13 +70,13 @@ let main argv =
 
 This works correctly. The arena is created on `main`'s stack, passed by reference to `hello`, and `readlnFrom` allocates from that arena. The string survives because the arena survives. The lifetime parameter `'lifetime` tracks this at the type level.
 
-But looking at this code, something felt wrong. This is Clef, a concurrent language celebrated for its elegance and expressiveness. Why does memory management demand such ceremony?
+But looking at this code, something felt wrong. This is Clef, a concurrent language built for expressiveness. Why does memory management demand such ceremony?
 
 ## Putting the Machine Back in CAML
 
 The "ML" in OCaml and F# stands for "Meta Language," but the "CAM" (Categorical Abstract Machine) is often forgotten. The original vision included the *machine*, the concrete representation of computation. Over time, managed runtimes abstracted this away entirely.
 
-Fidelity reclaims the machine. The key insight is that **memory layout can be a type-carrying quotation**: the type system itself encodes how values are represented in memory. This isn't just architectural elegance; it's mechanical efficiency.
+Our Fidelity framework reclaims the machine. Memory layout can be a type-carrying quotation: the type system itself encodes how values are represented in memory. This buys mechanical efficiency.
 
 Consider what happens when memory layout decisions are pushed to lower compiler strata:
 
@@ -93,7 +88,7 @@ Consider what happens when memory layout decisions are pushed to lower compiler 
 By making memory layout a type-level concern, Fidelity ensures that:
 
 - The compiler can verify layout correctness
-- Optimizations are provable, not hopeful
+- Optimizations rest on structure the type system tracks rather than on heuristics
 - Tools can introspect representation through types
 - Errors surface early, as type errors, not runtime crashes
 
@@ -425,7 +420,7 @@ This is the Fidelity philosophy: respect what works, learn from what doesn't, an
 
 The process we embarked on from the first realizations that led to "ByRef Resolved" to this concrete implementation in Composer has been one of pattern recognition. We solved the byref problem with explicit arena management. We built the type system infrastructure for lifetime tracking. We implemented the intrinsics and operations.
 
-But the deeper insight, that lifetime management should work like type inference, is an elegant reframing we thought worth sharing here. It's not just an implementation technique; it's a design principle that unifies our three-level memory management model.
+But the deeper insight, that lifetime management should work like type inference, is a reframing we thought worth sharing here. It is a design principle that unifies our three-level memory management model.
 
 Clef developers already know the power of inference. Type inference transformed programming from ceremony to expression. We believe lifetime inference can do the same for systems programming, maintaining the mechanical efficiency and memory safety that native compilation requires while preserving the expressiveness that makes Clef a joy to use.
 

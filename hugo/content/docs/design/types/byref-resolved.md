@@ -15,13 +15,13 @@ params:
 
 Memory safety in systems programming has three established homes: in a runtime tracker (garbage collection), in developer-supplied lifetime annotations (Rust), or in the developer's own discipline (manual management). The Clef compiler places it in a fourth: in the compiled artifact itself, with compile-time structural analysis producing the commitments and MLIR lowering preserving them through to the binary.
 
-The article's title points to one familiar instance of the runtime-tracker pattern's limitations. The byref restrictions in .NET exist because the CLR cannot track interior pointers across heap-allocated state machines, which means F# byrefs cannot be captured in async closures. That restriction is a specific case of a broader pattern: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. The framework's contribution is not a workaround for .NET specifically; it is an alternative position for where memory safety can live, with the structural commitments carried by the artifact rather than mediated by a runtime.
+The article's title points to one familiar instance of the runtime-tracker pattern's limitations. The byref restrictions in .NET exist because the CLR cannot track interior pointers across heap-allocated state machines, which means F# byrefs cannot be captured in async closures. That restriction is a specific case of a broader pattern: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. Our contribution is not a workaround for .NET specifically; it is an alternative position for where memory safety can live, with the structural commitments carried by the artifact rather than mediated by a runtime.
 
 The rest of this document describes the architectural commitments that produce this position, the intellectual lineage they draw on, how the approach compares to the established alternatives, and what the practical infrastructure (BAREWire, Reference Sentinels, RAII actor memory) contributes within the architecture.
 
 ## Architectural Commitments
 
-The framework's approach rests on commitments that interact rather than layer. They are presented separately below for clarity, but each depends on the others to produce the framework's value.
+Our approach rests on commitments that interact rather than layer. They are presented separately below for clarity, but each depends on the others to produce our framework's value.
 
 **Flat closures with explicit capture.** Every closure in Clef carries its captured environment as a structurally-visible value rather than as an opaque heap allocation. The capture relationships are part of the program's compile-time structure, available to the analysis that places the closure in a region and that determines its lifetime.
 
@@ -33,11 +33,11 @@ The framework's approach rests on commitments that interact rather than layer. T
 
 **Native compilation through MLIR.** The lowering through MLIR preserves the structural commitments as concrete code generation decisions. The commitments are built into how the binary lays out and accesses memory. This is what we mean when we say the safety lives in the artifact.
 
-These commitments compose. The flat closure representation supports the joint constraint reasoning that the region inference depends on. The escape classification informs the region placement that the verification certificate records. The MLIR lowering preserves the structural commitments that the joint constraint analysis established. The whole is more than the sum of the parts: a developer who writes ML-family code gets a binary whose memory behavior is described by a structural certificate that survives compilation.
+These commitments compose. The flat closure representation supports the joint constraint reasoning that the region inference depends on. The escape classification informs the region placement that the verification certificate records. The MLIR lowering preserves the structural commitments that the joint constraint analysis established. A developer who writes ML-family code gets a binary whose memory behavior is described by a structural certificate that survives compilation.
 
 ## Where the Architecture Comes From
 
-The framework's intellectual lineage runs through several identifiable contributions, each of which we adapt rather than adopt wholesale.
+Our intellectual lineage runs through several identifiable contributions, each of which we adapt rather than adopt wholesale.
 
 **Tofte and Talpin's region-based memory management** [1] introduced the region as the fundamental unit of memory lifetime, with regions determined statically from the program's scope structure. Their work established that a Standard ML compiler can infer regions with sufficient precision to eliminate garbage collection in many programs. We adopt the region as the fundamental unit but ground region inference in escape classification informed by joint constraint structure rather than in pure scope analysis.
 
@@ -51,7 +51,7 @@ The careful framing of these references is part of our intellectual posture: eac
 
 ## How the Approach Compares
 
-The framework occupies a position none of the established approaches fully occupies.
+Our approach occupies a position none of the established approaches fully occupies.
 
 **Rust's ownership system** provides compile-time memory safety through lifetime annotations that thread through every function signature. The safety is real and the annotation burden is real; Rust developers spend significant effort threading lifetimes through their code. Our approach achieves comparable compile-time safety without per-function lifetime annotations, with the analysis driven by the program's structural properties rather than by developer-supplied annotations.
 

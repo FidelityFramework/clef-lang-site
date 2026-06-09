@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The `inline` keyword occupies a peculiar space in the programmer's toolkit. It began life as a compiler hint in C, suggesting that a function might benefit from inline expansion. Over decades, it evolved into `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each incarnation reflects a different philosophy about who should make optimization decisions: the programmer or the compiler.
 
 For Clef developers working with the Fidelity Framework, `inline` serves dual masters. It's mandatory for Statically Resolved Type Parameters (SRTP), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
@@ -30,7 +25,7 @@ In native compilation, these costs become explicit. When targeting MLIR and LLVM
 
 ## The .NET Inline Culture: A Hidden Tax
 
-The F# ecosystem inherited SRTP from the ML family, where it enables powerful generic programming without runtime type information. Consider this canonical example:
+The F# ecosystem inherited SRTP from the ML family, where it enables generic programming without runtime type information. Consider this canonical example:
 
 ```fsharp
 let inline add x y = x + y
@@ -85,15 +80,13 @@ From the [MLIR Rationale](https://mlir.llvm.org/docs/Rationale/Rationale/):
 
 > "MLIR uses **block arguments** instead of PHI nodes. An alternative design is to use PHI nodes in blocks (like LLVM does) but this would create complications when predecessors are unwind blocks."
 
-This architectural choice has profound implications for how functions compile and optimize. Consider what happens in LLVM IR when you inline a function with complex control flow:
+This architectural choice shapes how functions compile and optimize. Consider what happens in LLVM IR when you inline a function with complex control flow:
 
 ```llvm
-; Complex PHI web after inlining
+; PHI web after inlining
 bb1:
   %x = phi i32 [%a, %entry], [%b, %loop]
   %y = phi i32 [%c, %entry], [%d, %loop]
-  ; Inlined function body created complex PHI relationships
-  ; Optimizer must reconstruct the original function structure
 ```
 
 PHI nodes encode control flow merge points by listing each predecessor and its corresponding value. When you inline functions, these PHI webs become tangled, making it harder for subsequent optimization passes to understand the original semantic structure.
@@ -209,7 +202,7 @@ Investigation revealed a structural problem:
 
 The fix was simple: remove `inline` from `Console.write`.
 
-The insight was profound: **inline in platform libraries was creating PSG structure violations**.
+The insight: `inline` in platform libraries was creating PSG structure violations.
 
 This led to a broader realization. Platform libraries should use real functions unless the specification **mandates** inline for semantic reasons (SRTP or escape analysis). Let's examine both.
 
@@ -347,7 +340,7 @@ let add<'T when 'T :> IAddable<'T>> (x: 'T) (y: 'T) =
 
 ## The Bigger Picture: Trusting the Optimizer
 
-There's a deeper architectural principle at work here: **separation of concerns**. Traditional systems programming conflates two fundamentally different responsibilities - ensuring programs are correct and making them fast. The `inline` keyword exemplifies this conflation, asking the compiler to make optimization decisions during the phase where it should be focused on correctness.
+There's a deeper architectural principle at work here: **separation of concerns**. Traditional systems programming conflates two distinct responsibilities, ensuring programs are correct and making them fast. The `inline` keyword exemplifies this conflation, asking the compiler to make optimization decisions during the phase where it should be focused on correctness.
 
 Consider what the compiler is actually good at. Type checking and inference happen at compile time because that's when you have access to the complete type system and can reason about type relationships. Memory safety guarantees through escape analysis similarly require understanding the full scope and lifetime of allocations. Semantic correctness - verifying that the program means what you intend - demands analyzing the complete structure before execution. The compiler's expertise lies in transforming high-level intent into correct, well-formed intermediate representation.
 
@@ -381,9 +374,9 @@ Alex witnesses the PSG and emits MLIR, but it still operates without complete co
 
 By the time MLIR's optimization passes run, the picture clarifies dramatically. The optimizer sees the complete program structure, understands call frequencies through profiling information, and knows the target architecture. It can make informed tradeoffs: inline this small function because it's called in a tight loop, but keep that larger function separate because it's rarely used and inlining would bloat the instruction cache.
 
-LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. It knows cache line sizes, pipeline depths, branch predictor characteristics, and SIMD instruction availability. The optimization decisions at this level can be exquisitely tuned to the specific CPU model, not just the general architecture family.
+LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. It knows cache line sizes, pipeline depths, branch predictor characteristics, and SIMD instruction availability. The optimization decisions at this level can be tuned to the specific CPU model, not just the general architecture family.
 
-This progression reveals the fundamental question: **why would you inline at CCS level** when MLIR has exponentially more information to work with?
+This progression frames the question: **why would you inline at CCS level** when MLIR has far more information to work with?
 
 ## The Mathematical Insight: Optimization Windows
 
@@ -478,7 +471,7 @@ The CCS2001 error for platform libraries isn't bureaucracy. It's preventing the 
 
 The CCS2002 warning for user code optimization is an invitation to understand the compilation model. You're not targeting a JIT that needs hints about hot paths. You're targeting an optimizer that sees megabytes of IR, knows your hardware architecture, and can make inlining decisions based on actual call graphs and target constraints. For generic code, simply using static abstract members will go a long way toward avoiding unnecessary inline dependencies.
 
-Fidelity's path forward treats `inline` as a semantic tool for type system requirements and memory safety, nothing more. The compiler ensures correctness. The optimizer handles performance. Understanding this separation - *getting* inline - means writing Clef that compiles to efficient native code across CPUs, GPUs, and microcontrollers without compromising the expressiveness that makes concurrent functional programming so incredibly powerful.
+Our Fidelity path forward treats `inline` as a semantic tool for type system requirements and memory safety, nothing more. The compiler establishes correctness. The optimizer handles performance. Understanding this separation, *getting* inline, means writing Clef that compiles to efficient native code across CPUs, GPUs, and microcontrollers without giving up the expressiveness that carries concurrent functional programming.
 
 ---
 
@@ -498,4 +491,4 @@ Fidelity's path forward treats `inline` as a semantic tool for type system requi
 
 ---
 
-*This policy emerged from real compiler development - fixing a bug during the memref transition led to fundamental insights about inline semantics, MLIR optimization, and multi-target compilation. Sometimes the best architectural decisions come not from first principles, but from solving concrete problems and generalizing the lessons learned.*
+*This policy emerged from real compiler development. Fixing a bug during the memref transition led to the insights about inline semantics, MLIR optimization, and multi-target compilation that this post records. We expect to keep generalizing lessons like this one as the rest of the compiler comes into place.*

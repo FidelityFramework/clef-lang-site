@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 In our work to bring [the Clef language](https://clef-lang.com) to systems programming, we're pursuing a vision of deterministic memory management outside the familiar boundaries of managed runtimes. For developers who have only known automatic memory management as an omnipresent runtime service, the concept we're pursuing - applying RAII (Resource Acquisition Is Initialization) principles to actor-based systems - represents a significant departure from established patterns. Our current research focuses on how three complementary systems work together: RAII-based arena allocation, the Olivier actor model we're developing, and our proposed Prospero orchestration layer.
 
 This blog entry examines how these three components form an integrated whole, where memory management strategies are determined at compile time to match actor-based application architectures. We believe that by applying RAII principles to actor systems, we can bring predictable memory management to systems programming while maintaining the deterministic performance characteristics that real-time applications demand. These ideas continue to evolve as we refine our implementation.

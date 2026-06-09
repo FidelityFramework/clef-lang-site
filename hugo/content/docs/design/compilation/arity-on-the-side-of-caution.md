@@ -11,23 +11,18 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+When Haskell Curry formalized the technique that now bears his name, he established a principle that would shape functional programming for decades: every function takes exactly one argument. What appears to be a multi-parameter function is actually a chain of single-parameter functions, each returning another function until all arguments are consumed. This insight became foundational to the ML family of languages.
 
-When Haskell Curry formalized the technique that now bears his name, he established a principle that would shape functional programming for decades: every function takes exactly one argument. What appears to be a multi-parameter function is actually a chain of single-parameter functions, each returning another function until all arguments are consumed. This insight, elegant in its simplicity, became foundational to the ML family of languages.
-
-F# inherits this tradition directly. Every multi-parameter function is, under the hood, a chain of single-parameter functions:
+Clef inherits this tradition from its F# lineage. Every multi-parameter function is, under the hood, a chain of single-parameter functions:
 
 ```fsharp
 let add x y = x + y
 // Desugars to: let add = fun x -> fun y -> x + y
 ```
 
-This is fundamental to ML-family languages. It's not syntax sugar; it's the computational model. Partial application falls out naturally: `add 5` returns a function waiting for one more argument. The elegance compounds: higher-order functions compose effortlessly, pipelines read left-to-right, and function signatures become self-documenting contracts.
+In ML-family languages this is the computational model, not syntax sugar. Partial application falls out naturally: `add 5` returns a function waiting for one more argument. Higher-order functions compose, pipelines read left-to-right, and function signatures become self-documenting contracts.
 
-Yet this elegance carries an implementation burden. When functions are truly curried, every partial application produces a new function value. In a theoretical lambda calculus, this is immaterial. In a compiler targeting real hardware, it raises immediate questions about representation, allocation, and lifetime.
+Currying carries an implementation burden. When functions are truly curried, every partial application produces a new function value. In a theoretical lambda calculus, this is immaterial. In a compiler targeting real hardware, it raises immediate questions about representation, allocation, and lifetime.
 
 In .NET, currying is essentially ignored. The CLR sees `add` as a method with two parameters. Partial application creates a closure object on the managed heap. The garbage collector handles the rest. Simple, if you have a garbage collector.
 
@@ -35,7 +30,7 @@ In .NET, currying is essentially ignored. The CLR sees `add` as a method with tw
 
 ## The Arity Question
 
-When compiling Clef to native code without a runtime, we face a fundamental question: **how do we represent function arity?**
+When compiling Clef to native code without a runtime, we face one question: **how do we represent function arity?**
 
 Consider this code from our sample applications:
 
@@ -77,7 +72,7 @@ Fidelity has none of these. We need arity to be explicit at compile time.
 
 ## The OCaml Model: Arity Is Explicit
 
-OCaml, F#'s main progenitor, takes a fundamentally different approach. In OCaml's Lambda intermediate representation, **every function carries its arity explicitly**.
+OCaml, a progenitor of F#, takes a different approach. In OCaml's Lambda intermediate representation, **every function carries its arity explicitly**.
 
 ```ocaml
 (* OCaml Lambda IR - arity is part of the representation *)
@@ -91,7 +86,7 @@ OCaml's native compiler (`ocamlopt`) then makes a critical optimization based on
 | `add 5 3` (saturated) | Direct call, register passing |
 | `add 5` (partial) | Allocate closure struct |
 
-The insight is statistical: in real code, saturated calls dominate. By tracking arity explicitly, OCaml can generate optimal code for the common case while still supporting partial application when needed.
+The insight is statistical: in real code, saturated calls dominate. By tracking arity explicitly, OCaml generates direct code for the common case while still supporting partial application when needed.
 
 ### The "Arity Curtain"
 
@@ -105,15 +100,15 @@ let result = apply_to_three (add 5)  (* But add has arity 2! *)
 
 When a function passes through an abstraction boundary, its arity becomes opaque. The compiler can no longer optimize saturated calls because it doesn't know how many arguments the function ultimately expects.
 
-This is a fundamental tension in ML compilation. OCaml accepts it as a tradeoff: optimize what you can see, fall back to closures for what you can't.
+This is a standing tension in ML compilation. OCaml accepts it as a tradeoff: optimize what the compiler can see, fall back to closures for what it cannot.
 
 ## Fidelity's Approach: Principled Arity Tracking
 
-For Fidelity, we've adopted the OCaml model, but with the benefit of Clef's type system providing additional information.
+For our Fidelity framework, we adopt the OCaml model, with the benefit of Clef's type system providing additional information.
 
 ### Arity in the PSG
 
-Our Program Semantic Graph (PSG) now carries explicit arity for all function bindings:
+Our Program Semantic Graph (PSG) carries explicit arity for all function bindings:
 
 ```fsharp
 type BindingInfo = {
@@ -134,7 +129,7 @@ When CCS (Clef Compiler Services) encounters a function definition, it records t
 
 ### Saturation Detection
 
-During PSG construction, CCS now detects saturated calls through partial applications:
+During PSG construction, CCS detects saturated calls through partial applications:
 
 ```fsharp
 // Source: Console.readln() |> greet prefix
@@ -146,11 +141,11 @@ App(App(greet, prefix), readln())  // Alex doesn't know how to emit this
 App(greet, [prefix; readln()])     // Direct 2-arg call
 ```
 
-The key insight: `greet` has arity 2. We provide 2 arguments (prefix and readln result). This is a saturated call that should compile to a direct function call, not closure creation.
+`greet` has arity 2. We provide 2 arguments (prefix and the readln result). This is a saturated call that should compile to a direct function call rather than closure creation.
 
 ### Closure Representation When Needed
 
-For genuinely escaping partial applications, we create explicit closure nodes.
+For genuinely escaping partial applications, the design carries an explicit closure node.
 
 ```fsharp
 let partial = greet "Hello"  // Escapes, bound to a name
@@ -159,7 +154,7 @@ let partial = greet "Hello"  // Escapes, bound to a name
 PartialApplication(greet, ["Hello"], remainingArity=1)
 ```
 
-Alex witnesses this and generates a closure struct on the stack:
+From this node, Alex is designed to emit a closure struct on the stack:
 
 ```mlir
 // Closure struct: { funcPtr, captured_arg0 }
@@ -179,7 +174,6 @@ The arity-aware approach gives us several benefits:
 Most Clef code uses saturated calls. With explicit arity tracking, these compile to direct function calls with no closure overhead:
 
 ```fsharp
-// This is the common case
 List.map (fun x -> x + 1) items  // map has arity 2, fully applied
 ```
 
@@ -194,11 +188,11 @@ items |> List.map addFive  // Closure doesn't escape
 
 ### 3. Predictable Performance
 
-Unlike .NET where closure allocation is implicit and unpredictable, Fidelity makes the cost visible. The PSG explicitly represents `PartialApplication` nodes, and developers can see exactly where closures are created.
+In .NET, closure allocation is implicit and its cost is hard to predict. Our Fidelity framework makes that cost visible: the PSG represents `PartialApplication` nodes directly, so developers can see exactly where closures are created.
 
 ### 4. SSA ≅ Functional
 
-MLIR's SSA form is fundamentally functional: values are immutable and scope follows dominance. Clef's computational model maps directly to SSA without reconstruction. Explicit arity tracking preserves this alignment:
+MLIR's SSA form is already functional in shape: values are immutable and scope follows dominance. Clef's computational model maps directly to SSA without reconstruction. Explicit arity tracking preserves this alignment:
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -228,10 +222,9 @@ flowchart TD
 
 ## The Path Forward
 
-With arity tracking in place, our sample applications now compile correctly. The curried function patterns that are idiomatic in Clef work without special handling:
+With arity tracking in the design, our sample applications are meant to compile without special handling for the curried function patterns idiomatic in Clef:
 
 ```fsharp
-// All of these now compile to efficient native code
 items |> List.map transform
 data |> filter predicate |> map projection
 result |> Option.map processValue
@@ -242,17 +235,7 @@ The next steps involve:
 - **Closure escape analysis**: Warn when closures escape their stack frame
 - **Defunctionalization for closed sets**: When all uses of a higher-order function are known, eliminate closures entirely
 
-## Conclusion
-
-Fidelity's name isn't accidental. We're committed to preserving Clef's semantics faithfully through the entire compilation pipeline. Currying isn't an obstacle to native compilation; it's a feature that maps beautifully to SSA when handled with care.
-
-By following the ML tradition of explicit arity tracking, we get:
-- Optimal code for saturated calls (the common case)
-- Principled representation for partial application
-- Predictable, stack-allocated closures
-- Direct alignment with MLIR's functional model
-
-The result is Clef code that compiles to tight, predictable native binaries while preserving the compositional elegance that makes its concurrent programming model such a rewarding experience.
+Explicit arity tracking is what lets currying reach native code without an obstacle in its path: saturated calls become direct function calls, partial application gets a principled stack-allocated representation, and Clef's computational model stays aligned with MLIR's SSA form. Carrying Clef's semantics faithfully through the pipeline is what our Fidelity framework is named for, and tracking arity on the side of caution is one of the places that commitment shows. We will keep refining the arity propagation and escape analysis as the compiler work continues.
 
 ---
 

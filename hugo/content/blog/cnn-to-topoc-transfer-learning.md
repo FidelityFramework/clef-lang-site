@@ -11,18 +11,13 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+We are working on transfer learning that combines convolutional neural networks (CNNs) with Topological Object Classification (TopOC) methods. This memo outlines our design approach to dimensionally-constrained models that maintain representational integrity through the transfer learning process, while targeting deployment to resource-constrained hardware through our Fidelity Framework compilation pipeline.
 
-At SpeakEZ, we are working on transformative approaches to transfer learning that combine convolutional neural networks (CNNs) with Topological Object Classification (TopOC) methods. This memo outlines our design approach to creating dimensionally-constrained models that maintain representational integrity throughout the transfer learning process while enabling deployment to resource-constrained hardware through our Fidelity Framework compilation pipeline.
-
-By leveraging [the Clef language](https://clef-lang.com)'s Units of Measure (UMX) system to enforce dimensional constraints across the entire model architecture, we achieve not only safer and more reliable models but also significantly more efficient computational patterns that can be directly compiled to FPGAs and custom ASICs. This combination of type safety and direct hardware compilation creates a unique advantage for deploying sophisticated AI capabilities in edge environments where traditional approaches fall short.
+The design uses [our Clef language](https://clef-lang.com)'s Units of Measure (UMX) system to enforce dimensional constraints across the model architecture. Holding those constraints at compile time gives the models more regular computational patterns, which the framework can lower toward FPGAs and custom ASICs. Compile-time dimensional checking paired with direct hardware lowering is the combination we are pursuing for edge environments where conventional frameworks carry their shape checks into runtime.
 
 ## The Dimensional Integrity Challenge in Transfer Learning
 
-Transfer learning between CNNs and topological representations introduces fundamental challenges that conventional frameworks struggle to address:
+Transfer learning between CNNs and topological representations introduces challenges that conventional frameworks address only at runtime:
 
 1. **Dimensional Consistency**: CNNs operate on grid-structured data with specific channel, height, and width dimensions, while topological representations focus on abstract structural invariants
 
@@ -30,11 +25,11 @@ Transfer learning between CNNs and topological representations introduces fundam
 
 3. **Compilation Target Constraints**: Hardware accelerators like FPGAs and ASICs impose strict requirements on memory layout and computational patterns
 
-Conventional approaches using Python-based frameworks handle these challenges through runtime checks and extensive trial-and-error experimentation, leading to inefficient models and deployment challenges. Our approach fundamentally reimagines this process through statically-verified dimensional constraints.
+Conventional approaches using Python-based frameworks handle these challenges through runtime checks and trial-and-error experimentation, which leaves the resulting models harder to deploy. Our approach moves these dimensional constraints to compile time, where the type checker resolves them once.
 
 ## Clef's Units of Measure: A Foundation for Dimensional Safety
 
-Our architecture leverages Clef's sophisticated type system to enforce dimensional constraints throughout the entire model pipeline:
+Our architecture uses Clef's type system to enforce dimensional constraints across the model pipeline:
 
 ```fsharp
 module ModelDimensions =
@@ -72,25 +67,23 @@ The CNN backbone extracts features with strictly enforced dimensional relationsh
 
 ```fsharp
 let createBackbone (inputShape: int<Channel> * int<Height> * int<Width>) =
-    // Type-safe convolution with dimensional guarantees
+    // Channel -> Channel * 2
     let conv1 = Conv2D<Channel, Channel * 2>(
         kernelSize = (3<Height>, 3<Width>),
         stride = (1<Height>, 1<Width>),
         padding = PaddingType.Same)
 
-    // Dimension-preserving pooling
+    // dimension-preserving pool
     let pool1 = MaxPool2D<Channel * 2>(
         kernelSize = (2<Height>, 2<Width>),
         stride = (2<Height>, 2<Width>))
 
-    // Subsequent layers maintain dimensional relationships
     // ...
 
-    // Returns dimensionally-typed feature tensors
     DimensionalSequential [conv1; pool1; ...]
 ```
 
-Each layer's input and output dimensions are verified at compile time, ensuring that the feature extraction process maintains dimensional integrity throughout. This eliminates an entire class of errors that plague traditional implementations.
+Each layer's input and output dimensions are checked at compile time, so the feature extraction process maintains dimensional integrity across the stack. This removes the class of shape-mismatch errors that conventional implementations catch only at runtime.
 
 ### 2. Topological Feature Transformation
 
@@ -102,19 +95,18 @@ let cnnToTopological
     (features: FeatureTensor)
     : TopologicalTensor =
 
-    // Compute persistent homology with dimension tracking
+    // Feature -> PersistenceDegree
     let persistenceDiagrams =
         computePersistentHomology<Feature, PersistenceDegree> features
 
-    // Extract Betti numbers with dimension preservation
+    // PersistenceDegree -> HomologyClass
     let betti =
         extractBettiNumbers<PersistenceDegree, HomologyClass> persistenceDiagrams
 
-    // Return topologically structured tensor with verified dimensions
     betti
 ```
 
-This transformation maintains dimensional safety constraints while converting between fundamentally different representation spaces - a challenging task that typically introduces errors in conventional frameworks.
+This transformation holds its dimensional constraints while converting between two different representation spaces, a conversion that conventional frameworks leave unchecked until runtime.
 
 ### 3. TopOC Classification Head
 
@@ -127,11 +119,9 @@ let topologicalClassifier
     (numClasses: int)
     : Tensor<int> =
 
-    // Dimension-preserving persistence landscape computation
     let landscapes =
         computePersistenceLandscapes<PersistenceDegree, HomologyClass> topo
 
-    // Final classification while maintaining dimensional constraints
     let logits =
         fullyConnected<HomologyClass * PersistenceDegree, int> landscapes numClasses
 
@@ -142,7 +132,7 @@ By maintaining dimensional constraints throughout this process, we ensure that t
 
 ## Direct Hardware Compilation Through Fidelity Framework
 
-The dimensional safety provided by Clef's UMX system creates unique advantages when compiling these models to hardware accelerators through our Fidelity Framework:
+In the compilation pathway we are building, the dimensional information from Clef's UMX system gives the lowering passes more to work with when targeting hardware accelerators through our Fidelity Framework:
 
 ```fsharp
 // Configure model for FPGA deployment
@@ -162,7 +152,7 @@ let compiledModel =
         optimizationLevel = OptimizationLevel.Aggressive
 ```
 
-The Fidelity compilation pipeline leverages several critical advantages:
+The compilation pipeline we envision draws on the dimensional information in several ways:
 
 1. **Zero-Copy Memory Layout**: The dimensional constraints allow for precise memory alignment and zero-copy operations specific to the target hardware
 
@@ -172,7 +162,7 @@ The Fidelity compilation pipeline leverages several critical advantages:
 
 4. **Binary Precision Adaptation**: Models can be automatically adapted to binary or reduced-precision representations while maintaining dimensional integrity
 
-This approach transforms how models are deployed to custom hardware, eliminating the translation layers and runtime checks that typically consume resources in accelerated environments.
+Carrying the dimensional constraints through to the target removes the translation layers and runtime shape checks that conventional toolchains spend resources on in accelerated environments.
 
 ## Practical Performance Analysis
 
@@ -186,11 +176,11 @@ Our design anticipates measurable advantages over conventional approaches:
 | Power Consumption | 3.8W | 0.9W | 4.2x lower |
 | Classification Accuracy | 91.2% | 93.8% | 2.6% higher |
 
-The dimensional constraints provide both computational efficiency and accuracy improvements by enforcing correct relationships throughout the model architecture.
+We attribute these projected gains to the dimensional constraints, which hold the correct relationships across the model architecture and let the compiler specialize against them.
 
 ## Representational Integrity Across the Pipeline
 
-One of the most powerful aspects of our approach is the maintenance of representational integrity across the entire pipeline, from model definition to hardware deployment:
+Our approach holds representational integrity across the pipeline, from model definition to hardware deployment:
 
 ```fsharp
 // Define an end-to-end dimensionally-constrained pipeline
@@ -204,11 +194,11 @@ let pipeline = Pipeline.create()
 
 This unified pipeline maintains dimensional constraints from raw input through to final classification, with the Fidelity Framework's compilation toolchain preserving these relationships through to the hardware implementation.
 
-The ability to trace dimensional relationships through the entire stack creates unprecedented opportunities for formal verification and safety guarantees. Unlike black-box models that can only be empirically tested, our approach allows for mathematical proofs of dimensional invariants.
+Tracing dimensional relationships through the stack gives the structural properties to the verifier directly. Where a black-box model offers only empirical testing, the dimensional invariants here are properties the type system establishes from the types themselves.
 
 ## ASIC Integration Through MLIR Lowering
 
-For custom ASIC deployment, the Fidelity framework has designs to provide direct pathways from dimensionally-constrained models to hardware descriptions:
+For custom ASIC deployment, our Fidelity framework is designed to provide direct pathways from dimensionally-constrained models to hardware descriptions:
 
 ```fsharp
 // ASIC configuration with dimensional awareness
@@ -238,15 +228,15 @@ The dimensional constraints allow the compiler to generate optimal circuit desig
 
 4. **Specialized Circuit Generation**: Custom circuits for topological operations can be generated based on the precise dimensional constraints
 
-This approach allows deployment of sophisticated CNN-to-TopOC models in environments that would traditionally be inaccessible due to resource constraints.
+This approach is meant to put CNN-to-TopOC models on devices that resource constraints would otherwise rule out.
 
 ## Dimensionally-Grounded Inertial Navigation System: A Reference Design
 
-At SpeakEZ, we have outlined specifications for an Inertial Navigation System (INS) that leverages our dimensionally-constrained approach to achieve high precision with minimal computational requirements. This reference design demonstrates how our CNN-to-TopOC architecture with UMX dimensional safety can be applied to safety-critical applications requiring deployment on resource-constrained hardware.
+We have outlined specifications for an Inertial Navigation System (INS) that applies our dimensionally-constrained approach, aiming for high precision with modest computational requirements. The reference design shows how our CNN-to-TopOC architecture with UMX dimensional safety carries into safety-critical applications that must run on resource-constrained hardware.
 
 ### Physical Dimensions as First-Class Types
 
-The INS design begins with a comprehensive type system representing physical quantities:
+The INS design begins with a type system representing physical quantities:
 
 ```fsharp
 module PhysicalDimensions =
@@ -320,7 +310,7 @@ let createInertialNavigationSystem() =
     ]
 ```
 
-Topological continuity constraints enforce temporal and spatial consistency in the navigation solution, addressing the fundamental challenge of drift in inertial systems.
+Topological continuity constraints enforce temporal and spatial consistency in the navigation solution, which is where drift accumulates in inertial systems.
 
 ### FPGA Implementation Specifications
 
@@ -356,7 +346,7 @@ let configureForFPGA (insModel: Model<SensorData, NavigationState>) =
         insOptimizations
 ```
 
-This configuration leverages the dimensional constraints to create highly optimized FPGA implementations that maintain computational precision while minimizing resource usage.
+This configuration is meant to use the dimensional constraints to produce FPGA implementations that hold computational precision while keeping resource usage low.
 
 ### Performance and Validation
 
@@ -382,10 +372,10 @@ Beyond our INS reference design, our broader aim is to carry these constraints f
 
 While these capabilities are still being developed, they represent the logical extension of our dimensional constraint system - moving from ensuring correct shapes to proving deeper mathematical properties of the models we deploy.
 
-## A New Standard for Model Safety and Efficiency
+## Where the Design Stands
 
-At SpeakEZ, our dimensionally-constrained CNN to TopOC transfer learning approach represents a fundamental advance in both model safety and deployment efficiency. By leveraging Clef's Units of Measure system throughout the model architecture and compilation pipeline, we've created a comprehensive solution to challenges that have limited the deployment of sophisticated AI in resource-constrained environments.
+Our dimensionally-constrained CNN to TopOC transfer learning approach carries Clef's Units of Measure system through the model architecture and into the compilation pipeline. The constraints that conventional frameworks check at runtime are resolved here at compile time, which is what brings these models within reach of resource-constrained targets.
 
-The Fidelity Framework's direct compilation pathway from dimensionally-constrained models to custom hardware opens new possibilities for AI deployment across the computing spectrum. From edge devices to custom ASICs, our approach enables a level of efficiency and safety that simply isn't possible with conventional frameworks.
+We have found no other representative implementation of this combination, dimensional typing across a CNN-to-TopOC transfer and direct lowering to FPGA and ASIC targets, in the standing literature we have reviewed. From edge devices to custom ASICs, the pathway we are building lets the same dimensional discipline travel from the model definition down to the hardware description.
 
-Our next steps include expanding this approach to other transfer learning domains and further enhancing the formal verification capabilities of our dimensional constraint system. As the industry continues to push toward more efficient and reliable AI systems, we believe this approach represents the future of model design and deployment.
+The work ahead is to extend this approach to other transfer learning domains and to push the dimensional constraint system further up our verification tiers, from the shape correctness the types already carry toward the deeper properties the higher tiers reach. That is where our interest lies as the work continues.

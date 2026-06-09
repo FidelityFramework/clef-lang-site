@@ -21,7 +21,7 @@ data: {"token": "", "index": 44, "finish_reason": "stop"}\n\n
 
 Every frame carries field names as strings, redundantly, because JSON is self-describing. The receiver parses each line, finds the `data:` prefix, parses the JSON, looks up `"token"` by string key, checks `"finish_reason"` by string key. The schema is rediscovered from every message.
 
-The question is whether the Fidelity framework's compilation pipeline offers something structurally better. It does, and the mechanism is BAREWire.
+The question is whether our Fidelity framework's compilation pipeline offers something structurally better. It does, and the mechanism is BAREWire.
 
 ## BAREWire Frames for Token Streaming
 
@@ -53,7 +53,7 @@ The [spatial mechanics](/docs/design/memory/spatial-mechanics/) article describe
 
 ### Inside the Container: Spatial
 
-The inference pipeline is spatial. The BitNet model processes through layers as a spatial dataflow pipeline. Data flows through processing stages with bounded buffering. On native hardware with SIMD, this is the materialized/spatial hybrid described in the spatial mechanics article: fixed-size tensors flowing through vectorized stages. The container runs native code compiled through LLVM. Dimensional types governed the range analysis. Representation selection chose the numeric format. The coeffect system verified the memory lifetimes. All of this happened at compile time.
+The inference pipeline is spatial. The BitNet model processes through layers as a spatial dataflow pipeline. Data flows through processing stages with bounded buffering. On native hardware with SIMD, this is the materialized/spatial hybrid described in the spatial mechanics article: fixed-size tensors flowing through vectorized stages. The container runs native code compiled through LLVM. Dimensional types governed the range analysis. Representation selection chose the numeric format. Our coeffect system verified the memory lifetimes. All of this happened at compile time.
 
 Each generated token exits the inference pipeline as a value with a known type. The container's BAREWire serializer encodes it as a frame and sends it over the container binding.
 
@@ -91,7 +91,7 @@ With MoQ/QUIC in the future, each inference stream could become a separate QUIC 
 
 The entire path from inference output to client display is specified at design time and enforced at runtime without runtime validation code.
 
-**Dimensional consistency**: the inference model's output types were verified at compile time, as described in the [decidability sweet spot](/docs/internals/verification/decidability-sweet-spot/). The DTS rejected every program that could produce dimensionally inconsistent results. The runtime does not check dimensions.
+**Dimensional consistency**: the inference model's output types were verified at compile time, as described in the [decidability sweet spot](/docs/internals/verification/decidability-sweet-spot/). Our DTS rejected every program that could produce dimensionally inconsistent results. The runtime does not check dimensions.
 
 **BAREWire schema**: derived at design time from the verified `InferenceResponse` type definition. Enforced at runtime by byte layout, not by validation code. The receiver does not inspect field names. It reads positions determined by the compiled schema.
 

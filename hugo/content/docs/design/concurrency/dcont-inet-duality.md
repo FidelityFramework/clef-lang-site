@@ -1,7 +1,7 @@
 ---
 title: "The DCont/Inet Duality"
 linkTitle: "DCont/Inet Duality"
-description: "How Computation Expressions Decompose Into Fundamental Compilation Patterns"
+description: "How computation expressions decompose into two compilation patterns: delimited continuations and interaction nets"
 date: 2025-09-25T00:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance", "Innovation"]
@@ -11,12 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-Clef's computation expressions represent one of the language's crown jewels - a unified syntax that makes complex control flow feel as natural as writing straight-line code. Yet beneath this syntactic elegance lies a mathematical structure that most compilers never fully exploit. In the Fidelity framework, we highlight that most CEs naturally decomposes into one of two fundamental patterns: delimited continuations for sequential effects, or interaction nets for true parallelism. This isn't just optimization; it's a recognition of an essential duality that enables us to develop a compilation path that yields true *zero-cost* computation graphs.
+Clef's computation expressions give a unified syntax for control flow that would otherwise be written as explicit branching. Beneath that syntax sits a mathematical structure most compilers do not exploit. In our Fidelity framework we treat most computation expressions as decomposing into one of two patterns: delimited continuations for sequential effects, or interaction nets for parallelism. We read this as a duality in the structure of the computation, and we are designing a compilation path around it to reach zero-cost computation graphs.
 
 This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](https://speakez.tech/blog/context-aware-compilation/) to our [exploration of continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), and from our [reactive programming model](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) to our [approach to referential transparency](https://speakez.tech/blog/seeking-referential-transparency/).
 
@@ -55,7 +50,7 @@ let divideNumbers init x y z = maybe {
 }
 ```
 
-The point worth unpacking here is that `let!` isn't magic - it's syntactic sugar for a very specific pattern of function composition. When we write `let! x = expr in body`, the compiler transforms it into `builder.Bind(expr, fun x -> body)`. This transformation reveals something profound: computation expressions are fundamentally about threading continuations through a computation.
+The `let!` is syntactic sugar for a specific pattern of function composition. When we write `let! x = expr in body`, the compiler transforms it into `builder.Bind(expr, fun x -> body)`. That transformation is the point: computation expressions thread continuations through a computation.
 
 ## The Continuation Connection
 
@@ -73,7 +68,7 @@ x + y
         x + y))
 ```
 
-This transformation from `let` to continuation-passing isn't just a curiosity - it's the foundation for how computation expressions work. The `let!` in a computation expression makes this pattern explicit and interceptable:
+This transformation from `let` to continuation-passing is the foundation for how computation expressions work. The `let!` in a computation expression makes the pattern explicit and interceptable:
 
 ```fsharp
 // The maybe builder intercepts at each continuation point
@@ -91,17 +86,17 @@ maybe {
 }
 ```
 
-This revelation - that computation expressions are continuations in disguise - leads to a deeper question: what happens when we compile these patterns? This is where the Fidelity framework's unique approach emerges.
+Once computation expressions are read as continuations, the question becomes what happens when we compile these patterns. This is where our Fidelity framework's approach diverges from a conventional compiler.
 
-## Fundamental Fork: Sequential vs Parallel
+## The Fork: Sequential vs Parallel
 
-Once we recognize computation expressions as continuation structures, we face a crucial compilation decision. Some computations require sequential threading of continuations - each step depends on the previous one. Others have no such dependencies - all operations could theoretically execute simultaneously.
+Once we recognize computation expressions as continuation structures, we face a compilation decision. Some computations require sequential threading of continuations, where each step depends on the previous one. Others carry no such dependencies, so all operations could in principle execute at once.
 
-This isn't a minor optimization detail; it's a fundamental distinction that determines the entire compilation strategy. As we explored in our [coeffects and codata analysis](/docs/design/coeffects-and-codata/), different computational patterns require different execution strategies:
+This distinction determines the compilation strategy for the whole expression. As we explored in our [coeffects and codata analysis](/docs/design/coeffects-and-codata/), different computational patterns call for different execution strategies:
 
 ### Sequential Patterns: The DCont Path
 
-When operations must happen in sequence - because each depends on the previous result or involves effects - we need delimited continuations. These capture "the rest of the computation" at specific points:
+When operations must happen in sequence, because each depends on the previous result or involves effects, we need delimited continuations. These capture "the rest of the computation" at specific points:
 
 ```fsharp
 // Sequential: each step depends on the previous
@@ -113,7 +108,7 @@ let processOrder order = async {
 }
 ```
 
-The Composer compiler recognizes this pattern and compiles it to MLIR's DCont dialect:
+Our Composer compiler is designed to recognize this pattern and lower it to MLIR's DCont dialect:
 
 ```mlir
 // DCont: explicit continuation capture and resumption
@@ -138,7 +133,7 @@ dcont.func @processOrder(%order: !order) -> !result {
 }
 ```
 
-Each `dcont.shift` captures the continuation at that point - literally "the rest of the computation" - allowing the operation to suspend and later resume. This is how async operations work without allocating Tasks or using thread pools.
+Each `dcont.shift` captures the continuation at that point, "the rest of the computation," so the operation can suspend and later resume. In this design async operations run without allocating Tasks or using thread pools.
 
 ### Parallel Patterns: The Inet Path
 
@@ -156,7 +151,7 @@ let analysis = query {
 // No operation depends on another's result
 ```
 
-Here, there's no need for sequential continuations. Every operation - every filter check, every projection - could happen simultaneously. The Composer compiler recognizes this pattern and compiles to interaction nets:
+Here there is no need for sequential continuations. Every filter check and every projection could happen at once. Our Composer compiler is designed to recognize this pattern and lower it to interaction nets:
 
 ```mlir
 // Inet: parallel graph reduction
@@ -169,17 +164,17 @@ inet.func @analysis(%sales: !inet.wire<array>) -> !inet.wire<array> {
 }
 ```
 
-Interaction nets are a model where computation happens through local graph reductions that can all occur simultaneously. There's no continuation capture, no sequencing, no waiting - just pure parallel execution.
+Interaction nets are a model where computation happens through local graph reductions that can all occur at once. The model carries no continuation capture, no sequencing, and no waiting; each reduction proceeds in parallel.
 
-## The Deeper Pattern Emerges
+## The Pattern Behind the Fork
 
-This distinction between DCont and Inet isn't arbitrary. It reflects a fundamental duality in computation itself:
+This distinction between DCont and Inet tracks a duality in the computation itself:
 
 **Effectful computations** need to sequence operations through time. They interact with the world, maintain state, or depend on previous results. These naturally map to delimited continuations (DCont), which provide explicit control over execution order. As we explored in [continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), these patterns can survive surprisingly deep into the compilation pipeline.
 
 **Pure computations** have no effects and no sequential dependencies. Every sub-computation can happen independently. These naturally map to interaction nets (Inet), which maximize parallelism through simultaneous graph reduction. Our work on [referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) shows how the compiler identifies these pure regions.
 
-Computation expressions already encode this distinction in their structure. The compiler just needs to recognize it:
+Computation expressions already encode this distinction in their structure, and the compiler reads it from there:
 
 ```fsharp
 // Async CE → Sequential effects → DCont
@@ -232,7 +227,7 @@ let traditional() = async {
 // Total: ~350+ bytes of heap allocation
 ```
 
-Fidelity's DCont compilation eliminates all heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
+Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
 
 ```fsharp
 // Fidelity: Stack-based continuations
@@ -248,9 +243,9 @@ let optimized() = async {
 // Total: 0 bytes of heap allocation
 ```
 
-The DCont dialect preserves the continuation structure in MLIR, allowing optimizations while maintaining stack-based execution with no heap allocations.
+The DCont dialect is meant to preserve the continuation structure in MLIR, which leaves room for optimization while keeping execution stack-based with no heap allocations.
 
-### Inet Compilation: Massive Parallelism
+### Inet Compilation: Parallelism
 
 Traditional query compilation creates sequential operations:
 
@@ -266,7 +261,7 @@ let traditional = query {
 //          Delegate allocations for predicates
 ```
 
-Fidelity's Inet compilation design aims to enable true parallelism:
+Our Inet compilation design aims to enable parallel execution of these operations:
 
 ```fsharp
 // Fidelity: Parallel execution
@@ -282,11 +277,11 @@ let optimized = query {
 // - Zero intermediate allocations
 ```
 
-On a GPU, this means thousands of elements processed in a single cycle. On a CPU, it could means full SIMD utilization.
+On a GPU, the target is thousands of elements processed in a single cycle. On a CPU, it is full SIMD utilization.
 
-## Hybrid Patterns: The Best of Both Worlds
+## Hybrid Patterns
 
-Real applications often mix sequential and parallel patterns. The Fidelity compiler will make every effort to deal with these seamlessly, leveraging our [Program Hypergraph architecture](https://speakez.tech/blog/coupling-and-cohesion/) to identify boundaries between pure and effectful regions:
+Real applications often mix sequential and parallel patterns. Our Composer compiler is designed to handle these together, using our [Program Hypergraph architecture](https://speakez.tech/blog/coupling-and-cohesion/) to identify boundaries between pure and effectful regions:
 
 ```fsharp
 let hybridWorkflow data = async {
@@ -305,7 +300,7 @@ let hybridWorkflow data = async {
 }
 ```
 
-The compiler automatically identifies the boundaries and generates optimal code for each region:
+The compiler is designed to identify the boundaries and generate code suited to each region:
 
 ```mermaid
 graph TD
@@ -331,7 +326,7 @@ graph TD
 
 ## The Mathematical Foundation
 
-This DCont/Inet duality isn't arbitrary - it's grounded in category theory. Understanding the mathematics reveals why these transformations are always safe and when they provide maximum benefit.
+This DCont/Inet duality is grounded in category theory, and the mathematics is what tells us when these transformations preserve semantics and where they pay off.
 
 ### Monads and Sequential Composition
 
@@ -386,11 +381,11 @@ query {
 // filter-then-map OR map-then-filter
 ```
 
-These mathematical guarantees mean the compiler can aggressively reorder and regroup operations while preserving correctness.
+These laws are what let the compiler reorder and regroup operations while preserving correctness.
 
 ## Performance Impact
 
-The DCont/Inet compilation strategy yields dramatic performance improvements:
+The DCont/Inet compilation strategy is projected to change the cost profile of these patterns:
 
 | Pattern | Traditional F# | Fidelity | Improvement |
 |---------|---------------|----------|-------------|
@@ -399,11 +394,11 @@ The DCont/Inet compilation strategy yields dramatic performance improvements:
 | State computations | Object allocations | Stack-based | 50x |
 | List comprehensions | Iterator objects | Direct generation | 20x |
 
-More importantly, these improvements compound. A workflow mixing async I/O with data processing sees both elimination of async overhead AND massive parallelization of pure operations.
+These improvements compound. A workflow that mixes async I/O with data processing stands to gain on both sides at once: the async overhead is removed and the pure operations are parallelized.
 
 ## Custom Computation Expressions
 
-The DCont/Inet duality extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This becomes particularly powerful when building domain-specific languages like our [Rx reactive framework](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/), where multicast observables naturally compile to interaction nets while unicast observables require delimited continuations:
+The DCont/Inet duality extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This carries over to domain-specific languages like our [Rx reactive framework](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/), where multicast observables map to interaction nets and unicast observables map to delimited continuations:
 
 ```fsharp
 [<CompileTo(ComputationPattern.Parallel)>]
@@ -418,7 +413,7 @@ type AsyncBuilder() =
     member _.Return(x) = ...             // Continuation reset
 ```
 
-The compiler respects these hints while verifying they match the actual computation patterns.
+The compiler is designed to respect these hints and to check that they match the actual computation patterns.
 
 ## Future Directions: Algebraic Effects and Beyond
 
@@ -444,8 +439,8 @@ let pureWorkflow = query<Effects = Pure> {
 
 ## Structure Is Compilation Strategy
 
-The journey from computation expressions to optimal machine code isn't about clever optimization tricks - it's about recognizing the mathematical structure already present in our code. Sequential patterns that thread continuations naturally compile to delimited continuations (DCont). Parallel patterns with no dependencies naturally compile to interaction nets (Inet).
+The path from computation expressions to machine code rests on recognizing the mathematical structure already present in the code. Sequential patterns that thread continuations map to delimited continuations (DCont). Parallel patterns with no dependencies map to interaction nets (Inet).
 
-This approach transforms computation expressions from runtime abstractions with overhead into compile-time specifications that generate optimal code. The builder pattern evolves from a runtime object model into a compilation guidance system. For developers, this means writing natural Clef code while getting optimal performance. For library authors, it enables rich domain-specific languages without runtime penalties. For the ecosystem, it demonstrates that expressive programming can achieve systems-level performance without abandoning its key ergonomics.
+This approach treats computation expressions as compile-time specifications rather than runtime abstractions that carry overhead. The builder pattern becomes a source of compilation guidance instead of a runtime object model. For the developer, this means writing ordinary Clef code and getting the performance the structure allows. For the library author, it opens up domain-specific languages without runtime penalties.
 
-The DCont/Inet duality reveals a deep truth: the patterns we love in expressive programming - monads for sequencing, applicatives for parallelism - aren't arbitrary abstractions. They're fundamental computational structures that, when recognized by the compiler, can guide the generation of optimal code. In Fidelity, computation expressions aren't optimized away; they're transformed into their natural machine-level representations, achieving zero-cost abstractions that live up to the hype.
+The patterns we work with in expressive programming, monads for sequencing and applicatives for parallelism, are the same structures that tell the compiler how to lower the code. We are early in building this compilation path, and we have found no other representative implementations of the DCont/Inet split in the standing literature we have reviewed. It is the direction we will keep developing as the rest of the Composer compiler comes into place.

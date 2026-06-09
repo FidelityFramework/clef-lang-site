@@ -11,18 +11,13 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 We just hit a milestone in the Composer compiler: mutable variables work in simple loops. Three console samples compile and execute correctly. Many more don't.
 
 The ***real*** trick is this is (at least) the *third* time we've been here. Most teams would bury that in a footnote. We're writing a blog post about it.
 
-Why? Because those three working samples represent something more interesting than "mutables work, again." They represent an architectural pattern that composes cleanly, fails visibly, and sets up the next breakthroughs. The failures aren't embarrassments. They're signal intelligence that validates the architecture.
+Why? Because those three working samples represent something more interesting than "mutables work, again." They represent an architectural pattern that composes cleanly, fails visibly, and sets up the next round of work. The failures tell us where the architecture is incomplete, and they do it precisely.
 
-This is the story of what we learned building managed mutability the right way, why honest accounting beats inflated claims, and how compositional patterns scale under pressure.
+This is the story of what we learned building managed mutability this way, why honest accounting serves the design better than inflated claims, and how our compositional patterns hold up under pressure.
 
 ## Nothing Is As Easy As It Seems
 
@@ -108,7 +103,7 @@ Just a contract violation that compiled successfully and produced garbage at run
 
 ## The Fix: Honor Contracts, Not Convenience
 
-The fix required a new pattern: `pStringFromPointerWithLength`. Not a full witness. Not a cheating "helper function." A monadic **Pattern** (capital P) that composes Elements across disciplines:
+The fix required a new pattern: `pStringFromPointerWithLength`. This is a monadic **Pattern** (capital P) that composes Elements across disciplines, rather than a full witness or a shortcut "helper function":
 
 ```fsharp
 let pStringFromPointerWithLength (nodeId: NodeId) (bufferSSA: SSA) (lengthSSA: SSA)
@@ -362,7 +357,7 @@ The type-driven approach flips the model. Patterns pull data from Coeffects stat
 
 Then something interesting happened. While reviewing the implementation, we realized the pattern had become a catamorphism - a systematic way of tearing down structure while preserving invariants. We weren't aiming for that. It emerged from choosing composition over construction. Turns out those "academic" programming concepts aren't abstract theories. They're descriptions of patterns that naturally arise when you design for their emergent properties.
 
-This isn't just cleaner code. It's a fundamental architectural principle: when you have a choice between push and pull, and you're working in a compositional context, pull usually composes better.
+The result is an architectural principle: when you have a choice between push and pull, and you're working in a compositional context, pull usually composes better.
 
 ### Principled Failures Are Progress
 
@@ -458,9 +453,7 @@ When you write `let mutable pos = 0` in a loop, the compiler measures: "This mut
 
 > Different measurements with correct allocation strategy.
 
-Escape analysis is the next waypoint in our journey. We have mutable variable support (TMemRef with alloca + load/store), compositional auto-loading, and Element/Pattern/Witness stratification validated under pressure. We have closure analysis. We're building escape analysis and lifetime inference. For now, we're celebrating what these working samples taught us.
-
-Compositional patterns scale. Principled failures provide better signal intelligence than common shortcuts. That's progress worth documenting.
+Escape analysis is the next waypoint. We have mutable variable support (TMemRef with alloca + load/store), compositional auto-loading, and Element/Pattern/Witness stratification that held up under pressure. We have closure analysis. We're building escape analysis and lifetime inference, and we'll keep working those gaps until the failing samples light up against a base we trust to scale.
 
 ---
 

@@ -13,16 +13,11 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 In a [universally contested future](/blog/safety-in-a-universally-contested-future/), every cryptographic operation rests on a single foundation: entropy. The keys that protect communications, the nonces that prevent replay attacks, the seeds that initialize secure protocols; all derive their strength from randomness that adversaries cannot predict or influence. When that foundation weakens, everything built upon it becomes vulnerable to harvest-now-decrypt-later strategies that patient adversaries are already executing.
 
 Post-quantum cryptography demands larger keys and more entropy. Air-gapped systems cannot rely on network-based entropy sources. Embedded devices in contested environments face active attempts to bias or destabilize their random number generation. The question of where random numbers come from, long ignored by application developers who simply call a function and move on, becomes existential when the security of critical infrastructure depends on the answer.
 
-This case study examines what appears to be a narrow problem: generating 4,096 bytes of cryptographic-quality random data from hardware entropy sources. The solution reveals principles that extend far beyond this specific application. Mathematical properties of the XOR operation, combined with hardware/software co-design and native compilation, produce results that managed runtimes cannot match. The methodology demonstrated here, using mathematics to guide both hardware architecture and software implementation, establishes patterns for building systems where security guarantees are provable.
+This case study examines what appears to be a narrow problem: generating 4,096 bytes of cryptographic-quality random data from hardware entropy sources. The same principles extend beyond this application. Mathematical properties of the XOR operation, combined with hardware/software co-design and native compilation, produce results that managed runtimes do not reach. Using mathematics to guide both the hardware architecture and the software implementation establishes patterns for building systems where security guarantees are provable.
 
 ---
 
@@ -221,7 +216,7 @@ sequenceDiagram
 
 ### MLIR's scf.parallel Dialect
 
-The Fidelity framework will express this parallelism through MLIR's Structured Control Flow (SCF) dialect. The `scf.parallel` operation declares logically parallel iterations with a reduction operation:
+Our Fidelity framework will express this parallelism through MLIR's Structured Control Flow (SCF) dialect. The `scf.parallel` operation declares logically parallel iterations with a reduction operation:
 
 ```mlir
 func.func @generateEntropyByte() -> i8 {
@@ -305,7 +300,7 @@ But the deeper issue is structural: **.NET copies data everywhere**. The managed
 
 For cryptographic materials, the copying is a security liability. Every copy creates another location in memory where sensitive data resides. Each copy expands the attack surface: more places for memory dumps to capture, more opportunities for side-channel observation, more locations that must be explicitly zeroed. Developers must maintain constant vigilance, carefully marshaling data and manually clearing buffers, hoping they haven't missed a copy the runtime created implicitly.
 
-Fidelity's zero-copy architecture eliminates this entire class of concerns. Data flows from hardware registers through computation to output without intermediate copies. There's no managed heap to marshal across, no GC relocating buffers, no implicit copies hiding sensitive material in unexpected memory locations. The attack surface shrinks to the essential minimum: the data exists in exactly the locations the code specifies, and nowhere else.
+Our Fidelity zero-copy architecture eliminates this entire class of concerns. Data flows from hardware registers through computation to output without intermediate copies. There's no managed heap to marshal across, no GC relocating buffers, no implicit copies hiding sensitive material in unexpected memory locations. The attack surface shrinks to the essential minimum: the data exists in exactly the locations the code specifies, and nowhere else.
 
 Managed runtimes abstract the hardware away. Their abstract machine stops above the device registers, so the instruction "read these four ADC channels in parallel" lives in native code, where the channels are addressable.
 
@@ -390,7 +385,7 @@ The XOR approach provides mathematical guarantees about entropy preservation. Ea
 
 Compare this with cryptographic whitening, which applies deterministic functions to input data. While whitening spreads entropy effectively, it also transforms it through known algorithms. An attacker who knows the whitening function and can observe outputs has more information than one observing pure XOR combinations.
 
-The Fidelity compilation model extends this integrity guarantee through the software layer. The Clef source expresses the mathematical operation directly. MLIR preserves the operation's semantics through lowering. Native code executes exactly what was specified. No interpreter reordering, no JIT optimization surprises, no garbage collector interference.
+Our Fidelity compilation model extends this integrity guarantee through the software layer. The Clef source expresses the mathematical operation directly. MLIR preserves the operation's semantics through lowering. Native code executes exactly what was specified. No interpreter reordering, no JIT optimization surprises, no garbage collector interference.
 
 ## Fault Tolerance Through Independence
 
@@ -428,7 +423,7 @@ Generating 4,096 bytes of cryptographic entropy might seem like a narrow problem
 
 **Native compilation enables hardware-awareness.** Managed runtimes provide convenience and safety, but they abstract away the hardware characteristics that determine real-world performance. For applications where hardware interaction dominates, native compilation provides access to capabilities that higher-level approaches cannot reach.
 
-The XOR entropy combiner demonstrates these principles in a compact, verifiable system. The same methodology will apply to signal processing, sensor fusion, real-time control, and anywhere that physical processes meet digital computation. Mathematics shows the path; hardware-aware compilation will walk it.
+The XOR entropy combiner demonstrates these principles in a compact, verifiable system. The same methodology will apply to signal processing, sensor fusion, real-time control, and anywhere that physical processes meet digital computation. We will keep building our co-design approach toward those domains as the compiler and the surrounding tooling mature.
 
 ---
 

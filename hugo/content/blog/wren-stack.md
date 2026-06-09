@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 There's a particular kind of frustration that comes from watching a progress bar crawl across your screen while an Electron app loads its bundled Chromium instance. Somewhere in those three-plus seconds of initialization, a complete web browser is waking up, allocating its 200 megabytes of baseline memory, spawning its constellation of processes, all so you can run what amounts to a glorified file picker. The frustration isn't about the seconds themselves. It's about knowing that the underlying operation, reading a directory and displaying a list, should take microseconds, not seconds.
 
 This mismatch between what desktop applications *could* be and what they've become isn't a new complaint. Developers have grumbled about Electron's weight since it first appeared. But the grumbling rarely produces alternatives. The web development ecosystem is simply too good: DaisyUI's component library, Tailwind's utility classes, SolidJS's fine-grained reactivity. These tools represent decades of collective innovation in user interface design. Abandoning them for Qt or GTK means abandoning that innovation, trading the expressiveness of modern CSS for the rigidity of native widget toolkits.
@@ -35,7 +30,7 @@ The conventional wisdom often only presents two paths for desktop development. Y
 
 This framing assumes that web technologies require a web runtime. That if you want CSS and JavaScript reactivity, the assumption is that you must bundle a browser engine and accept its overhead. But the assumption is wrong. Every modern desktop operating system already ships with a web rendering engine. macOS has WKWebView. Windows has WebView2. Linux has WebKitGTK. These aren't foreign components that need to be bundled; they're already present, already maintained, already consuming zero additional memory until your application needs them.
 
-The realization that unlocks the WREN Stack is simple: use the system's WebView as a rendering surface, but run application logic as native code compiled by Composer. The WebView displays your Partas.Solid components, styled with DaisyUI, rendered with the full power of a modern browser engine. But the "backend" that drives those components isn't JavaScript running in Node.js. It's [Clef](https://clef-lang.com) compiled to native machine code, communicating through typed binary messages over a local WebSocket connection.
+The realization that unlocks the WREN Stack is simple: use the system's WebView as a rendering surface, but run application logic as native code compiled by Composer. The WebView displays your Partas.Solid components, styled with DaisyUI, rendered by a modern browser engine. But the "backend" that drives those components isn't JavaScript running in Node.js. It's [Clef](https://clef-lang.com) compiled to native machine code, communicating through typed binary messages over a local WebSocket connection.
 
 The distinction matters. In Electron, your application bundles an entire Chromium browser: hundreds of megabytes of code that duplicates what the operating system already provides. A WREN Stack application uses the *system's* WebView, already installed, already maintained, already sharing memory with other applications that use it. The binary footprint drops from hundreds of megabytes to single digits. And while the WebView does run in a separate process (all modern WebViews use multi-process architectures for security and stability[^webview-processes]), the communication between your native logic and the UI uses BAREWire over localhost WebSockets, the same efficient binary protocol pattern that works across any IPC boundary.
 
@@ -75,7 +70,7 @@ The practical effect is immediate appearance. Users click your application icon 
 
 The most significant conceptual shift in the WREN Stack is nuancing the "frontend/backend" concept. In web development, frontend and backend are easy-to-distinguish separate deployments, separate processes, often separate systems. They communicate through highly layered network protocols. This separation makes sense when the frontend runs in a user's browser and the backend runs on a server.
 
-A unified desktop application experience doesn't have thes constraints. The user's machine runs everything. And yet most desktop frameworks preserve a 'hard' separation, often because they evolved from web frameworks (like Electron) or because they assume network-based architectures by default. Here we're keeping some of the design-time conventions, for clarity, and in other ways we're doing something truly unique that unifies "the two worlds" of frontend and backend.
+A unified desktop application experience doesn't have thes constraints. The user's machine runs everything. And yet most desktop frameworks preserve a 'hard' separation, often because they evolved from web frameworks (like Electron) or because they assume network-based architectures by default. Here we're keeping some of the design-time conventions, for clarity, while unifying "the two worlds" of frontend and backend in a way we have found no other representative implementation of in the standing literature we have reviewed.
 
 The WREN Stack maintains two perspectives at design time to create a single executable. Your Partas.Solid code, compiled by Fable, defines the visual interface and its reactive behavior. Your Composer code defines the native logic that responds to user actions, interacts with the filesystem, and communicates with hardware. Both compile to the same binary. The "communication" between them is message passing through a local WebSocket, but the overhead is minimal: binary frames over localhost, decoded directly into typed structures on both sides. No JSON parsing, no string escaping, no schema negotiation. Just bytes that both sides understand at compile time.
 
@@ -282,12 +277,8 @@ The WREN Stack extends the pattern established by SAFE and SPEC. The SAFE stack 
 
 The shared vocabulary, types defined once and compiled for multiple targets, becomes increasingly powerful as the Fidelity ecosystem matures. An application might use the same domain types across a WREN Stack desktop client, a SPEC edge API, and a SAFE server backend. The schemas stay synchronized because they're the same source files. The binary formats stay compatible because BAREWire derives them consistently.
 
-This isn't a vision for the distant future. It's the architecture the framework implements today. The WebView bindings exist. The BAREWire dual-targeting works. The Composer build process coordinates the Fable and native compilation tracks. WREN Stack applications compile and run.
+This is near-term design rather than a distant vision. We intend the WebView bindings, the BAREWire dual-targeting, and the Composer build process that coordinates the Fable and native compilation tracks to carry a WREN Stack application from source to a running binary.
 
-What remains is the ordinary work of any framework: expanding the API surface, polishing the developer experience, documenting the patterns, and building the community of practice. The foundation is solid. The architecture scales. The rest is iteration.
-
----
-
-*The WREN Stack: Small, native, and incredibly fast. The fusion of high-level design and low-level precision.*
+What remains is the ordinary work of any framework: expanding the API surface, polishing the developer experience, documenting the patterns, and building the community of practice. That is where our attention turns next as we keep building the WREN Stack out toward the rest of the Fidelity ecosystem.
 
 [^webview-processes]: All modern WebView implementations use multi-process architectures for security and stability. See: [WebView2 Process Model](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/process-model) (Windows), [WKWebView Architecture](https://developer.apple.com/documentation/webkit/wkwebview) (macOS), and [WebKit2 Design](https://docs.webkit.org/Deep%20Dive/Architecture/WebKit2.html) (Linux/WebKitGTK).

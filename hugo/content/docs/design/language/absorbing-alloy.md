@@ -11,16 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+In March 2025, we published [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), describing a BCL-free Clef standard library that would provide native type implementations. The goal was to preserve familiar APIs like `Console.WriteLine` while compiling to fat pointers and stack allocations instead of GC-tracked heap objects. Alloy would be to Fidelity what the BCL is to .NET.
 
-In March 2025, we published [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), describing a BCL-free Clef standard library that would provide native type implementations. The vision was compelling: preserve familiar APIs like `Console.WriteLine` while compiling to fat pointers and stack allocations instead of GC-tracked heap objects. Alloy would be to Fidelity what the BCL is to .NET.
-
-> That vision was a stepping stone, not a destination.
-
-Over the months that followed, as we deepened our understanding of ML-family languages, studied production MLIR frameworks and refined the Native Type Universe architecture, a realization crystallized: **types belong in the compiler, not in a library**. This may seem obvious to software engineers that "live" in other ecosystems, but for us it was a matter of ensuring that it was an emergent property and not to just a reflexive withdrawal from 'current art' in the .NET ecosystem.
+Over the months that followed, we deepened our reading of ML-family languages, studied production MLIR frameworks, and refined the Native Type Universe architecture. We reached a different position: types belong in the compiler, not in a library. This may seem obvious to software engineers who live in other ecosystems, but we wanted it to arrive as an emergent property of the design rather than a reflexive withdrawal from current art in the .NET ecosystem.
 
 ## The Library Pattern: A Familiar Approach
 
@@ -41,11 +34,11 @@ Alloy would define `NativeStr` as a struct with `Pointer` and `Length` fields. A
 
 It worked. Our HelloWorld samples compiled and ran without issues. The tests all passed. The dependency graph made sense. We had achieved BCL-free Clef compilation.
 
-> But still, something nagged at us.
+Something about the layering kept drawing our attention.
 
 ## The Realization: Types ARE the Language
 
-In late 2025, while exploring reference implementations for the nanopass architecture, we spent time with [the Scheme-based nanopass framework](https://github.com/nanopass/nanopass-framework-scheme) and its `define-language` form. The pattern was striking: in nanopass, you don't *import* a library of types. You *define* the language's types as part of the compiler itself.
+In late 2025, while exploring reference implementations for the nanopass architecture, we spent time with [the Scheme-based nanopass framework](https://github.com/nanopass/nanopass-framework-scheme) and its `define-language` form. The pattern stood out: in nanopass, you don't import a library of types. You define the language's types as part of the compiler itself.
 
 ```scheme
 (define-language L0
@@ -79,7 +72,7 @@ And then we looked at what we had already built.
 
 ## We Had Already Done It
 
-The irony was that over time our CCS (Clef Compiler Services) emerged to contain most of what we were seeking. The NTUKind discriminated union *already* defined the native type universe:
+Over time our CCS (Clef Compiler Services) had come to contain most of what we were seeking. The NTUKind discriminated union already defined the native type universe:
 
 ```fsharp
 type NTUKind =
@@ -104,9 +97,9 @@ CCS already had intrinsic modules for essential operations:
 - `Array.*` for collection operations
 - `NativeStr.*` for string operations
 
-The types weren't coming from Alloy and flowing through CCS. CCS was *defining* the types. Alloy was just providing aliases and wrapper functions that eventually resolved to CCS intrinsics anyway.
+The types weren't coming from Alloy and flowing through CCS. CCS was defining the types. Alloy was providing aliases and wrapper functions that resolved to CCS intrinsics anyway.
 
-> We were maintaining two layers where one would suffice.
+We were maintaining two layers where one would suffice.
 
 ## The Absorption
 
@@ -120,7 +113,7 @@ flowchart TD
     C --> D[Alex generates MLIR]
 ```
 
-We now have:
+our design collapses the chain to:
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -129,32 +122,32 @@ flowchart TD
     B --> C[Alex generates MLIR directly]
 ```
 
-The intermediate library layer disappears. Types and operations are compiler intrinsics from the start.
+The intermediate library layer drops away. Types and operations are compiler intrinsics from the start.
 
 ### Less is More
 
-The architectural simplification delivers a concrete benefit that deserves emphasis: **the compilation pipeline no longer performs extensive reachability analysis and pruning**.
+The architectural simplification carries a concrete benefit. In our design, the compilation pipeline no longer performs extensive reachability analysis and pruning.
 
 With Alloy as a library, compilation followed a subtractive model. The compiler loaded all of Alloy's type definitions, wrapper functions, and platform bindings, then analyzed which portions were actually reachable from the application code. Unreachable code was pruned. This is the same pattern .NET uses with the BCL, and it carries the same computational cost: the compiler must process everything before determining what to discard.
 
 With intrinsics, compilation follows an additive model. When CCS encounters `Console.writeln`, it recognizes an intrinsic and includes exactly what's needed for that operation. Nothing more. There's no library to load, no dependency graph to traverse, no pruning pass to execute.
 
-The difference is dramatic. In our HelloWorld samples, reachability analysis previously processed the entire Alloy typed tree before pruning over 90% of it. That analysis now simply doesn't happen. The compiler includes `Console.writeln`'s implementation and moves on.
+The difference is large. In our HelloWorld samples, reachability analysis previously processed the entire Alloy typed tree before pruning over 90% of it. With intrinsics that analysis no longer needs to run. The compiler includes `Console.writeln`'s implementation and moves on.
 
-This isn't a micro-optimization. It's a fundamental simplification of the compilation pipeline:
+This is a structural change to the compilation pipeline, not a local optimization:
 
 | Model | Process | Cost |
 |-------|---------|------|
 | **Subtractive** (Alloy) | Load all → Analyze reachability → Prune unused | O(library size) |
 | **Additive** (Intrinsics) | Include what's referenced | O(application size) |
 
-For small programs, the reduction is proportionally enormous. For large programs, the baseline is simply lower. Either way, less work means faster compilation and a simpler compiler implementation.
+For small programs, the proportional reduction is large. For large programs, the baseline is lower. Either way, less work means faster compilation and a simpler compiler implementation.
 
 Some reachability analysis remains necessary for platform binding libraries, where user-defined code may have unused paths. But for the core type system and intrinsic operations, the question "is this reachable?" no longer needs to be asked. If the compiler emits it, it's needed.
 
 ### New Intrinsic Modules
 
-CCS now provides comprehensive intrinsic modules:
+In our design, CCS provides intrinsic modules across the following surface:
 
 | Module | Purpose | Example Operations |
 |--------|---------|-------------------|
@@ -190,7 +183,7 @@ UUID generation and DateTime operations use platform quotations for resolution, 
 
 ## Familiar Surface, Native Core
 
-A reasonable concern at this point: does absorbing Alloy into the compiler mean F# developers need to learn a new API? The answer is no. The design-time experience largely remains idiomatic Clef.
+A reasonable concern at this point: does absorbing Alloy into the compiler mean developers coming from F# need to learn a new API? They do not. The design-time experience largely remains idiomatic Clef.
 
 ```fsharp
 // Application code looks exactly like standard Clef
@@ -205,7 +198,7 @@ let main () =
     |> Console.writeln
 ```
 
-This code uses familiar patterns: `let` bindings, string interpolation, module-qualified function calls. A Clef developer reading this code sees familiar syntax, not some domain-specific language for native compilation. The types (`string`, `Uuid`, `DateTime`) behave as expected. The functions (`Console.writeln`, `Uuid.newV4`, `DateTime.now`) follow standard naming conventions.
+This code uses familiar patterns: `let` bindings, string interpolation, module-qualified function calls. A Clef developer reading this code sees ordinary Clef syntax. The types (`string`, `Uuid`, `DateTime`) behave as expected. The functions (`Console.writeln`, `Uuid.newV4`, `DateTime.now`) follow standard naming conventions.
 
 The difference surfaces only when building platform libraries, the code that bridges Clef's type system to platform-specific implementations. Here, quotations become first-class citizens:
 
@@ -231,38 +224,30 @@ This separation preserves a clean division of concerns:
 | **Platform library authors** | Quotation-based bindings | Platform-specific implementations |
 | **Compiler (CCS + Alex)** | NTU types + quotations | MLIR operations |
 
-Most Clef developers never need to write platform bindings. They consume intrinsic modules (`Console.*`, `Uuid.*`, `DateTime.*`) the same way they'd consume any Clef library. The quotation machinery is an implementation detail, invisible unless you're extending the platform. The biggest everyday difference is no more `open System` calls, and much smaller executables with faster execution.
+Most Clef developers never need to write platform bindings. They consume intrinsic modules (`Console.*`, `Uuid.*`, `DateTime.*`) the same way they would consume any Clef library. The quotation machinery is an implementation detail, invisible unless you're extending the platform. The biggest everyday difference is no more `open System` calls, and smaller executables with faster execution.
 
-This was always the goal: native compilation without abstruse syntax.
-
-> The absorption of Alloy doesn't change the developer experience; it changes where the implementation lives.
-
-Types and operations that previously resolved through library indirection now resolve directly in the compiler, but the surface API remains unchanged.
+The goal throughout was native compilation without obscure syntax. Absorbing Alloy changes where the implementation lives, not how the developer writes code. Types and operations that previously resolved through library indirection now resolve directly in the compiler, while the surface API stays the same.
 
 ## A View With Gratitude
 
-Looking back at [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), the thinking was reasonable for its time. We were coming from a .NET perspective where the BCL/runtime separation is fundamental to the developer experience. With our new direction we sought opportunities to preserve a familiar pattern for users coming from a .NET background.
+Looking back at [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), the thinking was reasonable for its time. We were coming from a .NET perspective where the BCL/runtime separation shapes the whole developer experience. With our new direction we sought opportunities to preserve a familiar pattern for users coming from a .NET background.
 
-More importantly, Alloy served as a *discovery mechanism*. By implementing `NativeStr`, `Console`, and `Memory` as library code, we confirmed many of our expectations for native primitives:
+More importantly, Alloy served as a discovery mechanism. By implementing `NativeStr`, `Console`, and `Memory` as library code, we confirmed many of our expectations for native primitives:
 
-1. **What native types needed to look like** - Fat pointers, stack buffers, value-type options
-2. **What operations needed to exist** - Platform-independent APIs with platform-specific implementations
-3. **How SRTP could drive compile-time resolution** - Inline functions with type constraints
-4. **Where the BCL assumptions lived** - String encoding, GC integration, object hierarchies
+1. **What native types needed to look like:** fat pointers, stack buffers, value-type options
+2. **What operations needed to exist:** platform-independent APIs with platform-specific implementations
+3. **How SRTP could drive compile-time resolution:** inline functions with type constraints
+4. **Where the BCL assumptions lived:** string encoding, GC integration, object hierarchies
 
-> Alloy revealed over time that 'BCL-free Clef' was not only possible, it is *optimal*.
+Alloy showed us that BCL-free Clef was workable, and that moving the type definitions into the compiler was the cleaner arrangement. That work gave us the vocabulary and patterns CCS now carries directly. Having learned what we needed from Alloy, we could absorb those lessons into the compiler itself.
 
-This process gave us the vocabulary and patterns that CCS now embodies directly.
+## What We Kept: The F# Inheritance
 
-But a stepping stone is not the destination. Having learned what we needed from Alloy, we could absorb those lessons into the compiler itself.
-
-## What We Kept: F# Leverage
-
-CCS leverages F#'s existing infrastructure in ways that other languages cannot contemplate:
+Clef descends from F#, and CCS builds on three capabilities that lineage carries:
 
 **Quotations for Platform Binding Resolution**
 
-F# quotations are a unique language feature that provide type-carrying, compile-time code inspection. Unlike string-based or JSON-based code representations where types are opaque metadata that must be parsed and validated separately, quotations preserve the compiler's type information as first-class data.
+Quotations, inherited from F#, provide type-carrying, compile-time code inspection. Where string-based or JSON-based code representations leave types as opaque metadata that must be parsed and validated separately, a quotation preserves the compiler's type information as first-class data.
 
 When Alex needs to generate a syscall, it doesn't parse a string to discover that `buffer` is a `nativeptr<byte>`; that information is structurally present in the quotation, verified by the same type checker that validated the original code.
 
@@ -280,7 +265,7 @@ let write (fd: int) (buffer: nativeptr<byte>) (count: int) : int =
 
 **Active Patterns for Type Matching**
 
-F# active patterns enable elegant type decomposition in the compiler:
+Active patterns, also inherited from F#, decompose types in the compiler:
 
 ```fsharp
 let (|FatPointer|_|) (ty: NativeType) =
@@ -299,11 +284,11 @@ let inline add (x: ^T) (y: ^T) : ^T
     when ^T : (static member (+) : ^T * ^T -> ^T) = x + y
 ```
 
-These aren't features we invented. They're F# features that Alloy helped us understand how to leverage for native compilation.
+We did not invent these features. They come from F#, the lineage Clef descends from, and Alloy helped us understand how to put them to work for native compilation.
 
 ## The New Architecture
 
-The post-absorption architecture is cleaner:
+The post-absorption architecture we are building toward removes the middle layer:
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -350,41 +335,37 @@ The intermediate library layer is gone. Application code calls intrinsics. CCS r
 
 ## The Alloy Repository
 
-The Alloy repository remains as a historical artifact, a testament to our commitment to forging our own path. For a short time it will be:
+The Alloy repository remains as a historical artifact. For a short time it will be:
 
 1. **Preserved** with a README explaining its absorbed status
 2. **Made read-only** after a transition period
 3. **Kept as reference** for the patterns it established
 
-We don't delete our stepping stones. We acknowledge them and move forward.
+We keep our stepping stones rather than deleting them, and carry their lessons forward.
 
 ## New Art
 
-Taking some measure of ML, Rust, and Triton-CPU, the Fidelity framework now embodies a clean, unified principle: **types and operations ARE the language, not library imports**.
+Taking some measure of ML, Rust, and Triton-CPU, our Fidelity framework settles on a single principle: types and operations are the language, and they live in the compiler rather than in an imported library.
 
-CCS defines the Native Type Universe as Fidelity framework requires. CCS provides intrinsic modules for essential operations. Platform-specific details resolve via quotations at compile time. The Alex component inside the Composer compiler witnesses NTU types to MLIR.
+In our design, CCS defines the Native Type Universe the framework requires and provides intrinsic modules for essential operations. Platform-specific details resolve via quotations at compile time. The Alex component inside our Composer compiler witnesses NTU types to MLIR. No external library, no intermediate layer, no BCL equivalent.
 
-No external library. No intermediate layer. No BCL equivalent needed.
-
-This is what we mean by "new art" in compiler design for Clef. The lessons from .NET are valuable, but they're lessons about what we came FROM, not where we're going. The Fidelity framework charts its own course.
+This is what we mean by "new art" in compiler design for Clef. The lessons from .NET remain useful as an account of what we came from. We have found no other representative implementation of a native-first framework with this compiler-owned type universe in the standing literature we have reviewed.
 
 ## Looking Forward
 
-When we started this journey, we were conscious of the assumptions inherited from years of .NET development. The BCL as a 'mental model' felt comfortable. Alloy represented our attempt to follow that convention; a familiar pattern while pursuing a unique approach native compilation.
+When we started this work, we were conscious of the assumptions inherited from years of .NET development. The BCL as a mental model felt comfortable. Alloy was our attempt to follow that convention, a familiar pattern wrapped around a native compilation target.
 
-> It's now easy to see *that* dichotomy was on borrowed time from the very start.
-
-It was a reasonable hypothesis: keep the architecture that fellow developers might expect, and just swap out the runtime semantics. For a time, it worked well enough that we didn't question it. But the nanopass literature and MLIR dialect patterns crystallized ideas that were part our long-term vision. And we realized we'd be much better off implementing them *now* rather than later.
+It was a reasonable hypothesis: keep the architecture that fellow developers might expect, and swap out the runtime semantics underneath. For a time it worked well enough that we did not question it. The nanopass literature and MLIR dialect patterns then brought into focus ideas that were already part of our long-term direction, and we decided we were better off acting on them now rather than later.
 
 In a native type ecosystem the language doesn't consume type definitions. From our view, the language *is* type definitions plus evaluation rules. The distinction between "the compiler" and "the standard library" dissolves because there was never a principled boundary there to begin with. It's a vestige of a decision made 25+ years ago.
 
-This realization changes how we think about Fidelity's future. We're not building a .NET alternative with native compilation bolted on. We're building a native-first framework that happens to use F# syntax because F#'s ML heritage provides exactly the right abstractions: algebraic data types, pattern matching, quotations for metaprogramming, and statically resolved type parameters for zero-cost generics.
+This changes how we think about Fidelity's future. We are building a native-first framework, with Clef as its language. Clef descends from F#, and that ML heritage gives us the abstractions we want: algebraic data types, pattern matching, quotations for metaprogramming, and statically resolved type parameters for zero-cost generics. Native compilation is the starting point of the design, not a layer bolted onto a .NET alternative.
 
 The absorption of Alloy into CCS is one manifestation of this shift. There will be others. Each time we find ourselves recreating a .NET pattern, we now ask: is this pattern load-bearing, or is it scaffolding we can remove once we have a firm grasp of what's needed for this framework?
 
-Alloy was scaffolding. It helped us climb to a vantage point where we could see our new architecture clearly. From here, the next step forward doesn't require being beholden to the path we used to get here.
+Alloy was scaffolding. It carried us to a vantage point where the architecture we wanted came into view, and from here we can move on the design without holding onto the path that got us here.
 
-The good news is that now the Fidelity framework is simpler. The compilation path is cleaner; no more processing an entire library only to prune 90% of it. And the architecture finally reflects what was true from the beginning: in a native-first world, the compiler doesn't consume types from a library. The compiler *defines* the types, and everything else follows.
+The arrangement we are building toward keeps the compilation path short, with the compiler owning the type universe and the application referencing only what it uses. We will keep asking the same question at each .NET pattern we find ourselves recreating, and removing the ones that turn out to be scaffolding, as the work on Clef and Composer continues.
 
 ---
 

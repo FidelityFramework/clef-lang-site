@@ -11,20 +11,15 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Reactive programming sits at the intersection of practical engineering and algorithmic integrity in our Fidelity framework. While exploring reactive models, we drew on [Ken Okabe's Timeline library](https://github.com/ken-okabe/timeline), a minimalist F# implementation that built a reactive system with little code. That economy was a key inspiration for Fidelity.Rx, though we evolved the concepts to fit the framework's architectural requirements.
 
-The integration of reactive programming into the Fidelity framework presents a fascinating challenge at the intersection of practical engineering and algorithmic integrity. While exploring various reactive models, we discovered valuable insights from [Ken Okabe's Timeline library](https://github.com/ken-okabe/timeline) - a minimalist F# implementation that demonstrated how powerful reactive systems could be built with remarkably little code. This simplicity was a key inspiration for Fidelity.Rx, though we've evolved the concepts to align with Fidelity's unique architectural requirements.
-
-The driver for Fidelity.Rx is that reactive programming patterns represent a distinct form of codata, one where the observation method involves registration of callbacks rather than explicit pulling. This mathematical foundation would enable the Composer compiler to apply [the same sophisticated analysis techniques](/blog/coeffects-and-codata-in-firefly/) to reactive code that it uses for async operations, while maintaining the transparency and efficiency that define the Fidelity framework.
+The driver for our Fidelity.Rx is that reactive programming patterns represent a distinct form of codata, one where the observation method registers callbacks rather than explicitly pulling. This foundation would let the Composer compiler apply [the same analysis techniques](/blog/coeffects-and-codata-in-firefly/) to reactive code that it uses for async operations, while keeping the transparency and efficiency the framework is built around.
 
 ### Architectural Update: The Signal-Actor Isomorphism
 
 Since this entry was originally published, work on [Fidelity.UI](/blog/fidelity-ui/) revealed a deeper structural truth: **signals and actors are the same abstraction**. A signal that notifies its subscribers when it changes is an actor that sends messages to its dependents. The dependency graph is the message routing topology. Batching is mailbox coalescing.
 
-This isomorphism resolved the question of whether Fidelity.Rx should exist as a separate library. The answer, informed by the [Alloy precedent](/blog/alloy-absorbed/), is that the concepts described here are real and valuable, but they decompose naturally into layers that already exist:
+This isomorphism resolved the question of whether Fidelity.Rx should exist as a separate library. The answer, informed by the [Alloy precedent](/blog/alloy-absorbed/), is that the concepts described here are real, but they decompose naturally into layers that already exist:
 
 | Fidelity.Rx Concept | Architectural Home |
 |---------------------|-------------------|
@@ -34,13 +29,13 @@ This isomorphism resolved the question of whether Fidelity.Rx should exist as a 
 | Memory model gradient | **Fidelity.Platform** arena management (zero-alloc through actor-based) |
 | Push-based codata model | **Prospero/Olivier** actor substrate (actors are inherently push-based) |
 
-The design thinking in this entry remains sound - particularly the push/pull duality, the multicast/unicast distinction, and the transparency principles. What changed is the realization that these don't require a dedicated reactive library. The actor model *is* the reactive model. Fidelity.UI's signal primitives provide the developer-facing API, Prospero/Olivier provides the runtime substrate, and Composer provides the compiler optimizations. The concepts land in their natural homes rather than being collected into an intermediate abstraction.
+The design thinking in this entry remains sound, particularly the push/pull duality, the multicast/unicast distinction, and the transparency principles. What changed is the realization that these don't require a dedicated reactive library. The actor model *is* the reactive model. Fidelity.UI's signal primitives provide the developer-facing API, Prospero/Olivier provides the runtime substrate, and Composer provides the compiler optimizations. The concepts land in their natural homes rather than being collected into an intermediate abstraction.
 
 What follows is the original design exploration, preserved because the analysis of push-based codata and the multicast/unicast distinction directly informed the signal-actor architecture that emerged.
 
 ## Implementation Choices: The Multicast/Unicast Distinction
 
-Within the push-based model, a secondary but important distinction emerges: how do we handle multiple subscribers? This isn't about push vs pull - both multicast and unicast are push-based. It's about whether subscribers share execution or get isolated processing.
+Within the push-based model, a secondary but important distinction emerges: how do we handle multiple subscribers? This is not about push vs pull, since both multicast and unicast are push-based. It is about whether subscribers share execution or get isolated processing.
 
 ### Multicast Observables: Shared Push
 
@@ -63,7 +58,7 @@ temperatureSensor |> Multicast.subscribe logToFlash
 temperatureSensor |> Multicast.next 26.5  // All three observers notified
 ```
 
-This model perfectly aligns with zero-allocation requirements. The constraint becomes a feature: multicast observables are ideal for sensor data, UI events, and system notifications where broadcast semantics are natural.
+This model aligns with zero-allocation requirements. Multicast observables suit sensor data, UI events, and system notifications, where broadcast semantics are natural.
 
 ### Unicast Observables: Isolated Push  
 
@@ -92,15 +87,15 @@ The multicast/unicast choice is orthogonal to push/pull:
 - **Push vs Pull**: Who controls timing? (Producer vs Consumer)
 - **Multicast vs Unicast**: How is execution shared? (Broadcast vs Isolated)
 
-Both dimensions matter, but push vs pull is the fundamental distinction that makes reactive programming necessary. The multicast/unicast choice is an implementation detail - important for performance and semantics, but secondary to the core insight that some phenomena are inherently push-based.
+Both dimensions matter, but push vs pull is the distinction that makes reactive programming necessary. The multicast/unicast choice is an implementation detail. It matters for performance and semantics, and stays secondary to the point that some phenomena are inherently push-based.
 
 ## Push vs Pull Codata
 
-To understand why Fidelity.Rx is essential to the Fidelity ecosystem, we must first examine the mathematical distinction between pull-based and push-based codata structures. This is the fundamental duality that makes reactive programming necessary - async/await gives us pull-based codata, but many real-world scenarios require push-based codata.
+The role our Fidelity.Rx plays in the framework rests on the distinction between pull-based and push-based codata structures. This is the duality that makes reactive programming necessary. Async/await gives us pull-based codata, while many real-world scenarios require push-based codata.
 
 ### Pull-Based Codata (Async/Await)
 
-In category theory, pull-based codata is defined by its elimination rule - how we observe or consume it:
+In category theory, pull-based codata is defined by its elimination rule, the way we observe or consume it:
 
 \[\text{Stream}\langle A \rangle = \nu X. 1 + A \times X\]
 \[\text{observe} : \text{Stream}\langle A \rangle \to 1 + A \times \text{Stream}\langle A \rangle\]
@@ -140,21 +135,21 @@ temperatureSensor |> Multicast.next 25.5  // All observers notified
 
 The producer controls the timing. Values arrive when they're available, not when requested. This is essential for modeling events, sensor data, user input, and other inherently push-based phenomena.
 
-### The Fundamental Duality
+### The Push/Pull Duality
 
-The mathematical elegance lies in recognizing both patterns as codata with dual observation strategies:
+Both patterns are codata with dual observation strategies:
 
 - **Pull (Async)**: Consumer requests → Producer responds
 - **Push (Observable)**: Producer notifies → Consumer reacts
 
-Both are equally valid and necessary. You can't efficiently model mouse movements with pull-based async (constant polling wastes resources). You can't efficiently model file reading with push-based observables (overwhelming the consumer with data). The duality is fundamental.
+Both are valid and necessary. Modeling mouse movements with pull-based async forces constant polling that wastes resources. Modeling file reading with push-based observables overwhelms the consumer with data. Each phenomenon has the observation strategy that fits it.
 
-### The Elegance of Simplicity
+### How Little It Takes
 
-What makes push-based observables in Fidelity.Rx remarkable is how little code is required to implement them. The entire core can be expressed in remarkably few lines:
+Push-based observables in our Fidelity.Rx take little code to implement. The core fits in a few lines:
 
 ```fsharp
-// Push-based observable - the essential abstraction
+// Push-based observable
 type Observable<'a> = {
     mutable Observers: ('a -> unit) list
 }
@@ -168,10 +163,10 @@ let next value obs =
     for observer in obs.Observers do
         observer value
 
-// That's it - push-based reactivity in ~10 lines
+// push-based reactivity, ~10 lines
 ```
 
-For production use, we refine this into multicast (zero-allocation with arrays) and unicast (arena-based with isolation), but the core insight remains: push-based codata is fundamentally simple. No hidden state machines, no runtime services, no complex subscription management. Just functions being called when events occur.
+For production use, we refine this into multicast (zero-allocation with arrays) and unicast (arena-based with isolation), but the core stays the same. Push-based codata is plain: functions called when events occur, with no hidden state machines, no runtime services, and no subscription management layer.
 
 ### Coeffect Composition in Reactive Operations
 
@@ -194,7 +189,7 @@ This structure would enable the Composer compiler to make optimal decisions abou
 
 ## Transparency vs Runtime Opacity
 
-One of the most striking differences between Fidelity.Rx and traditional .NET reactive implementations lies in observability. To understand this contrast, we need to examine what happens under the hood in each approach.
+A clear difference between our Fidelity.Rx and traditional .NET reactive implementations lies in observability. The contrast shows in what happens under the hood in each approach.
 
 ### The Rx.NET Black Box
 
@@ -226,7 +221,7 @@ The runtime machinery becomes a black box that obscures the actual data flow. Wh
 
 ### Fidelity.Rx Transparency
 
-Fidelity.Rx takes a radically different approach. There is no hidden runtime machinery, but that doesn't mean there's no coordination - instead, synchronization is explicit and observable:
+Our Fidelity.Rx takes a different approach. There is no hidden runtime machinery, yet coordination is still present: synchronization is explicit and observable.
 
 ```fsharp
 // Multicast observable - what you see is what you get
@@ -261,7 +256,7 @@ This transparency extends to production diagnostics. When an issue arises, you c
 
 ### Zero-Allocation Reactive Patterns
 
-The simplicity of multicast observables in Fidelity.Rx enables truly zero-allocation reactive programming:
+The plain structure of multicast observables in our Fidelity.Rx supports zero-allocation reactive programming:
 
 ```fsharp
 // This reactive pipeline...
@@ -279,15 +274,15 @@ source.Observers.[source.Count] <- (fun x ->
 source.Count <- source.Count + 1
 ```
 
-No intermediate observables. No allocation per event. Just direct function calls.
+The pipeline compiles to direct function calls, with no intermediate observables and no per-event allocation.
 
 ## What Fidelity Provides "For Free"
 
-The Composer compiler's coeffect and codata analysis already provides substantial infrastructure that Fidelity.Rx can leverage:
+Our Composer compiler's coeffect and codata analysis is designed to provide infrastructure that Fidelity.Rx can leverage:
 
 ### 1. Efficient Suspension and Resumption
 
-When async operations compose with reactive operations, the compiler recognizes the suspension points:
+When async operations compose with reactive operations, the compiler would recognize the suspension points:
 
 ```fsharp
 // Developer explicitly chooses multicast for broadcast semantics
@@ -305,7 +300,7 @@ let isolatedResults =
     })
 ```
 
-The compiler optimizes these patterns by:
+The compiler would optimize these patterns by:
 
 - Recognizing the async boundary within the reactive bind
 - Preserving delimited continuations for the async portion
@@ -349,15 +344,15 @@ dataStream
 |> Multicast.map (transform1 >> transform2 >> transform3)
 ```
 
-This optimization emerges from recognizing that observable transformations form a category where composition is associative.
+This optimization would emerge from recognizing that observable transformations form a category where composition is associative.
 
 ## The Push-Based Reactivity Gap
 
-Despite the power of async/await, pull-based patterns cannot naturally express certain reactive scenarios. This isn't about multicast vs unicast - it's about phenomena that are inherently push-based:
+Async/await covers a wide range of work, yet pull-based patterns cannot naturally express certain reactive scenarios. This is about phenomena that are inherently push-based, separate from the multicast vs unicast question:
 
 ### Events Are Push-Based
 
-User input, sensor readings, network packets - these don't wait for you to pull them:
+User input, sensor readings, and network packets do not wait for you to pull them:
 
 ```fsharp
 // Inefficient: Polling with pull-based async
@@ -417,7 +412,7 @@ sensorObservable2 |> Multicast.filter (fun (_, curr) -> isCritical curr)
 
 ## Fidelity.Rx Design Principles and API
 
-The design of Fidelity.Rx embodies a hybrid approach that explicitly separates multicast and unicast observables based on their allocation requirements:
+The design of our Fidelity.Rx separates multicast and unicast observables by their allocation requirements:
 
 ### Core Type Design: Model-Aware Types
 
@@ -645,7 +640,7 @@ module LinearCollections =
 
 ### Level 4: Actor-Based Coordination
 
-For truly distributed scenarios:
+For distributed scenarios:
 
 ```fsharp
 // Actor-based collections with temperature awareness
@@ -829,32 +824,32 @@ let SearchView () =
     }
 ```
 
-The multicast/unicast distinction is still present, but expressed through familiar signal vocabulary rather than explicit observable types. `createSignal` is multicast - a value broadcast to all subscribers with zero-allocation semantics. `createResource` is unicast - per-subscriber isolated state backed by Prospero's arena management. The coeffect analysis described earlier applies identically; the Composer compiler recognizes these as codata patterns and optimizes accordingly.
+The multicast/unicast distinction is still present, but expressed through familiar signal vocabulary rather than explicit observable types. `createSignal` is multicast: a value broadcast to all subscribers with zero-allocation semantics. `createResource` is unicast: per-subscriber isolated state backed by Prospero's arena management. The coeffect analysis described earlier applies identically, and the Composer compiler recognizes these as codata patterns and optimizes accordingly.
 
 This resolution echoes the [Alloy absorption](/blog/alloy-absorbed/): the abstraction was real, but its natural expression was through existing architectural layers rather than a standalone library.
 
 ## The Architectural Synthesis
 
-### Mathematical Rigor
+### Mathematical Structure
 
 - Multicast observables form a comonad with shared state
 - Unicast observables form a monad with isolated state
-- Coeffect tracking ensures context-aware compilation
+- Coeffect tracking carries context through to compilation
 - Subscription model inference guides optimization
 
-### Performance Excellence
+### Performance
 
-- Multicast observables: True zero-allocation for embedded systems
-- Unicast observables: Arena-based for predictable cleanup
+- Multicast observables: zero-allocation for embedded systems
+- Unicast observables: arena-based for predictable cleanup
 - Compiler fusion based on subscription model analysis
-- No hidden allocations or runtime surprises
+- Allocation and runtime behavior visible at the call site
 
 ### Developer Ergonomics
 
 - Explicit models make performance predictable
 - Progressive disclosure: start multicast, add unicast when needed
 - Familiar FRP patterns with clear allocation boundaries
-- Seamless integration with Prospero and BAREWire when available
+- Integration with Prospero and BAREWire when available
 
 ## Future Directions
 
@@ -875,11 +870,11 @@ let data = createResource source fetcher
 // Compiler can optimize: unicast semantics, arena-scoped, no broadcast overhead
 ```
 
-The compiler provides warnings and optimization based on usage patterns, but the choice of primitive remains with the developer.
+The compiler would provide warnings and optimization based on usage patterns, while the choice of primitive remains with the developer.
 
 ### Hardware-Accelerated Signal Actors (Embedded)
 
-For embedded targets, signal actors compile to interrupt-driven patterns with zero overhead:
+For embedded targets, we intend signal actors to compile to interrupt-driven patterns with zero overhead:
 
 ```fsharp
 let temperature, setTemperature = createSignal 0
@@ -900,20 +895,20 @@ With the [unified actor architecture](/blog/unified-actor-architecture/), signal
 
 The design exploration in this entry recognized two orthogonal distinctions in reactive systems:
 
-1. **Push vs Pull**: The fundamental duality of codata - who controls timing?
-2. **Multicast vs Unicast**: An implementation choice - how is execution shared?
+1. **Push vs Pull**: The duality of codata. Who controls timing?
+2. **Multicast vs Unicast**: An implementation choice. How is execution shared?
 
 Both distinctions remain valid and important. What evolved was the realization that these don't require a dedicated reactive library to express. The signal-actor isomorphism reveals that **the actor model already embodies push-based reactivity**. An actor with a subscriber set *is* a multicast observable. An actor that spawns per-subscriber state in an arena *is* a unicast observable. Mailbox coalescing *is* batching. The dependency graph *is* the message routing topology.
 
 The concepts land in their natural architectural homes:
 
-- **Embedded developers** use `createSignal` - which compiles to zero-allocation multicast actors, with the same confidence described here about no hidden allocations
-- **Application developers** use `createResource` and `createStore` - which compile to arena-backed unicast actors, providing isolation without garbage collection
+- **Embedded developers** use `createSignal`, which compiles to zero-allocation multicast actors, with the same confidence described here about no hidden allocations
+- **Application developers** use `createResource` and `createStore`, which compile to arena-backed unicast actors, providing isolation without garbage collection
 - **System architects** choose between signal primitives (Fidelity.UI) and actor primitives (Prospero/Olivier) based on whether they're building UI or infrastructure
 - **The compiler** applies coeffect analysis to all of these uniformly, because they're all codata patterns over the same actor substrate
 
 The Alloy precedent proved instructive. Just as Alloy's concepts were real but decomposed into Fidelity.Platform + CCS, Fidelity.Rx's concepts are real but decompose into Fidelity.UI + Prospero/Olivier + Composer. The intermediate abstraction served its purpose as a thinking tool, then yielded to the layers that were always there.
 
-The future of reactive programming in the Fidelity ecosystem isn't a separate reactive library. It's the recognition that reactivity is intrinsic to the actor model, that signals are the developer-facing vocabulary for that reactivity, and that the compiler can optimize both because they share the same mathematical foundation: push-based codata with explicit subscription semantics.
+Reactive programming in our Fidelity ecosystem does not need a separate reactive library. Reactivity is intrinsic to the actor model, signals are the developer-facing vocabulary for that reactivity, and the compiler can optimize both because they share the same mathematical foundation: push-based codata with explicit subscription semantics.
 
-We're not hiding these realities. We're expressing them through the abstractions that naturally contain them. The result scales from tiny microcontrollers (zero-allocation signal actors) to distributed cloud systems (BAREWire-connected actor networks), all while maintaining predictable performance and transparent operation - exactly as originally envisioned.
+These are the abstractions that already contain the reactive concepts this entry set out to build. They are meant to scale from microcontrollers (zero-allocation signal actors) to distributed cloud systems (BAREWire-connected actor networks), with the same predictable performance and transparent operation. That is the direction we keep building toward as the signal-actor architecture takes shape across the framework.

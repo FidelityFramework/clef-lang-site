@@ -11,12 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-A startup's gene analysis samples nearly melted because someone confused Fahrenheit and Celsius in their monitoring system. A Mars orbiter was lost because of mixed metric and imperial units. Medication dosing errors have killed patients due to milligrams versus micrograms confusion. These aren't edge cases - they're symptoms of a fundamental problem in how we build mission-critical systems:
+A startup's gene analysis samples nearly melted because someone confused Fahrenheit and Celsius in their monitoring system. A Mars orbiter was lost because of mixed metric and imperial units. Medication dosing errors have killed patients due to milligrams versus micrograms confusion. These are not edge cases. They are symptoms of a recurring problem in how we build mission-critical systems:
 
 > Most languages approach types as an afterthought rather than a first line of defense.
 
@@ -24,13 +19,13 @@ A startup's gene analysis samples nearly melted because someone confused Fahrenh
 
 Consider a gene analysis startup that nearly lost years of irreplaceable samples due to a simple type confusion. A developer accidentally configured their freezer monitoring system to read temperatures in Fahrenheit while leaving alarm thresholds in Celsius. When 32°F (0°C) triggered alerts, they were dismissed as a configuration error.
 
-The real crisis came over the weekend when an electrical contractor tripped every circuit breaker in the building and left without telling anyone. The monitoring system - disabled due to the earlier "false" alarms - failed to notify anyone of the power loss. By pure luck, the samples survived. But this near-catastrophe exposed a fundamental flaw: their solution allowed temperature values to exist without their units, creating a disaster waiting to happen.
+The real crisis came over the weekend when an electrical contractor tripped every circuit breaker in the building and left without telling anyone. The monitoring system, disabled due to the earlier "false" alarms, failed to notify anyone of the power loss. By pure luck, the samples survived. This near-catastrophe exposed a flaw in the design: their solution allowed temperature values to exist without their units, creating a disaster waiting to happen.
 
 This wasn't a failure of testing, monitoring, or procedures. It was a failure of **types**. The system allowed temperature values to exist without their units of measure, creating a ticking time bomb that eventually exploded.
 
 ## Clef Units of Measure: Your First Line of Defense
 
-Clef offers a unique solution that other languages simply lack: units of measure with zero runtime cost. Here's how that freezer monitoring system should have been written:
+Our Clef language carries units of measure with zero runtime cost. We have found no other representative implementations of native zero-cost units of measure in the standing literature we have reviewed. Here is how that freezer monitoring system would be written in Clef:
 
 ```fsharp
 [<Measure>] type celsius
@@ -57,11 +52,11 @@ let checkTemperature (monitor: FreezerMonitor) (reading: float<fahrenheit>) =
         Alert.Critical "Temperature exceeded threshold"
 ```
 
-The beauty of Clef's approach is that these unit checks disappear entirely at runtime. The compiled code is identical to using plain floats, but the type system ensures you can never mix units incorrectly.
+These unit checks disappear entirely at runtime. The compiled code is identical to using plain floats, and the type system ensures you can never mix units incorrectly.
 
 ## Beyond Numbers: UMX for Domain Safety
 
-The Fidelity Framework extends this concept beyond numeric types using F# UMX (Units of Measure eXtensions). This brings the same compile-time safety to any type in your domain:
+Our Fidelity Framework extends this concept beyond numeric types using the UMX (Units of Measure eXtensions) approach. This brings the same compile-time safety to any type in your domain:
 
 ```fsharp
 // Define domain-specific units for a medical system
@@ -89,7 +84,7 @@ let wrongOrder = prescribeMedication patientId doctorId medication
 
 ## Real-World Applications in Systems Programming
 
-The Fidelity Framework leverages units of measure throughout its stack for systems-level safety:
+Our Fidelity Framework uses units of measure throughout its stack for systems-level safety:
 
 ### Memory Management with Units
 
@@ -175,7 +170,7 @@ let wrong = Modbus.readInputRegister sensor.SetPoint
 
 ## Memory Safety Without the Performance Tax
 
-One of the most challenging type safety problems in .NET is the "byref restriction" - the inability to store or return references to memory, which forces defensive copying that can devastate performance in data-intensive applications. The Fidelity Framework transforms this limitation into an advantage by combining UMX with BAREWire's capability-based memory management:
+One of the harder type safety problems in .NET is the "byref restriction," the inability to store or return references to memory, which forces defensive copying that can degrade performance in data-intensive applications. Our Fidelity Framework addresses this limitation by combining UMX with our BAREWire capability-based memory management:
 
 ```fsharp
 // Traditional .NET - forced to copy due to byref restrictions
@@ -210,10 +205,10 @@ let badFunction (cap: MemoryCapability<float, readonly>) =
     modifyData cap  // ERROR: Expected readwrite but got readonly
 ```
 
-This design prevents both type confusion AND performance degradation. Where .NET's byref restrictions force copying at every boundary, BAREWire capabilities can be safely passed through async boundaries, stored in data structures, and shared across processes - all while maintaining type safety through UMX:
+This design prevents both type confusion and performance degradation. Where .NET's byref restrictions force copying at every boundary, our BAREWire capabilities are designed to pass safely through async boundaries, to be stored in data structures, and to be shared across processes, all while maintaining type safety through UMX:
 
 ```fsharp
-// This works in Fidelity but is impossible in standard .NET
+// Fidelity design target; impossible under standard .NET byref rules
 let asyncProcessWithoutCopying (cap: MemoryCapability<float[], readwrite>) = async {
     // Capability can be captured in async - no byref restriction!
     do! Async.Sleep(100)
@@ -238,11 +233,11 @@ The integration of UMX with memory capabilities addresses multiple critical requ
 - **Type safety**: Prevents accidental writes to read-only memory at compile time
 - **Memory safety**: Makes use-after-free errors impossible through capability tracking
 - **Performance**: Eliminates defensive copying throughout the system
-- **Composability**: Capabilities work seamlessly with async, can be stored, and passed between processes
+- **Composability**: Capabilities work with async, can be stored, and passed between processes
 
 ## The Zero-Cost Abstraction Promise
 
-What makes Clef's units of measure exceptional is that they provide iron-clad safety with literally zero runtime cost. The compiler erases all unit information after types have been marshaled to the lowest level of compilation:
+Our Clef units of measure provide their safety at zero runtime cost. The compiler erases all unit information after types have been marshaled to the lowest level of compilation:
 
 ```fsharp
 // Clef source with units - type safe at compile time
@@ -275,9 +270,7 @@ calculatePower:
     ret                  ; return result in xmm0
 ```
 
-At each stage, more abstraction disappears. Units of measure exist only in the Clef source. By MLIR, they're gone but the operation remains typed. By assembly, even the operation names vanish. The type safety that prevents unit confusion exists only at compile time, protecting us during development but vanishing completely in the deployed code.
-
-> This is the holy grail of systems programming: abstractions that make your code *safer* **without** making it *slower*.
+At each stage, more abstraction disappears. Units of measure exist only in the Clef source. By MLIR, they're gone but the operation remains typed. By assembly, even the operation names vanish. The type safety that prevents unit confusion exists only at compile time, protecting us during development and vanishing completely in the deployed code.
 
 ## Learning from Near-Disasters
 
@@ -290,7 +283,7 @@ The freezer monitoring incident teaches us several critical lessons:
 
 ## Integration with the Fidelity Framework
 
-The Fidelity Framework builds on Clef's units of measure to provide comprehensive safety across the stack:
+Our Fidelity Framework builds on Clef's units of measure to extend that safety across the stack:
 
 ```fsharp
 // BAREWire protocol with type-safe channels
@@ -336,7 +329,7 @@ let calculateMaintenance
     (runtime: TimeSpan<hour>)
     (avgTemp: float<celsius>)
     (peakPressure: float<pascal>) : TimeSpan<hour> =
-    // Complex calculation with guaranteed unit correctness
+    // unit correctness checked at compile time
     let tempFactor = (avgTemp - 85.0<celsius>) / 10.0<celsius>
     let pressureFactor = peakPressure / 100_000.0<pascal>
 
@@ -346,21 +339,19 @@ let calculateMaintenance
 
 ## The Path Forward
 
-As we build increasingly critical systems - from medical devices to autonomous vehicles to financial infrastructure - we can't afford to treat types as optional. The gene analysis startup nearly lost irreplaceable samples because their monitoring system allowed temperature units to be confused. What will your organization risk before prioritizing a type-safe and memory-safe system?
+As we build increasingly critical systems, from medical devices to autonomous vehicles to financial infrastructure, we can't afford to treat types as optional. The gene analysis startup nearly lost irreplaceable samples because their monitoring system allowed temperature units to be confused. The cost of catching that class of error at compile time is one annotation; the cost of missing it can be a year of irreplaceable work.
 
-The Fidelity Framework demonstrates that type safety doesn't require sacrificing performance. By leveraging Clef's units of measure and extending them through UMX, we can build systems that are simultaneously:
+Our Fidelity Framework shows that type safety doesn't require sacrificing performance. By using Clef's units of measure and extending them through UMX, we can build systems that are at once:
 
 - **Safer**: Entire classes of errors become impossible
 - **Faster**: Zero runtime overhead from type checking
 - **Clearer**: Types in source code document intent and constraints
-- **Maintainable**: Refactoring becomes fearless with smart compiler support
+- **Maintainable**: The compiler flags unit mismatches introduced during refactoring
 
-## Don't Let Lazy Software Fail Your Business
+## Where We Are Taking This
 
-That company's freezer monitoring system nearly failed catastrophically not because of a bug in the traditional sense, but because the monitoring software allowed a dangerous state to exist. The DNA samples survived by luck alone - but luck is not a strategy. With Clef's units of measure, that error would have been caught at compile time, long before any samples were ever at risk.
+That company's freezer monitoring system nearly failed because the monitoring software allowed a dangerous state to exist, with no compiler in the way. The DNA samples survived by luck. With Clef's units of measure, that error would have been caught at compile time, long before any samples were ever at risk.
 
-In the Fidelity Framework, we're applying this lesson at every level - from low-level memory management to high-level protocol design. Because when you're building critical systems, "it works for my happy path use case" isn't good enough. The clear and present signal is that future systems need guarantees that only a strong type system can provide. And only Clef and the Fidelity framework can provide that at no additional runtime cost.
+In our Fidelity Framework, we are applying this lesson at every level, from low-level memory management to high-level protocol design. When you are building critical systems, "it works for my happy path use case" is not enough. Future systems need the compile-time guarantees a strong type system can provide, and we have found no other representative implementation in the standing literature we have reviewed that provides those guarantees at no additional runtime cost.
 
-The next time you're tempted to use a raw `float` for temperature, or a plain `string` for an identifier, remember: types aren't just academic exercises. They're your first, best, and cheapest line of defense against catastrophic failure.
-
-Your reputation and your business may depend on it.
+The next time you reach for a raw `float` for temperature, or a plain `string` for an identifier, the unit and the domain are the part of the design worth encoding in the type. That is the line of defense we are continuing to build out across the framework, from the dimensional type system upward, as the work continues.

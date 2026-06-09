@@ -11,58 +11,53 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Our Fidelity framework sits at the intersection of two computing approaches that have stayed largely separate: functional programming and direct native compilation. For decades the choice between them has read as a fixed trade. A managed runtime like .NET or the JVM brings productivity and safety while accepting a performance cost. Direct compilation brings raw efficiency while carrying manual memory management and a more involved development workflow.
 
-At the intersection of two powerful but largely separate computing paradigms stands the Fidelity framework, a revolutionary approach to systems programming that re-imagines what's possible when functional programming meets direct native compilation. For decades, developers have been forced into an artificial choice: embrace the productivity and safety of managed runtimes like .NET and the JVM while accepting their performance limitations, or pursue the raw efficiency of direct compilation while shouldering the burden of manual memory management and more complex development workflows.
+We treat that trade as a design choice rather than a law. Our Fidelity framework brings Clef's type system, pattern matching, and functional composition directly to native code through MLIR with no runtime dependency. Where existing cross-compilation approaches force compromises, we are building toward a few capabilities we have not found together in either ecosystem: a region-based memory management system that provides memory safety without garbage collection, our BAREWire zero-copy serialization with compile-time verification, and platform-specific optimization through functional composition rather than conditional compilation.
 
-The Fidelity framework aims to shatter this false dichotomy by bringing Clef's elegant type system, pattern matching, and functional composition directly to native code through MLIR without a runtime dependency. Unlike existing cross-compilation approaches that force compromises, Fidelity seeks to introduce innovations unseen in either ecosystem: a region-based memory management system designed to provide memory safety without garbage collection, BAREWire zero-copy serialization with compile-time verification, and platform-specific optimization through functional composition rather than conditional compilation.
-
-This document explores one cornerstone of this vision: Fidelity's hybrid library binding architecture. Through its Farscape binding generator and Alex MLIR transformation components, Fidelity is designed to create a seamless pathway from Clef to native code that preserves the language's functional paradigm while providing systems-level control over library integration. This approach would enable developers to make intentional choices about static and dynamic linking strategies while maintaining a consistent development experience, effectively bridging the gap between high-level abstractions and hardware-specific optimizations across diverse computing environments.
+This document covers one part of that work: our hybrid library binding architecture. Through our Farscape binding generator and our Alex MLIR transformation, we intend a path from Clef to native code that keeps the language's functional model while giving systems-level control over library integration. The aim is to let developers make intentional choices about static and dynamic linking while keeping a consistent development experience, across diverse computing environments and their differing hardware constraints.
 
 ## Clef as a Systems Programming Language
 
-The computing world has long existed in fragmented, specialized territories with different programming approaches dictated more by historical accident than technical necessity. Embedded systems developers write in C, server developers gravitate to Java or C#, data scientists use Python, and mobile developers work with Swift or Kotlin. This fragmentation creates artificial barriers that force teams to master multiple languages or make compromises that aren't technically required.
+The computing world has split into specialized territories, and the split often follows historical accident more than technical necessity. Embedded systems developers write in C, server developers gravitate to Java or C#, data scientists use Python, and mobile developers work with Swift or Kotlin. The result forces teams to master several languages, or to accept compromises that are not technically required.
 
-The Fidelity framework boldly challenges this status quo with a question: What if a single language could effectively target the entire computing spectrum without compromise? It aims to fulfill that promise *not* through a lowest common denominator approach, but through an adaptive compilation strategy that brings the full expressive power of functional programming to every deployment target.
+We start our Fidelity framework from a different question. Can a single language target the whole computing spectrum without that compromise? Our answer is not a lowest-common-denominator language. It is an adaptive compilation strategy that carries functional programming to every deployment target.
 
-Clef serves as the perfect foundation for this vision. Already incorporating the best ideas from ML, OCaml, and other influences while maintaining an elegant pragmatism, Clef offers:
+Clef gives us the foundation for that work. Descended from F#, it draws on ML, OCaml, and related lineages, and it offers:
 
-- A powerful type system with inference that catches errors at compile time
-- Pattern matching and discriminated unions for expressing complex domain logic
+- A type system with inference that catches errors at compile time
+- Pattern matching and discriminated unions for expressing domain logic
 - Immutability by default for safer concurrency
-- Computation expressions for elegant domain-specific languages
+- Computation expressions for domain-specific languages
 - Interoperability with existing codebases and libraries
-- Built-in concurrency primitives for modern parallel and distributed workloads
+- Built-in concurrency primitives for parallel and distributed workloads
 
-What Fidelity envisions is a direct compilation pathway that would enable Clef to freely explore new domains:
+What we intend to add is a direct compilation path that lets Clef reach into new domains:
 
 - Compilation directly to native code via MLIR/LLVM
 - Platform-specific memory management without garbage collection
 - Fine-grained control over resource allocation
-- Zero-cost abstractions optimal runtime efficiency with maximal safety
-- Direct interoperability with native libraries for instant access to a huge cross-section of capabilities
+- Zero-cost abstractions that pair runtime efficiency with safety
+- Direct interoperability with native libraries for access to a wide cross-section of existing capabilities
 
-The result could be a language that deploys anywhere, from tiny microcontrollers with kilobytes of RAM to massive distributed systems spanning thousands of servers, while maintaining the same core programming model.
+The target is a language that deploys from microcontrollers with kilobytes of RAM to distributed systems spanning thousands of servers, while keeping the same core programming model.
 
 ### The Library Binding Challenge
 
-In the journey to make Clef a true systems programming language, one of the most significant challenges is effective integration with existing native libraries. This isn't merely a technical problem of function calling conventions and memory layouts, it's a architectural decision that affects everything from deployment simplicity to security posture to performance characteristics.
+In making Clef a systems programming language, one of the harder problems is integration with existing native libraries. The problem reaches past function calling conventions and memory layouts. It is an architectural decision that affects deployment simplicity, security posture, and performance.
 
 - **Static linking**: Incorporates library code directly into the executable, creating self-contained applications but increasing size and complicating updates
 - **Dynamic linking**: Loads libraries at runtime, enabling sharing and updates but introducing deployment dependencies and potential compatibility issues
 
-This seeming "binary" choice, if one were made to the exclusion of the other in all cases, would fail to address the nuanced requirements of modern systems that often span multiple computing environments with different constraints. An embedded component might require static linking for reliability, while a desktop application might benefit from dynamically linked system components.
+Picking one of these for every case across an application misses the requirements of systems that span several computing environments with different constraints. An embedded component might require static linking for reliability, while a desktop application might benefit from dynamically linked system components.
 
-What's needed is an approach that elegantly spans these two choices, allowing developers to make intentional, fine-grained decisions about binding strategies while maintaining a consistent programming model.
+We want an approach that spans both choices, so developers can make fine-grained decisions about binding strategies while keeping a consistent programming model.
 
 ### The Hybrid Approach
 
-Fidelity introduces a hybrid binding architecture designed to fundamentally change how developers integrate with native libraries. Rather than forcing wholesale decisions about linking strategies at project inception, it would enable binding decisions to be made at build time based on deployment requirements, while preserving a consistent development experience.
+Our hybrid binding architecture changes where the linking decision is made. Rather than forcing wholesale decisions about linking strategy at project inception, it defers binding decisions to build time, based on deployment requirements, while keeping a consistent development experience.
 
-This architecture is built around three core principles:
+This architecture rests on three principles:
 
 1. **Unified Programming Interface**: Developers work with a consistent Clef API regardless of the underlying binding mechanism, eliminating the cognitive overhead of different programming models.
 
@@ -70,13 +65,13 @@ This architecture is built around three core principles:
 
 3. **Progressive Optimization**: Development builds can use dynamic binding for faster iteration, while release builds can selectively apply static binding where it provides maximum benefit.
 
-This approach represents a paradigm shift in how we think about library integration, moving from monolithic, project-wide decisions to fine-grained, intentional choices that could adapt to the specific requirements of each component and deployment environment.
+This moves library integration from monolithic, project-wide decisions to fine-grained choices that adapt to the requirements of each component and deployment environment.
 
 ## System Architecture
 
 ### Core Components
 
-The Fidelity framework's hybrid binding architecture is built around a carefully orchestrated pipeline designed to transform Clef code into native executables while preserving binding intent throughout the process. This architecture doesn't merely bridge existing technologies—it represents a fundamental rethinking of how compilation pipelines could adapt to diverse deployment requirements.
+Our hybrid binding architecture is built around a pipeline that transforms Clef code into native executables while carrying binding intent through every stage. The pipeline bridges existing technologies, and it also reworks how a compilation pipeline adapts to diverse deployment requirements.
 
 ```mermaid
 flowchart TB
@@ -132,13 +127,13 @@ flowchart TB
     DynamicLib -.-> AppCode
 ```
 
-Each component in this pipeline has been designed with a specific purpose that looks beyond "garden variety" compilation choices.
+Each component in this pipeline has a specific purpose beyond ordinary compilation choices.
 
 ### The Role of Farscape CLI
 
-Farscape represents an approach to generating bindings for native libraries that goes beyond traditional binding generators. Where conventional tools produce simple mechanical translations, Farscape is designed to create truly idiomatic Clef interfaces that feel natural to Clef developers while maintaining full fidelity with the underlying C/C++ APIs.
+Our Farscape generates bindings for native libraries. Where conventional tools produce mechanical translations, Farscape generates idiomatic Clef interfaces that read naturally to Clef developers while keeping fidelity with the underlying C/C++ APIs.
 
-Named in homage to the science fiction series exploring traversal between worlds, Farscape lives up to its namesake by creating bridges between disparate programming paradigms. It uses clang's two-pass parsing strategy (JSON AST extraction + macro extraction) with XParsec parser combinators for post-processing, but its true innovation lies in how it transforms these into Clef code that respects both languages' idioms.
+Named in homage to the science fiction series about traversal between worlds, Farscape builds bridges between disparate programming models. It uses clang's two-pass parsing strategy (JSON AST extraction plus macro extraction) with XParsec parser combinators for post-processing, and the part we have not seen elsewhere is how it transforms these into Clef code that respects both languages' idioms.
 
 Consider the challenge of mapping C's error-code-based error handling to Clef's more expressive result types:
 
@@ -156,21 +151,21 @@ let performOperation (input: NativeStr) : Result<int, ErrorCode> =
     else Error (enum<ErrorCode> resultCode)
 ```
 
-This transformation doesn't just make the API more pleasant to use—it could fundamentally reduce the likelihood of errors by enforcing Clef's stronger type safety while maintaining the full capabilities of the underlying C library.
+This transformation makes the API more pleasant to use, and it reduces the likelihood of errors by enforcing Clef's type safety while keeping the capabilities of the underlying C library.
 
-Furthermore, Farscape's generated bindings use the Platform.Bindings pattern (BCL-free), enabling both static linking and dynamic loading approaches. Alex provides platform-specific MLIR emission for each binding, laying the groundwork for the hybrid binding strategy that follows.
+Farscape's generated bindings use the Platform.Bindings pattern (BCL-free), which supports both static linking and dynamic loading. Our Alex provides platform-specific MLIR emission for each binding, which sets up the hybrid binding strategy that follows.
 
 ### The Role of Our Alex Library
 
-If Farscape creates the bridge between languages, Alex is the engine designed to transform how those bridges function at compile time. Named as a playful reference to the famous drawing that looks like either a duck or a rabbit based on the viewer's perspective, Alex would perform a critical role in the Fidelity compilation pipeline: the transformation of Clef Compiler Services (CCS) AST to MLIR representations that can be further lowered to efficient native code.
+If Farscape builds the bridge between languages, our Alex is the part that transforms how those bridges function at compile time. Named after the drawing that reads as either a duck or a rabbit depending on the viewer, Alex carries a central role in our compilation pipeline: it transforms the Clef Compiler Services (CCS) AST into MLIR representations that lower to native code.
 
-Alex's approach is inspired by LicenseToCIL's type-safe operation composition system, but extended to the more complex domain of direct MLIR generation. This isn't a mere mechanical translation—it's a sophisticated transformation designed to preserve the semantic intent of Clef code while enabling platform-specific optimizations.
+Alex's approach draws on LicenseToCIL's type-safe operation composition, extended to direct MLIR generation. The transformation preserves the semantic intent of Clef code while enabling platform-specific optimizations.
 
 For binding strategies, Alex works in concert with a preprocessing nanopass that resolves platform decisions before witnessing begins:
 
 ```fsharp
-// PlatformBindingResolution nanopass — runs before Alex witnessing
-// Resolves each opaque extern node to a concrete binding strategy
+// PlatformBindingResolution nanopass: runs before Alex witnessing
+// resolves each opaque extern node to a concrete binding strategy
 let resolvePlatformBindings (psg: PSG) (configuration: ProjectConfiguration) : PSG =
     let externNodes = findExternNodes psg
 
@@ -180,54 +175,53 @@ let resolvePlatformBindings (psg: PSG) (configuration: ProjectConfiguration) : P
             | BindingStrategy.Static -> ExternCall.Static extern.Library extern.Symbol
             | BindingStrategy.Dynamic -> ExternCall.Dynamic extern.Library extern.Symbol
 
-        // Attach resolved strategy as coeffect on the extern node
+        // resolved strategy as coeffect on the extern node
         graph |> attachCoeffect extern.NodeId strategy
     ) psg
 
-// Alex receives resolved extern nodes — no configuration lookup needed
-// Each extern node already carries its resolved ExternCall coeffect
+// each extern node already carries its resolved ExternCall coeffect
 let witnessExternCall (node: PSGNode) : MLIR<Val> = mlir {
     match node.Coeffect with
     | ExternCall.Dynamic (library, symbol) ->
-        // Emit external func decl + call site for dynamic linking
+        // external func decl + call site for dynamic linking
         return! emitDynamicCall library symbol node.Signature
     | ExternCall.Static (library, symbol) ->
-        // Emit direct function reference for static linking with LTO
+        // direct function reference for static linking with LTO
         return! emitStaticCall library symbol node.Signature
 }
 ```
 
-This separation is architecturally significant: the PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration — it simply emits what the resolved extern node tells it to. This means witnesses remain pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
+This separation matters for the design. The PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration. It emits what the resolved extern node tells it to emit. Witnesses stay pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
 
-Alex's witnessing extends beyond binding strategies to encompass the entire spectrum of Clef features, from closures to pattern matching to computation expressions — all translated into MLIR representations that preserve their semantic intent while enabling efficient native code generation.
+Alex's witnessing extends beyond binding strategies to the full range of Clef features, from closures to pattern matching to computation expressions. Each translates into MLIR that preserves its semantic intent while enabling native code generation.
 
 ### Compilation Pipeline
 
-The full compilation pipeline represents a seamless integration of these components into a coherent whole designed to transform Clef source to optimized native code:
+The full compilation pipeline integrates these components into one path from Clef source to optimized native code:
 
 - **Clef Source Code**: Developers write code using the Farscape-generated bindings, expressing their intent in idiomatic Clef without concern for the underlying binding mechanism.
 
 - **Clef Compilation**: The Clef compiler processes the source code into an abstract syntax tree, applying its rich type system to catch errors early.
 
-- **Quotation Extraction (CCS)**: CCS recognizes `[<FidelityExtern>]` attributed binding declarations during quotation extraction. The `Unchecked.defaultof<T>` body is never processed — CCS emits an opaque extern node in the PSG carrying (library, symbol) metadata.
+- **Quotation Extraction (CCS)**: CCS recognizes `[<FidelityExtern>]` attributed binding declarations during quotation extraction. The `Unchecked.defaultof<T>` body is never processed. CCS emits an opaque extern node in the PSG carrying (library, symbol) metadata.
 
 - **PSG Saturation (Baker)**: The extern node is a leaf with no body to saturate. Baker passes it through intact with its metadata alongside the rest of the reachable graph.
 
 - **Platform Binding Resolution**: A preprocessing nanopass resolves each extern node's binding strategy based on build configuration, attaching `ExternCall` coeffects (static or dynamic) before witnessing begins.
 
-- **MLIR Witnessing (Alex)**: Alex receives resolved extern nodes and emits the appropriate MLIR — `fidelity.binding_strategy` and `fidelity.library_name` attributes on external function declarations for dynamic binding, or direct function references for static linking.
+- **MLIR Witnessing (Alex)**: Alex receives resolved extern nodes and emits the appropriate MLIR. For dynamic binding, it emits `fidelity.binding_strategy` and `fidelity.library_name` attributes on external function declarations. For static linking, it emits direct function references.
 
 - **MLIR to LLVM Lowering**: The MLIR is progressively lowered through dialects until it reaches LLVM IR, with appropriate linkage directives for both static and dynamic libraries.
 
 - **Native Code Generation**: The final compilation step produces platform-specific executable code that incorporates the chosen binding strategies.
 
-This pipeline carries binding intent as metadata through every stage — from Clef attribute to PSG node to MLIR attribute to LLVM linkage directive — preserving the developer's original intent and the semantic integrity of the Clef language.
+This pipeline carries binding intent as metadata through every stage, from Clef attribute to PSG node to MLIR attribute to LLVM linkage directive. The developer's original intent and the semantic integrity of the Clef code carry through with it.
 
 ## Binding Strategies
 
 ### Static Binding
 
-Static binding prioritizes predictability, performance, and security through self-contained applications. In the Fidelity framework, static binding would incorporate library code directly into the application executable, creating a unified whole where the boundaries between application and library code disappear at runtime.
+Static binding prioritizes predictability, performance, and security through self-contained applications. In our Fidelity framework, static binding incorporates library code directly into the application executable, so the boundaries between application and library code disappear at runtime.
 
 #### Advantages
 
@@ -245,21 +239,21 @@ These advantages make static binding particularly valuable for specific categori
 
 #### Implementation Approach
 
-Fidelity's implementation of static binding is designed to depart from traditional approaches in a crucial way: it preserves the same developer experience regardless of the binding strategy. Here's how the process works:
+Our static binding departs from traditional approaches in one way: it keeps the same developer experience regardless of the binding strategy. The process works as follows:
 
-1. Farscape generates `[<FidelityExtern>]` attributed binding declarations that carry library name and symbol metadata, ensuring developers have a familiar and idiomatic Clef API.
+1. Farscape generates `[<FidelityExtern>]` attributed binding declarations that carry library name and symbol metadata, so developers work with an idiomatic Clef API.
 
 2. CCS recognizes the attribute during quotation extraction and emits an opaque extern node in the PSG. The declaration's `Unchecked.defaultof<T>` body is never processed.
 
-3. The PlatformBindingResolution nanopass resolves each extern node's binding strategy based on build configuration, and Alex emits the appropriate MLIR — direct LLVM dialect calls for static binding or external function declarations for dynamic binding.
+3. The PlatformBindingResolution nanopass resolves each extern node's binding strategy based on build configuration. Alex then emits the appropriate MLIR: direct LLVM dialect calls for static binding, or external function declarations for dynamic binding.
 
 4. For static binding, the LLVM linker incorporates the library code into the final executable, applying whole-program optimization through LTO where possible.
 
-This approach contrasts with traditional binding generators that often require developers to write different code for static and dynamic binding scenarios. By maintaining a consistent API regardless of the underlying binding mechanism, Fidelity enables developers to focus on their application logic rather than binding details.
+This contrasts with traditional binding generators, which often require developers to write different code for static and dynamic binding. By keeping a consistent API regardless of the binding mechanism, our framework lets developers focus on application logic rather than binding details.
 
 ### Dynamic Binding
 
-Dynamic binding represents an alternative philosophy of software deployment, one that prioritizes flexibility, resource sharing, and independent evolution of components. In the Fidelity framework, dynamic binding would load library code at runtime, establishing a clear boundary between the application and its dependencies.
+Dynamic binding takes a different approach to deployment, one that prioritizes flexibility, resource sharing, and independent evolution of components. In our Fidelity framework, dynamic binding loads library code at runtime, which sets a clear boundary between the application and its dependencies.
 
 #### Advantages
 
@@ -277,21 +271,21 @@ These advantages make dynamic binding particularly valuable for applications tha
 
 #### Implementation Approach
 
-Fidelity's implementation of dynamic binding uses `[<FidelityExtern>]` attributed binding declarations with dynamic library resolution, providing enhanced safety and flexibility:
+Our dynamic binding uses `[<FidelityExtern>]` attributed binding declarations with dynamic library resolution:
 
-1. Farscape generates `[<FidelityExtern>]` attributed binding declarations that carry library name and symbol metadata. Layer 2 idiomatic wrappers provide additional safety and error handling around the raw declarations.
+1. Farscape generates `[<FidelityExtern>]` attributed binding declarations that carry library name and symbol metadata. Layer 2 idiomatic wrappers add error handling around the raw declarations.
 
-2. The `[<FidelityExtern>]` attribute flows through CCS as an opaque extern node and Baker passes it through as a leaf — identical to the static path. The PlatformBindingResolution nanopass resolves the node to dynamic binding based on build configuration.
+2. The `[<FidelityExtern>]` attribute flows through CCS as an opaque extern node, and Baker passes it through as a leaf, identical to the static path. The PlatformBindingResolution nanopass resolves the node to dynamic binding based on build configuration.
 
 3. Alex emits MLIR with `fidelity.binding_strategy = "dynamic"` and `fidelity.library_name` attributes on external function declarations. The linker auto-collects appropriate flags (`-lc`, `-lwayland-client`, etc.).
 
 4. At runtime, the platform's dynamic linker resolves the external symbols against the target system's native libraries.
 
-This approach provides the flexibility of dynamic binding while mitigating many of its traditional drawbacks through Farscape's Layer 2 safety wrappers and compile-time type verification.
+This gives the flexibility of dynamic binding while reducing several of its traditional drawbacks through Farscape's Layer 2 safety wrappers and compile-time type verification.
 
 ### Hybrid Scenario
 
-The true power of Fidelity's binding architecture emerges in hybrid scenarios that combine static and dynamic binding within the same application. This isn't merely a technical trick—it's a fundamental rethinking of how Clef applications could interface with external code, enabling developers to make intentional, fine-grained decisions about binding strategies based on the specific requirements of each component.
+Our binding architecture is built for hybrid scenarios that combine static and dynamic binding within the same application. The point is to let developers make fine-grained decisions about binding strategy based on the requirements of each component, rather than committing the whole application to one strategy.
 
 Consider a security-focused embedded application that needs to balance performance, security, and integration with hardware:
 
@@ -314,15 +308,15 @@ In this scenario:
 - System redistributables like the Visual C++ Runtime are dynamically linked because they're shared by multiple applications and receive regular security updates.
 - The hardware abstraction layer is also dynamically linked.
 
-This hybrid approach represents the best of both worlds—gaining the security and performance benefits of static linking where they matter most, while maintaining the flexibility and resource sharing of dynamic linking where appropriate.
+This hybrid approach takes the security and performance of static linking where they matter most, and the flexibility and resource sharing of dynamic linking where those matter more.
 
-What makes this approach novel is that it doesn't require developers to write different code for different binding strategies. The same Clef code works regardless of whether a library is statically or dynamically linked, with the binding decisions made declaratively through configuration rather than embedded in the code itself.
+The approach does not require developers to write different code for different binding strategies. The same Clef code works whether a library is statically or dynamically linked, with the binding decisions made declaratively through configuration rather than embedded in the code. We have found no other representative implementation of this in the standing literature we have reviewed.
 
 ## Technical Implementation
 
 ### Project Configuration
 
-At the heart of Fidelity's hybrid binding architecture is a declarative configuration system designed to enable developers to specify binding strategies without modifying their code. This system leverages TOML (Tom's Obvious, Minimal Language) for its human-readable syntax and structured data model, creating a clear separation between binding intent and implementation.
+At the center of our hybrid binding architecture is a declarative configuration system that lets developers specify binding strategies without modifying their code. It uses TOML (Tom's Obvious, Minimal Language) for its human-readable syntax and structured data model, which separates binding intent from implementation.
 
 ```toml
 [package]
@@ -359,11 +353,11 @@ This configuration approach draws inspiration from Rust's Cargo system but exten
 
 3. **Default Strategy with Overrides**: The combination of a default strategy with specific overrides creates a configuration approach that scales from simple applications to complex systems with dozens of dependencies without becoming unwieldy.
 
-This declarative approach represents a shift in how we think about binding strategies, moving from implementation details embedded in code to architectural decisions expressed through configuration. This separation would enable the same codebase to adapt to different deployment scenarios without modification.
+This declarative approach moves binding strategy from implementation detail embedded in code to an architectural decision expressed through configuration. The same codebase then adapts to different deployment scenarios without modification.
 
 ### Farscape Binding Generation
 
-The binding generation process is the foundation of Fidelity's hybrid binding architecture. Farscape generates a single set of bindings that work identically with both static and dynamic linking — the binding strategy is resolved downstream in the compilation pipeline, not in the generated code.
+The binding generation process is the foundation of our hybrid binding architecture. Farscape generates a single set of bindings that work identically with both static and dynamic linking. The binding strategy is resolved downstream in the compilation pipeline, not in the generated code.
 
 Farscape's Moya project system organizes library decompositions through `.moya.toml` files that declare headers, namespace groupings, and function assignments. A single Moya project can reference multiple C headers (e.g., `unistd.h` and `fcntl.h` for IO operations), with Farscape merging and deduplicating declarations across headers automatically. This produces clean, non-overlapping Clef modules from the natural structure of the C library.
 
@@ -405,20 +399,19 @@ Farscape's binding generation goes beyond mere function mapping to address the f
 
 ### From Extern Node to MLIR
 
-The heart of Fidelity's hybrid binding architecture lies in how binding intent flows through the nanopass pipeline and arrives at Alex already resolved. By the time Alex witnesses an extern node, the PlatformBindingResolution nanopass has already attached a concrete `ExternCall` coeffect — Alex's job is purely to emit the corresponding MLIR.
+The center of our hybrid binding architecture is how binding intent flows through the nanopass pipeline and arrives at Alex already resolved. By the time Alex witnesses an extern node, the PlatformBindingResolution nanopass has attached a concrete `ExternCall` coeffect, so Alex's job is to emit the corresponding MLIR.
 
 ```fsharp
-// Alex witness for extern nodes — receives already-resolved binding intent
 let witnessExternNode (node: PSGNode) : MLIR<Val> = mlir {
     let extern = node.ExternCall  // (library, symbol) + resolved strategy
 
     match extern.Strategy with
     | ExternCall.Dynamic ->
-        // Emit external func decl + call site with binding metadata
+        // external func decl + call site with binding metadata
         let! func = declareExternalFunc extern.Symbol extern.Signature
         return! emitCall func node.Arguments
     | ExternCall.Static ->
-        // Emit direct function reference for LTO inlining
+        // direct function reference for LTO inlining
         let! func = declareStaticFunc extern.Symbol extern.Signature
         return! emitCall func node.Arguments
 }
@@ -427,13 +420,13 @@ let witnessExternNode (node: PSGNode) : MLIR<Val> = mlir {
 - For dynamic binding, Alex emits an external function declaration with `fidelity.binding_strategy` and `fidelity.library_name` MLIR attributes. The platform's dynamic linker resolves the symbol at load time.
 - For static binding, Alex emits a direct function reference that LLVM's link-time optimizer can inline across module boundaries.
 
-The separation between resolution (nanopass) and emission (Alex) is architecturally significant. Alex never queries build configuration — it witnesses what the PSG tells it. This keeps witnesses pure and composable, and means binding strategy changes never require modifications to Alex's witnessing logic.
+The separation between resolution (nanopass) and emission (Alex) matters for the design. Alex never queries build configuration. It witnesses what the PSG tells it. This keeps witnesses pure and composable, and binding strategy changes never require modifications to Alex's witnessing logic.
 
 Alex's witnessing preserves the semantic intent of the original code, ensuring that error handling, resource management, and other aspects of the API contract remain consistent regardless of the binding strategy.
 
 ### MLIR Generation with Binding Intent
 
-The next step in the compilation pipeline is the generation of MLIR, where binding intent would be preserved through metadata that guides subsequent processing. This preservation enables the later stages of the pipeline to make appropriate decisions about how to handle external function calls.
+The next step in the compilation pipeline generates MLIR, where binding intent is carried as metadata that guides later processing. That metadata lets the later stages decide how to handle external function calls.
 
 ```mlir
 // For statically bound functions (direct references)
@@ -451,9 +444,9 @@ func.func private @GPIO_Init(%arg0: !llvm.ptr<i8>, %arg1: !llvm.ptr<i8>) -> i32 
 }
 ```
 
-MLIR attributes capture binding intent in a way that can be processed by subsequent stages of the compilation pipeline. This approach leverages MLIR's extensibility to create a binding-aware intermediate representation that would carry more semantic information than traditional IRs.
+MLIR attributes capture binding intent in a form that later stages of the pipeline can process. This uses MLIR's extensibility to create a binding-aware intermediate representation that carries more semantic information than traditional IRs.
 
-This preservation of binding intent enables powerful transformations during the MLIR lowering process:
+Carrying binding intent this way enables several transformations during the MLIR lowering process:
 
 1. **Function Inlining**: For statically bound functions, the lowering process can apply aggressive inlining across module boundaries, eliminating the function call overhead entirely where appropriate.
 
@@ -461,18 +454,18 @@ This preservation of binding intent enables powerful transformations during the 
 
 3. **Platform-Specific Adaptation**: The binding information can inform platform-specific code generation strategies, such as using direct syscalls on certain platforms or dynamic loading on others.
 
-By carrying binding intent through the MLIR representation, Fidelity could enable a more nuanced compilation process that adapts to the specific requirements of each component and deployment environment.
+By carrying binding intent through the MLIR representation, our compilation process can adapt to the requirements of each component and deployment environment.
 
 ### Platform Library Handling
 
-An important aspect of Fidelity's binding architecture is its handling of platform-native libraries — the standard C library (libc, libSystem, ucrt), system services, and hardware abstraction layers that form the foundation of every target platform. These components are intrinsic to the platform and require specialized treatment in the binding strategy.
+Our binding architecture handles platform-native libraries with care: the standard C library (libc, libSystem, ucrt), system services, and hardware abstraction layers that form the foundation of every target platform. These components are intrinsic to the platform and need their own treatment in the binding strategy.
 
 ```fsharp
-// Platform library classification — resolved during PlatformBindingResolution
+// platform library classification, resolved during PlatformBindingResolution
 type PlatformLibrary =
-    | SystemLibrary of name: string    // libc, libSystem, ucrt — always dynamic
-    | VendorLibrary of name: string    // HAL, device drivers — platform-provided
-    | ApplicationLibrary of name: string  // user libraries — strategy from config
+    | SystemLibrary of name: string    // libc, libSystem, ucrt: always dynamic
+    | VendorLibrary of name: string    // HAL, device drivers: platform-provided
+    | ApplicationLibrary of name: string  // user libraries: strategy from config
 
 // The nanopass resolves platform libraries to always-dynamic binding
 let resolveLibraryStrategy (library: string) (config: ProjectConfiguration) =
@@ -497,19 +490,19 @@ This classification recognizes the practical reality of native platforms:
 
 2. **Vendor Libraries Follow Platform Conventions**: Hardware abstraction layers and device drivers are provided by the platform vendor and follow that platform's linking conventions.
 
-3. **Application Libraries Respect Configuration**: Libraries that the application brings — cryptographic implementations, protocol handlers, domain-specific code — are where the static/dynamic decision matters and where the build configuration applies.
+3. **Application Libraries Respect Configuration**: Libraries that the application brings (cryptographic implementations, protocol handlers, domain-specific code) are where the static/dynamic decision matters and where the build configuration applies.
 
 ### Build Pipeline Integration
 
-The binding architecture is designed to be fully integrated into the Composer compiler's build pipeline, creating a seamless process from source code to native executable that adapts to the configured binding strategies. This integration ensures that binding decisions propagate through the entire compilation process, affecting everything from AST transformation to MLIR generation to linking. The result would be a native executable that embodies the configured binding strategies, combining statically and dynamically linked components as specified.
+Our binding architecture is designed to integrate into the Composer compiler's build pipeline, so the path from source code to native executable adapts to the configured binding strategies. Binding decisions propagate through the whole compilation process, from AST transformation to MLIR generation to linking. The result is a native executable that combines statically and dynamically linked components as specified.
 
-This integration aims to be seamless: binding decisions wouldn't require special tooling or workflow changes—they'd simply be another aspect of the compilation process that adapts to the configuration. This seamless integration would enable developers to focus on their application logic rather than binding mechanics.
+We intend this integration to need no special tooling or workflow changes. Binding decisions become another aspect of the compilation process that adapts to the configuration, and developers can stay focused on application logic rather than binding mechanics.
 
 ## Practical Examples
 
 ### Embedded Security Example
 
-The hybrid binding architecture would reveal its power in real-world scenarios where different components have different requirements. Consider an embedded security application targeting a constrained microcontroller, where memory efficiency, performance, and security are critical concerns.
+The hybrid binding architecture shows its value in scenarios where different components have different requirements. Consider an embedded security application targeting a constrained microcontroller, where memory efficiency, performance, and security are critical concerns.
 
 ```fsharp
 open CryptoLib
@@ -546,11 +539,11 @@ This configuration reflects the different requirements of each component:
 - The cryptographic library is statically linked for security (preventing library substitution attacks) and performance (enabling inlining and other optimizations).
 - The hardware abstraction layer is dynamically linked because it interfaces directly with hardware that might vary between device revisions, requiring adaptation without recompilation.
 
-What's remarkable is that the application code remains the same regardless of these binding decisions, the developer works with a consistent, idiomatic Clef API while the underlying binding mechanics adapt to the configuration.
+The application code stays the same regardless of these binding decisions. The developer works with a consistent, idiomatic Clef API while the underlying binding mechanics adapt to the configuration.
 
 ### Cross-Platform Application Example
 
-The hybrid binding architecture also shines in cross-platform scenarios, where different platforms have different libraries and requirements. Consider a desktop application targeting Windows, macOS, and Linux with platform-specific components.
+The hybrid binding architecture also fits cross-platform scenarios, where different platforms have different libraries and requirements. Consider a desktop application targeting Windows, macOS, and Linux with platform-specific components.
 
 ```toml
 # Example binding configuration in project file
@@ -578,9 +571,9 @@ Again, the developer's application code remains consistent across platforms, usi
 
 ### Closures and Static Binding
 
-One of the most challenging aspects of direct native compilation for functional languages is handling closures, functions that capture variables from their surrounding environment. This challenge becomes particularly acute with static binding, where the closure's captured environment must be properly managed without a garbage collector.
+One of the harder parts of direct native compilation for functional languages is handling closures, functions that capture variables from their surrounding environment. This gets acute with static binding, where the closure's captured environment has to be managed without a garbage collector.
 
-Fidelity aims to address this challenge through a region-based stack allocation system that would preserve the safety and expressiveness of Clef closures without requiring a runtime.
+We address this with a region-based stack allocation system that keeps the safety and expressiveness of Clef closures without requiring a runtime.
 
 ```fsharp
 let createCounter initialValue =
@@ -623,7 +616,7 @@ let createCounter(initialValue: int) =
     counter
 ```
 
-This approach would preserve the semantic behavior of the original closure while eliminating the need for garbage collection:
+This preserves the semantic behavior of the original closure while removing the need for garbage collection:
 
 1. **Region-Based Allocation**: Captured variables are allocated in memory regions with controlled lifetimes, providing memory safety without garbage collection.
 
@@ -631,11 +624,11 @@ This approach would preserve the semantic behavior of the original closure while
 
 3. **Lifetime Management**: The region's lifetime is tied to the closure itself, ensuring that captured variables remain valid as long as the closure exists.
 
-This approach could enable the full expressiveness of Clef closures in statically linked code, without requiring the overhead of a garbage collector. It represents an effort to bring functional programming patterns to systems applications where traditional runtime approaches aren't feasible. For a deeper exploration of closure representation in Fidelity, see [Gaining Closure](/docs/design/gaining-closure/).
+This carries the expressiveness of Clef closures into statically linked code, without the overhead of a garbage collector. It brings functional programming patterns to systems applications where traditional runtime approaches are not feasible. For a deeper look at closure representation in our framework, see [Gaining Closure](/docs/design/gaining-closure/).
 
 ### BAREWire Integration
 
-Fidelity's binding architecture is designed to integrate deeply with BAREWire, the framework's zero-copy serialization system. This integration would enable efficient, type-safe communication between components, regardless of their binding strategy.
+Our binding architecture is designed to integrate with our BAREWire zero-copy serialization system. This integration is meant to give type-safe communication between components, regardless of their binding strategy.
 
 ```fsharp
 let messageSchema = BAREWire.schema {
@@ -657,19 +650,19 @@ let processMessage (buffer: AlignedBuffer<byte>) =
     CLibrary.processMessageData(buffer.GetPointer(), buffer.Length)
 ```
 
-This integration aims to provide several unique capabilities:
+This integration aims to provide several capabilities:
 
 1. **Zero-Copy Interoperability**: Data can be passed between Clef code and native libraries without copying, reducing memory pressure and improving performance.
 
-2. **Type-Safe Serialization**: The BAREWire schema ensures type safety between Clef code and native libraries, catching errors at compile time rather than runtime.
+2. **Type-Safe Serialization**: The BAREWire schema holds type safety between Clef code and native libraries, catching errors at compile time rather than runtime.
 
-3. **Memory Layout Control**: Explicit control over memory layout ensures compatibility with native libraries that expect specific struct layouts.
+3. **Memory Layout Control**: Explicit control over memory layout keeps compatibility with native libraries that expect specific struct layouts.
 
-This integration is particularly valuable for performance-critical applications that process large amounts of data, enabling efficient communication between components regardless of their binding strategy.
+This integration matters most for performance-critical applications that process large amounts of data, where it enables efficient communication between components regardless of their binding strategy.
 
 ### Platform-Specific Binding Strategies
 
-Different platforms have different considerations for binding strategies, influencing how libraries should be integrated. Fidelity addresses this through platform-specific binding configurations designed to adapt to the unique characteristics of each environment.
+Different platforms weigh binding strategies differently, which changes how libraries should be integrated. We address this through platform-specific binding configurations that adapt to the characteristics of each environment.
 
 ```fsharp
 let configureBindingStrategy (platformType: PlatformType) =
@@ -705,13 +698,13 @@ This approach recognizes that different environments have different priorities:
 - **Mobile Devices**: Balance static and dynamic binding, using static for performance-critical or security-sensitive components and dynamic for platform integration.
 - **Server Systems**: Prioritize dynamic binding for flexibility and resource sharing, with static binding reserved for the most performance-critical components.
 
-By adapting binding strategies to each platform's characteristics, Fidelity aims to enable efficient targeting of diverse environments without compromising on performance or compatibility.
+By adapting binding strategies to each platform's characteristics, we aim to target diverse environments without giving up performance or compatibility.
 
 ## Development Workflow
 
 ### Library Binding Workflow
 
-The development workflow for using native libraries in Fidelity is designed to be intuitive and familiar to Clef developers, while providing the flexibility needed for systems programming.
+The development workflow for using native libraries in our framework is designed to read as familiar to Clef developers, while giving the flexibility that systems programming needs.
 
 1. **Generate Bindings**: Use Farscape to generate Clef bindings for the C/C++ library
    ```bash
@@ -747,11 +740,11 @@ The development workflow for using native libraries in Fidelity is designed to b
    fargo build --profile release
    ```
 
-This workflow maintains a clean separation between binding intent and implementation, enabling developers to focus on their application logic while the binding mechanics adapt to the configuration. The consistency of the API regardless of binding strategy would allow the same code to be used across different deployment scenarios without modification.
+This workflow keeps a clean separation between binding intent and implementation, so developers focus on application logic while the binding mechanics adapt to the configuration. Because the API stays consistent regardless of binding strategy, the same code carries across different deployment scenarios without modification.
 
 ### Development-Time vs. Build-Time Binding
 
-A key innovation in Fidelity's approach is the separation between development-time and build-time binding decisions. This separation acknowledges that the optimal binding strategy during development may differ from the one used in production.
+Our approach separates development-time from build-time binding decisions. This acknowledges that the best binding strategy during development can differ from the one used in production.
 
 - **Development Time**: During development, dynamic binding provides faster compilation and easier debugging, enabling rapid iteration. Changes to the application code don't require recompiling the libraries, and debugging tools can see across the function call boundary more easily.
 
@@ -759,7 +752,7 @@ A key innovation in Fidelity's approach is the separation between development-ti
 
 - **CI/CD Pipeline**: In continuous integration environments, different binding strategies can be applied for different build targets, dynamic for debugging builds, static for release builds, and specific combinations for particular deployment environments.
 
-This separation creates a more productive development experience while still enabling optimal production builds. Developers could focus on their application logic during development, with the binding mechanics automatically adapting to the appropriate strategy at build time.
+This separation makes development more productive while still allowing optimized production builds. Developers stay focused on application logic during development, and the binding mechanics adapt to the appropriate strategy at build time.
 
 ## Performance Considerations
 
@@ -793,13 +786,13 @@ These advantages make dynamic binding particularly valuable for desktop applicat
 
 ### Optimization Strategies
 
-Fidelity is designed to employ several optimization strategies to maximize performance regardless of binding approach:
+We are designing several optimization strategies to keep performance high regardless of binding approach:
 
 - **Link-Time Optimization**: For statically linked components, link-time optimization enables aggressive cross-module optimizations like function inlining, constant propagation, and dead code elimination.
 
 - **Profile-Guided Optimization**: Using execution profiles to identify hot paths and optimize them aggressively, regardless of binding strategy.
 
-- **Inlining Across Boundaries**: For performance-critical functions, Fidelity could selectively inline across binding boundaries, even with dynamic binding, by generating specialized versions of the code.
+- **Inlining Across Boundaries**: For performance-critical functions, we intend to selectively inline across binding boundaries, even with dynamic binding, by generating specialized versions of the code.
 
 - **Vectorization**: SIMD optimization is applied where supported by the target platform, enabling efficient parallel processing regardless of binding strategy.
 
@@ -835,7 +828,7 @@ Dynamic binding introduces security considerations that must be addressed:
 
 - **Dependency Management**: Tracking and updating dependencies for security patches, particularly for libraries that handle sensitive operations like cryptography or network communication.
 
-Fidelity aims to address these considerations through enhanced runtime checks and verification mechanisms, reducing the security risks associated with dynamic binding.
+We aim to address these considerations through runtime checks and verification mechanisms, which reduce the security risks associated with dynamic binding.
 
 ### Recommended Security Practices
 
@@ -849,7 +842,7 @@ For security-critical applications, the recommended practices include:
 
 4. Follow platform-specific security best practices for library loading, particularly on platforms with specialized security mechanisms like code signing or secure boot.
 
-These practices could create a robust security posture that balances the flexibility of dynamic binding with the security benefits of static binding, enabling applications to meet their security requirements while maintaining deployment flexibility.
+These practices balance the flexibility of dynamic binding with the security benefits of static binding, so applications can meet their security requirements while keeping deployment flexibility.
 
 ## Future Developments
 
@@ -865,7 +858,7 @@ Fidelity's binding architecture will continue to evolve to address emerging requ
 
 - **Incremental Static Linking**: Combining benefits of both approaches with partial static linking, where frequently called functions are statically linked while rarely used ones remain dynamic.
 
-These innovations aim to further refine the binding architecture, enabling even more nuanced decisions that optimize for the specific characteristics of each application and deployment environment.
+These directions aim to refine our binding architecture toward finer decisions that fit the characteristics of each application and deployment environment.
 
 ### Tooling Improvements
 
@@ -893,13 +886,13 @@ These integration efforts would make Fidelity's binding architecture more access
 
 ## Conclusion
 
-The Fidelity framework's approach to library binding represents a paradigm shift in how we think about integrating native libraries with high-level languages. By separating binding intent from implementation, it aims to enable developers to make intentional, fine-grained decisions about binding strategies while maintaining a consistent programming model.
+Our approach to library binding moves the linking decision out of the source and into configuration. By separating binding intent from implementation, it lets developers make fine-grained decisions about binding strategy while keeping a consistent programming model.
 
-This balanced approach combines the best aspects of static and dynamic linking, providing the performance and security benefits of static binding where they matter most, while maintaining the flexibility and resource sharing of dynamic binding where appropriate. The result would be a more versatile architecture that adapts to diverse deployment requirements without compromising on developer experience.
+The approach takes the performance and security of static binding where they matter most, and the flexibility and resource sharing of dynamic binding where those matter more. The result is an architecture that adapts to diverse deployment requirements while holding the developer experience steady.
 
-What makes this approach compelling is not just its technical capabilities, but its potential impact on the development process. By removing the artificial boundary between "systems programming" and "high-level programming," it could enable developers to harness the full expressive power of Clef across the entire computing spectrum, from tiny embedded devices to massive distributed systems.
+The part we keep returning to is the effect on the development process. By removing the boundary between "systems programming" and "high-level programming," the same Clef code reaches across the computing spectrum, from embedded devices to distributed systems, without rewriting for each target.
 
-As the Fidelity ecosystem continues to evolve, the binding architecture remains a cornerstone of its vision. This approach represents a potential paradigm shift in systems programming—one that aims to dissolve traditional boundaries between environments while preserving the precision, expressiveness, and elegance that defines Clef as a programming language.
+The binding architecture stays a cornerstone of where we are taking our Fidelity framework. We will keep building it toward dissolving the boundaries between deployment environments while preserving the precision and expressiveness of Clef, and we will report what we learn as the work continues.
 
 ---
 

@@ -15,7 +15,7 @@ params:
 
 Large language models have a recurrence problem. Not the recurrence of RNNs, which is architectural, but the recurrence of reasoning itself: any task that requires iterating over structure, decomposing a problem into subproblems, or maintaining state across an unbounded number of steps. Transformer attention is fixed-width. The context window is finite. When reasoning requires recursion, the model either fits the entire recursive trace into its context or it fails.
 
-Two recent lines of work address this problem from different directions. They arrive at structurally similar solutions despite starting from different formal traditions. The convergence is instructive.
+Two recent lines of work address this problem from different directions. They arrive at structurally similar solutions despite starting from different formal traditions.
 
 ## λ-RLM: Fixed-Point Combinators as Inference Control
 
@@ -83,15 +83,15 @@ The constructions described above (typed actor constellation, BAREWire consultat
 
 **λ-RLM convergence guarantees are Hoare triples over the combinator tree.** The termination guarantee (depth \(d = \lceil \log_{k^*}(n / \tau^*) \rceil\)) is a Hoare triple of the form \(\{|P| > \tau^*\}\, \text{Split}\, \{|P_i| < |P|\}\) iterated through the recursion tree, with the loop invariant being "every leaf is bounded by \(\tau^*\)." The Y-combinator's fixed point is the invariant that the combinator structure maintains across recursion levels; the cost guarantee is a Hoare triple over the combinator tree that bounds the number of model invocations by counting the leaves; the power-law accuracy result is a Hoare triple over the Reduce composition that bounds the error in the aggregated result. The combinators' typed signatures are what make these triples decidable: the type discipline restricts the combinator language to one in which the relevant Hoare obligations live in QF_LIA over the abelian fragment, which means Z3 can discharge them at compile time. λ-RLM is, in this reading, a Tier 1 / Tier 2 verification target whose obligations the framework's existing dual-pass machinery already supports.
 
-The convergence of these four readings is not coincidental. Both λ-RLM and the porous loop are constructions over finite posets (the recursion tree, the actor constellation) with stalks (subproblem states, actor states) and structure maps (combinator composition, BAREWire consultation). Both require a global section condition for their guarantees to hold (every leaf below \(\tau^*\) for λ-RLM; convergent boundary tensions for the porous loop). Both compose with the framework's existing verification stack at exactly the layer where the sheaf vocabulary makes the composition precise.
+The four readings share a common construction. Both λ-RLM and the porous loop are constructions over finite posets (the recursion tree, the actor constellation) with stalks (subproblem states, actor states) and structure maps (combinator composition, BAREWire consultation). Both require a global section condition for their guarantees to hold (every leaf below \(\tau^*\) for λ-RLM; convergent boundary tensions for the porous loop). Both compose with the framework's existing verification stack at exactly the layer where the sheaf vocabulary makes the composition precise.
 
 ## Implications
 
-The convergence between λ-RLM's functional approach and the porous loop's actor-based approach is not coincidental. Both are responses to the same structural limitation: neural models that lack formal control over their own recurrence. Both impose typed discipline from outside the neural component. Both contain uncertainty within bounded scope.
+λ-RLM's functional approach and the porous loop's actor-based approach converge because both respond to the same structural limitation: neural models that lack formal control over their own recurrence. Both impose typed discipline from outside the neural component. Both contain uncertainty within bounded scope.
 
-The categorical framework developed in this series provides the formal vocabulary for understanding why both approaches work and how they relate. The practical implication for the Fidelity framework is that the porous loop's typed actor consultation is a generalization of the fixed-point combinator pattern: it provides the same structural control guarantees while additionally supporting domain-grounded inference through typed, verified, dimensionally-annotated channels.
+The categorical framework developed in this series provides the formal vocabulary for understanding why both approaches work and how they relate. The practical implication for our Fidelity framework is that the porous loop's typed actor consultation is a generalization of the fixed-point combinator pattern: it provides the same structural control guarantees while additionally supporting domain-grounded inference through typed, verified, dimensionally-annotated channels.
 
-This positions the HRM → RRM → Porous RRM progression not as a speculative architectural direction but as a principled extension of a pattern that is independently validated: typed structural control of inference produces formally verifiable, empirically measurable improvements over unstructured neural recursion.
+This grounds the HRM → RRM → Porous RRM progression in a pattern that already has independent validation: typed structural control of inference produces formally verifiable, empirically measurable improvements over unstructured neural recursion. Extending that pattern toward domain-grounded consultation is where our design work on the porous loop continues.
 
 ## References
 

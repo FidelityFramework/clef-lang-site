@@ -12,12 +12,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-The streaming question sits at the heart of systems programming. When data flows through a computation, the compiler must decide: should this materialize in memory, stream through a spatial pipeline, or remain suspended as a demand-driven thunk? Each choice carries profound implications for performance, memory pressure, and hardware utilization.
+The streaming question sits at the heart of systems programming. When data flows through a computation, the compiler must decide: should this materialize in memory, stream through a spatial pipeline, or remain suspended as a demand-driven thunk? Each choice carries implications for performance, memory pressure, and hardware utilization.
 
 Rust made its choice early: ownership and borrowing, enforced at compile time, with a single memory model baked into the language. This decision has served millions of developers well. It has also created constraints that become visible when targeting the heterogeneous compute landscape emerging in 2026 and beyond.
 
@@ -47,7 +42,7 @@ When data remains suspended, computation happens only when results are needed. A
 \text{Memory}_{demand} = O(1) + \text{closure\_overhead} \times \text{active\_thunks}
 \]
 
-Haskell pioneered this model, demonstrating its elegance for expressing infinite data structures and composable transformations. The challenge emerges at scale: when every intermediate value becomes a thunk, the overhead compounds. GHC's extensive optimization passes exist precisely to recover the efficiency that pervasive laziness costs.
+Haskell pioneered this model, demonstrating how it expresses infinite data structures and composable transformations. The challenge emerges at scale: when every intermediate value becomes a thunk, the overhead compounds. GHC's extensive optimization passes exist precisely to recover the efficiency that pervasive laziness costs.
 
 ### Spatial: The Dataflow Pipeline
 
@@ -61,17 +56,17 @@ This model maps directly to spatial compute architectures: systolic arrays, CGRA
 
 ## Why Rust's Early Decisions Constrain This Space
 
-Rust's ownership model encodes a specific memory semantics: every value has exactly one owner, and that owner determines lifetime. This works beautifully for materialized data on conventional CPUs. It becomes awkward for the other two models.
+Rust's ownership model encodes a specific memory semantics: every value has exactly one owner, and that owner determines lifetime. This works well for materialized data on conventional CPUs. It becomes awkward for the other two models.
 
 **Demand-driven computation** requires values that outlive their lexical scope. A lazy thunk captured in a closure must persist until evaluation. Rust handles this through `Box`, `Rc`, and `Arc`, each adding indirection and runtime overhead. The borrow checker, designed for stack-allocated ownership, offers limited assistance for heap-allocated lazy structures.
 
 **Spatial dataflow** requires values that flow between processing stages without clear ownership boundaries. When data moves from producer to consumer through a bounded channel, who "owns" it during transit? Rust's channel implementations work, but the ownership model provides no special support for expressing spatial relationships.
 
-More fundamentally, Rust's type system erases dimensional information that spatial compilation requires. The type `f32` carries no units. The type `[f32; 1024]` carries no semantic about whether this is a time series, a frequency spectrum, or a spatial image row. When targeting FPGAs or CGRAs, this missing information forces the compiler to make conservative choices.
+Beyond ownership, Rust's type system erases dimensional information that spatial compilation requires. The type `f32` carries no units. The type `[f32; 1024]` carries no semantic about whether this is a time series, a frequency spectrum, or a spatial image row. When targeting FPGAs or CGRAs, this missing information forces the compiler to make conservative choices.
 
-## The Fidelity Position: Tiered Abstraction
+## Our Position: Tiered Abstraction
 
-The Fidelity framework approaches this challenge through layered abstraction. Each layer independently addresses a dimension of the streaming problem:
+Our Fidelity framework approaches this challenge through layered abstraction. Each layer independently addresses a dimension of the streaming problem:
 
 | Layer | Concern | Mechanism | Annotation |
 |-------|---------|-----------|------------|
@@ -105,11 +100,11 @@ This information determines streaming strategy. A sequence with statically-known
 
 The coeffect \(R\) tracks what \(e\) requires from its environment.
 
-> This isn't new notation for academics, but it is novel for a systems language to compute and preserve this information through native code generation.
+> The notation is established in the literature. We have found no other representative implementation in the standing literature we have reviewed of a systems language that computes and preserves this information through native code generation.
 
 ### Dimensional Types: Physical Semantics
 
-Building on F#'s units of measure, dimensional types carry physical meaning through compilation:
+Building on the units of measure Clef inherits from its F# lineage, our dimensional types carry physical meaning through compilation:
 
 ```fsharp
 [<Measure>] type meters
@@ -125,7 +120,7 @@ let velocity (distance: float<meters>) (time: float<seconds>)
 let processAudio (data: array<float<samples>, 48000>) = ...
 ```
 
-The key insight: **memory semantics are also dimensions**. A pointer to peripheral memory differs from a pointer to main RAM. This information must survive compilation to generate correct hardware access patterns.
+Memory semantics are also dimensions. A pointer to peripheral memory differs from a pointer to main RAM. This information must survive compilation to generate correct hardware access patterns.
 
 ```fsharp
 [<Measure>] type Peripheral
@@ -136,7 +131,7 @@ let gpioRegister: Ptr<uint32, Peripheral, ReadOnly> = ...
 
 ### Refinement Types: Verified Constraints
 
-For paths requiring formal verification, Fidelity integrates with SMT solvers through opt-in annotations:
+For paths requiring formal verification, our framework integrates with SMT solvers through opt-in annotations:
 
 ```fsharp
 [<SMT Requires("length(output) >= length(input)")>]
@@ -221,7 +216,7 @@ let dotProduct (a: array<Posit32, n>) (b: array<Posit32, n>) : Posit32 =
     quire.ToPosit32()
 ```
 
-The quire's 512 bits eliminate rounding error during accumulation. The final conversion to posit is the only rounding operation. For streaming computations where millions of values accumulate, this property ensures numerical stability that IEEE floats cannot guarantee.
+The quire's 512 bits eliminate rounding error during accumulation. The final conversion to posit is the only rounding operation. For streaming computations where millions of values accumulate, this property holds numerical error to that single conversion, where IEEE floats accumulate rounding at every step.
 
 ## Hardware Targeting Through MLIR
 
@@ -260,7 +255,7 @@ The dimensional type information flows through the PSG into MLIR dialect selecti
 
 ## The Progressive Disclosure Principle
 
-A recurring theme emerges: **each layer is independently useful, and higher layers are opt-in**.
+Each layer is independently useful, and higher layers are opt-in.
 
 | Developer Experience | Layers Used | Formalism Required |
 |---------------------|-------------|-------------------|
@@ -287,7 +282,7 @@ A language that erases streaming semantics before code generation cannot target 
 
 The three streaming models (materialized, spatial, demand-driven) are not competitors. They are complementary representations appropriate for different computational patterns and hardware targets. A systems language designed for the heterogeneous future must support all three, with compiler analysis determining the best mapping for each computation.
 
-Fidelity's tiered approach provides this capability:
+Our tiered approach provides this capability:
 - **Coeffects** infer streaming requirements from program structure
 - **Dimensional types** carry physical and memory semantics through compilation
 - **Refinement types** enable verification for critical paths
@@ -296,13 +291,13 @@ The result is a compilation pathway where streaming semantics survive from sourc
 
 ### The Foundations We're Building
 
-This is not yet a finished implementation. What exists today is foundational work. The architectural decisions and compiler infrastructure that make spatial mechanics *possible*. The Composer compiler already implements coeffect analysis for sequence expressions and closure capture. Dimensional types flow through the Program Semantic Graph. The MLIR lowering infrastructure supports multiple dialects. These are not theoretical constructs; they are working compiler passes that generate native code today.
+This is not yet a finished implementation. What exists today is foundational work: the architectural decisions and compiler infrastructure that make spatial mechanics tractable. Our Composer compiler implements coeffect analysis for sequence expressions and closure capture. Dimensional types flow through the Program Semantic Graph. The MLIR lowering infrastructure supports multiple dialects. These are working compiler passes rather than theoretical constructs.
 
 What remains unfinished is the full integration: the analysis passes that automatically select between materialized, spatial, and demand-driven representations; the CIRCT backend that generates synthesizable hardware descriptions; the runtime support for bounded channels between spatial stages; the verification infrastructure that proves safety properties across heterogeneous boundaries.
 
 This gap between foundation and completion is intentional. We are building for a hardware landscape that is still emerging. The architectures described in this essay, Groq's LPU, Tenstorrent's mesh NoC, Intel's configurable dataflow, represent the leading edge of commercially available spatial compute. The generation after them will likely introduce new constraints and opportunities we cannot yet anticipate.
 
-By establishing the *mechanisms* now, the type system extensions, the IR representations, the analysis frameworks, we create the capacity to adapt as hardware evolves. The dimensional type system does not hard-code assumptions about specific architectures. The coeffect analysis does not privilege CPU execution models. The MLIR dialect selection remains extensible to new targets. And the possibility of retargeting to systems other than MLIR remain open to us.
+By establishing the mechanisms now, the type system extensions, the IR representations, the analysis frameworks, we create the capacity to adapt as hardware evolves. Our dimensional type system does not hard-code assumptions about specific architectures. The coeffect analysis does not privilege CPU execution models. The MLIR dialect selection remains extensible to new targets. Retargeting to systems other than MLIR remains open to us.
 
 ### Spatial Mechanics as System Architecture
 
@@ -312,9 +307,9 @@ In traditional compilation, data movement is incidental. The compiler focuses on
 
 The heterogeneous compute landscape inverts this assumption. On an FPGA, wiring between processing elements is as significant as the processing elements themselves. On a CGRA, the reconfigurable routing fabric determines what computations are even expressible. On a spatial accelerator, the data movement pattern *is* the program.
 
-Fidelity's approach acknowledges this reality through its type system. When a dimensional type annotation specifies `array<float<samples>, 48000>`, it declares not just element type and count, but the *semantic structure* of the data. The compiler understands this is time-series audio data sampled at 48kHz. This information determines buffering strategies, influences hardware mapping, and enables verification that transformations preserve signal properties.
+Our approach acknowledges this reality through its type system. When a dimensional type annotation specifies `array<float<samples>, 48000>`, it declares not just element type and count, but the semantic structure of the data. The compiler reads this as time-series audio data sampled at 48kHz. This information determines buffering strategies, influences hardware mapping, and enables verification that transformations preserve signal properties.
 
-This is why spatial mechanics must be integral to the Fidelity framework rather than a bolt-on optimization pass. The streaming model a computation requires emerges from the interaction between:
+This is why spatial mechanics belongs in the framework's core rather than in a bolt-on optimization pass. The streaming model a computation requires emerges from the interaction between:
 - The data's dimensional structure (arrays, sequences, tensors)
 - The operation's semantics (map, fold, filter, scan)
 - The target's capabilities (sequential, parallel, spatial)
@@ -324,30 +319,26 @@ No single compiler pass can resolve these interactions in isolation. They must b
 
 ### The Path Forward
 
-The work continues along several parallel tracks. On the analysis front, we are refining the coeffect system to handle increasingly complex streaming patterns: nested sequences, coroutines that yield to multiple consumers, dataflow graphs with cycles and feedback. On the lowering front, we are expanding MLIR dialect coverage and beginning experimental work with CIRCT for FPGA targeting. On the verification front, we are developing the integration points between SMT specifications and spatial pipeline generation.
+The work continues along several parallel tracks. On the analysis front, we are refining our coeffect system to handle increasingly complex streaming patterns: nested sequences, coroutines that yield to multiple consumers, dataflow graphs with cycles and feedback. On the lowering front, we are expanding MLIR dialect coverage and beginning experimental work with CIRCT for FPGA targeting. On the verification front, we are developing the integration points between SMT specifications and spatial pipeline generation.
 
 None of these paths is fully paved. Each represents a direction we believe is necessary based on the constraints we observe in current approaches and the requirements we anticipate from emerging hardware. Some will prove more tractable than others. Some will reveal unexpected complications. Some may point toward entirely new abstractions we have not yet imagined.
 
 This is the nature of foundational work in a rapidly evolving space. We are not building toward a fixed specification. We are building the *capacity* to handle a diverse and expanding set of targets, guided by principles that we believe will remain relevant:
 
 - **Preserve semantics through lowering**: Streaming properties visible in source code should survive to hardware generation
-- **Enable progressive disclosure**: Sophisticated annotations remain opt-in; standard Clef code should "just work"
+- **Enable progressive disclosure**: Heavier annotations remain opt-in; standard Clef code should "just work"
 - **Maintain dimensional fidelity**: Physical types, memory attributes, and numerical representations carry meaning that affects correctness
 - **Support heterogeneous targets**: The same source code should lower appropriately to CPU, GPU, FPGA, and future architectures
 
 These principles anchor the design even as specific implementations evolve.
 
-The spatial mechanics described in this essay represent one piece of a larger vision: a systems language that treats heterogeneous compute not as an afterthought or a specialized extension, but as a fundamental architectural assumption.
+The spatial mechanics described here represent one piece of a larger design direction: a systems language that treats heterogeneous compute as a starting architectural assumption rather than an afterthought or a specialized extension.
 
-> We are advancing a design model where dimensional types are not annotations for documentation but semantic contracts enforced through compilation.
+> We are advancing a design model where dimensional types are semantic contracts enforced through compilation rather than annotations for documentation, where streaming models emerge from program structure rather than manual optimization, and where the compiler serves as a bridge between functional specification and spatial implementation.
 
-Where streaming models emerge from program structure rather than manual optimization. Where the compiler serves as a bridge between functional specification and spatial implementation.
+We are building the foundations. The full structure will take time, as hardware continues to evolve and new targets emerge. Each piece reinforces the others, building toward a compilation pathway from Clef source to heterogeneous silicon.
 
-We are building the foundations. The full structure will take time, as hardware continues to evolve and new targets emerge. But we take solace in the fact that the paths forward are clear. Each piece reinforces the others, creating a coherent compilation pathway from Clef source to heterogeneous silicon.
-
-This clarity of direction matters more than completeness. In a rapidly evolving space, adaptability trumps premature commitment. By establishing the right abstractions now; abstractions that preserve semantics, enable progressive disclosure, and remain agnostic to specific hardware implementations; we create the capacity to meet targets which the technology landscape has yet to fully specify.
-
-The spatial mechanics will continue to evolve. Our shared vision remains steady.
+The abstractions we are settling now preserve semantics, enable progressive disclosure, and stay agnostic to specific hardware implementations. That gives us room to meet targets the technology landscape has yet to specify. We will keep refining the analysis, the lowering, and the verification as the spatial mechanics take shape, and as the hardware we are designing for comes into view.
 
 ---
 

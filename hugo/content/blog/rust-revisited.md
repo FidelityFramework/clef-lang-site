@@ -12,22 +12,17 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+The Rust programming ecosystem has transformed how the software industry views systems programming. By pioneering its ownership system with "borrowing" and "lifetimes", Rust brought compile-time memory safety into mainstream development. Beyond memory management, Rust's innovations in zero-cost abstractions, trait-based generics, and "fearless concurrency" philosophy have influenced a generation of language designers.
 
-The Rust programming ecosystem has transformed how the software industry views systems programming. By pioneering its ownership system with "borrowing" and "lifetimes", Rust brought compile-time memory safety into mainstream development. Beyond memory management, Rust's innovations in zero-cost abstractions, trait-based generics, and "fearless concurrency" philosophy have influenced an entire echelon of language designers.
-
-At SpeakEZ, we've analyzed Rust's design choices while developing the Fidelity Framework. This exploration examines both the similarities stemming from our shared OCaml heritage and the contrasts arising from different design philosophies, particularly around async programming models, ecosystem coherence, and developer ergonomics.
+At SpeakEZ, we've analyzed Rust's design choices while developing our Fidelity Framework. This exploration examines both the similarities stemming from a shared OCaml heritage and the contrasts arising from different design philosophies, particularly around async programming models, ecosystem coherence, and developer ergonomics.
 
 ## Honoring Rust's Contributions
 
-Rust deserves recognition for proving that memory safety doesn't require sacrificing performance. Its ownership system demonstrated that imperative programming could be made dramatically safer through compile-time verification. The language's zero-cost abstractions showed that high-level constructs could compile to machine code equivalent to hand-written C, creating a paradigm shift that continues to influence language design today.
+Rust deserves recognition for proving that memory safety doesn't require sacrificing performance. Its ownership system demonstrated that imperative programming could be made safer through compile-time verification. The language's zero-cost abstractions showed that high-level constructs could compile to machine code equivalent to hand-written C, an influence that continues to shape language design today.
 
-Both Rust and F# trace their lineage to OCaml. Rust's first compiler was written in OCaml, leaving traces in its pattern matching and type system design. F# began as an explicit adaptation of OCaml for .NET, later spawning the Fable compiler for JavaScript transpilation. This shared heritage manifests in similar constructs - algebraic data types, pattern matching, and functional influences - though the languages pursued divergent paths. Where F# embraced functional programming with immutability by default, Rust chose an imperative foundation with ownership-based safety.
+Both Rust and F# trace their lineage to OCaml. Rust's first compiler was written in OCaml, leaving traces in its pattern matching and type system design. F# began as an explicit adaptation of OCaml for .NET, later spawning the Fable compiler for JavaScript transpilation. This shared heritage manifests in similar constructs such as algebraic data types, pattern matching, and functional influences, though the languages pursued divergent paths. Where F# embraced functional programming with immutability by default, Rust chose an imperative foundation with ownership-based safety.
 
-The Fidelity Framework acknowledges these contributions while charting its own course, building on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered unique approaches: units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/traits-versus-srtp/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor, creating capabilities that Fidelity now extends into native compilation.
+Our Fidelity Framework acknowledges these contributions while charting its own course, drawing on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/traits-versus-srtp/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor. Clef inherits these approaches and carries them into native compilation.
 
 ## The Async Runtime Divergence
 
@@ -68,14 +63,14 @@ let fetchAndProcess url = async {
 }
 ```
 
-This unity provides predictable execution, clear debugging, and universal compatibility - benefits explored in depth in our [AMM analysis](/docs/design/abstract-machine-model-paradox/).
+This unity provides predictable execution, clear debugging, and universal compatibility, benefits explored in depth in our [AMM analysis](/docs/design/abstract-machine-model-paradox/).
 
 ### Fidelity's Compile-Time Innovation
 
-Fidelity extends Clef's async model through delimited continuations, achieving compile-time determinism:
+Our Fidelity Framework is designed to extend Clef's async model through delimited continuations, with the goal of compile-time determinism:
 
 ```fsharp
-// Standard Clef async becomes deterministic state machines
+// async lowered to a deterministic state machine
 let processWithDcont data =
     reset (fun () ->
         let validated = shift (fun k -> validateAsync data |> continueWith k)
@@ -84,7 +79,7 @@ let processWithDcont data =
     )
 ```
 
-The DCont dialect in MLIR (discussed in our AMM article) enables static state machine generation with predetermined memory layouts and zero runtime overhead.
+Our DCont dialect in MLIR (discussed in our AMM article) is designed to generate static state machines with predetermined memory layouts and no runtime overhead.
 
 ## Converging on Error Handling
 
@@ -161,11 +156,11 @@ let process (data: Data list) : Result<Stats, Error> =
     // Not mandatory in every function
 ```
 
-As detailed in [Memory Management by Choice](/docs/design/memory-management-by-choice/), BAREWire enables optimization where beneficial without polluting all code with memory concerns.
+As detailed in [Memory Management by Choice](/docs/design/memory-management-by-choice/), our BAREWire design is meant to enable optimization where beneficial without polluting all code with memory concerns.
 
 ## Compilation Architecture Divergence
 
-The architectural split between Rust's direct LLVM compilation and Fidelity's MLIR pipeline has profound implications:
+The architectural split between Rust's direct LLVM compilation and our MLIR pipeline carries several implications:
 
 ### Rust's Single Path
 
@@ -173,7 +168,7 @@ The architectural split between Rust's direct LLVM compilation and Fidelity's ML
 Rust → HIR → MIR → LLVM IR → Machine Code
 ```
 
-Direct LLVM compilation provides excellent optimization but locks into a single lowering strategy.
+Direct LLVM compilation provides strong optimization but locks into a single lowering strategy.
 
 ### Fidelity's Multi-Level Approach
 
@@ -181,9 +176,9 @@ Direct LLVM compilation provides excellent optimization but locks into a single 
 Clef → PHG → MLIR Dialects → Progressive Lowering → Multiple Targets
 ```
 
-The Program Hypergraph (detailed in our [AMM analysis](/docs/design/abstract-machine-model-paradox/)) maintains semantic information through compilation. MLIR's dialects - including DCont for continuations and Inet for interaction nets - enable targeting heterogeneous processors that Rust cannot efficiently reach.
+Our Program Hypergraph (detailed in our [AMM analysis](/docs/design/abstract-machine-model-paradox/)) is designed to maintain semantic information through compilation. The MLIR dialects we define, including DCont for continuations and Inet for interaction nets, are meant to target heterogeneous processors that Rust cannot efficiently reach.
 
-This architectural difference enables:
+This architectural difference is designed to enable:
 - Cross-domain optimizations across async, memory, and parallel operations
 - Hardware-specific lowering (FPGA dataflow, neuromorphic spikes, GPU kernels)
 - Preservation of mathematical properties for algebraic optimization
@@ -225,7 +220,7 @@ let processConcurrent data = async {
 }
 ```
 
-Clef provides multiple concurrency patterns - actors, streams, parallel collections - unified through consistent async semantics.
+Clef provides multiple concurrency patterns, including actors, streams, and parallel collections, unified through consistent async semantics.
 
 ## Developer Experience Contrasts
 
@@ -270,13 +265,13 @@ The fundamental split reflects different philosophies about systems programming:
 
 Both languages contribute valuable perspectives to systems programming:
 
-**Rust** proved that memory safety without garbage collection is practical, created a powerful ecosystem, and showed how functional concepts enhance imperative programming.
+**Rust** proved that memory safety without garbage collection is practical, built a large ecosystem, and showed how functional concepts enhance imperative programming.
 
-**Clef/Fidelity** demonstrates that functional programming can target systems domains, that multiple compilation strategies can coexist, and that heterogeneous computing doesn't require sacrificing high-level abstractions.
+**Clef and our Fidelity Framework** are designed to show that functional programming can target systems domains, that multiple compilation strategies can coexist, and that heterogeneous computing need not require sacrificing high-level abstractions.
 
 Rather than viewing these as competing approaches, they represent complementary explorations of the design space. Rust's explicit control appeals to developers wanting complete visibility. Clef's compositional abstractions appeal to those prioritizing domain logic with selective optimization.
 
-The future of systems programming isn't monolithic - it's an ecosystem of languages pushing boundaries in different directions. As computing becomes increasingly heterogeneous (FPGAs, neuromorphic processors, quantum devices), the ability to maintain multiple mental models and compilation strategies becomes essential. Both Rust and Fidelity contribute important pieces to this evolving puzzle.
+As computing becomes more heterogeneous, spanning FPGAs, neuromorphic processors, and prospectively quantum devices, the ability to maintain multiple mental models and compilation strategies grows more valuable. That is the direction we keep building toward with Clef and our Fidelity Framework as the work continues, and we expect to keep learning from Rust's path as we go.
 
 For deeper exploration of specific topics:
 - [Abstract Machine Models and heterogeneous computing](/docs/design/abstract-machine-model-paradox/)

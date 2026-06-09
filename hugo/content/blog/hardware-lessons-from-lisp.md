@@ -10,26 +10,21 @@ params:
   migration_date: 2026-03-29
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-The computing industry stands at a fascinating juncture in 2025. After decades of general-purpose processor dominance that led to the accidental emergence of general purpose GPU, we're witnessing what appears to be a reverse inflection point. Specialized architectures are re-emerging as an economic imperative, but with crucial differences from the LISP machines of the past. Our analysis examines how languages inheriting from LISP's legacy, particularly [Clef](https://clef-lang.com) and others with lineage to OCaml and StandardML, are uniquely positioned to realize the advantages of new hardware coming from vendors like NextSilicon, Groq, Cerebras and Tenstorrent: a concept we're calling Dataflow Graph Architecture (DGA).
+The computing industry sits at a notable juncture in 2025. After decades of general-purpose processor dominance that led to the accidental emergence of general purpose GPU, we're witnessing what appears to be a reverse inflection point. Specialized architectures are re-emerging as an economic imperative, with important differences from the LISP machines of the past. We examine here how languages inheriting from LISP's legacy, particularly [Clef](https://clef-lang.com) and others with lineage to OCaml and StandardML, are positioned to realize the advantages of new hardware coming from vendors like NextSilicon, Groq, Cerebras and Tenstorrent. We call this concept Dataflow Graph Architecture (DGA).
 
 ## The Phoenix Pattern: An Electric Car Saga
 
-Before diving into the LISP machine story, consider a striking historical parallel: the rise, fall, and resurrection of electric vehicles. In the late 1890s and early 1900s, electric cars weren't just viable; they dominated. By 1900, electric vehicles held the land speed record. In 1912 United States, 38% of automobiles were powered by electricity, with over 33,000 electric cars registered. They were the preferred choice of well-heeled urban customers, featuring luxurious interiors and sophisticated engineering.
+Before diving into the LISP machine story, consider a striking historical parallel: the rise, fall, and resurrection of electric vehicles. In the late 1890s and early 1900s, electric cars weren't just viable; they dominated. By 1900, electric vehicles held the land speed record. In 1912 United States, 38% of automobiles were powered by electricity, with over 33,000 electric cars registered. They were the preferred choice of well-heeled urban customers, featuring luxurious interiors and quiet, crank-free operation.
 
 {{< figure src="/images/blog/The_Employment_of_Women_on_the_Home_Front,_1914-1918_Q27982.jpg" caption="An employee of the Great Eastern Railway Company driving a battery-powered rail parcel truck somewhere in Britain c. 1914-1918 [Wikipedia]" >}}
 
 Yet by 1920, electric vehicles had virtually vanished from the market. The culprits? Henry Ford's mass-produced Model T cost three times less than a typical electric car. Gasoline's energy density provided 20-30 times the range. The electric starter eliminated hand-cranking, removing one of electric's key advantages. Infrastructure development favored gasoline distribution over electrical grids.
 
-Sound familiar? This is precisely the pattern that played out with LISP machines seventy years later. Superior in many technical dimensions, defeated by economics and ecosystem realities, only to return when fundamental constraints; energy efficiency and the promise of reduced environmental impact for electric vehicles, with analogs of computational efficiency for specialized processors; made the "old" approach newly essential.
+Sound familiar? This is the pattern that played out with LISP machines seventy years later. Superior in many technical dimensions, defeated by economics and ecosystem realities, only to return when constraints made the "old" approach newly essential. For electric vehicles those constraints were energy efficiency and the promise of reduced environmental impact. For specialized processors the analog is computational efficiency.
 
-Today's electric vehicle renaissance isn't merely nostalgia. Tesla's market capitalization exceeds that of the next nine automakers combined. Governments worldwide are mandating the phase-out of internal combustion engines. The technology that seemed permanently obsolete has returned, transformed by lithium-ion batteries, sophisticated power management, and most critically, an environmental imperative that changed the entire cost equation.
+Today's electric vehicle renaissance isn't merely nostalgia. Tesla's market capitalization exceeds that of the next nine automakers combined. Governments worldwide are mandating the phase-out of internal combustion engines. The technology that seemed permanently obsolete has returned, transformed by lithium-ion batteries, modern power management, and most critically an environmental imperative that changed the entire cost equation.
 
-This phoenix pattern; where superior but economically disadvantaged technologies lie dormant until external pressures resurrect them in evolved forms; is precisely what we're witnessing with specialized computing architectures.
+This phoenix pattern, where superior but economically disadvantaged technologies lie dormant until external pressures resurrect them in evolved forms, is what we're witnessing with specialized computing architectures.
 
 ## The First Golden Age of AI Hardware
 
@@ -39,7 +34,7 @@ To understand where we're heading, we must first appreciate where we've been. In
 
 The dominance was staggering. By the mid-1980s, the AI industry had grown to over $1 billion annually (before adjustment for inflation), with LISP machines representing a significant portion of that market. Companies like Symbolics, LISP Machines Inc. (LMI), Texas Instruments, and Xerox commanded premium prices for their specialized hardware. A single Symbolics 3600 workstation cost $70,000-80,000 in 1983 (approximately $240,000 in 2024 dollars), yet research labs and corporations eagerly paid these prices.
 
-What made LISP machines so compelling? They offered hardware-accelerated features that seemed almost magical at the time:
+What made LISP machines so compelling? They offered hardware-accelerated features that had no equivalent on the general-purpose hardware of the time:
 
 - **Tagged memory architectures** that performed runtime type checking in hardware.
 - **Graph-based memory models** where pointers were edges and data structures were subgraphs
@@ -47,29 +42,29 @@ What made LISP machines so compelling? They offered hardware-accelerated feature
 - **Message-passing primitives** built into the architecture
 - **Microcoded instructions** optimized for list processing and symbolic computation
 
-These weren't simple performance optimizations. They represented a fundamentally different view of computation. LISP machines viewed computation as a graph-structured process. Every piece of data carried its type, enabling dynamic hardware dispatch. This core tenet of embedding data semantics directly into the hardware is precisely what modern neuromorphic processors and Coarse-Grained Reconfigurable Arrays (CGRAs) are rediscovering. These new architectures are designed to understand beyond the nature of an operation to what kind of data it is operating on. This enables new levels of parallelism and efficiency that were dismissed as overengineering when general-purpose processors won on cost.
+These weren't performance optimizations. They represented a different view of computation. LISP machines viewed computation as a graph-structured process. Every piece of data carried its type, enabling dynamic hardware dispatch. This tenet of embedding data semantics directly into the hardware is what modern neuromorphic processors and Coarse-Grained Reconfigurable Arrays (CGRAs) are rediscovering. These new architectures are designed to understand beyond the nature of an operation to what kind of data it is operating on. This enables levels of parallelism and efficiency that were dismissed as overengineering when general-purpose processors won on cost.
 
 ## When That Market Fell Off a Cliff
 
-The collapse of LISP machines, when it came, was swift and brutal; remarkably similar to how electric vehicles disappeared from roads by 1920. What had been a billion-dollar industry dominated by companies like Symbolics and LISP Machines Inc. was effectively extinct by 1992, replaced by general-purpose RISC workstations that cost **three times less** while delivering **2-4 times the raw performance**.
+The collapse of LISP machines, when it came, was swift and brutal, much like how electric vehicles disappeared from roads by 1920. What had been a billion-dollar industry dominated by companies like Symbolics and LISP Machines Inc. was effectively extinct by 1992, replaced by general-purpose RISC workstations that cost **three times less** while delivering **2-4 times the raw performance**.
 
-Just as gasoline cars won on cost and convenience despite electric vehicles' technical elegance, RISC workstations crushed LISP machines through sheer economic force. The LISP machine's downfall wasn't merely economic. Software advances in garbage collection algorithms and compiler technology progressively reduced the need for specialized hardware. By the late 1980s, Common LISP compilers on RISC workstations matched the performance of LISP machines for most applications. The broader AI Winter of 1987-1993 delivered the final blow, as expert systems failed to meet inflated expectations and military funding for AI research evaporated. [2]
+Just as gasoline cars won on cost and convenience despite electric vehicles' technical merits, RISC workstations crushed LISP machines through economic force. The LISP machine's downfall wasn't merely economic. Software advances in garbage collection algorithms and compiler technology progressively reduced the need for specialized hardware. By the late 1980s, Common LISP compilers on RISC workstations matched the performance of LISP machines for most applications. The broader AI Winter of 1987-1993 delivered the final blow, as expert systems failed to meet inflated expectations and military funding for AI research evaporated. [2]
 
 But here's what the industry overlooked in its focus on cost-efficiency:
 
-> LISP machines weren't wrong about the nature of computation, they were simply ahead of their time and constrained by the economics and technologies of their era.
+> LISP machines weren't wrong about the nature of computation, they were ahead of their time and constrained by the economics and technologies of their era.
 
 Like electric vehicles waiting for lithium-ion batteries and climate urgency, LISP's architectural insights would need to wait for their resurrection moment.
 
 ## The Pendulum Swings Back
 
-Decades later, the architectural landscape is transforming in ways that mirror the LISP machine era while learning from its failures. Energy efficiency has emerged as the primary constraint driving innovation, with AI workloads consuming unprecedented amounts of power; the same existential crisis that brought electric vehicles roaring back to relevance. This has catalyzed development of radically different approaches to computing that sacrifice generality for domain-specific optimization, but with a crucial evolution: these new architectures transcend traditional Instruction Set Architectures (ISAs) to embrace a spatial computing model.
+Decades later, the architectural landscape is transforming in ways that mirror the LISP machine era while learning from its failures. Energy efficiency has emerged as the primary constraint driving innovation, with AI workloads consuming unprecedented amounts of power. This is the same pressure that brought electric vehicles back to relevance. It has catalyzed development of different approaches to computing that sacrifice generality for domain-specific optimization, with one further change: these new architectures move past traditional Instruction Set Architectures (ISAs) to embrace a spatial computing model.
 
 This puts a double burden on the developer community. There's an imperative to move faster, do more, and create more opportunities in less time. Dataflow architectures offer this inherently, but it requires new thinking. This new paradigm can be aided by the valuable lessons learned in previous technology eras.
 
 ### Dataflow Architectures: More Than ISAs
 
-Traditional ISAs have served us brilliantly for sequential computation, embedding assumptions that made sense for their era:
+Traditional ISAs have served sequential computation well, embedding assumptions that made sense for their era:
 
 1. **Sequential Execution**: ISAs assume a program counter advancing through memory, perfect for single-threaded work
 2. **Temporal Ordering**: Operations happen "before" or "after" each other, ideal for deterministic execution
@@ -91,27 +86,27 @@ Before examining today's purposefully designed dataflow accelerators, we must ac
 
 This accidental infrastructure, subsidized by gaming economics, democratized AI & HPC research in ways LISP machines never could. But what was tolerable as an externality for video games, power-hungry GPUs consuming 300-500 watts for entertainment has metastasized into a global crisis. Training a single large language model now consumes as much electricity as thousands of homes use in a year. Data centers housing GPU clusters strain power grids, consume millions of gallons of water for cooling, and contribute meaningfully to carbon emissions. The same architectural inefficiencies that gamers accepted for better frame rates now threaten the sustainability of AI advancement itself.
 
-This environmental and economic crisis isn't a minor optimization problem, it's an existential challenge that demands fundamental architectural innovation; the same forcing function that resurrected electric vehicles. GPUs, never designed for AI, force square-peg parallel computation through round-hole graphics pipelines. Their power consumption scales catastrophically with model size, creating a hard ceiling on AI progress defined not by algorithmic limits but by the physics of heat dissipation and the economics and logistics of power generation.
+This environmental and economic crisis isn't a minor optimization problem. It is a challenge that demands architectural change, the same forcing function that resurrected electric vehicles. GPUs, never designed for AI, force square-peg parallel computation through round-hole graphics pipelines. Their power consumption scales steeply with model size, creating a hard ceiling on AI progress defined not by algorithmic limits but by the physics of heat dissipation and the economics and logistics of power generation.
 
 ### The Renewed Dataflow Landscape
 
-The non-sustainability of the GPU trajectory has catalyzed a renaissance in computer architecture. Companies aren't just seeking marginal improvements, they're racing to find fundamentally different approaches before the current paradigm collapses under its own power consumption. This isn't speculative; major tech companies are already constrained by power availability, not computational capacity.
+The non-sustainability of the GPU trajectory has catalyzed a renaissance in computer architecture. Companies aren't just seeking marginal improvements, they're racing to find different approaches before the current paradigm collapses under its own power consumption. This isn't speculative. Major tech companies are already constrained by power availability, not computational capacity.
 
 Reversible computing pioneers like Vaire suggest orders of magnitude in energy improvements by avoiding information erasure entirely. [3] Wafer-scale integration from Cerebras packs 4 trillion transistors onto a single die, achieving 21 PB/s memory bandwidth. [4] RISC-V's extensibility enables heterogeneous architectures like Tenstorrent's combination of general-purpose cores with specialized accelerators. [6]
 
 The emergence of neuromorphic architectures represents perhaps the most radical departure from Von Neumann principles. Companies and research institutions are developing brain-inspired processors that compute through networks of artificial neurons and synapses. Intel's Loihi 2 processor exemplifies this approach with 1 million programmable neurons interconnected through 120 million synapses, all while consuming mere milliwatts of power. Unlike traditional processors that separate memory and computation, Loihi 2 co-locates both functions in its neuron cores, enabling asynchronous, event-driven computation that processes information only when spikes occur.
 
-This spike-based computing paradigm achieves remarkable efficiency for specific workloads; Intel has demonstrated solving optimization problems 50 times faster and with 100 times less energy than conventional CPUs. The architecture excels at tasks requiring adaptation and learning, from odor recognition to robotic control, processing sensory data streams with latencies measured in microseconds.
+This spike-based computing paradigm achieves high efficiency for specific workloads. Intel has demonstrated solving optimization problems 50 times faster and with 100 times less energy than conventional CPUs. The architecture excels at tasks requiring adaptation and learning, from odor recognition to robotic control, processing sensory data streams with latencies measured in microseconds.
 
 {{< figure src="/images/blog/Loihi-2-transparent-with-die.png" caption="The Intel Loihi 2's exposed die reveals its 128 neuromorphic cores arranged in a mesh topology, each containing up to 8,192 neurons that communicate through 'synaptic' connections." >}}
 
-There are many other designs that are at various stages of development. The Fraunhofer EMFT, working within the EU project NeurONN, is developing neurologically inspired computer architectures using novel 2D materials for memristor applications that are up to 330 times more efficient than current technologies in terms of switching speed, lifetime and energy consumption. [15] These neuromorphic systems encode information through coupled oscillating elements, mimicking the distributed computing and storage of biological neural networks; a vision that would have seemed familiar to LISP machine architects, who understood computation as graph transformation decades before the current echelon of advanced processors.
+There are many other designs that are at various stages of development. The Fraunhofer EMFT, working within the EU project NeurONN, is developing neurologically inspired computer architectures using novel 2D materials for memristor applications that are up to 330 times more efficient than current technologies in terms of switching speed, lifetime and energy consumption. [15] These neuromorphic systems encode information through coupled oscillating elements, mimicking the distributed computing and storage of biological neural networks. The approach would have seemed familiar to LISP machine architects, who understood computation as graph transformation decades before the current generation of processors.
 
-Each of these approaches shares a common thread: they to one degree or another describe computation in terms of graphs, not instruction sequences. This is where Clef and in particular the Firefly compiler within the Fidelity framework is among the vangaurd in being able to maximize the potential of these architectures while continuing to support 'standard die' CPU, GPU and TPU platforms.
+Each of these approaches shares a common thread: they to one degree or another describe computation in terms of graphs, not instruction sequences. This is where our Clef language, and in particular the Firefly compiler within our Fidelity framework, is designed to reach the potential of these architectures while continuing to support 'standard die' CPU, GPU and TPU platforms. We have found no other representative implementations targeting this full range in the standing literature we have reviewed.
 
 ## Functional Takes Center Stage (Again)
 
-The architectural features driving these new designs create an unexpectedly favorable environment for functional programming languages, but not for the reasons you might expect. It's not just functional purity or mathematical elegance for its own sake. It's how that semantic model contains natural alignment with dataflow architectures' execution model; the same way electric vehicles' instant torque and simplified drivetrains naturally exceed internal combustion's complexity once battery technology caught up.
+The architectural features driving these new designs create a favorable environment for functional programming languages, but not for the reasons you might expect. The reason is not functional purity or mathematical structure for its own sake. It is how that semantic model aligns with dataflow architectures' execution model, the same way electric vehicles' instant torque and simplified drivetrains exceed internal combustion's complexity once battery technology caught up.
 
 ### Direct Lineage: LISP → ML → OCaml → Clef
 
@@ -119,13 +114,13 @@ The most authentic line of descent runs through the ML family. When Robin Milner
 
 ### Clef as a Modern Dataflow Bridge
 
-Clef occupies a unique position as a modern, adaptive functional language with both the theoretical foundations and practical tooling for dataflow and control flow architectures. While preserving OCaml's functional core, Clef innovated with several features that extend beyond its ML heritage, a form of principled pragmatism that makes it particularly well-suited to this emerging hybrid paradigm:
+Clef occupies a distinct position as a modern functional language with both the theoretical foundations and practical tooling for dataflow and control flow architectures. Clef descends from F#, and through it from the ML family, and carries forward a set of features that extend beyond the OCaml core. That inheritance is what makes Clef well-suited to this emerging hybrid paradigm:
 
-**Computation Expressions** represent Clef's most significant innovation beyond OCaml. These enable building domain-specific languages with custom control flow, state management, and sequencing semantics. Unlike monads in other languages that focus primarily on sequencing effects, Clef's computation expressions provide a general framework for defining how computations compose, a natural fit for describing dataflow graphs where the composition rules determine how operations connect and execute. This innovation brought practical, readable syntax to what would otherwise require complex type machinery.
+**Computation Expressions** are one of the features Clef carries forward from its F# lineage that extend beyond OCaml. These enable building domain-specific languages with custom control flow, state management, and sequencing semantics. Unlike monads in other languages that focus primarily on sequencing effects, computation expressions provide a general framework for defining how computations compose, a fit for describing dataflow graphs where the composition rules determine how operations connect and execute. The feature brings readable syntax to what would otherwise require heavier type machinery.
 
-**Asynchronous Workflows**, introduced in 2007, [Don Syme pioneered](https://fsharp.org/history/hopl-final/hopl-fsharp.pdf) the async/await pattern that over the years proliferated throughout other programming languages. While fundamentally a continuation-based pattern for managing asynchronous operations, async workflows proved valuable for both sequential and parallel composition. They elegantly handle the reality that modern systems must coordinate I/O, network calls, and parallel computations without blocking threads. In the context of dataflow architectures, async workflows provide a foundation for expressing computations that can be composed and scheduled efficiently, though the reactive patterns that truly match dataflow's event-driven nature would come from other Clef libraries and patterns built atop this async foundation.
+**Asynchronous Workflows** trace to 2007, when [Don Syme pioneered](https://fsharp.org/history/hopl-final/hopl-fsharp.pdf) the async/await pattern in F# that over the years proliferated throughout other programming languages. A continuation-based pattern for managing asynchronous operations, async workflows proved valuable for both sequential and parallel composition. They handle the reality that modern systems must coordinate I/O, network calls, and parallel computations without blocking threads. In the context of dataflow architectures, async workflows provide a foundation for expressing computations that can be composed and scheduled efficiently, though the reactive patterns that match dataflow's event-driven nature would come from other Clef libraries and patterns built atop this async foundation.
 
-**Units of Measure** represents one of the language's most distinctive innovations, providing compile-time dimensional analysis that becomes essential when compiling to spatial architectures and native hardware. This feature, absent from OCaml and most functional languages, transforms what would be runtime errors into compile-time guarantees.
+**Units of Measure** provides compile-time dimensional analysis that becomes essential when compiling to spatial architectures and native hardware. Clef inherits Andrew Kennedy's units-of-measure inference through its F# lineage. The feature, absent from OCaml and most functional languages, turns what would be runtime errors into compile-time guarantees.
 
 For example, in dataflow and spatial computing architectures, confusing timing with data flow creates subtle bugs that are nearly impossible to debug at runtime. Units of Measure catch these at compile time:
 
@@ -141,32 +136,30 @@ type DataflowNode<'input, 'output> = {
     BufferDepth: int<token>
 }
 
-// Compile-time prevention of timing/data confusion
 let calculateBackpressure (node: DataflowNode<_,_>) (clockRate: int<cycles/ns>) =
-    // This would fail to compile: can't add tokens to cycles
-    // let invalid = node.BufferDepth + node.Latency  // ERROR!
+    // would not compile: can't add tokens to cycles
+    // let invalid = node.BufferDepth + node.Latency
 
-    // Correct calculation maintains dimensional consistency
     let maxTokensInFlight = node.BufferDepth
     let processingCapacity = node.Throughput * node.Latency
     min maxTokensInFlight processingCapacity  // Result: int<token>
 ```
 
-Crucially, Clef's Units of Measure are erased at runtime, meaning this compile-time safety comes with zero performance overhead. Types are carried through MLIR as attributes to serve memory mapping and optimization functions; and when appropriate are elided, leaving primitive numeric types, preserving verified dimensional consistency. This makes Units of Measure ideal for the goal of dependency-free, native compilation: maximum safety during development, maximum performance at runtime.
+Clef's Units of Measure are erased at runtime, so this compile-time safety carries no runtime cost. In our compilation design, types are carried through MLIR as attributes to serve memory mapping and optimization, then elided where appropriate to leave primitive numeric types while preserving the verified dimensional consistency. This suits the goal of dependency-free, native compilation: the checking happens during development, and the compiled output runs as plain numerics.
 
 **Clef's Agent-Based Concurrency via MailboxProcessor**, inherited from Erlang's actor model, provides a message-passing primitive that aligns with dataflow semantics. Each agent maintains its own state and processes messages asynchronously, essentially a dataflow node that activates on message arrival. This Erlang-inspired feature means Clef developers already have the optionality to think in terms of isolated computational units communicating through messages, exactly the mental model needed for dataflow architectures where data packets trigger computation as they arrive at processing junctures.
 
 **Type Providers** enable compile-time integration with external data sources, a critical capability for real-world dataflow systems that must ingest, validate, and process heterogeneous data streams. Unlike traditional approaches that discover data format errors at runtime, Clef's type providers generate strongly-typed representations from external schemas at compile time. This means a dataflow graph processing financial feeds, sensor streams, or scientific datasets knows the exact shape and constraints of its inputs before a single operation executes.
 
-This capability becomes particularly powerful when considering emerging standards like the [Hypergraph Interchange Format (HIF)](https://arxiv.org/html/2507.11520v1), which provides a unified JSON schema for higher-order network data. Clef's type providers could automatically generate type-safe representations from HIF-compliant datasets, enabling seamless integration of complex relational data, from co-authorship networks to chemical reactions to biological interactions, directly into computational pipelines.
+This capability extends to emerging standards like the [Hypergraph Interchange Format (HIF)](https://arxiv.org/html/2507.11520v1), which provides a unified JSON schema for higher-order network data. Clef's type providers could automatically generate type-safe representations from HIF-compliant datasets, integrating complex relational data, from co-authorship networks to chemical reactions to biological interactions, directly into computational pipelines.
 
 > This isn't just about building smarter chatbots.
 
-It's about enabling cross-disciplinary computation where a materials science simulation can safely consume protein interaction networks, or where economic models can incorporate social network dynamics with compile-time guarantees of data compatibility. This unique Clef feature transforms dataflow from an academic exercise into a practical framework for integrating the messy, heterogeneous data streams that define real-world computation.
+It's about enabling cross-disciplinary computation where a materials science simulation can safely consume protein interaction networks, or where economic models can incorporate social network dynamics with compile-time guarantees of data compatibility. This brings dataflow to the messy, heterogeneous data streams that define real-world computation.
 
 ## What is Old is New Again
 
-The current specialized architecture renaissance differs fundamentally from the LISP machine era in ways that suggest greater staying power, much as today's electric vehicle revolution has economic and environmental tailwinds the 1900s pioneers lacked:
+The current specialized architecture renaissance differs from the LISP machine era in ways that suggest greater staying power, much as today's electric vehicle revolution has economic and environmental tailwinds the 1900s pioneers lacked:
 
 ### Economic Incentives Align Differently
 
@@ -182,7 +175,7 @@ Modern dataflow architectures benefit from lessons learned about ecosystem devel
 
 ## Dataflow Graph Architectures
 
-The evidence strongly validates this theory of a "reverse inflection point", but with crucial differences. We're not simply returning to specialized architectures, we're expanding our computational model to encompass both sequential and spatial paradigms. Dataflow Graph Architectures complement traditional instruction-based computing by representing the natural parallelism in modern workloads: graphs of operations triggered by data availability, working alongside sequential control where it makes sense. Actor model architectures and other distributed systems concepts have been pointing in this direction for years.
+The evidence supports this theory of a "reverse inflection point", with important differences. We're not simply returning to specialized architectures, we're expanding our computational model to encompass both sequential and spatial paradigms. Dataflow Graph Architectures complement traditional instruction-based computing by representing the natural parallelism in modern workloads: graphs of operations triggered by data availability, working alongside sequential control where it makes sense. Actor model architectures and other distributed systems concepts have been pointing in this direction for years.
 
 For developers, this means *not* hard-pivoting but rather enriching how we express computation. We can still ask "what happens next?" when sequence matters, while also asking "what depends on what?" when parallelism dominates. We can manage state through time when appropriate, while describing transformations through space when beneficial. We can write sequential code where it's natural, while preserving inherent parallelism where it emerges.
 
@@ -190,22 +183,22 @@ The languages best positioned for this transition are those that maintained grap
 
 ## Implications for Fidelity and Beyond
 
-For the Fidelity framework, the timing is perfect. As specialized architectures mature over the next few years, frameworks that can:
+For our Fidelity framework, the timing lines up. As specialized architectures mature over the next few years, frameworks that can:
 
 - Preserve computational intent through hypergraph representations
 - Support arbitrary numeric types (like posits) natively
 - Maintain proof obligations through compilation
 - Target diverse hardware through generalized dataflow and control flow representations
 
-...will become increasingly valuable. Fidelity's PHG isn't just another intermediate representation, it's a native encoding that can pivot between dataflow computation and control flow mechanics that preserves the structure each architecture needs.
+...will become increasingly valuable. Our PHG isn't just another intermediate representation, it's a native encoding that can pivot between dataflow computation and control flow mechanics while preserving the structure each architecture needs.
 
 ## A Final Homage to LISP
 
-The LISP machines' ghost doesn't haunt modern computing as a cautionary tale but as vindication. Their graph-based memory, tagged architectures, and message-passing primitives weren't wrong, they were both **of** and ***ahead* of** their time. As the marketplace embraces native dataflow architectures that expand beyond traditional instruction sets, we're not leaving the past behind; we're fulfilling a vision that LISP pioneers glimpsed, and that promise holds to this day.
+The LISP machines' ghost reads to modern computing as vindication rather than cautionary tale. Their graph-based memory, tagged architectures, and message-passing primitives weren't wrong, they were both **of** and ***ahead* of** their time. As the marketplace takes up native dataflow architectures that expand beyond traditional instruction sets, the vision the LISP pioneers glimpsed comes back into reach, alongside the sequential foundations built since.
 
-The phoenix pattern teaches us that revolutionary ideas rarely die; they hibernate. Electric vehicles waited ninety years for their resurrection. LISP machines waited forty. Both returned not as nostalgic revivals but as evolved solutions to problems their original incarnations couldn't have imagined. As we stand at this inflection point, the key lesson from history is clear: **being right about architecture isn't enough if you're wrong about timing and ecosystems**. But in 2025, with AI's insatiable appetite for efficient computation, climate urgency demanding sustainable computing, and an open ecosystem emerging around dataflow architectures, the timing is finally right. The graph-based, type-aware, parallel-by-default future that LISP machines imagined is becoming reality, enhanced by, not replacing, the sequential computing foundations we've built over seven decades.
+The phoenix pattern shows that good architectural ideas often hibernate rather than die. Electric vehicles waited ninety years for their resurrection. LISP machines waited forty. Both returned as evolved solutions to problems their original incarnations couldn't have imagined. The lesson from both is that being right about architecture isn't enough when the timing and the ecosystem aren't there. In 2025, with AI's appetite for efficient computation, climate pressure on power-hungry compute, and an open ecosystem forming around dataflow architectures, the timing has caught up. The graph-based, type-aware, parallel-by-default model that LISP machines imagined is coming into reach, enhanced by, not replacing, the sequential computing foundations built over seven decades.
 
-Just as today's electric vehicles bear little resemblance to their 1900s ancestors while embodying the same fundamental advantages, tomorrow's dataflow architectures will realize LISP's vision through technologies and at scales the pioneers could never have contemplated. The old ideas, refined by decades of dormancy and awakened by necessity, are indeed new again.
+This is the ground we want our Clef language and our Fidelity framework to stand on as specialized hardware matures, and it is where our attention stays as the work continues.
 
 ---
 

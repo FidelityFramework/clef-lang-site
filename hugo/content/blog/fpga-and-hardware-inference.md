@@ -204,7 +204,7 @@ threshold = floor(clock_period_ns / ns_per_weight_unit)
 
 The platform binding declares `ns_per_weight_unit`, a fabric-specific constant representing the average delay per weighted depth unit, calibrated from Vivado post-route timing. The Arty A7-100T binding declares `ns_per_weight_unit = 1.6`, derived from the HelloArty ground truth: weighted depth 8 produced a total path delay of 12.635 ns, giving approximately 1.58 ns per unit (rounded conservatively to 1.6).
 
-The project declares `clock_mhz` in its `fidproj`, which can override the binding's default. At the binding's default of 100 MHz, the threshold computes to `floor(10 / 1.6) = 6`. HelloArty declares `clock_mhz = 25` because its LED chaser design has no timing-critical paths — a 4-second breathing cycle does not need 100 MHz evaluation. At 25 MHz, the threshold becomes `floor(40 / 1.6) = 25`, well above the smoothstep's depth of 12.
+The project declares `clock_mhz` in its `fidproj`, which can override the binding's default. At the binding's default of 100 MHz, the threshold computes to `floor(10 / 1.6) = 6`. HelloArty declares `clock_mhz = 25` because its LED chaser design has no timing-critical paths. A 4-second breathing cycle does not need 100 MHz evaluation. At 25 MHz, the threshold becomes `floor(40 / 1.6) = 25`, well above the smoothstep's depth of 12.
 
 When depth exceeds the threshold, the compiler emits a `CCS0100` warning with a two-sided diagnostic that tells the developer both knobs they can turn:
 
@@ -217,9 +217,9 @@ Behavior.clef:100: warning CCS0100: Combinational depth 12 exceeds threshold 6 (
 
 The diagnostic does not prescribe a solution. It presents the tradeoff: pipeline the logic to fit the clock, or relax the clock to fit the logic. The developer picks which knob to turn based on what they know about their design.
 
-**Layer 2** is Vivado's post-route WNS (Worst Negative Slack). This is the ground truth. HelloArty's smoothstep chain produces WNS = −2.635 ns at 100 MHz on Artix-7 — the design needs 12.635 ns but only has 10 ns. Layer 1's structural heuristic flagged this before synthesis ever ran.
+**Layer 2** is Vivado's post-route WNS (Worst Negative Slack). This is the ground truth. HelloArty's smoothstep chain produces WNS = −2.635 ns at 100 MHz on Artix-7: the design needs 12.635 ns but only has 10 ns. Layer 1's structural heuristic flagged this before synthesis ever ran.
 
-The `ns_per_weight_unit` constant is calibrated against Layer 2 ground truth. HelloArty provides the first calibration data point. As more designs are compiled across different device families, the per-fabric constant is refined — the feedback loop from real Vivado runs back-annotates the compiler model over time. Different fabrics (Kintex, Zynq, ECP5) will carry their own calibration constants in their platform bindings.
+The `ns_per_weight_unit` constant is calibrated against Layer 2 ground truth. HelloArty provides the first calibration data point. As more designs are compiled across different device families, the per-fabric constant gets refined: the feedback loop from real Vivado runs is meant to back-annotate the compiler model over time. Different fabrics (Kintex, Zynq, ECP5) will carry their own calibration constants in their platform bindings.
 
 With `--warnaserror`, the CCS0100 warning promotes to an error, stopping compilation before Verilog is generated. This gives the developer the choice: fix the combinational depth (by pipelining or restructuring), relax the clock, or proceed to synthesis knowing the design will likely violate timing.
 
@@ -266,8 +266,6 @@ We've written previously about posit arithmetic and the case for bringing Gustaf
 
 The planned demonstration for this is a numerical simulation where accuracy-dependent calculations are compiled to FPGA and connected to a CPU host over UART. The CPU orchestrates. The FPGA computes. Machine classification determines which parts of the FPGA design need registered outputs for clean data transfer and which can respond combinationally to streaming input. Width inference ensures every arithmetic unit uses exactly the precision the computation requires.
 
-This is where the "same compiler, multiple targets" principle becomes concrete. Not as an aspiration, but as a pipeline property. The compiler reads what you wrote, classifies what you built, infers how wide your values need to be, checks whether your design fits in the timing budget, and targets the hardware that fits. 
+This is where the "same compiler, multiple targets" principle takes shape as a pipeline property. As we conceive it, the compiler reads what you wrote, classifies what you built, infers how wide your values need to be, checks whether your design fits in the timing budget, and targets the hardware that fits.
 
-These are the first clear advantages of the Dimensional Type System. 
-
-They won't be the last.
+Machine classification and width inference are the first FPGA-facing results we have from our Dimensional Type System, and they are the ones we will keep building on as the rest of the heterogeneous pipeline comes into place.

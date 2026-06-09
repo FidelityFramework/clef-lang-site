@@ -11,24 +11,19 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Creating a native UI framework for [our Clef language](https://clef-lang.com) raises a specific question: how would we preserve the functional programming experience Clef developers work in while compiling to native code with deterministic memory management? As we envision FidelityUI, our UI framework for the Fidelity ecosystem, we sit at the intersection of functional programming and systems programming. We would not have to start from scratch. The Fabulous framework has already worked through many of the design challenges we would face, and by adapting its patterns to our native compilation context, we could build something that reads as familiar to Clef developers while delivering the performance required for embedded and real-time systems.
 
-The journey of creating a native UI framework for [the Clef language](https://clef-lang.com) presents a fascinating challenge: how would we preserve the elegant, functional programming experience that Clef developers love while compiling to efficient native code with deterministic memory management? As we envision FidelityUI, the UI framework for the Fidelity ecosystem, we find ourselves at the intersection of functional programming ideals and systems programming realities. Fortunately, we wouldn't have to start from scratch. The Fabulous framework has already solved many of the design challenges we would face, and by carefully adapting its patterns to our native compilation context, we could create something that feels familiar to Clef developers while delivering the performance characteristics required for embedded and real-time systems.
-
-> **Note on Cross-Pollination**: While this article focuses on lessons from Fabulous, FidelityUI would also draw inspiration from SwiftUI's declarative syntax and compile-time optimizations. However, unlike Swift's object-oriented foundation, FidelityUI would remain true to Clef's functional roots and the MVU/Elmish patterns that have proven so effective in the Clef community. Where SwiftUI uses property wrappers and 'combines', FidelityUI would use pure functions and algebraic data types, maintaining the referential transparency that makes functional programs easier to reason over.
+> **Note on Cross-Pollination**: While this article focuses on lessons from Fabulous, our FidelityUI would also draw on SwiftUI's declarative syntax and compile-time optimizations. Where Swift rests on an object-oriented foundation, FidelityUI would stay with Clef's functional roots and the MVU/Elmish patterns the Clef community already works in. Where SwiftUI uses property wrappers and 'combines', FidelityUI would use pure functions and algebraic data types, keeping the referential transparency that makes functional programs easier to reason over.
 
 ## Understanding the Translation Challenge
 
-Before diving into the technical details, it's worth understanding what we're trying to achieve. Fabulous provides a beautiful functional API for building user interfaces with F#, managing complex state through the Model-View-Update pattern, and efficiently updating UI through its sophisticated diffing algorithm. Our challenge would be to take these high-level patterns and compile them down to direct calls to LVGL (Light and Versatile Graphics Library) and Skia, eliminating runtime overhead in the process.
+Fabulous provides a functional API for building user interfaces in F#, managing state through the Model-View-Update pattern, and updating the UI through its diffing algorithm. Our challenge would be to take these high-level patterns and compile them down to direct calls to LVGL (Light and Versatile Graphics Library) and Skia, removing runtime overhead in the process.
 
 🔑 We wouldn't need to recreate Fabulous from scratch. Instead, we could adapt its core concepts while replacing its runtime infrastructure with compile-time transformations. Where Fabulous creates widget trees at runtime, FidelityUI would generate static LVGL object hierarchies at compile time. Where Fabulous uses heap-allocated closures for event handling, FidelityUI would transform these into direct function pointers suitable for embedded systems.
 
 ## The Widget Model: From Abstract to Concrete
 
-Fabulous's widget model provides an excellent starting point for FidelityUI. In Fabulous, widgets are lightweight descriptions of UI elements, designed to be efficiently compared and diffed. Let's examine how we could adapt this model for native compilation.
+Fabulous's widget model gives our FidelityUI a starting point. In Fabulous, widgets are lightweight descriptions of UI elements, structured so they can be compared and diffed. Here is how we could adapt this model for native compilation.
 
 In Fabulous, a widget looks like this:
 
@@ -42,7 +37,7 @@ type Widget =
       EnvironmentAttributes: EnvironmentAttribute[] }
 ```
 
-For FidelityUI, we would maintain this same conceptual structure, but with a crucial difference: these widgets would exist only at compile time. The Composer compiler would transform them into direct LVGL calls. Here's how this transformation would work conceptually:
+For FidelityUI, we would keep this same conceptual structure, with one difference: these widgets would exist only at compile time. Our Composer compiler would transform them into direct LVGL calls. Here is how this transformation would work conceptually:
 
 ```fsharp
 // What the developer writes (using Fabulous-like API)
@@ -79,7 +74,7 @@ Notice how the high-level functional description would transform into low-level 
 
 ## SwiftUI: Declarative Meets Functional
 
-While Fabulous provides our primary architectural inspiration, we also look to SwiftUI for lessons in declarative UI design. SwiftUI showed the world that declarative UI could be both performant and pleasant to use, even in resource-constrained environments like watchOS. However, where SwiftUI relies on Swift's reference types and ARC (Automatic Reference Counting), FidelityUI would take a more radical approach with zero heap allocations.
+While Fabulous gives our FidelityUI its primary architectural reference, we also look to SwiftUI for lessons in declarative UI design. SwiftUI demonstrated that declarative UI could be performant in resource-constrained environments like watchOS. Where SwiftUI relies on Swift's reference types and ARC (Automatic Reference Counting), FidelityUI would target zero heap allocations.
 
 Consider SwiftUI's view modifiers pattern:
 
@@ -91,7 +86,7 @@ Text("Hello")
     .padding()
 ```
 
-FidelityUI would adapt this fluent interface style while ensuring it compiles to zero-cost abstractions:
+Our FidelityUI would adapt this fluent interface style while compiling it to zero-cost abstractions:
 
 ```fsharp
 // FidelityUI - looks similar but compiles very differently
@@ -101,11 +96,11 @@ Label("Hello")
     |> Label.padding (Thickness.uniform 10.0)
 ```
 
-SwiftUI's modifiers create wrapper views at runtime, while FidelityUI's modifiers would be purely compile-time constructs that generate direct LVGL style calls. This would give us SwiftUI's elegant API design without the runtime overhead.
+SwiftUI's modifiers create wrapper views at runtime, while our FidelityUI modifiers would be compile-time constructs that generate direct LVGL style calls. This would give us SwiftUI's API design without the runtime overhead.
 
 ## Compile-Time Resolution
 
-One of Fabulous's most elegant features is its attribute system, which allows properties to be attached to widgets in a type-safe manner. FidelityUI would adapt this pattern, but instead of storing attributes at runtime, we would resolve them during compilation.
+One of Fabulous's features is its attribute system, which attaches properties to widgets in a type-safe manner. Our FidelityUI would adapt this pattern, but instead of storing attributes at runtime, we would resolve them during compilation.
 
 The proposed transformation would look like this (FidelityUI not yet implemented):
 
@@ -126,7 +121,7 @@ func.call @lv_obj_set_style_text_color(%label_ref, %blue_color, %c0) : (memref<1
 func.call @lv_obj_set_style_text_font_size(%label_ref, %font_size, %c0) : (memref<1x!lvgl.obj>, i32, i32) -> ()
 ```
 
-The vision for FidelityUI is that developers would continue to use the familiar Fabulous-style API, while the compiler would handle all the complexity of transforming these high-level descriptions into efficient native code.
+The vision for FidelityUI is that developers keep the familiar Fabulous-style API while the compiler lowers those high-level descriptions to native code.
 
 ## Layout Systems: From Functional to Imperative
 
@@ -180,7 +175,7 @@ let create_grid parent =
     // ... similar for other children
 ```
 
-As implied above, we wouldn't be implementing a layout system from scratch. Instead, we would create a functional API layer that compiles down to LVGL's existing, well-tested layout system. This would give us the best of both worlds: a pleasant functional programming experience and efficient native implementation.
+As implied above, we would not implement a layout system from scratch. Instead, we would build a functional API layer that compiles down to LVGL's existing layout system, pairing a functional programming surface with a native implementation underneath.
 
 ## Event Handling Without Closures
 
@@ -214,11 +209,11 @@ let create_button parent dispatch =
     LVGL.obj_add_event_cb btn button_click_handler LV_EVENT_CLICKED context_ptr
 ```
 
-This transformation would eliminate the heap allocation while preserving the functional programming model at the source level. The developer would write idiomatic Clef code, and Composer would handle the complexity of transforming it into efficient native code.
+This transformation would remove the heap allocation while preserving the functional programming model at the source level. The developer would write idiomatic Clef code, and our Composer would transform it into native code.
 
 ## Compile-Time Optimization
 
-One of Fabulous's most sophisticated features is its diffing algorithm, which efficiently updates only the parts of the UI that have changed. For FidelityUI, we would adapt this concept but with a twist: where possible, we would perform diffing at compile time.
+One of Fabulous's features is its diffing algorithm, which updates only the parts of the UI that have changed. For our FidelityUI, we would adapt this concept with one shift: where possible, we would perform the diffing at compile time.
 
 Consider a view function with conditional rendering:
 
@@ -264,7 +259,7 @@ let update_view container old_model new_model =
     // ... other transitions
 ```
 
-This approach would combine Fabulous's efficient diffing concept with compile-time analysis to generate minimal update code. The result would be UI updates that are both functional in style and optimal in performance.
+This approach would combine Fabulous's diffing concept with compile-time analysis to generate minimal update code. The UI updates would stay functional in style while running as direct native calls.
 
 ## Integration with the MVU Pattern
 
@@ -314,7 +309,7 @@ let init_app parent =
     app_state.View <- create_view parent app_state.Model dispatch
 ```
 
-This transformation would eliminate the need for heap-allocated message queues while preserving the clean separation of concerns that makes MVU so powerful. Unlike SwiftUI's hidden state management complexity, FidelityUI would keep the MVU pattern explicit and understandable, just as Elmish developers expect.
+This transformation would remove the need for heap-allocated message queues while preserving the separation of concerns that MVU keeps. Where SwiftUI hides its state management behind property wrappers, our FidelityUI would keep the MVU pattern explicit, as Elmish developers expect.
 
 ## Learning from SwiftUI's Compilation Strategy
 
@@ -324,25 +319,25 @@ SwiftUI compiles its declarative views into efficient update graphs, eliminating
 
 ## Looking Forward: The Path to Production
 
-As we envision FidelityUI built on these foundations, we're exploring more than just a UI framework. We aim to demonstrate that functional programming patterns can thrive in environments traditionally dominated by imperative, manual memory management approaches. By leveraging the design wisdom embedded in Fabulous while adapting it for native compilation, we could get the best of both worlds.
+As we envision our FidelityUI built on these foundations, the aim is to show that functional programming patterns can hold up in environments usually built with imperative, manual memory management. By drawing on the design work in Fabulous while adapting it for native compilation, we could carry the functional surface and the native target together.
 
-The early stages of FidelityUI would focus on proving these core concepts: Can we maintain Fabulous's elegant API while compiling to native code with deterministic memory management? Can we preserve the functional programming experience while generating efficient LVGL calls? We believe the answer, as these conceptual examples suggest, could be yes.
+The early stages of FidelityUI would test two questions. Can we keep Fabulous's API while compiling to native code with deterministic memory management? Can we preserve the functional programming experience while generating direct LVGL calls? The conceptual examples above suggest the design holds together, and the early work would set out to confirm it.
 
-## The Best of All Worlds
+## Where the Pieces Come From
 
-FidelityUI would represent a unique synthesis of ideas:
+Our FidelityUI would draw from several sources:
 
 - From **Fabulous**, we would take the widget model, the MVU pattern, and the overall architectural approach to functional UI
 - From **SwiftUI**, we would learn about declarative UI syntax and compile-time optimization strategies
-- From **LVGL**, we would leverage a battle-tested, efficient rendering engine suitable for embedded systems
+- From **LVGL**, we would take a mature rendering engine suited to embedded systems
 - From **Clef and Elmish**, we would maintain the pure functional programming model that makes applications predictable and testable
 
 But unlike any of these inspirations, FidelityUI would compile to native code with deterministic memory management, making it suitable for hard real-time systems while maintaining an idiomatic Clef developer experience.
 
-As the framework matures, we would expand beyond basic layouts to include animations, custom rendering with Skia, and advanced interaction patterns. But the foundation would remain the same: careful adaptation of proven functional patterns to native compilation, creating a future where Clef developers could target any platform without compromise.
+As our framework matures, we would expand beyond basic layouts to animations, custom rendering with Skia, and richer interaction patterns. The foundation would stay the same: adapting functional patterns to native compilation, so Clef developers could target a wide range of platforms from one source.
 
-For Clef developers, this would mean they could write UI code using familiar patterns and have confidence that it would compile to efficient native code suitable for everything from embedded devices to desktop applications. For the broader programming community, it would demonstrate that functional programming and systems programming are not mutually exclusive. With the right compiler infrastructure, we could have both elegance and efficiency.
+For Clef developers, this would mean writing UI code in familiar patterns that compiles to native code, from embedded devices through to desktop applications. For the broader programming community, it would show functional programming and systems programming working from one source, with the compiler infrastructure carrying the high-level surface down to native calls.
 
-The journey from Fabulous's managed, runtime-based approach to FidelityUI's envisioned compile-time, native implementation would showcase the power of standing on the shoulders of giants. We wouldn't be discarding these innovations; we would be translating them to a new context where they could shine even brighter. In doing so, we would be opening new possibilities for functional programming in domains where it was previously thought impractical.
+Moving from Fabulous's managed, runtime-based approach to our envisioned compile-time, native implementation would carry those patterns into a context they were not originally built for: embedded and real-time systems with deterministic memory. We would be translating the prior work rather than setting it aside.
 
-This is just the beginning. As we continue to design FidelityUI, guided by classic lessons from WPF and Fabulous's excellent design, informed by SwiftUI's innovations, and powered by Composer's compilation pipeline, we're envisioning a future where Clef developers could target any platform, from tiny embedded devices to powerful server clusters, without sacrificing the language features and patterns they love.
+This is early design. As we keep working on FidelityUI, drawing on lessons from WPF and Fabulous, reading across from SwiftUI, and building on our Composer compilation pipeline, we are working toward a setup where Clef developers could target platforms from small embedded devices through server clusters while keeping the language features and patterns they already work in. That is the direction we will keep building toward as the rest of the ecosystem comes into place.

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 When we began designing the Fidelity framework, we encountered a fundamental architectural question that would shape every subsequent decision: how do you build a type system that serves both the embedded developer programming a Cortex-M0 with 32 kilobytes of RAM and the systems architect deploying across a cluster of 64-bit servers? The conventional answer has been to accept fragmentation, to maintain separate type representations for each target, or to impose a lowest-common-denominator abstraction that satisfies neither scenario well.
 
 We chose a different path. The Native Type Universe (NTU) represents our answer to this challenge, a type architecture where platform awareness flows through the compilation pipeline as structured metadata, where type identity and type width are separated by design, and where the compiler retains full control over memory layout decisions until the final lowering stage.

@@ -12,20 +12,15 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+As we design Composer, one question sits at the heart of functional systems programming: how far down the compilation stack can we preserve the abstractions that [our Clef language](https://clef-lang.com) is built on? Delimited continuations are the theoretical foundation for async/await, generators, and algebraic effects. We want to know whether they can survive the journey from high-level Clef through MLIR's SSA form to executable code, and whether they should.
 
-When we set out to build Composer, we faced a fundamental question that cuts to the heart of functional systems programming: how far down the compilation stack can we preserve the elegant abstractions that make [the Clef language](https://clef-lang.com) powerful? Specifically, can delimited continuations - the theoretical foundation for async/await, generators, and algebraic effects - survive the journey from high-level Clef through MLIR's SSA form to executable code? And perhaps more importantly, should they?
-
-This isn't just an academic exercise. The answer determines whether we can build truly functional device drivers, whether async code can run without heap allocation, and whether Clef can genuinely compete with C for embedded systems. It's a question that forces us to confront the tension between abstraction and performance, between mathematical elegance and hardware reality.
+The answer shapes whether we can build functional device drivers, whether async code can run without heap allocation, and whether Clef can compete with C for embedded systems. It forces a choice between abstraction and performance, between the mathematical structure of the source and the hardware it has to run on.
 
 ## The Preservation Boundary
 
-Let's start with a fundamental observation: abstractions have lifespans in a compiler. They're born in the source language, live through various intermediate representations, and eventually die when they meet the harsh reality of hardware. The question is not whether delimited continuations will eventually be lowered to something else - they must be. The question is: how long can we keep them alive, and what benefits do we gain from their longevity?
+Abstractions have lifespans in a compiler. They are born in the source language, live through various intermediate representations, and are lowered to something else when they meet hardware. Delimited continuations will be lowered eventually; that part is not in question. What we want to know is how long we can keep them alive, and what we gain from their longevity.
 
-In Composer's architecture, delimited continuations begin life as first-class citizens in our Program Hypergraph (PHG):
+In our Composer architecture, delimited continuations begin life as first-class citizens in our Program Hypergraph (PHG):
 
 ```fsharp
 type PSGNode =
@@ -42,11 +37,11 @@ type PSGNode =
     }
 ```
 
-At this level, we have complete semantic information. The bidirectional zipper structure allows us to navigate and transform the continuation while preserving its full context. This is delimited continuations in their purest form - mathematical objects with precise semantics.
+At this level, we hold the full semantic information. The bidirectional zipper structure lets us navigate and transform the continuation while preserving its surrounding context. The continuation is still a mathematical object here, with the precise semantics the source assigned it.
 
 ## The Fork(s) in the Road: WAMI vs LLVM
 
-As we lower from PSG through MLIR, we reach a critical decision point. This is where the paths diverge dramatically, and our choice determines not just performance characteristics but the very nature of what survives to runtime.
+As we lower from our PSG through MLIR, we reach a decision point. The paths diverge here, and the choice determines both the performance characteristics and what survives to runtime.
 
 ```mermaid
 flowchart TD
@@ -101,48 +96,46 @@ flowchart TD
     end
 ```
 
-This diagram reveals the crucial architectural decision: Composer leverages existing MLIR dialects, particularly the DCont (delimited continuation) dialect. We preserve the art that exists - no reinventing wheels. The PSG transforms Clef into these standard dialects, then we choose whether to preserve continuations (WAMI) or compile them away (LLVM).
+The diagram shows the architectural decision. Composer builds on existing MLIR dialects, particularly the DCont (delimited continuation) dialect, rather than introducing new ones. Our PSG transforms Clef into these standard dialects, and then we choose whether to preserve continuations (the WAMI path) or compile them away (the LLVM path).
 
-The PSG (and PHG that will follow it in a future revision) maintains full semantic information about continuations, effects, and resource lifetimes, which maps cleanly to existing MLIR dialects like DCont, Async, SCF, and MemRef. This allows us to make an informed decision at the last possible moment about whether to preserve these abstractions (WAMI path) or compile them away for performance (LLVM path).
+Our PSG (and the PHG that will follow it in a later revision) carries the full semantic information about continuations, effects, and resource lifetimes. That information maps onto existing MLIR dialects like DCont, Async, SCF, and MemRef, which lets us defer the preserve-or-compile decision to the last possible moment.
 
 ### The WAMI Path: Semantic Preservation
 
-WAMI's Stack Switching proposal represents something remarkable - delimited continuations as a first-class WebAssembly feature. When we compile through WAMI, our continuations map almost directly:
+The Stack Switching proposal for WebAssembly brings delimited continuations in as a first-class feature. On the WAMI path we envision, Clef continuations would map onto it almost directly:
 
 ```fsharp
-// In your Clef source
+// Clef source
 let processAsync() = async {
     let! data = readSensor()
     let! result = transform data
     return result
 }
 
-// In PSG representation
+// PSG representation
 DelimitedContinuation {
     Reset = AsyncBoundary
     Shift = ReadSensorSuspendPoint
     Context = TransformContinuation
 }
 
-// Maps to existing DCont dialect in MLIR
+// DCont dialect in MLIR
 dcont.shift @readSensor : !dcont.cont {
-    // This preserves the semantic structure
     dcont.suspend %sensor_read
 }
 
-// Which WAMI preserves as
+// preserved on the WAMI path
 ssawasm.suspend $sensor_read
-// The continuation structure is preserved!
 ```
 
-WAMI's suspend/resume operations **are** delimited continuations at the IR level. We're not losing the abstraction; we're mapping it to an equivalent abstraction in the target platform. This is preservation in the truest sense.
+The suspend/resume operations in the Stack Switching proposal are delimited continuations at the IR level. The mapping does not discard the abstraction; it carries it onto an equivalent abstraction in the target platform.
 
 ### The LLVM Path: Semantic Compilation
 
 LLVM takes a different approach. It has no notion of delimited continuations, so we must compile them away:
 
 ```fsharp
-// The same Clef source compiles to a state machine
+// the same Clef source, compiled to a state machine
 type ProcessAsyncStateMachine = struct
     val mutable state: int
     val mutable data: SensorData
@@ -161,17 +154,17 @@ type ProcessAsyncStateMachine = struct
 end
 ```
 
-Here, the delimited continuation semantics are "compiled away" into state machines. The abstraction is lost at the IR level, replaced by explicit state management. This is compilation in its traditional sense - high-level constructs become low-level implementations.
+Here the delimited continuation semantics compile away into state machines. The abstraction does not survive the IR level; explicit state management takes its place. This is compilation in the traditional sense, where high-level constructs become low-level implementations.
 
 ## The Preservation Paradox
 
-This brings us to the paradox: WAMI preserves our abstractions beautifully but runs on a virtual machine with inherent overhead. LLVM compiles our abstractions away but produces native code with optimal performance. Which path serves our goal of functional systems programming better?
+This is the paradox. The WAMI path preserves our abstractions but runs on a virtual machine that carries its own overhead. The LLVM path compiles those abstractions away and produces native code. Which one serves functional systems programming better?
 
-The answer, surprisingly, might be "both."
+The answer may be "both."
 
 ## Building Pure Functional Hardware Drivers
 
-The real test of our approach comes when we need to touch hardware. How do we maintain functional purity while reading from an I2C sensor or writing to SPI? The answer lies in treating hardware access as algebraic effects, with delimited continuations as the implementation mechanism.
+The approach gets tested when we need to touch hardware. How do we hold functional purity while reading from an I2C sensor or writing to SPI? We treat hardware access as algebraic effects, with delimited continuations as the implementation mechanism.
 
 ### Capabilities as Effects
 
@@ -185,10 +178,9 @@ type I2CEffect<'a> =
     | Read of count: int * cont: (byte[] -> I2CEffect<'a>)
     | Stop of result: 'a
 
-// This remains pure through compilation
 let readTemperatureSensor =
     Start(0x44,
-        Write(0xE0uy,  // Command: read temperature
+        Write(0xE0uy,  // command: read temperature
             Read(2, fun data ->
                 let temp = (int data.[0] <<< 8) ||| int data.[1]
                 Stop(float temp / 100.0))))
@@ -229,7 +221,7 @@ flowchart TD
 ```
 
 ```fsharp
-// Single interpretation point - the only place purity meets reality
+// the single interpretation point
 let interpretI2C protocol =
     shift (fun k ->
         match protocol with
@@ -247,24 +239,24 @@ let interpretI2C protocol =
             k result)
 ```
 
-With WAMI, these effects map beautifully to host functions:
+On the WAMI path, these effects map onto host functions:
 
 ```fsharp
-// The effect suspends the continuation
+// the effect suspends the continuation
 HardwareEffect(I2CRead count, continuation)
     ↓
-// WAMI preserves this as
+// preserved on the WAMI path
 ssawasm.suspend $i2c_read
     ↓
-// Host performs I/O and resumes with result
+// host performs I/O and resumes with the result
 ssawasm.resume %continuation (result)
 ```
 
-The continuation structure is preserved throughout! The host environment handles the actual hardware interaction, but the functional structure remains intact.
+The continuation structure carries through this whole path. The host environment handles the hardware interaction while the functional structure stays intact.
 
-### Selective Compilation: The Best of Both Worlds
+### Selective Compilation
 
-The solution to our paradox might be selective compilation based on performance requirements:
+The way out of the paradox we see is selective compilation, driven by the performance requirements of each part of the program:
 
 ```mermaid
 flowchart LR
@@ -294,31 +286,30 @@ flowchart LR
 ```
 
 ```fsharp
-// Performance-critical tight loops via LLVM
+// tight loop, compiled native via LLVM
 [<CompileDirect>]
 let processBuffer (data: Span<byte>) =
-    // This needs maximum performance
     for i in 0 .. data.Length - 1 do
         data.[i] <- lookup.[int data.[i]]
 
-// Coordination logic preserves continuations via WAMI
+// coordination, continuations preserved via WAMI
 [<PreserveContinuations>]
 let orchestrateProcessing() = async {
     let! rawData = Sensor.readAsync()
-    processBuffer rawData  // Calls into LLVM-compiled code
+    processBuffer rawData  // calls into the LLVM-compiled path
     let! result = analyze rawData
     do! Logger.writeAsync result
 }
 ```
 
-This hybrid approach gives us native performance where it matters while preserving elegant async coordination where it helps.
+This hybrid approach gives us native performance in the tight loop while preserving the async coordination structure where it earns its keep.
 
 ## Architectural Principles
 
-From this analysis, several principles emerge for building a functional systems programming platform:
+A few principles for building a functional systems programming platform come out of this:
 
 ### 1. Preserve Until Necessary
-Keep abstractions alive as long as they provide value. Delimited continuations offer elegant composition and automatic resource management - preserve them until performance demands otherwise.
+Keep abstractions alive as long as they provide value. Delimited continuations give us composition and automatic resource management, so we hold them until performance demands otherwise.
 
 ### 2. Explicit Boundaries
 Make the purity/effect boundary explicit and minimal. One interpretation point is easier to audit than effects scattered throughout the codebase.
@@ -329,21 +320,21 @@ Not all code needs maximum performance. Use native compilation for hot paths and
 ### 4. Effects as Protocols
 Model hardware interactions as pure protocol descriptions. This enables testing, simulation, and reasoning without touching actual hardware.
 
-## The Deeper Insight
+## The Insight
 
-The continuation preservation paradox reveals something profound about systems programming. We've been trained to think that low-level programming requires low-level thinking - that to be fast, we must abandon our abstractions. But what if that's not true?
+The continuation preservation paradox points at an assumption worth questioning. The received wisdom is that low-level programming requires low-level thinking, that speed costs you your abstractions. We are designing Composer on the premise that the trade is not forced.
 
-What if we can preserve our high-level constructs exactly as far as they're useful, then compile them away exactly where performance demands? What if we can have mathematical elegance in our coordination logic while still achieving native performance in our hot paths?
+We can preserve high-level constructs as far as they are useful, and compile them away where performance demands. The coordination logic keeps its mathematical structure while the hot paths reach native performance.
 
-This is the promise of Composer with selective compilation. By supporting both WAMI (preservation) and LLVM (compilation) backends, we can choose the right tool for each part of our system. Delimited continuations can survive all the way to WebAssembly when that serves our needs, or compile to efficient state machines when performance is critical.
+This is what we are designing toward with selective compilation. By supporting both a WAMI (preservation) backend and an LLVM (compilation) backend, Composer can pick the right path for each part of a program. Delimited continuations can survive all the way to WebAssembly when that serves the design, or compile to efficient state machines when the path is performance-critical.
 
 ## Practical Implications
 
-For embedded developers, this architecture enables something previously thought impossible: purely functional device drivers with predictable performance. Your sensor reading logic remains functional and testable:
+For embedded developers, this architecture is meant to enable purely functional device drivers with predictable performance. The sensor reading logic stays functional and testable:
 
 ```fsharp
 let readMultipleSensors() = async {
-    // These operations happen concurrently via continuations
+    // concurrent reads via continuations
     let! temp = Temperature.readAsync()
     let! humidity = Humidity.readAsync()
     let! pressure = Pressure.readAsync()
@@ -356,16 +347,14 @@ let readMultipleSensors() = async {
 }
 ```
 
-While the actual hardware access compiles to efficient native code. No heap allocations, no runtime overhead, just clean functional code that performs like C.
+The hardware access underneath compiles to native code, with no heap allocations and no runtime overhead on that path. The functional code at the top is meant to perform like C.
 
-## The Art of Compilation
+## Preservation-Aware Compilation
 
-Building Composer has taught us that compilation is not just about lowering abstractions - it's about preserving them exactly as long as they provide value. Delimited continuations can survive surprisingly deep in the compilation stack, deeper than traditional wisdom would suggest.
+Designing Composer has shifted how we think about compilation. It is not only about lowering abstractions; it is about holding them as long as they provide value. Delimited continuations can survive further down the compilation stack than the usual rules of thumb suggest.
 
-With WAMI, they survive essentially unchanged into the runtime. With LLVM, they compile away but leave behind efficient implementations. Both paths have their place in a functional systems programming toolkit.
+On the WAMI path they survive into the runtime largely unchanged. On the LLVM path they compile away and leave behind efficient implementations. Both belong in a functional systems programming toolkit.
 
-The good news is that we don't have to choose globally. By making preservation decisions locally based on performance requirements, we can build systems that are both elegant and efficient. Hardware drivers can be purely functional. Async code can run without allocation. Clef can compete with C for embedded systems.
+The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work.
 
-This is the promise of preservation-aware compilation: keeping the best of functional programming while achieving the performance of systems programming. The continuation preservation paradox isn't a problem to solve - it's a design space to explore.
-
-In Composer, delimited continuations survive as far as they need to. No further, but crucially, no less.
+This is where we are taking the design. The continuation preservation paradox is the question that shapes the next stretch of work on Composer, and the per-call-site preservation choice is the part of the answer we will keep building toward as the rest of the toolchain comes into place.

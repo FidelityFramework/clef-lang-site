@@ -11,12 +11,7 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-The AI industry stands at an inflection point. As detailed in our ["Beyond Transformers"](/blog/beyond-transformers/) analysis, the convergence of matmul-free architectures and sub-quadratic models will lead a fundamental shift in how we build and deploy AI systems. While the research community has demonstrated these approaches can match or exceed transformer performance with dramatically lower computational requirements, our investigation at SpeakEZ has uncovered an intriguing gap:
+The AI industry stands at an inflection point. As detailed in our ["Beyond Transformers"](/blog/beyond-transformers/) analysis, the convergence of matmul-free architectures and sub-quadratic models will shift how we build and deploy AI systems. While the research community has demonstrated these approaches can match or exceed transformer performance with dramatically lower computational requirements, our investigation at SpeakEZ has uncovered an intriguing gap:
 
 > Current tensor-only representations may not optimally capture the heterogeneous computational patterns these models require.
 
@@ -38,7 +33,6 @@ Traditional tensor frameworks force all these patterns into homogeneous arrays, 
 # PyTorch's tensor-only approach to representing a Mamba layer
 class MambaLayer:
     def __init__(self, d_model, d_state):
-        # Everything becomes a tensor, regardless of actual structure
         self.A = torch.zeros(d_state)  # Diagonal matrix, wastes memory
         self.B = torch.zeros(d_state, d_model)
         self.C = torch.zeros(d_model, d_state)
@@ -100,7 +94,7 @@ type EfficientAttention =
     | Performer of randomFeatures: float32[,] * orthogonal: bool
 ```
 
-We see these representations may serve to match the mathematical structure of post-transformer models more directly, and therefore represent an advancement in machine learning architecture.
+We see these representations may serve to match the mathematical structure of post-transformer models more directly.
 
 ## BAREWire's Key: Zero-Copy Operations
 
@@ -162,7 +156,7 @@ let processSequence (layer: Region<MambaLayer, 'r>) (input: Tensor) =
     | _ -> failwith "Invalid layer type"
 ```
 
-We're exploring is that state space models have natural sparsity patterns and sequential dependencies that discriminated unions might represent more directly than tensor-only frameworks. This speculation arises from examining the mathematical structure of SSMs like Mamba. These models fundamentally differ from transformers in several ways:
+State space models have natural sparsity patterns and sequential dependencies, and we are exploring whether discriminated unions might represent these more directly than tensor-only frameworks. This speculation arises from examining the mathematical structure of SSMs like Mamba. These models fundamentally differ from transformers in several ways:
 
 **Structural Sparsity**: The transition matrix A in SSMs is typically diagonal or block-diagonal, meaning only O(n) non-zero elements in what tensor frameworks represent as an n*n matrix. Current implementations waste memory storing zeros or use complex indexing schemes to avoid it.
 
@@ -250,7 +244,7 @@ The chain rule of calculus remains valid regardless of representation. Furnace's
 
 ### Compile-Time Gradient Synthesis
 
-Clef's type system, combined with Furnace's architecture, could enable compile-time generation of efficient gradient paths. Since the structure of discriminated unions is known statically, we could potentially generate specialized backprop code for each variant combination, avoiding runtime dispatch overhead while maintaining Furnace's mathematical correctness guarantees.
+Clef's type system, combined with Furnace's architecture, could enable compile-time generation of efficient gradient paths. Since the structure of discriminated unions is known statically, we could potentially generate specialized backprop code for each variant combination, avoiding runtime dispatch overhead while keeping the gradient computation structurally consistent with Furnace's differentiation rules.
 
 ### Heterogeneous Adjoints
 
@@ -332,6 +326,6 @@ Our investigation at SpeakEZ has identified discriminated union-aware memory lay
 
 We emphasize that this article presents **early-stage exploration**, not validated results. The ideas presented here require rigorous empirical validation, performance benchmarking, and peer review before any significant claims can be made. Our goal is to contribute to the broader research conversation about how the industry might better represent the increasingly heterogeneous computational patterns emerging in modern AI, building on our practical insights.
 
-As the industry moves beyond transformers, we believe exploring alternative memory representations is a valuable research direction. Whether this particular approach proves fruitful remains to be seen, but the investigation itself helps illuminate the assumptions and constraints built into our current frameworks. The combination of BAREWire's memory layout capabilities and Furnace's advanced differentiation engine provides a unique platform for this exploration. We look forward to the Fidelity framework's contributions to this growing field.
+As the industry moves beyond transformers, we believe exploring alternative memory representations is a valuable research direction. Whether this particular approach proves fruitful remains to be seen, but the investigation itself helps illuminate the assumptions and constraints built into our current frameworks. The combination of our BAREWire memory layout and our Furnace differentiation engine gives us a platform for this exploration, and that is where our interest lies as the work continues.
 
 *The technology concepts described here relate to U.S. Patent Application No. 63/786,247 "System and Method for Zero-Copy Inter-Process Communication Using BARE Protocol", though we note that the specific application to AI architectures will likely remain a research topic of continuing interest.*

@@ -12,16 +12,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
-In today's "move fast and break things" culture, its gratifying to find quiet, principled work win the day. Don Syme designed F# quotations, active patterns, and computation expressions over a decade ago; they now form the architectural backbone of Composer's native compilation pipeline. This is what I call "standing art": capabilities that were always present, waiting for the right application to reveal their immense value as a first-class language feature.
+In today's "move fast and break things" culture, it's gratifying to find quiet, principled work win the day. Don Syme designed F# quotations, active patterns, and computation expressions over a decade ago; they now form the architectural backbone of our Composer native compilation pipeline. This is what I call "standing art": capabilities that were always present, waiting for the right application to put them to use as first-class language features.
 
 In the [History of Programming Languages paper](https://fsharp.org/history/hopl-final/hopl-fsharp.pdf), section 9.9 describes how quotations emerged from Syme's research at Intel on staged computation and metaprogramming. The original motivation was GPU code generation and database query translation. Today, these same primitives enable something their designer may not have fully anticipated: a complete native compilation pipeline for Clef without runtime dependencies.
 
-The Fidelity framework builds on three F# features that together provide unique infrastructure for systems programming:
+Our Fidelity framework builds on three features Clef inherits from F#, which together provide infrastructure for systems programming:
 
 | Feature | Compilation Role | Unique Capability |
 |---------|-----------------|-------------------|
@@ -29,11 +24,11 @@ The Fidelity framework builds on three F# features that together provide unique 
 | **Active Patterns** | Structural recognition | Compositional matching without type discrimination |
 | **Computation Expressions** | Control flow abstraction | Continuation capture as notation |
 
-These are not incidental conveniences. They are the machinery that makes self-hosting possible.
+Together they are the machinery that makes self-hosting possible.
 
 ## Quotations as Semantic Carriers
 
-Quotations (`Expr<'T>`) encode program fragments as data. In typical F# usage, this enables dynamic code generation. In Fidelity, quotations serve a unique purpose based on the context in which they're employed: one of our first and most prominent use cases is carrying memory constraints and peripheral descriptors through the compilation pipeline as first-class semantic information.
+Quotations (`Expr<'T>`) encode program fragments as data. In typical F# usage, this enables dynamic code generation. In our Fidelity framework, quotations serve a purpose set by the context in which they're employed: one of our first use cases is carrying memory constraints and peripheral descriptors through the compilation pipeline as first-class semantic information.
 
 Consider how Farscape will generate hardware bindings:
 
@@ -46,17 +41,15 @@ let gpioQuotation: Expr<PeripheralDescriptor> = <@
 @>
 ```
 
-This quotation is not evaluated at runtime. The Composer compiler inspects its structure during PSG construction, extracting the peripheral layout, memory region classification, and instance addresses. The information flows through the nanopass pipeline and informs code generation: Alex knows to emit volatile loads for peripheral access because the quotation carried that semantic through.
+This quotation is not evaluated at runtime. Our Composer compiler is designed to inspect its structure during PSG construction, extracting the peripheral layout, memory region classification, and instance addresses. The information flows through the nanopass pipeline and informs code generation: Alex emits volatile loads for peripheral access because the quotation carried that semantic through.
 
-> The distinction from reflection-based approaches is significant.
-
-Quotations are compile-time artifacts. They require no runtime support, introduce no BCL dependencies, and impose no overhead in the generated binary. The F# compiler verifies their structure; and eventually the Composer pipeline would transform them.
+This differs from reflection-based approaches. Quotations are compile-time artifacts. They require no runtime support, introduce no BCL dependencies, and impose no overhead in the generated binary. The F# compiler verifies their structure, and our Composer pipeline is designed to transform them.
 
 ## Active Patterns for Compositional Recognition
 
-Active patterns also provide a powerful component for Composer compilation. It enables structural recognition without the brittleness of string matching or the complexity of type discrimination hierarchies. They are Clef's answer to a fundamental compiler construction problem: how do you classify program constructs cleanly?
+Active patterns are a second component our Composer compilation draws on. They enable structural recognition without the brittleness of string matching or the complexity of type discrimination hierarchies. They are Clef's answer to a recurring compiler construction problem: how do you classify program constructs cleanly?
 
-In Composer, active patterns enable the typed tree zipper and Alex traversal to recognize PSG nodes:
+In our Composer, active patterns let the typed tree zipper and Alex traversal recognize PSG nodes:
 
 ```fsharp
 let (|PeripheralAccess|_|) (node: PSGNode) =
@@ -102,7 +95,7 @@ builder.Bind(someOption, fun x ->
         builder.Return(x + y)))
 ```
 
-The nested lambdas are continuations. This observation has profound implications for native compilation: computation expressions already express the control flow patterns that the DCont dialect needs to represent.
+The nested lambdas are continuations. This observation carries directly into native compilation: computation expressions already express the control flow patterns that our DCont dialect needs to represent.
 
 The Composer compilation strategy depends on the computation pattern:
 
@@ -112,9 +105,9 @@ The Composer compilation strategy depends on the computation pattern:
 | Parallel pure (validated, reader) | Inet | Compile to data flow |
 | Mixed | Both | Analyze and split |
 
-An async computation expression compiles to DCont dialect operations; each `let!` becomes a `dcont.shift` that captures the continuation. A validated computation with `and!` combinators compiles to Inet dialect; the independent branches can execute in parallel.
+An async computation expression is designed to compile to DCont dialect operations, where each `let!` becomes a `dcont.shift` that captures the continuation. A validated computation with `and!` combinators compiles to Inet dialect, where the independent branches can execute in parallel.
 
-This is the innovation described in [DCont Inet Duality](/docs/design/dcont-inet-duality/). The unique application here is that referential transparency determines compilation strategy. Coeffects track what code *needs* from its environment; this information guides the decomposition. This is where the elegance of category theory meets the real world of compilation strategy.
+We describe this construction in [DCont Inet Duality](/docs/design/dcont-inet-duality/). The application here is that referential transparency determines compilation strategy. Our coeffect system tracks what code *needs* from its environment, and this information guides the decomposition.
 
 The MLIR builder is itself a computation expression:
 
@@ -133,19 +126,19 @@ The compiler's internal structure mirrors the patterns it compiles.
 
 ## The Self-Hosting Path
 
-These three features provide the infrastructure for Composer to compile itself. Quotations can represent the compiler's own AST structures. Active patterns can match on the compiler's own IR. Computation expressions structure the compilation pipeline.
+These three features provide the infrastructure for our Composer to compile itself. Quotations can represent the compiler's own AST structures. Active patterns can match on the compiler's own IR. Computation expressions structure the compilation pipeline.
 
-This is not a theoretical aspiration. The machinery is in place, and has been for years:
+The underlying language machinery has been in place for years:
 
 - The PSG builder uses computation expressions for monadic construction
 - The typed tree zipper uses active patterns for correlation
 - The nanopass pipeline operates on inspectable intermediate representations
 
-Self-hosting requires that the compiler can process its own source. With quotations providing semantic encoding, active patterns providing structural recognition, and computation expressions providing control flow, the path is clear. The features Don Syme designed for metaprogramming and staged computation now enable bootstrap compilation.
+Self-hosting requires that the compiler can process its own source. Quotations provide the semantic encoding, active patterns provide the structural recognition, and computation expressions provide the control flow. The features Don Syme designed for metaprogramming and staged computation are what we intend to carry into bootstrap compilation.
 
 ## Beyond OCaml and Rust
 
-At SpeakEZ Technologies we always seek to shed light on the places where we draw inspiration. Sometimes that means looking at lessons to follow, and other times it's to see certain decisions as *a warning*. OCaml provides excellent native compilation, and it still provides a long, smooth "shared edge" with Clef as FStar is used as the design time proof-delivering component of our platform. However, Clef's quotations for compile-time metaprogramming is a unique draw of its own merit. OCaml's PPX system operates on strings and requires external tooling. Similarly, Rust provides procedural macros with similar power; but they too are fundamentally string-based, operating on token streams rather than typed representations.
+We draw inspiration from several language systems, some as a lesson to follow and some as a decision to read as *a warning*. OCaml provides native compilation, and it shares a long edge with Clef, since we plan to use F* as the design-time proof-delivering component of our platform. Clef's quotations for compile-time metaprogramming have a separate draw. OCaml's PPX system operates on strings and requires external tooling. Rust provides procedural macros of comparable reach, but they too are string-based, operating on token streams rather than typed representations.
 
 Clef through the Fidelity framework offers something different:
 
@@ -157,20 +150,18 @@ Clef through the Fidelity framework offers something different:
 | Continuation notation | No | No | Computation expressions |
 | Metaprogramming | PPX (stringly) | proc_macro (stringly) | Quotations (typed) |
 
-To be sure, OCaml and Rust are mature, highly performant production-scale language systems. And while Fidelity framework is early-stage, our understanding of the unique position we occupy continues to develop. The distinction is architectural: Clef provides typed metaprogramming primitives that other ML-family languages approach through string manipulation. It's an ambitous goal (and one that was never fully explored in the .NET ecosystem) but is one that we believe is worth fully developing to its fullest potential. We believe that this will provide unparalleled degrees of freedom in the Fidelity framework ecosystem. The principled work we do now will, like Don Syme saw early on, pay dividends for years to come.
+OCaml and Rust are mature, performant, production-scale language systems. Our Fidelity framework is early-stage, and our understanding of the position we occupy continues to develop. The distinction is architectural: Clef provides typed metaprogramming primitives that other ML-family languages approach through string manipulation. We have found no other representative implementations of this approach in the .NET-lineage literature we have reviewed, and we think it is worth developing further. The principled work we do now will, as Don Syme saw early on, pay dividends for years to come.
 
-The practical implication is design-time tooling. When quotations carry type information, the IDE can provide accurate completions, the compiler can verify structure, and transformations preserve semantics. This is the high-level experience that we aim to provide, with the tooling to make manual optimizations where the generated code requires tuning. If we do this right, it will mean that Fidelity framework and Composer as its compiler will use this tooling internally and limit the amount of "innovation budget" a user will have to spend with these advanced tools at design time. But like so many other ambitious features, it will take some time and consideration (and no small amount of head-scratching) to realize its fullest ambition.
+The practical implication is design-time tooling. When quotations carry type information, the IDE can provide accurate completions, the compiler can verify structure, and transformations preserve semantics. This is the experience we aim to provide, with the tooling to make manual optimizations where the generated code requires tuning. We intend for our Fidelity framework and Composer to use this tooling internally, which would limit the "innovation budget" a user spends on these design-time tools. Realizing that intent will take time and consideration, and no small amount of head-scratching.
 
 ## Hiding in Plain Sight
 
-Three Clef features contribute significantly to the architectural backbone of the Composer compiler:
+Three Clef features form the architectural backbone of our Composer compiler:
 
 - **Quotations** encode memory constraints and semantic information as inspectable compile-time data
 - **Active patterns** enable compositional structural recognition throughout the nanopass pipeline
 - **Computation expressions** provide continuation capture as notation, compiling naturally to the DCont and Inet dialects
 
-These are nominniegurlt recent additions or experimental features. They are standing art: capabilities Don Syme designed years ago that now propel our ideas around native compilation without runtime dependencies. The Fidelity framework aspires to demonstrate that Clef's advanced type-safe features are practical for systems programming; and beyond that they are the infrastructure that makes self-hosting achievable.
+All three predate our framework by years and have been stable in F# the whole time. They are standing art: capabilities Don Syme designed years ago that now carry our ideas around native compilation without runtime dependencies. Our Fidelity framework aims to show that the type-safe features Clef inherits are practical for systems programming, and that they are the infrastructure self-hosting rests on.
 
-The path forward involves continued development with appreciation for the foresight embedded in F#'s design. There is substantial work ahead in optimization, platform support, and tooling. And we're gratified the foundation is sound: three metaprogramming features, designed for staged computation and translation, now serve as foundation of our native compiler.
-
-Standing art, rediscovered.
+The path forward involves continued development with appreciation for the foresight embedded in F#'s design. There is substantial work ahead in optimization, platform support, and tooling. We're gratified the foundation is sound, and we will keep building on these three features, designed for staged computation and translation, as our native compiler takes shape.

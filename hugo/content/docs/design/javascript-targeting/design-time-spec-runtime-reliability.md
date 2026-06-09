@@ -15,7 +15,7 @@ This article examines what that shared pipeline verifies, how each verified prop
 
 ## Dimensional Consistency
 
-The [DTS verification pipeline](/docs/internals/verification/decidability-sweet-spot/) assigns dimensional annotations to every numeric value and solves consistency constraints via Z3 in the `QF_LIA` fragment. The solution is polynomial-time, complete, and principal. Every dimensionally consistent program can be typed without annotation. The inferred type is the most general. The constraint system is finite and the solution algorithm terminates. This verification happens in Alex, before the pipeline forks to target-specific backends.
+Our [DTS verification pipeline](/docs/internals/verification/decidability-sweet-spot/) assigns dimensional annotations to every numeric value and solves consistency constraints via Z3 in the `QF_LIA` fragment. The solution is polynomial-time, complete, and principal. Every dimensionally consistent program can be typed without annotation. The inferred type is the most general. The constraint system is finite and the solution algorithm terminates. This verification happens in Alex, before the pipeline forks to target-specific backends.
 
 For JavaScript via JSIR, the dimensional verification that runs for the native path also runs for the JavaScript path, because both paths share the same middle-end. A Clef program that passes dimensional verification will not produce a dimensionally inconsistent computation on either target.
 
@@ -23,7 +23,7 @@ The dimensions are erased after verification. The emitted JavaScript carries no 
 
 ## Memory and Escape Classification
 
-The [coeffect algebra](/docs/internals/verification/memory-coeffect-algebra/) classifies every value's escape behavior: StackScoped, ClosureCapture, ReturnEscape, ByRefEscape. Each classification maps to an allocation strategy and lifetime bound. The classification interacts with a lifetime ordering (stack < arena < heap < static), and when any usage of a value demands a lifetime exceeding the value's tentative assignment, the value is promoted. The promotion is recorded in the PSG as a coeffect annotation. The compiler generates Z3 assertions verifying that no references to a value escape into a longer-lived scope than the value's allocation permits.
+Our [coeffect algebra](/docs/internals/verification/memory-coeffect-algebra/) classifies every value's escape behavior: StackScoped, ClosureCapture, ReturnEscape, ByRefEscape. Each classification maps to an allocation strategy and lifetime bound. The classification interacts with a lifetime ordering (stack < arena < heap < static), and when any usage of a value demands a lifetime exceeding the value's tentative assignment, the value is promoted. The promotion is recorded in the PSG as a coeffect annotation. The compiler generates Z3 assertions verifying that no references to a value escape into a longer-lived scope than the value's allocation permits.
 
 On native targets, these classifications drive concrete allocation decisions. Stack-scoped values stay on the stack. Arena-captured values go to arena allocation. The compiler eliminates garbage collection for verified allocations. Z3 proves the lifetime inequality mathematically. The resulting binary runs without a garbage collector, without reference counting, without runtime bounds checks for stack-scoped buffers with statically known sizes.
 
@@ -33,7 +33,7 @@ The verification is not wasted. The escape analysis in Alex catches lifetime err
 
 ## BAREWire Schema Derivation
 
-When actors communicate across substrate boundaries, the BAREWire schema is derived from the verified types, records, and structured data definitions that constitute the actor's message contract. The [Schema Identity section](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) of the JSIR article describes how schema identity serves as a proxy for dimensional agreement. The key property for JavaScript targeting is that the schema derivation happens in Alex, before the pipeline forks.
+When actors communicate across substrate boundaries, our BAREWire schema is derived from the verified types, records, and structured data definitions that constitute the actor's message contract. The [Schema Identity section](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) of the JSIR article describes how schema identity serves as a proxy for dimensional agreement. The key property for JavaScript targeting is that the schema derivation happens in Alex, before the pipeline forks.
 
 The native serializer (via LLVM) and the JavaScript deserializer (via JSIR) both derive from the same BAREWire dialect ops. The byte layout is identical because both lowering paths consumed the same IR representation. A Worker receiving a BAREWire frame from a native container reads the same byte positions that the container wrote. Cross-substrate serialization compatibility is a structural property of the shared middle-end, not a property that must be tested across substrate pairs.
 

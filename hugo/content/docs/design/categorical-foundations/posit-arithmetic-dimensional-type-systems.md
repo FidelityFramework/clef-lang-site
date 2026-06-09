@@ -78,7 +78,7 @@ When a computation spans multiple hardware targets, values must cross target bou
 
 Every posit32 value within its representable range (\(\sim 10^{-36}\) to \(\sim 10^{36}\)) is exactly representable in `float64`, which covers \(10^{-308}\) to \(10^{308}\). The transfer from posit32 to `float64` is lossless; the compiler can prove this at compile time from the representation specifications. The reverse direction (float64 to posit32) incurs precision loss that depends on the dimensional range of the value being transferred.
 
-The BAREWire protocol handles the binary encoding and transport. The DTS framework handles the semantic analysis: what precision is lost, where, and whether the loss is acceptable for the computation's dimensional requirements. The language server can display this analysis as a diagnostic on any value that crosses a target boundary:
+Our BAREWire protocol handles the binary encoding and transport. Our DTS framework handles the semantic analysis: what precision is lost, where, and whether the loss is acceptable for the computation's dimensional requirements. The language server can display this analysis as a diagnostic on any value that crosses a target boundary:
 
 ```
 Transfer (xilinx → x86_64): posit32 → float64

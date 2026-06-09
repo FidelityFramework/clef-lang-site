@@ -11,14 +11,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+In distributed systems, trust is a mathematical problem. For decades, organizations have relied on single points of failure: a master key, a root certificate, a privileged administrator. The mathematics of secure multi-party computation, pioneered by Adi Shamir in 1979 and refined through Schnorr signatures, has reached a point where distributed trust is practical and, for many deployments, preferable to centralized approaches.
 
-In the world of distributed systems, trust is fundamentally a mathematical problem. For decades, organizations have relied on single points of failure: a master key, a root certificate, a privileged administrator. But what if we told you that the mathematics of secure multi-party computation, pioneered by Adi Shamir in 1979 and refined through Schnorr signatures, has reached a point where distributed trust is not just theoretically possible, but practically superior to centralized approaches?
-
-What if the programming language you choose could be the difference between a secure implementation and a catastrophic key compromise?
+The programming language used to implement these protocols affects the outcome. The difference between a correct implementation and a key compromise often comes down to whether the language can catch the error before the code runs.
 
 ## The Convergence of Cryptography and Type Theory
 
@@ -26,13 +21,13 @@ The cryptographic community has been building toward truly practical threshold s
 
 But here's the challenge that keeps security engineers awake at night: implementing these protocols correctly. A single off-by-one error in share indices, a confused parameter in modular arithmetic, or a mishandled group element can compromise the entire system. Unlike application bugs that might cause a crash or incorrect output, cryptographic implementation errors often fail silently, potentially exposing keys or enabling forgeries that go undetected until disaster strikes.
 
-At SpeakEZ, we've been applying the same principles that power our Fidelity Framework to the domain of cryptographic protocols. Just as we use [the Clef language](https://clef-lang.com)'s type system to ensure neural network dimensions align correctly at compile time, we can encode the mathematical invariants of FROST directly into our type system, making entire classes of implementation errors impossible.
+At SpeakEZ, we have been applying the same principles that power our Fidelity Framework to cryptographic protocols. Just as we use [our Clef language](https://clef-lang.com)'s type system to ensure neural network dimensions align correctly at compile time, we encode the mathematical invariants of FROST directly into the type system, making whole classes of implementation errors unrepresentable.
 
 ## What is FROST, and Why Should Distributed Systems Architects Care?
 
 FROST is a threshold signature scheme that allows any `t` participants out of `n` total parties to collaboratively produce a valid Schnorr signature, without any single party ever possessing the complete private key. Think of it as cryptographic democracy: no single entity can act alone, but any sufficient quorum can act together.
 
-For organizations building distributed systems, this offers profound advantages:
+For organizations building distributed systems, this offers several advantages:
 
 * **No Single Point of Failure**: Even if `n-t` key shares are compromised, the system remains secure
 * **Operational Resilience**: The system continues functioning even when some participants are offline
@@ -197,7 +192,7 @@ let createSignature<[<Measure>] 'Curve, [<Measure>] 't, [<Measure>] 'n>
 
 ## Integration with Distributed Oracle Networks
 
-Some of our early whiteboard notes show DON (Distributed Oracle Networks), and this is where FROST signatures become particularly powerful. In a distributed oracle network, multiple nodes need to collectively attest to external data. FROST enables this with cryptographic guarantees:
+Some of our early whiteboard notes show DON (Distributed Oracle Networks), and this is a natural fit for FROST signatures. In a distributed oracle network, multiple nodes need to collectively attest to external data. FROST supports this with cryptographic guarantees:
 
 ```fsharp
 // Type-safe distributed oracle with FROST signatures
@@ -333,9 +328,9 @@ Validators can share signing authority without sharing keys. This enables secure
 ### 4. Secure Multi-Party Computation
 FROST signatures provide the authentication layer for MPC protocols, ensuring all parties are legitimate participants.
 
-## Performance Without Compromise
+## Performance
 
-Unlike traditional multi-signature schemes that require multiple rounds of communication, FROST optimizes for practical deployment:
+Traditional multi-signature schemes require multiple rounds of communication. FROST reduces this for practical deployment:
 
 ```fsharp
 // Benchmark comparison
@@ -388,14 +383,13 @@ type ThresholdAnalysis =
                 isByzantineSafe && t >= 3 && (float t / float n) >= 0.5
         |}
 
-// At compile time, we can verify security properties:
 // let analysis = ThresholdAnalysis.SecurityLevel<T3, N5>()
-// Compiler ensures T3 <= N5 and both are positive
+// compiler ensures T3 <= N5 and both are positive
 ```
 
 ## Future Directions: Post-Quantum FROST
 
-As quantum computing advances, we're already researching post-quantum variants of FROST using lattice-based cryptography. Clef's type system is particularly well-suited for this transition:
+As quantum computing advances, we are researching post-quantum variants of FROST using lattice-based cryptography. Clef's type system is well-suited for this transition:
 
 ```fsharp
 // Future-proof signature abstraction
@@ -406,13 +400,13 @@ type SignatureScheme<[<Measure>] 'SecurityParam> =
     | DilithiumScheme of DilithiumParams<'SecurityParam>  // Post-quantum
     | FROSTDilithium of FROSTDilithiumParams<'SecurityParam>  // Threshold post-quantum
 
-// Code written today will seamlessly upgrade to post-quantum
+// scheme-parametric over the signature primitive
 let signMessage<[<Measure>] 'SecurityParam> scheme message =
     match scheme with
     | FROSTScheme params ->
         FROST.sign params message
     | FROSTDilithium params ->
-        // Same threshold properties, quantum-resistant math
+        // same threshold properties, quantum-resistant math
         FROSTDilithium.sign params message
     | _ ->
         failwith "Single-party signature"
@@ -449,13 +443,13 @@ let secureAIInference model encryptedInput threshold =
     { Result = result; Attestation = attestation }
 ```
 
-## Mathematical Certainty in an Uncertain World
+## Encoding Cryptographic Structure in Types
 
-The convergence of advanced cryptographic protocols like FROST with type-safe programming languages represents a fundamental shift in how we build secure systems. No longer do we need to choose between mathematical elegance and practical implementation. Clef's type system allows us to directly encode the beautiful mathematics of threshold cryptography into code that is both performant and provably correct.
+Pairing a threshold signature protocol like FROST with a language that encodes the protocol's invariants changes how a correct implementation gets built. Clef's type system carries share indices, curve membership, and threshold counts into the type signatures. A class of implementation errors then becomes a compile-time error rather than a silent runtime failure. Among the threshold-signature implementations we have reviewed, we have found no other that encodes these invariants at the type level in this way.
 
-At SpeakEZ, we believe this approach, making the complex simple and the theoretical practical, is the future of secure distributed systems. By encoding security properties directly into our type system, we transform cryptographic implementation from an error-prone art into a mathematically rigorous engineering discipline.
+We treat this as the structural front line, not the whole argument. Encoding security properties in the type system moves cryptographic implementation toward a checked engineering discipline, and the game-based security proof still rests with the verification layers described below.
 
-The future of distributed trust isn't just about better algorithms or faster hardware; it's about programming languages and frameworks that make correct implementation the path of least resistance. With Clef and the Fidelity Framework, that future is here today.
+Better algorithms and faster hardware matter, and so does the language used to express the protocol. A language and framework that make correct implementation the path of least resistance is what we are building toward with Clef and the Fidelity Framework, and the work on the post-quantum transition continues from here.
 
 *This article was originally written in 2021 and has since been updated to reflect recent Fidelity platform development.*
 

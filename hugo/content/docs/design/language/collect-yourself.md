@@ -11,18 +11,13 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Every .NET developer knows collections. `List<T>`, `Dictionary<K,V>`, arrays. They are the bread and butter of everyday programming. You iterate, filter, map, and fold without thinking twice. Underneath these ordinary operations sits a structure that supports automatic parallelization and SIMD vectorization, with no template metaprogramming or `std::enable_if` involved.
 
-Every .NET developer knows collections. `List<T>`, `Dictionary<K,V>`, arrays. They're the bread and butter of everyday programming. You iterate, filter, map, and fold without thinking twice. But what if I told you that underneath these pedestrian operations lies something profound? Something that could unlock automatic parallelization and SIMD vectorization without a single template metaprogramming nightmare or `std::enable_if` in sight?
-
-Welcome to the quiet revolution happening in Fidelity's Composer compiler, where Clef collections reveal their true nature: pure lambda calculus, ready for acceleration.
+That is the property our Composer compiler reads from Clef collections. Each collection operation reduces to pure lambda calculus, and that purity is what the compiler accelerates.
 
 ## The Purity Hiding in Plain Sight
 
-Consider this utterly ordinary Clef code:
+Consider this ordinary Clef code:
 
 ```fsharp
 let results =
@@ -36,11 +31,11 @@ To most .NET developers, this is just a collection pipeline. Filter some things,
 
 But look closer. Each of these operations is **referentially transparent**. Given the same inputs, they always produce the same outputs with no side effects. The `filter` doesn't mutate `data`. The `map` creates new values. The `fold` accumulates without touching external state.
 
-This isn't an accident. It's lambda calculus in disguise.
+This is lambda calculus in disguise, and it follows from how the operations are defined rather than from any incidental property of the code.
 
 ## Why Purity Matters: The Graph Coloring Connection
 
-In a [previous exploration of graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/), we discussed how the Composer compiler analyzes code to discover hidden parallelism. The key insight: operations that don't interfere with each other can be assigned the same "color" and executed simultaneously.
+In a [previous exploration of graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/), we discussed how our Composer compiler analyzes code to discover hidden parallelism. Operations that do not interfere with each other can be assigned the same "color" and executed simultaneously.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -58,14 +53,14 @@ graph TD
     end
 ```
 
-Pure operations, by definition, don't interfere with anything. They're the ultimate parallelization candidates.
+Pure operations do not interfere with anything, which makes them strong parallelization candidates.
 
-When the compiler sees `List.map (fun x -> x * 2) data`, it recognizes:
+When the compiler reads `List.map (fun x -> x * 2) data`, the analysis records that:
 - Each element transformation is independent
 - No element depends on any other element's result
 - The operation is embarrassingly parallel
 
-The same `map` that looks sequential in your source code can become a parallel scatter across CPU cores or a vectorized SIMD operation. Automatically. Without any special syntax or attributes.
+The same `map` that looks sequential in your source code can then compile to a parallel scatter across CPU cores or a vectorized SIMD operation, with no special syntax or attributes in the source.
 
 ## How Languages Handle Dynamic Collections
 
@@ -149,13 +144,12 @@ Go provides memory safety through garbage collection like .NET, but with a simpl
 
 ### Clef with Fidelity: Compile-Time Purity Analysis
 
-Fidelity takes yet another path. We preserve Clef's functional semantics while analyzing purity at compile time:
+Our Fidelity framework takes yet another path. We preserve Clef's functional semantics while analyzing purity at compile time:
 
 ```fsharp
 let data = [1; 2; 3]
-let extended = 4 :: data  // Structural sharing, no mutation
+let extended = 4 :: data  // structural sharing, no mutation
 
-// Functional operations preserve purity
 let doubled = data |> List.map (fun x -> x * 2)
 ```
 
@@ -171,13 +165,13 @@ flowchart LR
     end
 ```
 
-The key difference: Fidelity doesn't just verify safety. It discovers optimization opportunities from purity. Where Rust tracks ownership and .NET tracks references, Fidelity tracks **referential transparency**.
+The difference shows in what the analysis is for. Where Rust's borrow checker tracks ownership and .NET tracks references for safety, our compile-time analysis reads **referential transparency** and uses it to find optimization opportunities.
 
 ## Structural Sharing: Immutability Without the Cost
 
 "But wait," says the skeptical .NET developer, "immutable collections are slow! All that copying!"
 
-Here's where Clef's collection design reveals its elegance. Consider:
+This is where Clef's collection design answers the objection. Consider:
 
 ```fsharp
 let m1 = Map.add "a" 1 Map.empty
@@ -216,15 +210,15 @@ constexpr OutputIt transform_parallel(InputIt first, InputIt last,
 }
 ```
 
-The C++ approach demands you explicitly encode parallelization potential in the type system through increasingly baroque template machinery. It's powerful, but the cognitive overhead is immense.
+The C++ approach demands that you explicitly encode parallelization potential in the type system through template machinery that grows more involved as the constraints accumulate. The expressiveness is real, and so is the cognitive overhead.
 
-Clef's approach? Write normal code. Let the compiler discover the purity. Get the parallelization for free.
+The Clef path is to write normal code, have the compiler read the purity, and get the parallelization from that:
 
 ```fsharp
-let doubled = List.map (fun x -> x * 2) data  // That's it. That's the code.
+let doubled = List.map (fun x -> x * 2) data
 ```
 
-The purity is *intrinsic* to the operation, not bolted on through type gymnastics.
+The purity is *intrinsic* to the operation, carried by how `map` is defined rather than encoded by hand in the type signature.
 
 ## From Referential Transparency to SIMD
 
@@ -251,7 +245,7 @@ But because the operation is pure and element-independent, the compiler can emit
 vector.store %result_vec, %result[%i] : vector<8xi32>
 ```
 
-Eight elements processed per instruction. No template metaprogramming. No explicit SIMD intrinsics. Just pure operations, automatically vectorized.
+Eight elements processed per instruction, from pure operations the compiler vectorizes on its own, with the source free of template metaprogramming or explicit SIMD intrinsics.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -266,11 +260,11 @@ flowchart TB
     end
 ```
 
-This isn't theoretical. It's the explicit design goal of Fidelity's approach to collection operations. We don't rely on LLVM's `-O3` auto-vectorization lottery. The structure that enables vectorization is preserved in the IR itself.
+This is the design goal we are working toward for collection operations in our Fidelity framework. Rather than leaving vectorization to whatever LLVM's `-O3` pass happens to recover, we intend to preserve the structure that enables it in the IR itself, so the vector form is available by construction.
 
 ## PSGSaturation: Only Pay for What You Use
 
-The compilation strategy connects directly to how [Baker's incremental approach](/docs/design/baker-saturation-engine/) informs Composer's design. Just as Baker doesn't copy an entire heap when a single object changes, PSGSaturation doesn't instantiate a complete collection implementation when you only use a subset of operations.
+The compilation strategy connects directly to how [Baker's incremental approach](/docs/design/baker-saturation-engine/) informs our Composer design. Just as Baker avoids copying an entire heap when a single object changes, PSGSaturation is designed to instantiate only the collection operations you use rather than a complete implementation.
 
 When you write:
 
@@ -296,9 +290,7 @@ flowchart TD
     end
 ```
 
-The semantic graph captures exactly what the operation needs. Nothing more. Alex witnesses this graph and generates MLIR that matches the actual requirements. If you never call `List.fold`, you don't pay for fold machinery.
-
-This is the "only pay for what you use" principle extended from memory management to semantic analysis.
+The semantic graph captures what the operation needs and nothing more. Our Alex backend is designed to witness this graph and generate MLIR that matches those requirements, so that if you never call `List.fold`, no fold machinery is emitted. This carries the "only pay for what you use" principle from memory management into semantic analysis.
 
 ## The Compositional Advantage
 
@@ -322,7 +314,7 @@ Compare this to imperative code where each loop iteration might mutate shared st
 
 ## The Road Ahead: DCont and INet Dialects
 
-Today, Composer emits standard MLIR dialects for collection operations. But the architecture preserves degrees of freedom for future optimization.
+Today, our Composer compiler emits standard MLIR dialects for collection operations, and the architecture preserves degrees of freedom for further optimization.
 
 When the Delimited Continuations (DCont) dialect is integrated into our MLIR scheme, effectful boundaries will be explicit:
 
@@ -352,16 +344,12 @@ flowchart LR
 
 The pedestrian collection code written for WREN stack apps will some day automatically benefit from these optimizations. No code changes required.
 
-## Collect Yourself: The Takeaway
+## Collect Yourself
 
-The next time you write a `map`, `filter`, or `fold`, remember: you're not just processing data. You're hinting at pure lambda calculus in disguise. Each operation is a building block that the compiler can analyze, parallelize, and vectorize. The question is whether your framework and the underlying hardware can support it.
+When you write a `map`, `filter`, or `fold`, you are expressing pure lambda calculus in everyday clothing. Each operation is a building block the compiler can analyze, parallelize, and vectorize, given a framework and hardware that carry that structure through.
 
-This is where theory meets practice. [Graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/) isn't an abstract mathematical curiosity. It's how we discover which operations can run simultaneously. [Referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) isn't a functional programming talking point. It's the property that makes optimization *provably correct*. [Baker's incremental approach](/docs/design/baker-saturation-engine/) isn't just about marshaling memory. It's a philosophy that permeates how we think about paying only for what we actually use.
+Three threads converge here. [Graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/design/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
 
-These theoretical foundations become crucial engineering decisions. The expressive design that makes Clef code pleasant to reason about is the same purity that enables the compiler to generate efficient parallel code. The structural sharing that makes immutable collections practical is the same sharing that preserves optimization opportunities.
+These foundations become engineering decisions. The design that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code, and the structural sharing that makes immutable collections practical is the same sharing that preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
 
-This is the Fidelity promise: write clear, idiomatic Clef code. Get performance that rivals hand-optimized C++. Pay only for what you use.
-
-No template metaprogramming required. No SFINAE. No concept constraints. Just collections, doing what they've always done, finally recognized for what they truly are.
-
-Pure functions, all the way down.
+This is the design we will keep building toward as the dialect work and the saturation engine come together: collection code that reads as ordinary, and a compiler that treats it as the pure lambda calculus it already is.

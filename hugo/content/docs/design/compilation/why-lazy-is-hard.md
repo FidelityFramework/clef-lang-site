@@ -12,11 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 There are only two hard things in computer science: cache invalidation and naming things. Phil Karlton's quip has aged well, but the functional programming community might add a corollary: sometimes the name we pick makes things harder than they need to be.
 
 Consider "lazy evaluation." Henderson and Morris coined the term in their [1976 POPL paper](https://dl.acm.org/citation.cfm?id=811543), and it stuck. But "lazy" may be the least apt term in computing. A lazy evaluator isn't lounging around avoiding work; it's *poised*, ready to spring into action the instant a value is demanded. "Call-by-need" captures this better: computation happens precisely when needed, not before, not after. The lazy evaluator is the most *attentive* mechanism imaginable, tracking exactly which expressions remain unevaluated and responding immediately when circumstances change. That we named this disciplined, demand-driven approach after a vice rather than a virtue tells you something about how we think about work.
@@ -227,8 +222,8 @@ let expensive = lazy (
     42
 )
 
-let v1 = Lazy.force expensive  // Prints "Computing..."
-let v2 = Lazy.force expensive  // Prints "Computing..." again
+let v1 = Lazy.force expensive  // side effect runs
+let v2 = Lazy.force expensive  // side effect runs again, no memoization yet
 ```
 
 True memoization, where the result is computed once and cached, requires mutation of the lazy struct. The `computed` flag must transition from false to true; the `value` slot must store the result. In a single-threaded context, this is straightforward. With concurrency, it requires synchronization.
@@ -317,9 +312,9 @@ Standard ML of New Jersey's closure conversion, documented in Appel's "Compiling
 
 Lazy evaluation in Fidelity is not a checkbox feature added for completeness. It is infrastructure that validates architectural decisions and enables future capabilities. The flat closure model scales. The coeffect approach composes. The SSA discipline holds.
 
-When sequences arrive, they will build on this foundation. When async workflows arrive, they will build on this foundation. The patterns established here, capture analysis, layout computation, uniform calling conventions, repeat throughout the Fidelity framework.
+When sequences arrive, they will build on this foundation. When async workflows arrive, they will build on this foundation. The patterns established here, capture analysis, layout computation, uniform calling conventions, repeat throughout our Fidelity framework.
 
-Making lazy work is hard. Making it work without a runtime is harder. Making it compose with everything else the compiler must do is the real challenge. That composition is what the Fidelity architecture was designed to target from day one.
+Composing lazy evaluation with everything else our compiler does is the part we have kept in view from the start, and it is where our work continues as sequences and async workflows come into place.
 
 ## Related Reading
 

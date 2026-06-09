@@ -12,22 +12,17 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 ---
 
-The computing world has fragmented into specialized ecosystems - embedded systems demand byte-level control, mobile platforms enforce strict resource constraints, while server applications require elasticity and parallelism. Traditionally, these environments have forced developers to choose between conflicting approaches: use a high-level language with garbage collection and accept the performance overhead, or drop down to systems programming with manual memory management and lose expressiveness. And of course the targets themselves have grown more sophisticated. Mobile devices now have sophisticated multi-processor architectures with multi-threading the norm. The future (or at least the *near* future) is in being able to directly address heterogenous architectures for a given device or solution.
+The computing world has fragmented into specialized ecosystems. Embedded systems demand byte-level control, mobile platforms enforce strict resource constraints, and server applications require elasticity and parallelism. Traditionally, these environments have forced developers to choose between conflicting approaches: use a high-level language with garbage collection and accept the performance overhead, or drop down to systems programming with manual memory management and lose expressiveness. The targets themselves have grown more capable. Mobile devices now ship multi-processor architectures with multi-threading the norm. The near future is in being able to directly address heterogeneous architectures for a given device or solution.
 
 ## Beyond Runtime Boundaries
 
-The Fidelity Framework represents a fundamental rethinking of this dichotomy. Built around the functional-first language Clef, it aims to create a compilation pipeline that generates truly native code across the entire computing spectrum while maintaining strong correctness guarantees. By leveraging a direct path from Clef Compiler Services (CCS) to MLIR, Fidelity adapts its implementation strategy to each target platform while preserving Clef's elegant programming model and the rich type information that makes Clef so powerful.
+Our Fidelity Framework reworks this dichotomy. Built around our functional-first language Clef, it aims to create a compilation pipeline that generates native code across the computing spectrum while maintaining strong correctness guarantees for its deterministic layer. By following a direct path from Clef Compiler Services (CCS) to MLIR, Fidelity is designed to adapt its implementation strategy to each target platform while preserving Clef's programming model and the rich type information it carries.
 
 ## Compilation Without Compromise
 
-At its heart, Fidelity consists of a direct compilation pathway from Clef source code to native executables through the MLIR (Multi-Level Intermediate Representation) and, at least in early iterations, to the LLVM back end. Where Rust compiles directly to LLVM IR, Fidelity routes through MLIR to eventually access a broader range of targets: GPUs and AI accelerators, microcontrollers, FPGAs, CGRAs, and traditional CPUs. This approach shares philosophical similarities with Rust's compilation model, but with a focus on functional programming paradigms, stronger type-based guarantees, and hardware diversity, all while preserving [the Clef language](https://clef-lang.com)'s coherent design-time ergonomics of "Python in a three piece suit".
+At its heart, Fidelity consists of a direct compilation pathway from Clef source code to native executables through the MLIR (Multi-Level Intermediate Representation) and, at least in early iterations, to the LLVM back end. Where Rust compiles directly to LLVM IR, Fidelity routes through MLIR to eventually access a broader range of targets: GPUs and AI accelerators, microcontrollers, FPGAs, CGRAs, and traditional CPUs. This approach shares similarities with Rust's compilation model, but with a focus on functional programming paradigms, stronger type-based guarantees for the deterministic layer, and hardware diversity, all while preserving [our Clef language](https://clef-lang.com)'s coherent design-time ergonomics of "Python in a three piece suit".
 
 ```mermaid
 flowchart TB
@@ -62,7 +57,7 @@ Clef Compiler Services produces two distinct representations: the *AST* (syntax 
 
 2. **Deterministic Memory Transformation**: Analysis of PSG expressions enables Fidelity to control memory allocation strategies at compile time, from stack allocation to arena-based allocation to actor-scoped memory, converting closures to explicit parameters and mapping higher-order functions to efficient function pointers.
 
-3. **Intelligent Dialect Selection**: Type information drives the selection of appropriate MLIR dialects - numeric operations map to the `arith` dialect, memory operations to `memref`, and control flow to either `scf` or `cf` based on structure. This is where XParsec in the "Alex" component of the Composer compiler plays a pivotal rols in transforming the pruned grap into lowered representations.
+3. **Type-Directed Dialect Selection**: Type information drives the selection of appropriate MLIR dialects. Numeric operations map to the `arith` dialect, memory operations to `memref`, and control flow to either `scf` or `cf` based on structure. This is where XParsec in our "Alex" component of the Composer compiler is designed to transform the pruned graph into lowered representations.
 
 From the perspective of someone familiar with Rust conventions, this provides the control of manual memory management with the expressiveness of functional programming. For Python developers, imagine if your code could be transformed to run with deterministic memory management while maintaining Python's clarity.
 
@@ -85,11 +80,11 @@ type Matrix<'T, [<Measure>] 'Rows, [<Measure>] 'Cols>
 type RangeInt<[<Measure>] 'Min, [<Measure>] 'Max>
 ```
 
-Our design for a memory layout analyzer calculates precise layouts for these types, ensuring efficient memory access patterns in the generated code. For Python developers coming from NumPy, this means shape errors are caught at compile-time with zero runtime overhead.
+Our memory layout analyzer is designed to calculate precise layouts for these types, so that the generated code follows efficient memory access patterns. For Python developers coming from NumPy, this means shape errors are caught at compile time with zero runtime overhead.
 
 ### Advanced Memory Layout Analysis
 
-The Composer compiler is designed to provide unprecedented control over memory layout through PSG analysis:
+Our Composer compiler is designed to provide fine-grained control over memory layout through PSG analysis:
 
 ```fsharp
 // Discriminated unions get optimal tagged layouts
@@ -106,7 +101,7 @@ The Alex code generation component will work directly with enriched PSG types to
 
 ## Memory Management: Static Analysis for Dynamic Adaptation
 
-The nanopass architecture is designed to enable sophisticated memory management through compile-time analysis:
+Our nanopass architecture is designed to drive memory management through compile-time analysis:
 
 ### Reachability Analysis
 
@@ -123,11 +118,11 @@ Our plans for Composer's static analyzer will calculate memory usage, enabling:
 - Automatic transformation to stack or arena allocations
 - Stack usage visualization for debugging and optimizationallocations
 
-For developers, this means smaller binaries with only the code actually needed, determined through precise compute graph analysis. Our zipper traversal with XParsec means accruate flattening of the compute graph into a focused layout with none of the extra baggage of assemblies.
+For developers, this means smaller binaries with only the code actually needed, determined through precise compute graph analysis. Our zipper traversal with XParsec is meant to flatten the compute graph accurately into a focused layout, without the extra baggage of assemblies.
 
 ## Familiar APIs, Native Performance
 
-Central to the Fidelity developer experience is the native type system built into CCS (Clef Compiler Services), which provides BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, CCS uses, among other things, *fat pointers*—structures that combine a raw pointer with length metadata—eliminating object headers and runtime overhead entirely.
+Central to the Fidelity developer experience is the native type system built into our CCS (Clef Compiler Services), which provides BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, CCS uses, among other things, *fat pointers*. These are structures that combine a raw pointer with length metadata, eliminating object headers and runtime overhead entirely.
 
 ```fsharp
 let hello() =
@@ -182,7 +177,7 @@ The architecture enables rich IDE support:
 
 ## Platform Configuration Through Type-Directed Compilation
 
-The type-preserving pipeline is designed to enable sophisticated platform adaptation:
+The type-preserving pipeline is designed to enable platform adaptation:
 
 ```fsharp
 // Platform configuration drives compilation strategy
@@ -202,20 +197,20 @@ let embeddedConfig =
 
 ## The Olivier Actor Model: Type and Memory-Safe Concurrency
 
-With the enhanced type system, Olivier aims to provide stronger guarantees:
+With the enhanced type system, our Olivier actor model aims to provide stronger guarantees:
 
 - Process isolation verified at compile time
 - Message types checked across actor boundaries
 - Zero-copy message passing where type analysis permits
 - Static verification of supervision hierarchies
 
-Olivier's memory model uses arena allocation with sentinel-based lifetime tracking, providing RAII semantics within actor boundaries. Each actor owns its memory arena, and resource cleanup is deterministic: when an actor terminates, its entire arena is reclaimed. This gives developers advanced memory management without the complexity of a borrow checker.
+Olivier's memory model uses arena allocation with sentinel-based lifetime tracking, providing RAII semantics within actor boundaries. Each actor owns its memory arena, and resource cleanup is deterministic: when an actor terminates, its entire arena is reclaimed. This gives developers deterministic memory management without the complexity of a borrow checker.
 
-For developers who appreciate Erlang's reputation for building resilient distributed systems, Olivier brings compile-time verification to the actor model with robust supervision trees. For Rust developers seeking a clean async model and deterministic memory, it delivers on-the-metal resource management without the constant burden of borrow checker semantics.
+For developers who appreciate Erlang's reputation for building resilient distributed systems, Olivier is designed to bring compile-time verification to the actor model with supervision trees. For Rust developers seeking a clean async model and deterministic memory, it aims to deliver on-the-metal resource management without the constant burden of borrow checker semantics.
 
 ## BAREWire: Schema-Driven Memory and Communication
 
-Where CCS provides the intrinsic type system and Olivier manages concurrency, BAREWire handles the challenge of data layout and exchange. Built on the BARE (Binary Application Record Encoding) protocol, BAREWire provides schema-driven memory mapping that enables zero-copy operations across process boundaries, network connections, and hardware interfaces.
+Where CCS provides the intrinsic type system and Olivier manages concurrency, our BAREWire handles data layout and exchange. Built on the BARE (Binary Application Record Encoding) protocol, BAREWire provides schema-driven memory mapping that enables zero-copy operations across process boundaries, network connections, and hardware interfaces.
 
 Clef's type system can describe memory layouts with sufficient precision that serialization becomes a compile-time concern rather than a runtime operation:
 
@@ -264,7 +259,7 @@ This opens a path for .NET developers to access the broader native ecosystem wit
 
 ## Verification: Types as Proofs
 
-The preserved type information enables deeper F* integration, and this is where we believe the Fidelity Framework will have its most significant long-term impact. We have several patents pending in this area covering the intersection of type-preserving compilation, formal verification, and hardware targeting.
+The preserved type information enables deeper F* integration, and this is where we believe our Fidelity Framework will have its longest-lived impact. We have several patents pending in this area, covering the intersection of type-preserving compilation, formal verification, and hardware targeting.
 
 ### Incremental Verification
 1. Standard Clef code with rich types
@@ -278,20 +273,18 @@ The type-preserving pipeline is designed to ensure verification guarantees aren'
 
 This verification capability positions Fidelity for two converging domains: high-performance computing and post-quantum security. For AI and HPC workloads, verified type information enables aggressive optimization while maintaining correctness guarantees across GPU, FPGA, and accelerator targets. For cryptographic applications, the same pipeline supports formal verification of post-quantum implementations, a requirement that will only grow more critical as quantum computing matures and the current "AI hype cycle" gives way to the deeper infrastructure challenges of cryptographic migration.
 
-## A New Era of Native Clef Compilation
+## Native Clef Compilation
 
-The Fidelity Framework represents a fundamental advance in functional language compilation. By preserving Clef's rich type system throughout the compilation pipeline, Composer aims to enable:
+Our Fidelity Framework takes a distinct approach to functional language compilation. By preserving Clef's rich type system throughout the compilation pipeline, Composer aims to enable:
 
 - Deterministic memory transformations guided by type analysis
 - Precise memory layout calculation from type definitions
 - Compile-time verification of resource constraints
 - Type-directed optimization strategies
 
-This isn't just about making Clef run natively; it's about demonstrating that functional languages could match and exceed the performance of systems programming languages while maintaining their expressiveness and safety guarantees. The goal is to preserve the accessible development experience that F# has cultivated over the years, while taking advantage of modern compiler optimization technologies to target a wider array of hardware than had previously been practical.
+Our aim is to show that a functional language can match or exceed the performance of systems programming languages while keeping its expressiveness and its safety guarantees for the deterministic layer. We want to preserve the accessible development experience that F#, the lineage Clef descends from, cultivated over the years, while taking advantage of modern compiler optimization to target a wider array of hardware than had previously been practical. For developers, that means type information serving as the foundation for building high-performance systems with lower maintenance burden and confident refactoring.
 
-For developers, Fidelity offers a glimpse of what's possible when type information serves not just as a safety mechanism, but as the foundation for building high-performance systems with lower maintenance burden and fearless refactoring.
-
-> The future of systems programming lies ***not*** in choosing between safety and performance, but in using one to achieve the other.
+The compiler front end is still under active refinement, and the backend work past LLVM remains ahead of us. We will keep building toward the design described here as the rest of the pipeline comes into place, and we will keep sharing what we learn along the way.
 
 ---
 
@@ -299,11 +292,11 @@ For developers, Fidelity offers a glimpse of what's possible when type informati
 
 This primer provides an overview of the Fidelity Framework. For detailed treatments of specific topics, see:
 
-- [Baker: A Key Ingredient to Composer](/docs/design/baker-saturation-engine/) — The nanopass architecture, two-tree zipper pattern, and SRTP resolution
-- [Absorbing Alloy](/docs/design/absorbing-alloy/) — How the native type system evolved from a standalone library to compiler intrinsics
-- [Intelligent Tree-Shaking](/docs/design/intelligent-tree-shaking/) — Semantic reachability analysis, soft-delete patterns, and library boundary classification
-- [Clef Source-Based Package Management](/docs/design/clefpak-source-based-package-management/) — The `.fidproj` format, `cpk` package manager, and clefpak.dev registry
-- [Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/) — Type-safe concurrency primitives and actor supervision hierarchies
-- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) — Actor-aware memory management through deterministic lifetimes and arena allocation
-- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/) — Zero-copy serialization, reactive signals, and cross-platform data exchange
-- [The Farscape Bridge](https://speakez.tech/blog/the-farscape-bridge/) — Type-safe bindings for C/C++ libraries, AI accelerators, and post-quantum cryptography
+- [Baker: A Key Ingredient to Composer](/docs/design/baker-saturation-engine/): the nanopass architecture, two-tree zipper pattern, and SRTP resolution
+- [Absorbing Alloy](/docs/design/absorbing-alloy/): how the native type system evolved from a standalone library to compiler intrinsics
+- [Intelligent Tree-Shaking](/docs/design/intelligent-tree-shaking/): semantic reachability analysis, soft-delete patterns, and library boundary classification
+- [Clef Source-Based Package Management](/docs/design/clefpak-source-based-package-management/): the `.fidproj` format, `cpk` package manager, and clefpak.dev registry
+- [Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/): type-safe concurrency primitives and actor supervision hierarchies
+- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): actor-aware memory management through deterministic lifetimes and arena allocation
+- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): zero-copy serialization, reactive signals, and cross-platform data exchange
+- [The Farscape Bridge](https://speakez.tech/blog/the-farscape-bridge/): type-safe bindings for C/C++ libraries, AI accelerators, and post-quantum cryptography

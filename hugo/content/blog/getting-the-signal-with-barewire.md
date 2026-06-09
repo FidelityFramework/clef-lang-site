@@ -11,14 +11,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Reactive programming has become essential infrastructure for modern applications. From browser interfaces responding to user input to distributed systems coordinating state across nodes, the ability to propagate changes through a dependency graph underpins countless software architectures. Yet the dominant patterns for implementing reactivity carry significant cognitive and runtime overhead. The subscription model that pervades .NET, RxJS, and similar frameworks demands explicit lifecycle management that clutters application code and creates entire categories of resource leaks.
 
-SpeakEZ's Fidelity Framework takes a different approach. By combining BAREWire's zero-copy memory architecture with a signal-based reactive model, we achieve reactive semantics without the subscription ceremony. This isn't merely a stylistic preference; it's an architectural decision that aligns with our [actor-oriented design philosophy](/blog/the-case-for-actor-oriented-architecture/) and enables consistent reactive patterns across native compilation, browser deployment, and managed runtime targets.
+Our Fidelity Framework takes a different approach. By combining BAREWire's zero-copy memory architecture with a signal-based reactive model, we aim for reactive semantics without the subscription ceremony. This is an architectural decision that aligns with our [actor-oriented design philosophy](/blog/the-case-for-actor-oriented-architecture/) and carries consistent reactive patterns across native compilation, browser deployment, and managed runtime targets.
 
 ## The Subscription Problem
 
@@ -153,11 +148,11 @@ flowchart TD
 
 ## Departing from .NET Conventions
 
-A fundamental tension emerges when bringing signal-based reactivity to [the Clef language](https://clef-lang.com): the language's heritage carries .NET conventions that assume explicit resource management. The `IDisposable` pattern, `use` bindings, and finalizer semantics pervade idiomatic .NET F# code. These patterns exist because the CLR's garbage collector cannot guarantee deterministic cleanup; developers must explicitly mark resource boundaries.
+A tension emerges when bringing signal-based reactivity to [our Clef language](https://clef-lang.com): the .NET heritage Clef descends from carries conventions that assume explicit resource management. The `IDisposable` pattern, `use` bindings, and finalizer semantics pervade idiomatic .NET code. These patterns exist because the CLR's garbage collector cannot guarantee deterministic cleanup; developers must explicitly mark resource boundaries.
 
-Fidelity takes deliberate leave from these conventions. As explored in our discussion of [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), the Composer compiler performs scope analysis during IR lowering to insert cleanup code automatically. Developers write clean signal operations; the compiler determines where cleanup belongs based on actor lifecycle boundaries and continuation points.
+Our Fidelity Framework takes deliberate leave from these conventions. As explored in our discussion of [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), our Composer compiler is designed to perform scope analysis during IR lowering and insert cleanup code automatically. Developers write signal operations; the compiler determines where cleanup belongs based on actor lifecycle boundaries and continuation points.
 
-This represents more than syntactic convenience. It reflects a philosophical position: resource management is a compiler concern, not a developer burden. The same [coeffect analysis](/blog/coeffects-and-codata-in-firefly/) that tracks async boundaries and memory access patterns also tracks resource lifetimes. When the compiler knows that a signal exists within an actor's arena, it knows exactly when that arena will be released. No `Dispose` call needed; no `IDisposable` interface required.
+This reflects a position we hold: resource management is a compiler concern, not a developer burden. The same [coeffect analysis](/blog/coeffects-and-codata-in-firefly/) that tracks async boundaries and memory access patterns also tracks resource lifetimes. When the compiler knows that a signal exists within an actor's arena, it knows when that arena will be released. No `Dispose` call needed; no `IDisposable` interface required.
 
 ```fsharp
 // .NET convention: explicit disposal
@@ -176,13 +171,12 @@ let processSensor (sensor: Signal<SensorReading>) =
     effect (fun () ->
         let value = Signal.get derived
         updateDisplay value)
-    // No cleanup code; Composer inserts it during IR lowering
-    // based on the enclosing actor's lifecycle
+    // cleanup inserted by Composer during IR lowering, scoped to the enclosing actor
 ```
 
 The Fable target for Fidelity.CloudEdge follows a similar philosophy, delegating to SolidJS's internal cleanup mechanisms. The .NET interop layer necessarily bridges back to `IDisposable` conventions when interfacing with existing .NET code, but pure Fidelity code intends to remain free of explicit disposal ceremony.
 
-This departure may initially feel unfamiliar to developers accustomed to .NET patterns. The `use` binding becomes less prevalent. The `IDisposable` interface appears only at system boundaries. Resource cleanup becomes invisible, handled by the same compilation infrastructure that manages [arena allocation and actor termination](/blog/raii-in-olivier-and-prospero/). The code that developers write focuses entirely on the reactive logic; the compiler handles the rest.
+This departure may initially feel unfamiliar to developers accustomed to .NET patterns. The `use` binding becomes less prevalent. The `IDisposable` interface appears only at system boundaries. Resource cleanup would be handled by the same compilation infrastructure that manages [arena allocation and actor termination](/blog/raii-in-olivier-and-prospero/). The code that developers write focuses on the reactive logic; the compiler handles the rest.
 
 ## Designing Signals for Clef
 
@@ -369,11 +363,9 @@ This hybrid provides the ergonomics of implicit tracking (signal reads within a 
 
 ## Integration with BAREWire: Solving the Byref Problem
 
-The signal model gains substantial power when integrated with BAREWire's zero-copy memory architecture. Traditional reactive systems copy values through the dependency graph. Each signal holds its own copy of the data; each propagation involves allocation and copying. For small values this overhead is negligible. For large buffers, frequently updated data streams, or resource-constrained environments, the overhead dominates.
+The signal model integrates with BAREWire's zero-copy memory architecture. Traditional reactive systems copy values through the dependency graph. Each signal holds its own copy of the data; each propagation involves allocation and copying. For small values this overhead is negligible. For large buffers, frequently updated data streams, or resource-constrained environments, the overhead dominates.
 
-Our unique design for BAREWire enables a different, patent-pending approach: signals that reference data in shared buffers without copying. This capability rests on BAREWire's solution to the [byref problem](/blog/byref-resolved/) that has constrained .NET developers for decades. Where .NET's byref restrictions force defensive copying because references cannot outlive their stack frame, BAREWire separates buffer lifetime from access permissions through capability-based memory management. 
-
-> This is where zero-copy yields zero overhead.
+Our design for BAREWire takes a different, patent-pending approach: signals that reference data in shared buffers without copying. This rests on BAREWire's solution to the [byref problem](/blog/byref-resolved/) that has constrained .NET developers for decades. Where .NET's byref restrictions force defensive copying because references cannot outlive their stack frame, BAREWire separates buffer lifetime from access permissions through capability-based memory management.
 
 ### Capability-Based Memory Access
 
@@ -532,7 +524,7 @@ type ReactiveActor<'State, 'Message>(initialState: 'State) =
         derived
 ```
 
-Dependent computations in other actors receive invalidation notifications and must handle the terminated state appropriately. From a design perspective, this would seem to align with Erlang's "let it crash" philosophy: explicit lifecycle boundaries as opposed to complex distributed garbage collection for cross-actor references. But there will be considerable attention given to this area once the work gets down to brass tacks of implementation.
+Dependent computations in other actors receive invalidation notifications and must handle the terminated state appropriately. From a design perspective, this would seem to align with Erlang's "let it crash" philosophy: explicit lifecycle boundaries as opposed to distributed garbage collection for cross-actor references. We expect to give this area considerable attention as the implementation work proceeds.
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -564,7 +556,7 @@ flowchart TD
 
 ## The Cross-Target Challenge
 
-The Fidelity Framework targets three distinct compilation paths: native execution via MLIR (and many cases LLVM by extension), browser deployment via Fable to JavaScript, and .NET managed runtime interop. It's important to note that each target has different characteristics that affect reactive implementation.
+Our Fidelity Framework targets three distinct compilation paths: native execution via MLIR (and in many cases LLVM by extension), browser deployment via Fable to JavaScript, and .NET managed runtime interop. Each target has different characteristics that affect reactive implementation.
 
 ### Native Target (Fidelity/MLIR)
 
@@ -599,7 +591,7 @@ The native implementation can leverage MLIR's optimization passes. Simple signal
 
 ### Browser Target (Fable/Fidelity.CloudEdge)
 
-The browser target trades the native target's memory control for JavaScript's runtime semantics. F# compiles through Fable to JavaScript, where we leverage the [SPEC stack](/blog/spec-stack/)[^1]—SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge—for deployment. SolidJS provides the reactive runtime, and its subscription-free signal model directly inspired Fidelity's approach. Rather than reimplementing signal mechanics, we delegate to SolidJS's battle-tested primitives through Partas.Solid's F# bindings:
+The browser target trades the native target's memory control for JavaScript's runtime semantics. Clef compiles through Fable to JavaScript, where we leverage the [SPEC stack](/blog/spec-stack/)[^1] (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) for deployment. SolidJS provides the reactive runtime, and its subscription-free signal model directly inspired our approach. Rather than reimplementing signal mechanics, we delegate to SolidJS's primitives through Partas.Solid's F# bindings:
 
 ```fsharp
 // Fable implementation using SolidJS
@@ -637,7 +629,7 @@ let effect (f: unit -> unit) : unit =
     createSolidEffect f
 ```
 
-This approach leverages SolidJS's battle-tested reactive implementation while presenting an F#-idiomatic API. The Fable compiler erases the F# types to direct SolidJS calls, incurring no additional overhead at runtime. SolidJS handles its own cleanup internally; no `IDisposable` bridge required.
+This approach leverages SolidJS's reactive implementation while presenting an idiomatic Clef API. The Fable compiler erases the types to direct SolidJS calls, incurring no additional overhead at runtime. SolidJS handles its own cleanup internally; no `IDisposable` bridge required.
 
 For BAREWire integration in the browser, buffers become `Uint8Array` instances:
 
@@ -664,9 +656,9 @@ The SolidJS signal wraps the buffer reference. When a new buffer arrives (via We
 
 ### Edge Target (Fidelity.CloudEdge)
 
-The same Fable compilation pipeline that targets browsers also deploys to Cloudflare Workers—this is the "C" in the SPEC stack. Fidelity.CloudEdge[^2] provides type-safe F# bindings to Cloudflare's edge infrastructure, including Durable Objects for persistent state and coordinated WebSocket connections. Where SolidJS manages reactive state within a browser tab, Durable Objects extend this coordination across distributed clients through what we term the "cloud edge backplane."
+The same Fable compilation pipeline that targets browsers also deploys to Cloudflare Workers, the "C" in the SPEC stack. Our Fidelity.CloudEdge library[^2] provides type-safe bindings to Cloudflare's edge infrastructure, including Durable Objects for persistent state and coordinated WebSocket connections. Where SolidJS manages reactive state within a browser tab, Durable Objects extend this coordination across distributed clients through what we term the "cloud edge backplane."
 
-Fidelity.CloudEdge exposes this infrastructure through idiomatic F# types:
+Our Fidelity.CloudEdge library exposes this infrastructure through idiomatic Clef types:
 
 ```fsharp
 // Fidelity.CloudEdge Durable Object state management
@@ -681,7 +673,7 @@ type DurableObjectStorage =
     abstract member transaction<'T> : closure -> JS.Promise<'T>
 ```
 
-The persistent WebSocket capability is particularly significant. Unlike traditional WebSocket servers that lose connection state on restart, Durable Objects maintain WebSocket connections across the Cloudflare network with automatic failover. This persistence aligns with BAREWire's zero-copy philosophy: binary messages flow directly from edge to client without intermediate serialization layers.
+The persistent WebSocket capability matters here. Unlike traditional WebSocket servers that lose connection state on restart, Durable Objects maintain WebSocket connections across the Cloudflare network with automatic failover. This persistence aligns with BAREWire's zero-copy philosophy: binary messages flow directly from edge to client without intermediate serialization layers.
 
 ```fsharp
 // Signal bridge between Durable Object and connected clients
@@ -701,9 +693,9 @@ module EdgeSignal =
         signal
 ```
 
-We see the architecture enabling scenarios where a signal update on one client propagates through the edge backplane to all connected clients, with BAREWire ensuring the binary payload traverses the network without transformation. The Durable Object becomes a coordination point in the reactive graph, extending signal semantics beyond a single runtime.
+We envision the architecture enabling scenarios where a signal update on one client propagates through the edge backplane to all connected clients, with BAREWire carrying the binary payload across the network without transformation. The Durable Object becomes a coordination point in the reactive graph, extending signal semantics beyond a single runtime.
 
-This is a feature area that is still under development at Cloudflare, and SpeakEZ Technologies will follow their updates closely.
+This is a feature area that is still under development at Cloudflare, and we will follow their updates closely.
 
 ### .NET Interop Target
 
@@ -956,7 +948,7 @@ This pattern prevents cascading message sends during state updates, which could 
 
 ## The Cloud Edge Backplane
 
-Having established how Fidelity's signal model operates within individual runtimes—native via MLIR, browser via the SPEC stack, and .NET interop—we now turn to coordination across distributed clients. This is where Fidelity.CloudEdge and Durable Objects transform the signal model from a single-runtime pattern into a distributed coordination primitive. Cloudflare's platform provides three capabilities that extend reactive semantics across the network.
+Having established how our signal model operates within individual runtimes (native via MLIR, browser via the SPEC stack, and .NET interop), we now turn to coordination across distributed clients. This is where our Fidelity.CloudEdge library and Durable Objects would carry the signal model from a single-runtime pattern into distributed coordination. Cloudflare's platform provides three capabilities that extend reactive semantics across the network.
 
 ### Durable Objects as Signal Coordinators
 
@@ -1075,13 +1067,13 @@ flowchart TD
     QUIC -.->|Media Frames| Media
 ```
 
-This edge backplane transforms the signal model from a single-runtime pattern into a distributed coordination primitive. The same F# code, compiled through Fable to JavaScript, runs in browsers, Cloudflare Workers, and Durable Objects. Signals flow across these boundaries with BAREWire ensuring efficient binary encoding. The platform provides the persistence, fan-out, and resilience; the application code remains focused on reactive logic.
+This edge backplane is meant to carry the signal model from a single-runtime pattern into distributed coordination. The same Clef code, compiled through Fable to JavaScript, would run in browsers, Cloudflare Workers, and Durable Objects. Signals flow across these boundaries with BAREWire carrying the binary encoding. The platform provides the persistence, fan-out, and resilience; the application code remains focused on reactive logic.
 
 ## Connecting to Alloy.Rx
 
 The signal model presented here complements the [Alloy.Rx reactive framework](/blog/alloyrx-native-reactivity-in-fidelity/) by providing a different abstraction for different use cases. Where Alloy.Rx distinguishes between multicast (broadcast) and unicast (isolated) observables based on push semantics, the signal model focuses on pull semantics with automatic dependency tracking.
 
-The distinction matters. Alloy.Rx multicast observables excel at event streams where producers push updates to multiple observers, achieving zero allocation for broadcast scenarios—making them a natural fit for sensor data, UI events, and system notifications. Unicast observables provide per-subscriber isolation with arena-based allocation, which becomes appropriate when each subscriber needs independent processing state.
+The distinction matters. Our Alloy.Rx multicast observables suit event streams where producers push updates to multiple observers, achieving zero allocation for broadcast scenarios. This makes them a natural fit for sensor data, UI events, and system notifications. Unicast observables provide per-subscriber isolation with arena-based allocation, which becomes appropriate when each subscriber needs independent processing state.
 
 The signal model takes a different approach: pull-based semantics with implicit dependency tracking. This makes signals a natural fit for derived state, computed properties, and reactive UI bindings where the consumer controls when values are read rather than reacting to pushed updates.
 
@@ -1171,30 +1163,30 @@ The signal model's performance depends heavily on the target environment and usa
 
 ## Reactive Architecture Without Ceremony
 
-The signal model outlined here represents a significant departure from subscription-based reactive programming. By making dependency tracking implicit in signal reads, we eliminate an entire category of resource management concerns. By integrating signals with BAREWire's [capability-based memory architecture](/blog/byref-resolved/), we enable reactive systems that handle large data volumes without allocation overhead. By aligning signal lifecycle with actor boundaries through [RAII principles](/blog/raii-in-olivier-and-prospero/), we provide deterministic cleanup without garbage collection.
+The signal model outlined here departs from subscription-based reactive programming. By making dependency tracking implicit in signal reads, we remove a category of resource management concerns. By integrating signals with BAREWire's [capability-based memory architecture](/blog/byref-resolved/), we aim to handle large data volumes without allocation overhead. By aligning signal lifecycle with actor boundaries through [RAII principles](/blog/raii-in-olivier-and-prospero/), we provide deterministic cleanup without garbage collection.
 
-Perhaps most importantly, by having the Composer compiler manage cleanup through [scope analysis and coeffect tracking](/blog/coeffects-and-codata-in-firefly/), we free developers from the `IDisposable` ceremony that pervades .NET code. This is not merely a convenience; it reflects a core principle of the Fidelity Framework: infrastructure concerns belong in the compiler, not in application code.
+By having our Composer compiler manage cleanup through [scope analysis and coeffect tracking](/blog/coeffects-and-codata-in-firefly/), we free developers from the `IDisposable` ceremony that pervades .NET code. This reflects a principle of our framework: infrastructure concerns belong in the compiler, not in application code.
 
-This isn't merely a different API for the same underlying model. The architectural implications ripple through application design:
+The architectural implications carry through application design:
 
-Composition becomes natural because derived signals compose freely without subscription handles to manage. Complex reactive graphs emerge from simple function composition rather than careful orchestration of observable chains.
+Derived signals compose freely without subscription handles to manage. Reactive graphs emerge from function composition rather than orchestration of observable chains.
 
 Testing simplifies as well. Without subscription lifecycle concerns, reactive code tests like pure functions: set inputs, check outputs. There's no need to mock subscription mechanics or carefully time disposal.
 
 The same reactive patterns work consistently across native, browser, edge, and managed targets. Application logic remains unchanged; only the driver implementation varies by platform.
 
-Signals and actors reinforce each other in ways that deepen both patterns. Actor boundaries provide cleanup semantics while signals provide reactive state within actors. Durable Objects extend this to the edge, providing persistent coordination across distributed clients. The combination proves more powerful than any component alone.
+Signals and actors reinforce each other. Actor boundaries provide cleanup semantics while signals provide reactive state within actors. Durable Objects extend this to the edge, providing persistent coordination across distributed clients.
 
-The Fidelity Framework's approach to reactivity exemplifies our broader philosophy: provide sophisticated capabilities through simple, composable primitives. Developers shouldn't need to become experts in subscription lifecycle management to build reactive applications. They should be able to read values, derive computations, and trust the system to handle the plumbing.
+Our framework's approach to reactivity follows a position we hold across the design: provide capabilities through composable primitives. Developers should not need to become experts in subscription lifecycle management to build reactive applications. They should be able to read values, derive computations, and rely on the system to handle the plumbing.
 
-BAREWire makes this possible by providing the memory substrate where signals and buffers coexist. The BARE protocol's simplicity, a binary encoding that maps directly to memory layout, aligns with our zero-copy goals. The [solution to the byref problem](/blog/byref-resolved/) eliminates the defensive copying that would otherwise negate the benefits of reactive optimization. The [SPEC stack](/blog/spec-stack/) carries these patterns to the browser through SolidJS's proven signal implementation, while Fidelity.CloudEdge extends this reach to the edge, where Durable Objects and persistent WebSockets transform local reactive patterns into distributed coordination primitives. The result is a reactive system where data flows through dependency graphs without copying, where cleanup is deterministic, where signals propagate from native code through edge infrastructure to browser UIs, and where the cognitive load of subscription management simply disappears.
+BAREWire provides the memory substrate where signals and buffers coexist. The BARE protocol's binary encoding maps directly to memory layout, which aligns with our zero-copy goals. Our [solution to the byref problem](/blog/byref-resolved/) removes the defensive copying that would otherwise negate the benefits of reactive optimization. The [SPEC stack](/blog/spec-stack/) carries these patterns to the browser through SolidJS's signal implementation, while our Fidelity.CloudEdge library extends the reach to the edge, where Durable Objects and persistent WebSockets carry local reactive patterns into distributed coordination.
 
-This is what we mean by "getting the signal": receiving the essential benefits of reactive programming while filtering out the noise of incidental complexity. Whether that signal originates in native code, traverses the cloud edge backplane, or updates a browser UI, the model remains consistent. From our perspective, the signal is clear.
+This is the direction we will keep building toward: a reactive system where data flows through dependency graphs without copying, where cleanup is deterministic, and where signals propagate from native code through edge infrastructure to browser UIs. There is implementation work ahead on every target named here, and we will report on it as the design takes shape.
 
 ---
 
 *This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-firefly/), [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), [ByRef Resolved](/blog/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/alloyrx-native-reactivity-in-fidelity/).*
 
-[^1]: The SPEC stack—SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge—represents our vision for unified web development with F#. See [The SPEC Stack: A Proposal](/blog/spec-stack/) for the full architectural overview.
+[^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef. See [The SPEC Stack: A Proposal](/blog/spec-stack/) for the full architectural overview.
 
-[^2]: Fidelity.CloudEdge enables F# deployment to Cloudflare's edge network through Fable compilation. For a deeper exploration of this integration, see [Leaner, Smarter AI Cloud Systems](/blog/leaner-smarter-ai-cloud-systems/).
+[^2]: Our Fidelity.CloudEdge library enables Clef deployment to Cloudflare's edge network through Fable compilation. For a deeper exploration of this integration, see [Leaner, Smarter AI Cloud Systems](/blog/leaner-smarter-ai-cloud-systems/).

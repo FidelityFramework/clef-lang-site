@@ -12,28 +12,23 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 ---
 
-Erlang emerged in the late 1980s at Ericsson, during an epoch when distributed systems were in their infancy and reliability was becoming a critical concern in telecommunications. Born out of the practical need to build telephone exchanges that could achieve the mythical "nine nines" (99.9999999%) of uptime, Erlang introduced a paradigm shift in how we approach concurrency and fault tolerance.
+Erlang emerged in the late 1980s at Ericsson, when distributed systems were in their infancy and reliability was becoming a critical concern in telecommunications. It was built to meet a practical need: telephone exchanges that could achieve the "nine nines" (99.9999999%) of uptime. To get there, Erlang took an unusual position on concurrency and fault tolerance.
 
 ## A Pioneer in Reliable Distributed Computing
 
-In an era dominated by object-oriented programming and shared-state concurrency, Erlang boldly embraced functional programming with immutable data and the actor model. Its design philosophy, lightweight processes, message passing, and "let it crash" error handling, created a foundation for systems that could not only scale horizontally but also self-heal through sophisticated supervision hierarchies.
+In an era dominated by object-oriented programming and shared-state concurrency, Erlang embraced functional programming with immutable data and the actor model. Its design rested on lightweight processes, message passing, and "let it crash" error handling. That combination produced systems that scaled horizontally and self-healed through supervision hierarchies.
 
-Particularly noteworthy is how Erlang's approach has been validated through formal methods. McErlang, a model checker for Erlang, enables formal verification of deterministic behavior in what is otherwise a dynamic environment. This achievement demonstrated that even highly concurrent systems could be reasoned about with mathematical precision, bridging the gap between practical engineering and theoretical computer science.
+Erlang's approach has also been studied through formal methods. McErlang, a model checker for Erlang, enables formal verification of deterministic behavior in what is otherwise a dynamic environment. The work showed that concurrent systems could be reasoned about with mathematical precision, connecting practical engineering to theoretical computer science.
 
-Erlang's influence extended far beyond its original domain, inspiring a new generation of actor-model implementations. In 2009, Jonas Bonér created Akka for the JVM ecosystem, directly translating Erlang's concurrency principles into a form palatable for enterprise Java environments. Later, Aaron Stannard co-created Akka.NET which brought these same concepts to the .NET world, demonstrating the timelessness of Erlang's core insights and extending them well beyond the original remit. These frameworks served as crucial bridges, carrying Erlang's wisdom into mainstream enterprise computing while adapting its principles to different runtime environments and programming paradigms.
+Erlang's influence extended beyond its original domain into a generation of actor-model implementations. In 2009, Jonas Bonér created Akka for the JVM ecosystem, translating Erlang's concurrency principles into a form suited to enterprise Java environments. Aaron Stannard later co-created Akka.NET, which carried the same concepts to the .NET world and extended them past the original remit. These frameworks carried Erlang's concurrency model into mainstream enterprise computing while adapting it to different runtime environments and programming paradigms.
 
-The Fidelity framework shares these foundational goals of reliability, scalability, and formal correctness. By examining Fez, an F#-to-Erlang transpiler, we've confirmed that our innovations align with Erlang's time-tested principles while extending them with modern type systems, memory management techniques, and compilation technology. This retrospective analysis demonstrates how Fidelity draws inspiration from Erlang's pioneering work while addressing the demands of today's computing landscape, with designs to support deep inter-operation with Akka.NET clusters.
+Our Fidelity framework shares Erlang's goals of reliability, scalability, and formal correctness. By examining Fez, an F#-to-Erlang transpiler, we have checked our design choices against Erlang's principles, and we extend them with modern type systems, memory management techniques, and compilation technology. This analysis traces where Fidelity draws on Erlang's work and where it diverges to meet the demands of today's computing landscape, including a planned path toward inter-operation with Akka.NET clusters.
 
 ## Key Concepts from Erlang via Fez
 
-The Fez transpiler provides a window into how Erlang's concurrency model can be expressed in F#. By examining this relationship, we can identify what Fidelity has adopted from Erlang and where it advances beyond Erlang's capabilities.
+The Fez transpiler shows how Erlang's concurrency model can be expressed in F#. Examining that relationship lets us identify what our Fidelity design adopts from Erlang and where it goes further.
 
 ```mermaid
 flowchart TB
@@ -65,33 +60,33 @@ flowchart TB
 ### 1. Lightweight Concurrency Units
 
 **Erlang Pattern:**
-Erlang reimagined concurrency by treating it not as a scarce resource to be carefully managed, but as an abundant one to be freely utilized. Its lightweight "processes" (not OS processes) managed by the BEAM VM embodied this philosophy perfectly. Where traditional threading models might struggle with thousands of concurrent units, Erlang could effortlessly juggle millions. Fez captures this essence with its deceptively simple `Pid` type:
+Erlang treats concurrency as an abundant resource rather than a scarce one. Its lightweight "processes" (not OS processes), managed by the BEAM VM, carry that choice: where traditional threading models strain at thousands of concurrent units, Erlang handles millions. Fez captures the idea with a minimal `Pid` type:
 
 ```fsharp
 // Fez's minimal Pid representation
 type Pid = P
 ```
 
-This minimalist approach belies the profound shift in thinking: concurrency should be a fundamental building block, not an advanced feature locked behind complex APIs.
+The minimal type reflects a position: concurrency is a basic building block, not a feature reached through a heavy API.
 
 **Fidelity Implementation:**
-Olivier embraces this paradigm shift while adapting it for modern hardware realities. The philosophy remains, lightweight units of concurrent execution, but the implementation addresses contemporary performance considerations:
+Our Olivier design keeps lightweight units of concurrent execution and adapts the implementation for current hardware:
 
 ```clef
 // Conceptual Olivier actor representation
 type ActorRef<'Message> = private {
     Id: ActorId
     Path: ActorPath
-    // Not isolated heaps, but shared heap with managed references
+    // shared heap with managed references, not isolated heaps
 }
 ```
 
-Unlike Erlang's process-isolated memory model, Olivier uses a **shared heap per OS process** with actors operating within that space. This approach recognizes that modern hardware has evolved since Erlang's inception, memory is more abundant, cache coherence more sophisticated, and compiler technology more advanced. By maintaining logical separation without physical memory isolation, Olivier preserves the conceptual clarity of Erlang's model while leveraging contemporary architectural advantages.
+Unlike Erlang's process-isolated memory model, Olivier is designed to use a **shared heap per OS process**, with actors operating within that space. The reasoning is that hardware has changed since Erlang's inception: memory is more abundant, cache coherence is better, and compiler technology has advanced. By keeping logical separation without physical memory isolation, Olivier aims to preserve the clarity of Erlang's model while taking advantage of these architectural changes.
 
 ### 2. Message-Passing Concurrency
 
 **Erlang Pattern:**
-"Share nothing, communicate everything" encapsulates Erlang's radical approach to concurrency. In a world where shared memory and locks dominated concurrent programming, Erlang made an uncompromising choice: actors would be truly isolated, communicating only through explicit message passing. This wasn't merely a technical decision but a philosophical stance on how to build reliable systems, one that eliminated entire classes of concurrency bugs by design. Fez distills this profound idea into a beautifully simple interface:
+"Share nothing, communicate everything" captures Erlang's approach to concurrency. Where shared memory and locks dominated concurrent programming, Erlang made a different choice: actors are isolated and communicate only through explicit message passing. That choice eliminates several classes of concurrency bugs by construction. Fez expresses it in a small interface:
 
 ```fsharp
 // Fez's basic message passing
@@ -99,34 +94,32 @@ let send<'T> (dst: Pid) (msg: 'T) : unit = ()
 let (<!) = send
 ```
 
-The operator `<!` in particular captures the visual metaphor of a message flying from one actor to another, reinforcing the conceptual model at the syntax level.
+The `<!` operator reads as a message flying from one actor to another, carrying the model into the syntax.
 
 **Fidelity Implementation:**
-BAREWire embraces Erlang's message-passing philosophy while recognizing that not all isolation requires memory boundaries. By distinguishing between logical isolation (the programming model) and physical isolation (the implementation), Fidelity creates a system that maintains Erlang's safety guarantees while optimizing for modern hardware realities:
+Our BAREWire design keeps Erlang's message-passing model while treating memory boundaries as one form of isolation among several. By separating logical isolation (the programming model) from physical isolation (the implementation), BAREWire is meant to preserve Erlang's safety properties while taking advantage of modern hardware:
 
 ```clef
 // Conceptual BAREWire-enabled messaging
 let send<'T> (target: ActorRef<'T>) (message: 'T) : unit =
-    // When appropriate, passes by reference within shared heap
-    // Uses BAREWire for cross-process serialization when needed
     match getActorLocation target with
     | SameProcess ->
-        // Direct reference passing in shared heap
+        // direct reference passing in shared heap
         enqueueMessage target.Mailbox message
     | RemoteProcess ->
-        // Zero-copy serialization with BAREWire
+        // zero-copy serialization with BAREWire
         let serialized = BAREWire.serialize message
         transportChannel.Send(target.Path, serialized)
 ```
 
-This hybrid approach offers the best of both worlds: the conceptual clarity of message-passing with the performance benefits of reference passing when safe to do so. It's an evolution that preserves Erlang's core insight, that isolation creates reliability, while adapting it to modern computing environments where different forms of isolation are available.
+This design keeps the message-passing model while passing by reference when it is safe to do so. It carries forward Erlang's premise that isolation supports reliability, and it widens the set of isolation forms available, since memory boundaries are no longer the only option.
 
 ### 3. Pattern Matching for Message Handling
 
 **Erlang Pattern:**
-Erlang elevated pattern matching from a mere language feature to the central paradigm for handling communication in concurrent systems. This approach transformed message processing from imperative command sequences to declarative pattern recognition, a shift that made complex interactions both more readable and less error-prone.
+Erlang made pattern matching the central mechanism for handling communication in concurrent systems. Message processing becomes declarative pattern recognition rather than an imperative command sequence, which makes complex interactions more readable and less error-prone.
 
-The beauty of this approach is how naturally it maps the structure of data to the structure of code. When a message arrives, the system doesn't execute procedures; it recognizes patterns and responds accordingly. Fez brilliantly captures this concept by mapping F# discriminated unions to Erlang pattern matching:
+The approach maps the structure of data onto the structure of code. When a message arrives, the system matches it against patterns and responds to the matching case. Fez captures this by mapping F# discriminated unions to Erlang pattern matching:
 
 ```fsharp
 // Fez's pattern matching for message reception
@@ -139,10 +132,10 @@ let alts =
     |> Seq.toList
 ```
 
-This translation layer reveals the deep harmony between F#'s type system and Erlang's pattern matching, two different expressions of the same fundamental insight about data and behavior.
+This translation layer shows the alignment between F#'s type system and Erlang's pattern matching, two expressions of the same relationship between data and behavior.
 
 **Fidelity Implementation:**
-Fidelity takes this powerful idea and enhances it with the full force of Clef's type system. Where Erlang's pattern matching was dynamic, Fidelity makes it static, catching potential message handling errors at compile time rather than runtime:
+Our Fidelity design takes the same idea and runs it through Clef's type system. Where Erlang's pattern matching is dynamic, Clef makes it static, so message handling errors surface at compile time rather than runtime:
 
 ```clef
 // Conceptual Olivier message handling
@@ -157,33 +150,31 @@ let myActor (mailbox: ActorMailbox<MyActorMessage>) =
 
         match message with
         | Command1 payload ->
-            // Type-safe pattern matching with compiler verification
             processCommand1 payload
             return! loop()
 
         | Command2(name, value) ->
-            // Deconstructed parameters with zero-copy access
+            // deconstructed parameters, zero-copy access
             processCommand2 name value
             return! loop()
 
         | Shutdown ->
-            // Terminate actor
             return ()
     }
     loop()
 ```
 
-This approach preserves the elegant declarative style that makes Erlang's message handling so powerful while adding compile-time safety. The pattern matching isn't just checking shapes anymore, it's verifying that the entire messaging protocol conforms to a statically verified contract. It's the difference between discovering a message handling bug during testing versus having the compiler prevent such bugs from ever reaching production.
+This keeps the declarative style of Erlang's message handling and adds compile-time checking. The pattern match does more than check shapes: the type system holds the message protocol to a contract checked at compile time, so a class of message-handling bugs is caught before testing rather than discovered during it.
 
 ### 4. Supervision Hierarchies
 
 **Erlang Pattern:**
-Perhaps Erlang's most revolutionary contribution was its radical rethinking of error handling through the "let it crash" philosophy. Where traditional systems aimed to prevent failures through defensive programming, Erlang embraced failure as inevitable and instead focused on recovery. This wasn't recklessness but pragmatism, in complex distributed systems, trying to anticipate every failure mode is futile; it's more effective to focus on resilient recovery mechanisms.
+One of Erlang's distinctive contributions was its approach to error handling through the "let it crash" philosophy. Where traditional systems aim to prevent failures through defensive programming, Erlang treats failure as inevitable and focuses on recovery. The reasoning is pragmatic: in complex distributed systems, anticipating every failure mode is impractical, so the effort goes into resilient recovery instead.
 
-Supervision trees embodied this insight, creating hierarchical structures where "supervisor" processes monitored "worker" processes and could restart them upon failure. This approach allowed clean separation between business logic and error handling, producing systems that could self-heal without human intervention. Fez provides basic hooks for this powerful concept, allowing F# developers to tap into conceptual levers inspired by Erlang's robust fault tolerance mechanisms.
+Supervision trees carry this idea. They form hierarchies where "supervisor" processes monitor "worker" processes and restart them on failure, which keeps business logic separate from error handling and lets systems self-heal without human intervention. Fez provides basic hooks for the concept, giving F# developers access to recovery patterns drawn from Erlang's fault-tolerance model.
 
 **Fidelity Implementation:**
-Prospero implements supervision with enhanced flexibility and type safety, taking Erlang's profound insight and adapting it for modern typed systems:
+Our Prospero design takes Erlang's supervision model into a statically typed setting, with more flexible strategies:
 
 ```clef
 // Conceptual Prospero supervision
@@ -211,9 +202,9 @@ let banking = orchestrator {
 }
 ```
 
-This approach builds upon Erlang's supervision model in several significant ways. The type system ensures that supervisors and their charges have compatible message types, preventing an entire class of runtime errors. The supervision strategies themselves become statically verified, with the compiler checking that exception handling is exhaustive. Perhaps most importantly, by making the relationship between Akka.NET and Erlang's supervision models explicit, Prospero creates a bridge between these two powerful ecosystems, allowing systems built on Fidelity to interoperate seamlessly with existing Akka.NET deployments.
+This builds on Erlang's supervision model in a few ways. The type system holds supervisors and their charges to compatible message types, which makes a class of runtime errors unrepresentable. The supervision strategies are checked at compile time, with exhaustive exception handling enforced by the compiler. By making the relationship between Akka.NET and Erlang's supervision models explicit, Prospero is designed to bridge the two ecosystems, so systems built on Fidelity can interoperate with existing Akka.NET deployments.
 
-This evolution preserves the philosophical core of Erlang's approach, that systems should be designed to recover from failure rather than trying to prevent all failures, while enhancing it with static verification and ecosystem compatibility.
+This keeps the core of Erlang's approach, that systems should be designed to recover from failure rather than prevent all of it, and adds compile-time checking and ecosystem compatibility.
 
 ## Memory Management: A Different Approach
 
@@ -246,36 +237,36 @@ flowchart LR
 
 ### Erlang's Approach: Process Isolation
 
-Erlang's memory model reflects its origins in the telecommunications industry of the 1980s, where hardware was limited but reliability was paramount. The BEAM VM uses completely isolated heaps per lightweight process, a radical design choice that prioritizes fault isolation above all else. When one process crashes due to memory corruption, others remain unaffected. When a process sends a message to another, the data is fully copied, ensuring complete isolation.
+Erlang's memory model reflects its origins in the telecommunications industry of the 1980s, where hardware was limited but reliability was paramount. The BEAM VM uses isolated heaps per lightweight process, a design choice that prioritizes fault isolation. When one process crashes due to memory corruption, others are unaffected. When a process sends a message to another, the data is copied in full, which keeps the two processes isolated.
 
-This approach created extraordinary reliability guarantees. Each process becomes a fortress unto itself, immune to the failures of its neighbors. Garbage collection happens per-process, eliminating system-wide pauses. The cost, additional memory usage and copying overhead, was deemed worthwhile for systems where five minutes of downtime per year was considered unacceptable.
+This isolation is what gives Erlang its reliability properties. Each process is self-contained and unaffected by the failures of its neighbors. Garbage collection happens per-process, which avoids system-wide pauses. The cost in extra memory and copying overhead was judged worthwhile for systems where five minutes of downtime per year was unacceptable.
 
 ### Fidelity's Approach: Shared Managed Heap
 
-Fidelity takes a different approach that reflects both changes in computing hardware and advances in language implementation techniques. Olivier actors operate within a shared heap per OS process, with Prospero potentially serving as the allocator. This design recognizes that modern systems have abundant memory, sophisticated cache hierarchies, and powerful garbage collection algorithms that can provide safety without isolation.
+Our Fidelity design takes a different approach, shaped by changes in computing hardware and advances in language implementation. Olivier actors are designed to operate within a shared heap per OS process, with Prospero serving as the allocator. The reasoning is that current systems have abundant memory, deep cache hierarchies, and garbage collection algorithms that can provide safety without per-process isolation.
 
-The shared heap approach offers several advantages:
+The shared-heap approach is meant to offer several advantages:
 - Enables zero-copy message passing between actors in the same process
 - Eliminates redundant memory allocations
 - Leverages decades of advances in garbage collection research
 - Takes advantage of modern CPU cache architectures
 - Provides a smooth migration path from existing .NET code
 
-Rather than creating isolation through memory boundaries, Fidelity achieves it through type system guarantees and disciplined API design. This reflects a philosophical evolution: from isolation as a runtime property to isolation as a compile-time property.
+Rather than creating isolation through memory boundaries, our Fidelity design enforces it through the type system and a disciplined API. The shift is from isolation as a runtime property to isolation as a compile-time property.
 
-This approach maintains the actor programming model, with its clear separation of concerns and message-based communication, while embracing modern memory management techniques for performance. It's not a rejection of Erlang's wisdom but an adaptation of it for contemporary computing environments where different trade-offs make sense.
+This keeps the actor programming model, with its separation of concerns and message-based communication, and pairs it with current memory management techniques for performance. It adapts Erlang's model to a hardware setting where different trade-offs apply.
 
 ## Where Fidelity Surpasses Erlang
 
 ### 1. Memory Efficiency and Control
 
 **Erlang Limitation:**
-Erlang's isolated process model brought unprecedented reliability but at a cost. Every message passed between processes must be copied in its entirety, a design decision that prioritizes isolation above all else. While appropriate for telecommunications systems of the 1980s, this approach creates significant overhead for data-intensive applications where message sizes might be measured in megabytes rather than bytes.
+Erlang's isolated process model brought high reliability at a cost. Every message passed between processes is copied in full, a decision that puts isolation first. That suited 1980s telecommunications systems, but it adds overhead for data-intensive applications where message sizes are measured in megabytes rather than bytes.
 
-Additionally, Erlang provides limited control over memory layout. Developers have no direct way to specify alignment, padding, or memory organization, critical factors for performance-sensitive applications, especially those interacting with hardware or external systems with specific memory expectations.
+Erlang also gives little control over memory layout. There is no direct way to specify alignment, padding, or organization, which matter for performance-sensitive applications and especially for those interacting with hardware or external systems that expect a particular memory layout.
 
 **Fidelity Advancement:**
-BAREWire represents a fundamental rethinking of this trade-off, providing sophisticated memory management that maintains safety while eliminating unnecessary copies:
+Our BAREWire design revisits this trade-off, with memory management that keeps safety while removing copies that are not needed:
 
 ```clef
 // Conceptual BAREWire memory layout control
@@ -293,9 +284,9 @@ let sensorBuffer = AlignedBuffer<SensorReading>.Create(
 )
 ```
 
-This advancement goes beyond mere optimization, it opens entirely new application domains where the actor model can excel. Scientific computing, media processing, machine learning, financial modeling, fields traditionally ill-suited to Erlang's approach, become viable targets for actor-based concurrency. BAREWire achieves this by distinguishing between logical isolation (the programming model) and physical isolation (the implementation details), providing the best of both worlds.
+This change is not only an optimization; it opens application domains where the actor model has been a poor fit. Scientific computing, media processing, machine learning, and financial modeling all work with large messages, and they become viable targets for actor-based concurrency. BAREWire reaches this by separating logical isolation (the programming model) from physical isolation (the implementation details).
 
-Moreover, BAREWire's integration with Clef's units of measure system means that these memory optimizations don't come at the expense of type safety. The system can statically verify that memory layouts conform to expected sizes and alignments, catching potential errors at compile time rather than runtime.
+BAREWire's integration with Clef's units-of-measure system means these memory choices do not come at the expense of type safety. The system checks at compile time that memory layouts match expected sizes and alignments, so layout errors surface before runtime.
 
 ### 2. Type Safety and Verification
 
@@ -303,7 +294,7 @@ Moreover, BAREWire's integration with Clef's units of measure system means that 
 Erlang uses dynamic typing with pattern matching but no compile-time guarantees.
 
 **Fidelity Advancement:**
-Fidelity leverages Clef's type system with extensions:
+Our Fidelity design uses Clef's type system with extensions:
 - Static dimensional validation
 - Memory layout verification
 - Units of measure for physical quantities
@@ -318,7 +309,7 @@ type TelemetryMessage =
     | HeartbeatInterval of float<seconds>
     | SystemShutdown
 
-// Compile-time verification prevents mistakes
+// celsius required; a bare float or float<seconds> fails to type-check
 let processTemperature (temp: float<celsius>) =
     if temp > 100.0<celsius> then triggerCooling()
 ```
@@ -329,7 +320,7 @@ let processTemperature (temp: float<celsius>) =
 The BEAM VM provides good concurrency but adds interpretation overhead.
 
 **Fidelity Advancement:**
-Fidelity's compilation pipeline generates native code:
+Our Fidelity compilation pipeline generates native code:
 - Direct compilation to MLIR and LLVM
 - Platform-specific optimizations
 - No runtime VM overhead
@@ -348,10 +339,10 @@ let embeddedConfig =
 ### 4. Concurrency Primitives
 
 **Erlang Limitation:**
-Erlang pioneered a concurrency model based on processes and messages, creating a foundation that has stood the test of time. However, its primitives remain relatively basic, spawn a process, send a message, receive a message. While these operations are powerful in combination, they can become unwieldy for complex concurrency patterns. Composition is challenging; patterns like parallel map or concurrent resource management must be rebuilt in each application rather than leveraged from libraries. Error handling across process boundaries requires careful manual coordination.
+Erlang's concurrency model is built on processes and messages, and it has held up over decades. Its primitives stay basic, though: spawn a process, send a message, receive a message. The operations combine well, but complex concurrency patterns can become unwieldy. Composition is hard. Patterns like parallel map or concurrent resource management get rebuilt in each application rather than pulled from libraries, and error handling across process boundaries needs careful manual coordination.
 
 **Fidelity Advancement:**
-Frosty, Fidelity's concurrency library, builds upon Erlang's foundation with compositional primitives that make complex concurrency patterns both easier to express and more reliable to execute:
+Frosty, our Fidelity concurrency library, builds on Erlang's model with compositional primitives meant to make complex concurrency patterns easier to express and more predictable to execute:
 
 ```clef
 // Compositional streams with cancellation
@@ -369,19 +360,19 @@ let processData = coldStream {
 }
 ```
 
-This example demonstrates several advances. The computation expression syntax (`coldStream { ... }`) creates a declarative way to express asynchronous operations. The `use` keyword ensures that resources are properly disposed even if exceptions occur or the operation is cancelled. The `withTimeout` combinator attaches cancellation behavior without complicating the core logic.
+This example shows a few of the pieces. The computation expression syntax (`coldStream { ... }`) gives a declarative way to express asynchronous operations. The `use` keyword disposes resources even if exceptions occur or the operation is cancelled. The `withTimeout` combinator attaches cancellation behavior without complicating the core logic.
 
-Frosty provides two fundamental stream types, `HotStream<'T>` for operations that begin immediately and `ColdStream<'T>` for operations that start on demand. This distinction enables more precise control over when and how concurrent operations execute. Combined with structured cancellation and resource management, these primitives enable developers to build complex concurrent workflows that remain maintainable and predictable.
+Frosty is designed to provide two stream types: `HotStream<'T>` for operations that begin immediately and `ColdStream<'T>` for operations that start on demand. The distinction controls when and how concurrent operations execute. Paired with structured cancellation and resource management, these primitives are meant to let developers build concurrent workflows that stay maintainable and predictable.
 
-Perhaps most importantly, Frosty integrates deeply with the rest of the Fidelity stack. BAREWire provides memory-efficient data structures, XParsec enables zero-copy parsing, and the MLIR/LLVM pipeline optimizes the resulting code for the target platform. This integration creates a concurrency model that's both more expressive than Erlang's and more efficient in execution.
+Frosty is designed to integrate with the rest of our Fidelity stack. BAREWire provides memory-efficient data structures, XParsec enables zero-copy parsing, and the MLIR/LLVM pipeline optimizes the resulting code for the target platform. The aim is a concurrency model more expressive than Erlang's and more efficient in execution.
 
 ## Lessons from Fez Worth Preserving
 
-Examining Fez, a bridge between F# and Erlang, reveals conceptual patterns that remain valuable regardless of implementation details. These patterns represent the essence of what made Erlang revolutionary and continue to inform Fidelity's design:
+Examining Fez, a bridge between F# and Erlang, surfaces patterns that hold regardless of implementation details. These patterns are part of what made Erlang effective, and they inform our Fidelity design:
 
 ### 1. Simple Process Identification
 
-Fez's minimalist `Pid` type encapsulates a profound insight: actor references should be simple, opaque handles that hide implementation details. This approach creates a clean separation between what an actor is and how to communicate with it:
+Fez's minimal `Pid` type carries one idea: actor references should be opaque handles that hide implementation details. That separates what an actor is from how to communicate with it:
 
 ```fsharp
 // Fez's minimalist API surface
@@ -390,35 +381,35 @@ let send<'T> (dst: Pid) (msg: 'T) : unit = ()
 let receive<'Msg> () = Unchecked.defaultof<obj> :?> 'Msg
 ```
 
-This simplicity isn't just aesthetic, it enables powerful patterns like location transparency (sending messages without knowing where the recipient physically resides) and actor lifecycle management (supervising actors without being tightly coupled to their implementation). By studying Fez's approach, we're reminded that the most powerful abstractions are often the simplest ones.
+The opaque handle enables location transparency (sending messages without knowing where the recipient physically resides) and actor lifecycle management (supervising actors without coupling to their implementation). The abstraction does a lot of work while staying small.
 
 ### 2. Message Pattern Clarity
 
-Discriminated unions provide a perfect type-level representation of message protocols, while pattern matching offers an intuitive way to handle those messages. This natural alignment suggests that the actor model isn't just compatible with functional programming, it's enhanced by it. Fidelity embraces this synergy with strong data guarantees of BAREWire, using discriminated unions as the primary way to define actor message protocols. This approach makes message handling both more readable and more maintainable, as the type system ensures that all message variants are properly handled.
+Discriminated unions give a type-level representation of message protocols, and pattern matching handles those messages directly. The alignment between the two is why the actor model fits functional programming so well. Our Fidelity design uses discriminated unions as the primary way to define actor message protocols, backed by BAREWire's data layout. The type system checks that all message variants are handled, which keeps message handling readable and maintainable.
 
 ### 3. Minimalist API Surface
 
-Perhaps the most valuable lesson from Fez is the power of a focused, minimal API. With just three core functions, `spawn`, `send`, and `receive`, Fez captures the essence of actor-based programming. This minimalism makes the model accessible to newcomers while providing enough expressivity for complex systems.
+A focused, minimal API is one of the clearest lessons from Fez. With three core functions, `spawn`, `send`, and `receive`, Fez covers actor-based programming. That keeps the model accessible to newcomers while staying expressive enough for complex systems.
 
-Fidelity preserves this minimalist approach in its core actor API, ensuring that the fundamental operations remain simple and consistent. Additional functionality is provided through extension methods and combinators, allowing developers to opt into complexity only when needed.
+Our Fidelity core actor API keeps the same minimal surface, so the core operations stay simple and consistent. Additional functionality comes through extension methods and combinators, which developers reach for only when they need them.
 
-These lessons from Fez inform Fidelity's design philosophy: maintain conceptual simplicity while enhancing power and safety through modern language features and compilation techniques.
+These lessons from Fez carry into our Fidelity design: keep the core simple, and add safety and capability through the type system and compilation pipeline.
 
 ## Beyond Erlang
 
-Fidelity successfully incorporates Erlang's core patterns while advancing beyond its limitations:
+Our Fidelity design takes up Erlang's core patterns and extends them:
 
-- **Shared heap model** prioritizes performance while maintaining actor isolation semantics
-- **BAREWire protocol** enables efficient message passing across process boundaries
-- **Olivier actor model** provides Erlang-like simplicity with stronger guarantees
-- **Prospero orchestration** offers Akka.NET compatibility for broader ecosystem integration
+- **Shared heap model** favors performance while keeping actor isolation semantics
+- **BAREWire protocol** carries message passing across process boundaries with fewer copies
+- **Olivier actor model** keeps Erlang-like simplicity with compile-time type checking
+- **Prospero orchestration** targets Akka.NET compatibility for broader ecosystem integration
 
-By learning from Erlang through the lens of Fez while pushing beyond its boundaries with modern compilation techniques, Fidelity creates a synthesis that offers both the clarity of the actor model and the performance of native code. The result is not merely an adaptation of Erlang's ideas, but a forward-looking synthesis that represents the future of actor-based concurrent programming.
+By learning from Erlang through Fez and extending it with our compilation pipeline, Fidelity aims to combine the clarity of the actor model with the performance of native code. We are early in this design, and the comparison with Erlang is one of the ways we check it.
 
 ## A Modern Tradition: Honoring Erlang's Legacy
 
-For over three decades, Erlang has stood as a vanguard in the realm of distributed systems engineering. Its influence extends far beyond its niche, shaping modern platforms like Elixir, informing design patterns in diverse languages, and demonstrating that reliability at scale is an achievable goal. The famous case study of Ericsson's AXD301 switch, containing over a million lines of Erlang code yet achieving carrier-grade reliability, remains a testament to the soundness of its foundational principles.
+For over three decades, Erlang has been a reference point in distributed systems engineering. Its influence reaches past its original niche, shaping platforms like Elixir, informing design patterns in other languages, and showing that reliability at scale is achievable. The case study of Ericsson's AXD301 switch, over a million lines of Erlang code at carrier-grade reliability, still holds up as evidence for its foundational principles.
 
-The Fidelity framework acknowledges this profound legacy. Where Erlang blazed trails through uncharted territory with pragmatic innovation, Fidelity aims to build highways with modern materials and techniques. We recognize that Erlang's concepts weren't merely technical choices but philosophical insights about the nature of distributed computing that have stood the test of time.
+Our Fidelity framework builds on that work. Erlang's concepts were not only technical choices; they were positions on how distributed computing should be built, and they have held up. Where Erlang reached its design through hardware constraints of its era, we are working through a different set of constraints, with type theory, memory management, and compilation technology that were not available then.
 
-As computing continues to evolve, from cloud infrastructure to edge devices, from massive data centers to embedded systems, the need for reliable concurrency only grows more acute. The Fidelity framework seeks to carry forward Erlang's torch into this new era, not by discarding its wisdom but by recasting it in the light of contemporary advances in type theory, memory management, and compilation technology. In doing so, we hope to honor Erlang's pioneering spirit by extending its tradition of pragmatic innovation into the next generation of distributed systems.
+As computing keeps moving across cloud infrastructure, edge devices, large data centers, and embedded systems, the need for reliable concurrency stays central. We are continuing to develop this design and to test it against Erlang's record, and we hope to honor Erlang's pioneering spirit by extending its tradition of pragmatic innovation into the next generation of distributed systems.

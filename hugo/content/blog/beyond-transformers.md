@@ -12,26 +12,21 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 *Note: This article was updated September 27, 2025, incorporating insights from recent research and a recent [Richard Sutton interview](https://www.youtube.com/watch?v=21EYKqUsPfg) that affirm many of the tenets we have put forward, including the content of this blog entry.*
 
-In the world of artificial intelligence, a structural transition is underway. For more than a decade, matrix multiplication has served as the computational foundation of neural networks, powering everything from language models like ChatGPT to computer vision systems analyzing medical images. This architectural choice has driven remarkable progress, yet it has also created fundamental constraints that limit how AI systems learn and evolve.
+In the world of artificial intelligence, a structural transition is underway. For more than a decade, matrix multiplication has served as the computational foundation of neural networks, powering everything from language models like ChatGPT to computer vision systems analyzing medical images. This architectural choice has driven steady progress, yet it has also created constraints that limit how AI systems learn and evolve.
 
-Current language models train on vast corpora of text - essentially a frozen snapshot of human knowledge. These models learn from the crystallized outputs of intelligence without understanding the processes that created that knowledge. They can recite that water boils at 100°C at sea level but have never observed the relationship between temperature, pressure, and phase transitions. This distinction between learning outcomes versus learning processes represents a critical limitation in how contemporary AI systems develop understanding.
+Current language models train on vast corpora of text, essentially a frozen snapshot of human knowledge. These models learn from the crystallized outputs of intelligence without understanding the processes that created that knowledge. They can recite that water boils at 100°C at sea level but have never observed the relationship between temperature, pressure, and phase transitions. This distinction between learning outcomes versus learning processes is a central limitation in how contemporary AI systems develop understanding.
 
 ## The New Horizons in AI Efficiency
 
-The research community has been converging on addressing these limitations from multiple directions. In October 2023, Microsoft Research introduced BitNet, demonstrating that large language models could function with weights quantized to just 1 bit. They followed this in February 2024 with "The Era of 1-bit LLMs," showing that 1.58 bits per weight was sufficient for state-of-the-art performance – a finding that challenged conventional wisdom about the precision requirements of AI models.
+The research community has been converging on addressing these limitations from multiple directions. In October 2023, Microsoft Research introduced BitNet, demonstrating that large language models could function with weights quantized to just 1 bit. They followed this in February 2024 with "The Era of 1-bit LLMs," showing that 1.58 bits per weight was sufficient for state-of-the-art performance. That finding challenged conventional wisdom about the precision requirements of AI models.
 
-In a separate thrust of work, researchers from the University of California, Santa Cruz [published a groundbreaking paper](https://arxiv.org/abs/2406.02528) in April 2024 titled "Scalable MatMul-free Language Modeling." This research demonstrated that large language models can be built without any matrix multiplication operations while maintaining strong performance at billion-parameter scales.
+In a separate thrust of work, researchers from the University of California, Santa Cruz [published a paper](https://arxiv.org/abs/2406.02528) in April 2024 titled "Scalable MatMul-free Language Modeling." This research demonstrated that large language models can be built without any matrix multiplication operations while maintaining strong performance at billion-parameter scales.
 
-Parallel to these weight-focused innovations, other researchers have been tackling the quadratic complexity challenges of transformer architectures. The Mamba architecture, introduced by Albert Gu and colleagues in late 2023, employs state space models (SSMs) that process sequences with linear scaling, enabling efficient handling of extremely long contexts. Similarly, extended LSTMs (xLSTMs) have emerged as powerful hybrid approaches that combine the parameter efficiency of recurrent networks with mechanisms inspired by transformers. Other notable sub-quadratic alternatives include Linear Attention variants like Performer and MEGA (Moving Average Equipped Gated Attention), as well as structured state space models such as S4 and S5.
+Parallel to these weight-focused innovations, other researchers have been tackling the quadratic complexity challenges of transformer architectures. The Mamba architecture, introduced by Albert Gu and colleagues in late 2023, employs state space models (SSMs) that process sequences with linear scaling, enabling efficient handling of extremely long contexts. Similarly, extended LSTMs (xLSTMs) have emerged as hybrid approaches that combine the parameter efficiency of recurrent networks with mechanisms inspired by transformers. Other notable sub-quadratic alternatives include Linear Attention variants like Performer and MEGA (Moving Average Equipped Gated Attention), as well as structured state space models such as S4 and S5.
 
-These parallel research vectors converge on a common realization: intelligence requires understanding how knowledge is constructed, not merely pattern-matching against existing knowledge. The distinction becomes particularly clear when considering continuous learning - biological systems learn through ongoing interaction with their environment, updating their understanding based on experience. Current AI architectures, with their rigid separation between training and inference phases, cannot achieve this fundamental capability.
+These parallel research vectors converge on a common realization: intelligence requires understanding how knowledge is constructed, not merely pattern-matching against existing knowledge. The distinction becomes particularly clear when considering continuous learning: biological systems learn through ongoing interaction with their environment, updating their understanding based on experience. Current AI architectures, with their rigid separation between training and inference phases, cannot achieve this capability.
 
 At SpeakEZ, we've been following this convergence of research and ensuring our Fidelity Framework is fully adaptable to these developments in machine learning. Our approach addresses not just computational efficiency but the deeper question of how AI systems acquire and refine understanding over time.
 
@@ -43,7 +38,7 @@ This operation accounts for approximately 90% of the computational cost in moder
 
 ## What is Sub-Quadratic Scaling, and Why Does it Matter for Your Bottom Line?
 
-Alongside computational intensity, traditional transformer models face a scaling challenge. Each element in a sequence must "attend" to every other element when processing text, creating computational requirements that grow quadratically with sequence length - doubling input length quadruples computational needs.
+Alongside computational intensity, traditional transformer models face a scaling challenge. Each element in a sequence must "attend" to every other element when processing text, creating computational requirements that grow quadratically with sequence length, so doubling input length quadruples computational needs.
 
 This quadratic scaling (O(n²) in technical terms) creates concrete business limitations:
 
@@ -53,21 +48,21 @@ This quadratic scaling (O(n²) in technical terms) creates concrete business lim
 
 * **Inference Bottlenecks**: Real-time applications face significant degradation when handling long conversations, limiting practical deployment scenarios.
 
-Sub-quadratic approaches fundamentally change these economics by ensuring computational requirements grow linearly with input length:
+Sub-quadratic approaches change these economics by keeping computational requirements growing linearly with input length:
 
-* **True Long-Context Understanding**: Process entire documents, books, or codebases without prohibitive costs.
+* **Long-Context Processing**: Process entire documents, books, or codebases without prohibitive costs.
 
 * **Predictable Scaling Economics**: Linear cost scaling enables reliable budget planning and sustainable deployments.
 
-* **Unlocked Use Cases**: Applications requiring continuous operation with growing context become commercially viable.
+* **New Use Cases**: Applications requiring continuous operation with growing context become commercially viable.
 
 For executives, the difference between quadratic and linear scaling determines which AI applications are commercially viable versus those that remain research curiosities.
 
-## The Breakthrough: AI Without Matrix Multiplication
+## AI Without Matrix Multiplication
 
-The UC Santa Cruz [research](https://github.com/ridgerchu/matmulfreellm) demonstrated that by using ternary weights (limited to values of -1, 0, or +1) and replacing complex matrix operations with simple addition and subtraction, models can achieve performance comparable to state-of-the-art Transformers while using far less memory and computational resources.
+The UC Santa Cruz [research](https://github.com/ridgerchu/matmulfreellm) demonstrated that by using ternary weights (limited to values of -1, 0, or +1) and replacing matrix operations with addition and subtraction, models can achieve performance comparable to state-of-the-art Transformers while using far less memory and computational resources.
 
-This approach changes hardware requirements fundamentally:
+This approach changes hardware requirements at the root:
 
 | **Traditional AI Models** | **MatMul-Free Models** |
 |---------------------------|------------------------|
@@ -87,9 +82,9 @@ Similarly, sub-quadratic models offer their own advantages:
 
 The MatMul-free paper demonstrated these models running on FPGA hardware at just 13 watts of power while processing billion-parameter scale models. Performance gaps between MatMul-free models and traditional Transformers narrow as model size increases, suggesting this approach becomes more advantageous at scale.
 
-## SpeakEZ AI's Fidelity Framework: Engineering a New Paradigm
+## Our Fidelity Framework and These Architectures
 
-The architectural decisions in our Fidelity Framework emerged from recognizing that current AI systems learn from static snapshots of knowledge without understanding the processes that generated that knowledge. This limitation becomes particularly acute as the field shifts toward continuous learning and experience-based intelligence. Our technologies directly enable and enhance new computational approaches:
+The architectural decisions in our Fidelity Framework emerged from recognizing that current AI systems learn from static snapshots of knowledge without understanding the processes that generated that knowledge. This limitation becomes particularly acute as the field shifts toward continuous learning and experience-based intelligence. Our technologies are designed to enable and support these computational approaches:
 
 ### 1. Clef Type Safety for Neural Representations
 
@@ -139,7 +134,7 @@ let multiplyVector (input: Vector<float, 'InDim>) (weights: TernaryMatrix<'InDim
     result
 ```
 
-Our Clef type system provides elegant expressions for sub-quadratic algorithms like linear attention and state space models:
+Our Clef type system expresses sub-quadratic algorithms like linear attention and state space models directly:
 
 ```fsharp
 // Type-safe linear attention implementation with O(n) complexity
@@ -251,13 +246,13 @@ This approach to custom MLIR operations would enable several advantages:
 2. **Specialized Optimization**: MLIR optimization passes recognize and optimize these patterns specifically
 3. **Hardware-Specific Targeting**: The MLIR dialect can be lowered to hardware-specific instructions
 
-The conceptual simplicity of these designs is directly reflected in compiled code, without inefficiencies from expressing operations in terms of traditional primitives.
+The intent of this design is that the simplicity of these operations carries through to compiled code, without the inefficiencies that come from expressing them in terms of traditional primitives.
 
 ### 3. Furnace: Advanced Auto-Differentiation for MatMul-Free Models
 
 A critical challenge in training MatMul-free networks involves maintaining gradient fidelity through non-standard operations. The UC Santa Cruz paper notes significant instability when attempting to binarize or ternarize attention matrices, leading to "a significant drop in performance and failure to reach model convergence." This highlights the challenge of gradient computation in quantized networks.
 
-While the forward pass in MatMul-free models elegantly replaces matrix multiplication with addition and subtraction, the backward pass presents complex mathematical challenges. The Furnace auto-differentiation engine, a hard fork of the DiffSharp library, addresses these pain points:
+While the forward pass in MatMul-free models replaces matrix multiplication with addition and subtraction, the backward pass presents complex mathematical challenges. Our Furnace auto-differentiation engine, a hard fork of the DiffSharp library, addresses these challenges:
 
 ```fsharp
 // Custom auto-differentiation for ternary operations
@@ -290,7 +285,7 @@ While this approximation enables training, it introduces systematic errors that 
 
 Furnace approaches this problem via principled structures in calculus and functional programming. Instead of treating quantization as a black-box operation with arbitrary gradient approximation, Furnace builds a mathematical model of how gradient information should propagate through non-differentiable boundaries.
 
-Our research explores techniques that provide stronger theoretical guarantees for gradient estimation in quantized networks:
+Our research explores techniques that give gradient estimation in quantized networks a stronger theoretical footing:
 
 * **Higher-precision intermediate representations**: Python frameworks typically use 32-bit floating point for gradient calculations. This can be insufficient for extreme quantization in ternary networks, where small gradient errors significantly impact convergence. Furnace uses arbitrary-precision arithmetic where needed, dynamically adjusting precision based on mathematical requirements.
 
@@ -322,7 +317,7 @@ Current deep learning frameworks rely on single-precision (32-bit) floating poin
 
 For MatMul-free models with ternary weights, training dynamics become extraordinarily sensitive to numerical precision. Small rounding errors can prevent weights from crossing quantization thresholds, leading to training stagnation.
 
-The Fidelity Framework addresses this through direct access to extended precision capabilities in modern hardware:
+Our Fidelity Framework addresses this through direct access to extended precision capabilities in modern hardware:
 
 ```fsharp
 // Direct access to extended precision through LLVM's machine model
@@ -356,7 +351,7 @@ The UC Santa Cruz paper notes that their FPGA implementation required careful me
 
 * **Compact Representation**: BAREWire can encode ternary weights in just 2 bits per value, reducing memory requirements by over 90% compared to standard 32-bit representations.
 
-* **Direct Memory Mapping**: Enables seamless data movement between CPUs, GPUs, and FPGAs without costly copies.
+* **Direct Memory Mapping**: Moves data between CPUs, GPUs, and FPGAs without costly copies.
 
 * **Custom Memory Layouts**: Unlike generic frameworks, BAREWire supports hardware-specific memory patterns that maximize efficiency on each target device.
 
@@ -542,8 +537,7 @@ let generateTernaryAccumulationKernel<[<Measure>] 'InputDim, [<Measure>] 'Output
     // Compile the kernel for the specific hardware
     Compiler.buildKernel mlirOps target
 
-// Usage example - the entire type checking happens at compile time,
-// and hardware-specific optimizations are applied automatically
+// type checking at compile time; hardware-specific optimizations applied per target
 let nvKernel = generateTernaryAccumulationKernel<N1024, N4096> NvidiaGPU 256
 let ttKernel = generateTernaryAccumulationKernel<N1024, N4096> Tenstorrent 64
 
@@ -560,7 +554,7 @@ This Clef approach with Furnace allows expressing operations at a high mathemati
 
 Developers focus on mathematical intent while the system handles transformation to efficient hardware-specific code. Type safety ensures dimension mismatches are caught at compile time, crucial when working with large-scale MatMul-free models.
 
-## MatMul-Free Linear Gated Recurrent Unit: The Token Mixer of the Future
+## MatMul-Free Linear Gated Recurrent Unit: An Efficient Token Mixer
 
 The UC Santa Cruz paper introduced a MatMul-free Linear Gated Recurrent Unit (MLGRU) as an efficient token mixer for language models. Our design extends this with Clef's type safety and hardware-specific optimizations:
 
@@ -587,7 +581,7 @@ Our MLGRU implementation leverages Furnace for training stability. Gating mechan
 
 These advantages become increasingly important as models scale to billion-parameter ranges, where traditional frameworks encounter gradient instability.
 
-Alex's ability to directly transform Clef representations of MLGRU into specialized MLIR operations creates another advantage. Our approach generates specialized computational patterns that reflect the true structure of the algorithm:
+Alex's ability to directly transform Clef representations of MLGRU into specialized MLIR operations creates another advantage. Our approach is designed to generate computational patterns that reflect the structure of the algorithm:
 
 ```fsharp
 // Implementation of MLGRU forward pass in Clef
@@ -628,9 +622,9 @@ This functional description would transform into custom MLIR operations that mai
 
 This proposed MLIR representation would progressively lower through dialect transformations to hardware-specific instructions, with each stage maintaining the core structure of the algorithm while applying platform-specific optimizations.
 
-## FPGA Implementation: Realizing the Vision
+## FPGA Implementation
 
-The UC Santa Cruz researchers demonstrated impressive results on FPGA hardware, achieving processing of billion-parameter scale models at 13 Watts. Our Fidelity Framework extends this through a complete FPGA compilation pipeline:
+The UC Santa Cruz researchers demonstrated results on FPGA hardware, processing billion-parameter scale models at 13 Watts. Our Fidelity Framework is designed to extend this through an FPGA compilation pipeline:
 
 * **Hardware-Specific Functional Units**: Implement specialized units for rowwise operations, root mean square calculations, and ternary matrix multiplication.
 
@@ -640,7 +634,7 @@ The UC Santa Cruz researchers demonstrated impressive results on FPGA hardware, 
 
 Furnace's auto-differentiation system supports hardware-software co-design. By maintaining mathematical precision during training, we can derive models that better match the numerical characteristics of fixed-point FPGA implementations, reducing the accuracy gap that typically occurs when deploying floating-point trained models to fixed-point hardware.
 
-The Fidelity Framework's direct path from Clef through MLIR to hardware description languages creates a powerful pipeline for FPGA implementation. Our approach maintains a consistent semantic model throughout:
+Our direct path from Clef through MLIR to hardware description languages is meant to serve as the pipeline for FPGA implementation, maintaining a consistent semantic model throughout:
 
 ```fsharp
 // Hardware-aware implementation of ternary matrix operation
@@ -658,7 +652,7 @@ let ternaryMatrixOperation input weights =
     result
 ```
 
-Alex transforms this high-level description through MLIR to LLHD (LLVM's hardware description dialect) and ultimately to Verilog or VHDL for FPGA synthesis. The same mathematical model deploys efficiently across CPUs, GPUs, and FPGAs, with each implementation optimized for target hardware while maintaining semantics.
+Alex is designed to transform this high-level description through MLIR to LLHD (LLVM's hardware description dialect) and then to Verilog or VHDL for FPGA synthesis. The same mathematical model would then deploy across CPUs, GPUs, and FPGAs, with each implementation optimized for target hardware while maintaining semantics.
 
 Our FPGA implementation extends the UC Santa Cruz approach by incorporating dedicated hardware units for commonly repeated operations in MatMul-free models:
 
@@ -680,11 +674,11 @@ For organizations deploying AI systems, the combination of MatMul-free and sub-q
 
 * **Extended Edge Capabilities**: MatMul-free models run efficiently on resource-constrained edge devices, enabling new applications where connectivity or latency requirements preclude cloud solutions.
 
-* **Practical Long-Context Applications**: Sub-quadratic scaling enables cost-effective processing of extremely long contexts - from full books to entire codebases to lengthy medical records.
+* **Practical Long-Context Applications**: Sub-quadratic scaling enables cost-effective processing of extremely long contexts, from full books to entire codebases to lengthy medical records.
 
-## Computational Graph Pre-Mapping: The Fidelity Advantage
+## Computational Graph Pre-Mapping
 
-A fundamental innovation in SpeakEZ's approach is computational graph pre-mapping -- analyzing and optimizing the structure of the neural network before code generation begins. This approach leverages rich information available in Clef's strongly-typed AST to make informed decisions about how operations should be implemented on target hardware.
+One part of our approach is computational graph pre-mapping, analyzing and optimizing the structure of the neural network before code generation begins. This step draws on the information available in Clef's strongly-typed AST to make informed decisions about how operations should be implemented on target hardware.
 
 For both MatMul-free and sub-quadratic models, this creates several advantages:
 
@@ -694,11 +688,11 @@ For both MatMul-free and sub-quadratic models, this creates several advantages:
 
 3. **Hardware-Specific Operation Mapping**: Different accelerators have different strengths and weaknesses for operations in post-transformer models. Pre-mapping allows us to select optimal implementation strategy for each target.
 
-This approach is implemented through our computational graph analyzer, which builds a high-level representation of the model's operations and applies target-specific optimization strategies.
+We carry this out through our computational graph analyzer, which builds a high-level representation of the model's operations and applies target-specific optimization strategies.
 
 ## Looking Ahead: Designed Intelligence, Not Organic Mimicry
 
-The research convergence on MatMul-free and sub-quadratic approaches represents an acknowledgment that current AI systems learn from crystallized outputs of intelligence without understanding the underlying processes. The industry has been training on shadows of knowledge - the final Wikipedia articles, the published papers, the compiled codebases - without access to the iterative refinement, experimentation, and reasoning that produced them.
+The research convergence on MatMul-free and sub-quadratic approaches represents an acknowledgment that current AI systems learn from crystallized outputs of intelligence without understanding the underlying processes. The industry has been training on shadows of knowledge (the final Wikipedia articles, the published papers, the compiled codebases) without access to the iterative refinement, experimentation, and reasoning that produced them.
 
 This distinction matters because it determines what kinds of intelligence we can build. Systems trained solely on outputs can become sophisticated pattern matchers but struggle with genuine reasoning or adaptation. The emerging architectures our framework supports enable a different approach: designed intelligence that combines structured knowledge with experiential learning.
 
@@ -706,14 +700,14 @@ This distinction matters because it determines what kinds of intelligence we can
 
 Building directly on Microsoft's BitNet research and Albert Gu's Mamba architecture, our hybrid orchestration system advances these approaches. While these research efforts demonstrated that individual models could operate efficiently with specific approaches, our orchestration system enables multiple specialized models to operate in concert across heterogeneous hardware.
 
-This system combines efficient weight representations with sub-quadratic sequential processing, creating a comprehensive solution that:
+This system combines efficient weight representations with sub-quadratic sequential processing. As we conceive it, the design would:
 
-* Dynamically routes inputs to appropriate specialist models based on task complexity
-* Allocates computational resources based on input characteristics and available hardware
-* Creates seamless communication between models using our BAREWire protocols
-* Delivers 3-4x reductions in memory requirements while maintaining inference quality
+* Dynamically route inputs to appropriate specialist models based on task complexity
+* Allocate computational resources based on input characteristics and available hardware
+* Carry communication between models over our BAREWire protocols
+* Target 3-4x reductions in memory requirements while maintaining inference quality
 
-This synthesis of multiple research vectors creates a deployment architecture far more flexible and efficient than any existing approach or these novel approaches alone.
+This synthesis of multiple research vectors aims at a deployment architecture more flexible and more efficient than these approaches taken alone. We have found no other representative implementations of this combination in the standing literature we have reviewed.
 
 ### Direct Hardware Targeting Through MLIR Lowering
 
@@ -738,9 +732,9 @@ flowchart TD
     LLVMIR --> Tensix["Tenstorrent Tensix Backend"]
 ```
 
-Direct hardware targeting is particularly powerful for new model architectures because their computational patterns differ significantly from traditional networks. By bypassing generic intermediate representations designed for matrix-multiplication-centric operations, we generate code that directly leverages specific strengths of each hardware target.
+Direct hardware targeting matters for new model architectures because their computational patterns differ significantly from traditional networks. By bypassing generic intermediate representations designed for matrix-multiplication-centric operations, we intend to generate code that leverages the specific strengths of each hardware target.
 
-On Tenstorrent's Tensix architecture, we map ternary accumulation operations to specialized vector processing units underutilized by conventional matrix operations. On FPGAs, we create custom datapaths optimized for specific patterns of ternary network inference. On conventional GPUs, we generate specialized kernels that maximize throughput for addition/subtraction operations dominating MatMul-free computation.
+On Tenstorrent's Tensix architecture, the design maps ternary accumulation operations to specialized vector processing units underutilized by conventional matrix operations. On FPGAs, it would build custom datapaths for specific patterns of ternary network inference. On conventional GPUs, it would generate specialized kernels for the addition and subtraction operations that dominate MatMul-free computation.
 
 ### Advanced Auto-Differentiation for Novel Architectures
 
@@ -768,11 +762,11 @@ This mathematical foundation enables exploration of activation functions and net
 
 Limitations of standard auto-differentiation approaches become acute for novel architectures. Libraries like PyTorch's autograd, TensorFlow's GradientTape, and JAX's grad function are heavily optimized for dense matrix operations. When these operations are replaced with alternatives, optimizations become irrelevant, and default fallback paths often introduce numerical instability.
 
-Furnace addresses this by implementing auto-differentiation at a more fundamental mathematical level, with specialized support for discontinuous functions appearing in quantized networks and recursive structures in state space models. This enables stable training of novel architectures difficult or impossible to train effectively with conventional frameworks.
+Furnace addresses this by implementing auto-differentiation at a lower mathematical level, with specialized support for discontinuous functions appearing in quantized networks and recursive structures in state space models. This enables stable training of novel architectures difficult or impossible to train effectively with conventional frameworks.
 
 ### Physics-Based Sensor Fusion on ASICs and FPGAs
 
-While much research has focused on language models, we see tremendous potential in applying post-transformer principles to physics-based sensor fusion applications. Traditional sensor fusion requires complex, power-hungry matrix operations to integrate data from multiple sensors in real-time. By adapting these approaches:
+While much research has focused on language models, we see clear potential in applying post-transformer principles to physics-based sensor fusion applications. Traditional sensor fusion requires power-hungry matrix operations to integrate data from multiple sensors in real-time. By adapting these approaches:
 
 * **Ultra-Low-Power Operation**: Critical for battery-powered autonomous systems and IoT devices
 * **Reduced Latency**: Simpler operations enable faster response times for safety-critical applications
@@ -864,12 +858,12 @@ Our approach incorporates physical equations directly into the computational gra
 
 ## Building Intelligence That Understands Process, Not Just Patterns
 
-The shift to post-transformer AI represents a fundamental recognition that intelligence requires understanding how knowledge is created, not just memorizing its outputs. Current models trained on the internet's vast corpus learn from a frozen snapshot - the final answers without the questioning, the conclusions without the reasoning, the solutions without the problem-solving process.
+The shift to post-transformer AI rests on a recognition that intelligence requires understanding how knowledge is created, not just memorizing its outputs. Current models trained on the internet's vast corpus learn from a frozen snapshot: the final answers without the questioning, the conclusions without the reasoning, the solutions without the problem-solving process.
 
-The convergence of MatMul-free and sub-quadratic approaches, combined with continuous learning capabilities, points toward a future where AI systems can genuinely learn from experience. These systems won't just pattern-match against training data but will build understanding through interaction, update their knowledge through use, and maintain mathematical guarantees about their behavior.
+The convergence of MatMul-free and sub-quadratic approaches, combined with continuous learning capabilities, points toward a future where AI systems can genuinely learn from experience. These systems would build understanding through interaction and update their knowledge through use, with their behavior held within structural bounds the type system can carry.
 
-At SpeakEZ, we've been building the tools and frameworks that make these advances practical. Our Fidelity Framework provides organizations with capabilities to implement these cutting-edge approaches, creating AI systems that are more efficient, more affordable, and more aligned with how intelligence actually develops.
+At SpeakEZ, we've been building the tools and frameworks that aim to make these advances practical. Our Fidelity Framework is meant to give organizations the means to implement these approaches, toward AI systems that are more efficient, more affordable, and more aligned with how intelligence actually develops.
 
-The mathematical foundations exist. The hardware capabilities are emerging. The software frameworks are maturing. What remains is the engineering work to bring these elements together into production systems that can transform how AI is built and deployed.
+The mathematical foundations exist. The hardware capabilities are emerging. The software frameworks are maturing. What remains is the engineering work to bring these elements together into production systems.
 
-As we continue developing these technologies, we're excited about the possibilities they create for sustainable, cost-effective AI deployment. The future of AI isn't just about bigger models on more powerful hardware -- it's about architectures that understand the fundamental nature of learning and intelligence. At SpeakEZ, we're proud to be building that future.
+We will keep developing these technologies along the lines this post sketches, weighing each architecture against the others as the research convergence continues and our own pipeline from Clef through MLIR to hardware takes shape.

@@ -12,18 +12,13 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+From our design perspective, the path for AI inference lies less in ever-larger transformer models demanding massive GPU clusters and more in a diverse ecosystem of specialized architectures optimized for specific deployment scenarios. We are developing the infrastructure that could make this approach practical. Our ["Beyond Transformers"](/blog/beyond-transformers/) analysis explored the theoretical foundations of matmul-free and sub-quadratic models. This article outlines how our Fidelity Framework could turn those models into high-performance inference systems that would span from edge devices to distributed data centers.
 
-The future of AI inference lies not in ever-larger transformer models demanding massive GPU clusters, but in a diverse ecosystem of specialized architectures optimized for specific deployment scenarios. We're developing the infrastructure that could make this future a reality. While our ["Beyond Transformers"](/blog/beyond-transformers/) analysis explored the theoretical foundations of matmul-free and sub-quadratic models, this article outlines how our Fidelity Framework could transform these innovations into practical, high-performance inference systems that would span from edge devices to distributed data centers.
+Inference presents different opportunities for heterogeneous optimization than training does. By leveraging discriminated unions, zero-copy memory operations, and physics-aware modeling whose dimensions are checked at compile time, we believe we can achieve order-of-magnitude improvements in inference performance across diverse hardware platforms.
 
-Inference, unlike training, presents unique opportunities for heterogeneous optimization. By leveraging discriminated unions, zero-copy memory operations, and type-safe physics-aware modeling, we believe we can achieve order-of-magnitude improvements in inference performance across diverse hardware platforms.
+## Why Deployment Differs from Training
 
-## The Inference Revolution: Why Deployment Differs from Training
-
-Training and inference present fundamentally different computational challenges and opportunities:
+Training and inference present different computational challenges and opportunities:
 
 **Training** requires:
 - Massive parallel computation for gradient calculations
@@ -90,7 +85,7 @@ let executeTernaryLayer (input: SharedBuffer<float32>) (weights: TernaryWeights)
     output
 ```
 
-This zero-copy approach would be particularly powerful when combined with modern interconnect technologies:
+This zero-copy approach gains the most when combined with modern interconnect technologies:
 
 ### Leveraging CXL for Coherent Memory
 
@@ -142,7 +137,7 @@ let setupDistributedInference (nodes: NetworkEndpoint list) =
 
 ## Physics-Aware Models with Clef Units of Measure
 
-One of the most powerful advantages of [the Clef language](https://clef-lang.com) for inference is its zero-cost units of measure system, enabling physics-aware models that maintain dimensional correctness:
+One advantage of [our Clef language](https://clef-lang.com) for inference is its zero-cost units of measure system, which carries dimensional correctness into physics-aware models. Clef inherits this units-of-measure inference from its F# lineage, in the style Andrew Kennedy introduced:
 
 ```fsharp
 // Physical units for sensor fusion
@@ -200,7 +195,7 @@ This approach should provide several critical advantages:
 
 ## Transformer to DeepSeek MLA Conversion
 
-One of the most exciting developments we envision is the ability to convert existing transformer models to more efficient architectures like DeepSeek's Multi-head Latent Attention (MLA):
+We envision converting existing transformer models to more efficient architectures like DeepSeek's Multi-head Latent Attention (MLA):
 
 ```fsharp
 module TransformerConversion =
@@ -263,7 +258,7 @@ let optimizeForInference (model: BaseModel) (target: InferenceTarget) =
 
 ## High-Speed CPU Inference with Ternary Models
 
-Perhaps the most surprising development could be the emergence of CPU-efficient models that rival GPU performance for many tasks:
+CPU-efficient models that rival GPU performance for many tasks are within reach with ternary weights:
 
 ```fsharp
 // Ternary BERT for CPU inference
@@ -557,7 +552,7 @@ Deploying diagnostic models at the edge could transform healthcare delivery:
 
 ### Case Study 3: Industrial IoT Monitoring
 
-Physics-aware models for predictive maintenance could revolutionize industrial operations:
+Physics-aware models for predictive maintenance could change how industrial operations run:
 
 ```fsharp
 // Turbine monitoring with physics constraints
@@ -595,7 +590,7 @@ let monitorTurbine (monitor: TurbineMonitor) (telemetry: TurbineTelemetry) =
 
 ## Future Directions: The Inference Ecosystem
 
-As we look ahead, several trends are converging that could make heterogeneous, post-transformer inference the dominant paradigm:
+Looking ahead, several trends are converging that could make heterogeneous, post-transformer inference the common approach:
 
 ### 1. Hardware Evolution
 
@@ -630,20 +625,18 @@ type InferenceEngine2025 = {
 }
 ```
 
-## Inference at the Speed of Thought
+## Bringing the Pieces Together
 
-The transformation from monolithic transformer models to heterogeneous, specialized inference architectures represents more than just a performance optimization, it's a fundamental reimagining of how AI systems could operate in the real world. By embracing the natural heterogeneity of modern computing platforms and the unique characteristics of purpose-driven models, including continuing to leverage transformers where appropriate at the boundary of mission-critical systems.
+The move from monolithic transformer models to heterogeneous, specialized inference architectures is a shift in how AI systems could operate in the field. It rests on the heterogeneity of modern computing platforms and the characteristics of purpose-driven models, while continuing to use transformers where they earn their place at the boundary of mission-critical systems.
 
-The enablers of this transformation should include:
+The enablers we are building toward include:
 
-1. **Discriminated Unions**: Enabling natural data structure representation of heterogeneous architectures
-2. **Zero-Copy Operations**: BAREWire potentially eliminating data movement overhead with zero-copy and efficient IPC
-3. **Physics-Aware Types**: Clef UMX providing correctness guarantees at a "zero-cost" as types are erased at compile time
-4. **Distributed Execution**: RDMA/RoCE enabling seamless scale-out with planned support for a variety of protocols and standards
-5. **Automated Conversion**: Furnace transforming existing models using world-class auto-differentiation and transformation tooling
+1. **Discriminated Unions**: representing heterogeneous architectures as ordinary data structures
+2. **Zero-Copy Operations**: our BAREWire removing data movement overhead through zero-copy memory sharing and IPC
+3. **Physics-Aware Types**: our Clef units of measure carrying dimensional correctness at zero runtime cost, since the units are erased at compile time
+4. **Distributed Execution**: RDMA/RoCE scaling out across nodes, with planned support for a range of protocols and standards
+5. **Automated Conversion**: Furnace transforming existing models with auto-differentiation and transformation tooling
 
-These capabilities are rapidly maturing from research concepts to practical implementations. From financial trading floors to medical clinics, from autonomous vehicles to industrial plants, the future of AI inference is continuing to advance at an increasing pace each day.
+These capabilities are maturing from research concepts toward practical implementations. The targets range across financial trading floors, medical clinics, autonomous vehicles, and industrial plants.
 
-We're committed to developing these capabilities through the Fidelity Framework. Whether you need to deploy models to resource-constrained edge devices or build planet-scale inference systems, our tools aim to provide the foundation for efficient, reliable, and performant AI inference in the post-transformer era.
-
-The age of high-speed, heterogeneous inference is approaching. The only question is: will you lead, follow, or watch the future pass you by?
+We have found no other representative implementation in the standing literature we have reviewed that brings physics-aware types, zero-copy heterogeneous execution, and automated model conversion together in one inference path. That is the direction we will keep building toward through our Fidelity Framework as the rest of the tooling comes into place.

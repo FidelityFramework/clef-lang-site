@@ -11,14 +11,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+Our Fidelity framework builds desktop applications with [our Clef language](https://clef-lang.com), targeting native user interfaces across multiple platforms while keeping the functional programming model. The layout system is one hard part of that: it has to stay functional and still give developers the panel, grid, and stacking primitives that established UI frameworks offer.
 
-The Fidelity framework aims to create a novel approach to building desktop applications with [the Clef language](https://clef-lang.com), enabling developers to create native user interfaces across multiple platforms while preserving functional elegance. One of the key challenges in building such a framework is developing a robust layout system that maintains the functional programming paradigm while providing the flexibility and power of established UI frameworks.
-
-This article explores how Fidelity can incorporate ideas from modern functional UI frameworks to create a pure Clef implementation of a window layout system without external dependencies, relying solely on Clef native code and integrated low level LVGL and Skia libraries. Additionally, we'll examine how Fidelity addresses the critical challenge of UI process prioritization through its compiler pipeline, a crucial aspect for developers familiar with platforms that leverage a modernized WPF design.
+This article describes how Fidelity can draw ideas from modern functional UI frameworks to build a pure Clef implementation of a window layout system without external dependencies, relying on Clef native code and the integrated low level LVGL and Skia libraries. We also examine how Fidelity is designed to address UI process prioritization through its compiler pipeline, which matters to developers familiar with platforms that use a modernized WPF design.
 
 > **Note for .NET Developers**: Unlike .NET frameworks that use concepts of threads and thread pools, Fidelity's native compilation architecture uses a different approach to concurrency. Rather than thinking about "UI threads" and "background threads," Fidelity operates with specialized processes and task scheduling. This article will explain the conceptual transition from the threading model to Fidelity's process-based architecture.
 
@@ -165,11 +160,11 @@ module Button =
         AttrBuilder.createEvent "Click" handler
 ```
 
-This process-aware attribute system would enable the compiler to verify processing safety at compile time, eliminating the need for runtime checks while maintaining a familiar programming model for developers coming from traditional .NET and Fable UI frameworks.
+This process-aware attribute system is designed to let the compiler verify processing safety at compile time, removing the need for runtime checks while keeping a familiar programming model for developers coming from traditional .NET and Fable UI frameworks.
 
 ## Compiler Integration and Process Coordination
 
-Unlike traditional UI frameworks that handle thread marshaling at runtime, Fidelity addresses the critical concern of process coordination through its compilation pipeline. This approach eliminates runtime overhead while ensuring that UI operations and background tasks are properly coordinated by design.
+Traditional UI frameworks handle thread marshaling at runtime. Fidelity is designed to address process coordination through its compilation pipeline instead, which would remove runtime overhead while coordinating UI operations and background tasks by construction.
 
 ### Compiler-Aware Process Boundaries
 
@@ -291,15 +286,14 @@ module VirtualDom =
         patch host diffs
 ```
 
-Unlike traditional virtual DOM implementations, Fidelity's virtual DOM would have compile-time process awareness, eliminating the need for runtime checks and process coordination. This aims to provide a similar update mechanism but with improved performance through static process analysis.
+Where traditional virtual DOM implementations check process context at runtime, our Fidelity virtual DOM is designed to carry process awareness at compile time, which would remove the need for those runtime checks. The update mechanism stays similar, with the process analysis moved into compilation.
 
 ## MVU Integration with Process-Aware Compiler
 
-The Elmish Model-View-Update (MVU) pattern in Fidelity could benefit significantly from compiler-assisted process coordination. Unlike the runtime approach common in many WPF-inspired frameworks, Fidelity's compiler would ensure process safety statically:
+The Elmish Model-View-Update (MVU) pattern in Fidelity could benefit from compiler-assisted process coordination. Where the runtime approach is common in many WPF-inspired frameworks, our Fidelity compiler would establish process safety statically:
 
 ```fsharp
-// In traditional functional UI frameworks, process safety is often handled at runtime
-// For example, in some frameworks you might see code like this:
+// traditional runtime process safety, handled in a dispatcher
 let runWithSyncDispatch (arg: 'arg) (program : Program<'arg, 'model, 'msg, #IView>) = 
     // Syncs view changes from non-UI processes through a dispatcher
     let syncDispatch (dispatch: Dispatch<'msg>) (msg: 'msg) =
@@ -325,7 +319,7 @@ This provides a familiar programming model but with improved performance and saf
 
 ### Timeline State Management with Process Awareness
 
-Fidelity's Timeline reactive system is designed to enhance the MVU pattern with built-in process awareness:
+Our Timeline reactive system is designed to extend the MVU pattern with built-in process awareness:
 
 ```fsharp
 // Timeline signals automatically manage process context
@@ -477,11 +471,11 @@ let createSharedRenderBuffer width height =
     // with proper process coordination
 ```
 
-This process-aware hybrid approach would allow Fidelity to leverage the strengths of both libraries while maintaining safety through compile-time verification.
+This process-aware hybrid approach is designed to let Fidelity use both libraries while keeping process safety through compile-time verification.
 
 ## Conclusion
 
-By learning from modern UI frameworks while focusing on LVGL and Skia integration, Fidelity aims to create a powerful, pure Clef layout system that provides the best of both worlds: the functional elegance of Clef with the performance and native feel of platform-specific implementations.
+By drawing from modern UI frameworks while focusing on LVGL and Skia integration, Fidelity is designed to provide a pure Clef layout system that pairs Clef's functional model with the performance and native feel of platform-specific implementations.
 
 The advantages of this approach include:
 
@@ -492,7 +486,7 @@ The advantages of this approach include:
 5. **Type Safety**: Strong typing that catches errors at compile time
 6. **Composability**: Reusable, composable components that follow functional programming principles
 
-For developers familiar with traditional WPF-style frameworks and their functional variants, Fidelity provides a familiar programming model with improved performance and safety characteristics. Process coordination happens at compile time rather than runtime, eliminating the overhead of runtime checks while maintaining safety guarantees.
+For developers familiar with traditional WPF-style frameworks and their functional variants, Fidelity is designed to keep a familiar programming model while moving process coordination to compile time. That coordination would happen during compilation rather than at runtime, removing the overhead of runtime checks while keeping the structural safety the compiler can verify.
 
 > **From Threads to Processes: A Conceptual Bridge for .NET Developers**
 > 
@@ -507,4 +501,4 @@ For developers familiar with traditional WPF-style frameworks and their function
 > 
 > This conceptual shift provides significant performance advantages while maintaining the familiar programming model that .NET and Fable developers expect.
 
-The Fidelity layout system aims to demonstrate that it's possible to combine the best ideas from existing functional UI frameworks while maintaining a pure Clef implementation that leverages the strengths of libraries like LVGL and Skia, all with compile-time safety guarantees.
+We want our Fidelity layout system to draw the ideas worth keeping from existing functional UI frameworks while staying a pure Clef implementation over libraries like LVGL and Skia, with process boundaries checked during compilation. That is the direction we will keep building toward as the rest of the framework comes into place.

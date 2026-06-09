@@ -11,14 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
+In 1998, [Andrew Appel published a paper](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) that changed how we think about compiler design. "SSA is Functional Programming" demonstrated that Static Single-Assignment form, the intermediate representation at the heart of modern optimizing compilers, is exactly equivalent to functional programming with nested lexical scope. This observation carries weight for hardware-software co-design.
 
-In 1998, [Andrew Appel published a paper](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) that heralded a change to how we should think about compiler design. "SSA is Functional Programming" demonstrated that Static Single-Assignment form, the intermediate representation at the heart of modern optimizing compilers, is exactly equivalent to functional programming with nested lexical scope. This insight has profound implications as we enter a new era of hardware-software co-design.
-
-For SpeakEZ Technologies, this revelation validates our approach with the Fidelity framework more than 25 years after that seminal paper's first publication: lowering Clef to native code through MLIR isn't just possible, it's aligned to the fundamental structure of well-principled compilation.
+We read that result as support for the direction we have taken with our Fidelity framework, more than 25 years after the paper's first publication. Lowering Clef to native code through MLIR is consistent with the structure of well-principled compilation.
 
 ## The Hidden Functional Program
 
@@ -26,7 +21,7 @@ Every imperative program contains a functional program waiting to be discovered.
 
 > "The SSA community draws pictures of graphs with basic blocks and flow edges, and the functional-language community writes lexically nested functions, but they're both doing exactly the same thing in different notation." - Andrew Appel
 
-This isn't merely a theoretical observation. The algorithms for optimal φ-function placement in SSA use dominance frontiers to discover the ideal nesting structure, exactly what a functional programmer would write naturally.
+The algorithms for optimal φ-function placement in SSA use dominance frontiers to discover the nesting structure that a functional programmer would write directly.
 
 Consider this imperative code and its SSA form:
 
@@ -68,7 +63,7 @@ L2: j2 ← φ(j4, j1)
 The φ-functions mark where control flow merges and values must be selected based on which path was taken. But look at the equivalent functional program:
 
 ```fsharp
-// Natural F# representation
+// the functional equivalent, written in Clef
 let rec loop j k =
     if k < 100 then
         let j', k' =
@@ -87,11 +82,11 @@ let result =
     loop j k
 ```
 
-The F# version directly expresses what SSA must construct: function parameters (instead of φ-functions), lexical scoping (instead of dominance relationships), and recursive calls (instead of back edges).
+The Clef version directly expresses what SSA must construct: function parameters (instead of φ-functions), lexical scoping (instead of dominance relationships), and recursive calls (instead of back edges).
 
-## Why MLIR Changes Everything
+## What MLIR Adds
 
-MLIR takes the SSA concept further by providing multiple levels of abstraction, each maintaining SSA form but at different semantic levels. This is where Clef's heritage in functional design becomes even more valuable.
+MLIR extends SSA by providing multiple levels of abstraction, each maintaining SSA form at a different semantic level. This is where Clef's heritage in functional design carries through.
 
 ### Traditional Compilation: Loss of Intent
 
@@ -109,14 +104,14 @@ async fn process_data(input: &[u8]) -> Result<Output, Error> {
 ; Complex state machine with no async semantics visible
 ```
 
-The compiler must transform the imperative async code into state machines, losing the high-level control flow information in the process. Rust's ownership model provides valuable compile-time guarantees, but those guarantees are checked before SSA transformation; the ownership information does not flow into LLVM IR where further optimizations occur.
+The compiler must transform the imperative async code into state machines, losing the high-level control flow information in the process. Rust's ownership model provides compile-time guarantees, but those guarantees are checked before SSA transformation; the ownership information does not flow into LLVM IR where further optimizations occur.
 
 ### Clef with MLIR: Preserving Structure
 
 With Clef and Fidelity's approach:
 
 ```fsharp
-// F# source with explicit control flow
+// Clef source with explicit control flow
 let processData input = async {
     let! validated = validate input
     let! transformed = transform validated
@@ -140,10 +135,10 @@ The structure maps directly to MLIR's dialects, preserving semantic information 
 
 ## Delimited Continuations: Making SSA Explicit
 
-While Appel showed that SSA is functional programming, the Fidelity framework takes this further by using delimited continuations to make the SSA structure explicit as the Composer compiler constructs the Program Hypergraph (PHG):
+Appel showed that SSA is functional programming. In our Fidelity framework we use delimited continuations to make the SSA structure explicit, which is how we intend the Composer compiler to construct the Program Hypergraph (PHG):
 
 ```fsharp
-// Traditional F# async
+// Clef async, the conventional form
 let traditionalAsync data = async {
     let! x = fetchData()
     let! y = processData x
@@ -159,18 +154,17 @@ let withDelimitedContinuations data =
     )
 ```
 
-The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. This isn't coincidence, it's the same mathematical structure expressed directly at the semantic level rather than discovered through multiple intermediate transforms.
+The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. The correspondence is structural: the same mathematical relationship expressed directly at the semantic level, rather than discovered through multiple intermediate transforms.
 
 ### Compilation Advantages
 
-This explicit structure enables several compilation advantages:
+In the design we are building toward, this explicit structure opens several compilation advantages:
 
-1. **Deterministic State Machines**: The compiler knows all possible state transitions at compile time
+1. **Deterministic State Machines**: all possible state transitions are known at compile time
 2. **Optimal Memory Layout**: Continuation boundaries provide natural points for memory management
 3. **Precise Resource Tracking**: Resources can be tied to continuation scopes
 
 ```fsharp
-// Fidelity's approach - resources tied to continuation boundaries
 let processWithResources data =
     reset (fun () ->
         let buffer = allocate 4096  // Tied to this continuation
@@ -183,7 +177,7 @@ let processWithResources data =
 
 ## Mojo: The def/fn Impedance Mismatch
 
-Mojo's fundamental split between Python-compatible `def` functions and performance-oriented `fn` functions reveals the challenge:
+Mojo's split between Python-compatible `def` functions and performance-oriented `fn` functions shows the challenge:
 
 ```python
 # Mojo can't reconcile dynamic and static in one model
@@ -194,16 +188,16 @@ fn performance_critical(x: Int) -> Int:  # Static, maps to SSA
     return process_fast(x)
 ```
 
-This split exists because dynamic languages can't naturally express the static structure that SSA requires. Clef doesn't suffer the burden of this split. Its type system and SSA-aligned design already express what SSA needs.
+This split exists because dynamic languages can't naturally express the static structure that SSA requires. Our Clef language carries one model: its type system and SSA-aligned design already express what SSA needs.
 
 ## Practical Implications for Systems Programming
 
 ### Memory Management Without Annotations
 
-Clef's abstractions compile efficiently because they already match SSA's structure:
+Our Clef abstractions are designed to compile efficiently because they already match SSA's structure:
 
 ```fsharp
-// High-level F# code with type-safe units and functional composition
+// Clef with units of measure and functional composition
 [<Measure>] type celsius
 [<Measure>] type fahrenheit
 
@@ -226,7 +220,7 @@ let processReadings (readings: SensorReading array) =
 // Each operation becomes a basic block with clear data flow
 ```
 
-This compiles to efficient MLIR because the structure already expresses what SSA represents:
+In our intended lowering, this maps to efficient MLIR because the structure already expresses what SSA represents:
 
 ```mlir
 // Natural MLIR representation - no reconstruction needed
@@ -287,35 +281,35 @@ vector<pair<int, double>> processReadings(vector<SensorReading>& readings) {
 
 Clef's operations ***are*** the SSA structure, where no reconstruction is needed.
 
-Rust occupies an interesting middle ground in this comparison. Rust's ownership model shares conceptual similarities with SSA's single-assignment property: each binding owns its value, and ownership transfer is explicit. Some have argued that Rust is therefore also a natural fit for MLIR. We see merit in this perspective; Rust's explicitness about ownership does provide information that compilers can exploit. However, Rust remains fundamentally imperative in control flow, requiring the same reconstruction that C++ needs. Rust's advantages lie in the safety guarantees it provides before compilation, not in the structure it provides during compilation. Both approaches have value; they optimize for different properties.
+Rust occupies a middle ground in this comparison. Rust's ownership model shares conceptual similarities with SSA's single-assignment property: each binding owns its value, and ownership transfer is explicit. Some have argued that Rust is therefore also a natural fit for MLIR. We see merit in this perspective; Rust's explicitness about ownership does provide information that compilers can exploit. However, Rust remains imperative in control flow, requiring the same reconstruction that C++ needs. Rust's advantages lie in the safety guarantees it provides before compilation, not in the structure it provides during compilation. Both approaches have value; they optimize for different properties.
 
-## The Revelation: Functional Programming IS Efficient Compilation
+## Functional Programming IS Efficient Compilation
 
-The point in combining Appel's work with modern MLIR is this:
+Combining Appel's work with MLIR brings out one point:
 
 > Functional programming isn't a high-level abstraction that must be compiled away, it's the natural structure of efficient compilation itself.
 
 When you write Clef code, you're writing in the same structure that optimizing compilers target. When you use delimited continuations, you're making explicit the control flow that SSA must represent. When you compose operations, you're creating the exact relationships that MLIR's passes optimize.
 
-This isn't about forcing functional programming onto systems development. It's recognizing that the most efficient compilation representations (SSA within MLIR) are inherently functional, making a language rooted in those principles the natural choice for MLIR's lowering strategy.
+The most efficient compilation representations (SSA within MLIR) are functional in structure, which makes a language rooted in those principles a fitting source for MLIR's lowering strategy. This is a claim about where the structure already lives, not a case for imposing functional programming on systems development.
 
-## Looking Forward: The Fidelity Advantage
+## Looking Forward
 
-By starting with Clef and compiling through MLIR, Fidelity achieves several advantages:
+By starting with Clef and compiling through MLIR, our Fidelity framework is designed for several advantages:
 
 1. **Natural Mapping**: No impedance mismatch between source and target
 2. **Preserved Intent**: High-level patterns survive through compilation
 3. **Better Optimization**: MLIR works with original structure, not reconstructions
 4. **Simpler Mental Model**: Developers write with intent naturally aligned to the compiler
 
-As we move toward an era of heterogeneous computing, CPUs, GPUs, TPUs, and custom accelerators, the ability to preserve high-level intent through compilation becomes crucial. MLIR's dialect system excels at this, and Clef's design provides an effective source language for expressing computations that can be efficiently mapped to diverse hardware.
+As heterogeneous computing spreads across CPUs, GPUs, TPUs, and custom accelerators, preserving high-level intent through compilation matters more. MLIR's dialect system is built for this, and we design our Clef language as a source for expressing computations that map onto diverse hardware.
 
-We should note that MLIR itself is language-agnostic, and projects like Rust-GPU demonstrate that imperative languages can target heterogeneous hardware effectively. The question is not whether a language with functional roots is the only path to MLIR but whether functional structure provides advantages in preserving semantic information through the compilation pipeline. Our experience suggests it does, particularly for the kinds of coordination and memory management patterns that Fidelity emphasizes. Different languages will continue to evolve their MLIR integration strategies, each bringing their own strengths to the heterogeneous computing challenge.
+MLIR itself is language-agnostic, and projects like Rust-GPU demonstrate that imperative languages can target heterogeneous hardware effectively. The open question is whether functional structure provides advantages in preserving semantic information through the compilation pipeline, rather than whether a language with functional roots is the only path to MLIR. Our experience suggests it does, particularly for the kinds of coordination and memory management patterns that Fidelity emphasizes. Different languages will continue to evolve their MLIR integration strategies, each bringing their own strengths to the heterogeneous computing challenge.
 
 ## Conclusion
 
-Andrew Appel's insight that "SSA is Functional Programming" isn't just a theoretical curiosity, it's a fundamental truth about efficient compilation. The Fidelity framework embraces this truth, using Clef not because we prefer any particular paradigm, but because Clef's design ***embodies*** the natural form of modern, structurally correct optimizing compilers.
+Andrew Appel's result that "SSA is Functional Programming" describes the structure of efficient compilation. We design our Fidelity framework around it, choosing Clef because Clef's design ***matches*** the form that modern optimizing compilers already target.
 
-When you write Clef code targeting MLIR through Fidelity, you're not fighting against the compilation model, you're working with it. Your source code largely expresses the SSA structure that other languages must reconstruct. Your delimited continuations make explicit the control flow that others must analyze. Your composition of operations directly maps to the optimization opportunities that MLIR can more easily transform.
+Clef code aimed at MLIR works with the compilation model rather than against it. The source expresses the SSA structure that other languages must reconstruct. Delimited continuations make explicit the control flow that others have to analyze. Composed operations map onto the optimization opportunities that MLIR's passes act on.
 
-This is why Clef is a natural fit for MLIR: not because we've made it work, but because at the deepest level, they speak the same language. That's the language of functional transformations that has been awaiting discovery at the heart of efficient compilation.
+That alignment is what drew us to MLIR as the lowering target, and it is the structure we will keep building our Composer compiler around as the rest of the framework comes into place.

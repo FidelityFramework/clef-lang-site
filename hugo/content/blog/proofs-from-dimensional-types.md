@@ -9,7 +9,7 @@ tags: ["Architecture", "Type Systems", "Innovation"]
 
 In 1989, Philip Wadler published ["Theorems for free!"](https://people.mpi-sws.org/~dreyer/tor/papers/wadler.pdf), a paper that demonstrated a remarkable property of polymorphic type systems: the type of a function, by itself, determines non-trivial theorems about that function's behavior. No implementation needs to be examined. No test cases need to be run. The type is the theorem.
 
-This result, grounding John Reynolds' earlier abstraction theorem (1983) in a form accessible to working programmers, has quietly underpinned the design of ML-family type systems for over three decades. Its influence on the Fidelity framework's Dimensional Type System is direct and foundational, and it deserves explicit acknowledgment.
+This result, grounding John Reynolds' earlier abstraction theorem (1983) in a form accessible to working programmers, has quietly underpinned the design of ML-family type systems for over three decades. It is a direct influence on our Dimensional Type System, and the lineage is worth tracing.
 
 ## The Parametricity Result
 
@@ -29,7 +29,7 @@ The DTS extends Hindley-Milner unification with dimensional annotations drawn fr
 
 Parametricity guarantees this uniformity. A multiplication function that works correctly for meters must work correctly for kilograms, for seconds, for any dimension, because the dimension variable is abstract. The function has no mechanism to dispatch on the dimension and do something different. The type prevents it.
 
-This is not a minor technical point. It is the formal reason that dimensional type inference is sound. When the DTS infers that a computation is dimensionally consistent, it is deriving a free theorem from the computation's polymorphic type. The inference is decidable (polynomial time, complete, principal) because the dimensional constraints form a system of linear equations over the integers, solved by Gaussian elimination. But the correctness of that inference, the reason the inferred types actually guarantee dimensional consistency of the compiled artifact, rests on parametricity.
+This is the formal reason that dimensional type inference is sound. When our DTS infers that a computation is dimensionally consistent, it is deriving a free theorem from the computation's polymorphic type. The inference is decidable (polynomial time, complete, principal) because the dimensional constraints form a system of linear equations over the integers, solved by Gaussian elimination. But the correctness of that inference, the reason the inferred types actually guarantee dimensional consistency of the compiled artifact, rests on parametricity.
 
 ## Persistence Through Lowering
 
@@ -59,7 +59,7 @@ Wadler's paper is explicitly an accessible reformulation of Reynolds' abstractio
 
 Reynolds also independently discovered continuations (as documented in his 1993 survey "The Discoveries of Continuations"), which provide the formal basis for Clef's DCont mechanism. The two contributions, abstraction (parametricity) and continuations (DCont), are the two formal pillars of the porous loop's typed interface:
 
-DCont provides the suspension and resumption mechanism. The recurrent model suspends mid-computation, passes its state as a delimited continuation to a domain actor, and resumes with the typed response.
+DCont provides the suspension and resumption mechanism. In the design we are building toward, the recurrent model suspends mid-computation, passes its state as a delimited continuation to a domain actor, and resumes with the response.
 
 Parametricity provides the guarantee that the suspension and resumption are dimensionally consistent. The continuation's type is polymorphic in the dimension; the domain actor's response must satisfy the same dimensional constraints regardless of which specific dimension is instantiated. This is a free theorem of the continuation's type.
 
@@ -98,9 +98,9 @@ The discipline that the (problem, technique) framing imposes is symmetric. Treat
 
 ## The Deeper Pattern
 
-Wadler's paper demonstrates a principle that recurs throughout the Fidelity framework's design: structure that is present in the type system generates properties of the compiled artifact ***for free***. Dimensional consistency, escape classification, grade preservation, coeffect propagation, and cross-target transfer fidelity are all instances of this principle. None requires runtime enforcement. None requires separate verification tooling. Each falls out of the type structure through parametricity.
+Wadler's paper demonstrates a principle that recurs throughout our framework's design: structure that is present in the type system generates properties of the compiled artifact for free. Dimensional consistency, escape classification, grade preservation, coeffect propagation, and cross-target transfer fidelity are all instances of this principle. None requires runtime enforcement. None requires separate verification tooling. Each falls out of the type structure through parametricity.
 
-This is the formal content of the claim that verification is a compilation byproduct: the types determine the theorems, the compiler infers the types, and the theorems follow. The cost is the type system's design. Once the design is in place, the theorems are "free" in the truest sense of its original meaning.
+This is the formal content of the claim that verification is a compilation byproduct: the types determine the theorems, the compiler infers the types, and the theorems follow. The cost is the type system's design. Once that design is in place, the theorems are free in Wadler's original sense, and that is the property we will keep building on as the verification stack fills out the tiers above the abelian fragment.
 
 ## References
 

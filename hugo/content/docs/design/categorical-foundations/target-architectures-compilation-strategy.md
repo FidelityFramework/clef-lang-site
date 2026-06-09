@@ -51,7 +51,7 @@ computeForce: float<kg> → float<kg> → float<m> → float<newtons>
 
 ## FPGA: Reconfigurable Fabric
 
-The FPGA target differs from CPU in three fundamental ways: numeric representations are configurable per computation, memory is spatially distributed across the fabric, and execution is inherently parallel at the operation level.
+The FPGA target differs from CPU in three ways: numeric representations are configurable per computation, memory is spatially distributed across the fabric, and execution is inherently parallel at the operation level.
 
 **Numeric representation:** Posit arithmetic implemented in DSP48 slices (on Xilinx targets) or equivalent multiply-accumulate blocks. The representation selection function evaluates posit widths against the dimensional range of each value. For posit32 with es = 2, the dynamic range extends to approximately \(10^{\pm 36}\), with best precision near unity.
 
@@ -140,7 +140,7 @@ Each boundary has a distinct transfer cost, bandwidth constraint, and precision 
 
 The compiler would resolve these boundaries during MLIR lowering, using the dimensional range analysis to determine whether a specific precision conversion is acceptable for the computation's requirements. The [DTS/DMM paper](/publications/dts-dmm/) formalizes this as cross-target transfer fidelity analysis (Section 4.4), and the [posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) provides the detailed example for the CPU ↔ FPGA case.
 
-In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and the inverse structure map exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel: information about the source stalk that does not survive into the target stalk, quantified by the dimensional range analysis. The fidelity score is a measure of how much of the source stalk the structure map preserves. This framing makes precise what the score is computing: not "quality" in the abstract, but the kernel size of a specific stalk-to-stalk homomorphism.
+In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and the inverse structure map exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel: information about the source stalk that does not survive into the target stalk, quantified by the dimensional range analysis. The fidelity score is a measure of how much of the source stalk the structure map preserves. This framing makes precise what the score is computing: the kernel size of a specific stalk-to-stalk homomorphism.
 
 Each lowering pass within a single target is itself an application of Hoare's *consequence rule* over the compilation sheaf's annotations. If the precondition (the stalk at the higher-level dialect) is preserved by the lowering pass, and the postcondition (the stalk at the lower-level dialect) is implied by what the higher-level dialect promised, then the lowering is sound and the dual-pass discharge confirms it. The [decidability sweet spot document](/docs/internals/verification/decidability-sweet-spot/) develops this Hoare-logic reading of the dual-pass architecture in detail.
 

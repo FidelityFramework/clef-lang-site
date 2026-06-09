@@ -11,17 +11,12 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 > This entry builds on concepts explored in [Unexpected Fusion](/blog/unexpected-fusion/), which outlines how F# synthesizes OCaml's type-safe functional programming with Erlang's actor model through the `MailboxProcessor` primitive. That foundation informs the unified abstraction proposed here.
 
 
-The actor model presents a compelling abstraction for concurrent and distributed systems. When building two frameworks that target fundamentally different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? The answer lies in recognizing that actors are defined by their semantics, not their implementation details.
+The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? The answer lies in recognizing that actors are defined by their semantics, not their implementation details.
 
-This entry explores the architectural decisions behind a unified actor abstraction that compiles to Olivier actors in Fidelity and Durable Object-backed actors in Conclave. By designing at the right level of abstraction, developers write actor behaviors once and deploy them to either target without modification.
+This entry explores the architectural decisions behind a unified actor abstraction designed to compile to our Olivier actors in Fidelity and to Durable Object-backed actors in Conclave. By designing at the right level of abstraction, developers would write actor behaviors once and deploy them to either target without modification.
 
 ## The Core Tension
 
@@ -266,7 +261,7 @@ type Prospero(strategy: SupervisionStrategy) =
             restartFrom id
 ```
 
-RAII cleanup happens at continuation boundaries. When an actor terminates or restarts, its memory arena releases deterministically. The `Prospero` supervisor, named for the orchestrating figure in Shakespeare's *The Tempest*, runs on an elevated thread and monitors child actors for failures. Its role is to apply supervision policies: restart the failed actor alone, restart all siblings, or restart actors spawned after the failed one. This [actor-oriented architecture](/blog/the-case-for-actor-oriented-architecture/) provides process-level protection without runtime overhead.
+RAII cleanup happens at continuation boundaries. When an actor terminates or restarts, its memory arena releases deterministically. Our `Prospero` supervisor, named for the orchestrating figure in Shakespeare's *The Tempest*, runs on an elevated thread and monitors child actors for failures. Its role is to apply supervision policies: restart the failed actor alone, restart all siblings, or restart actors spawned after the failed one. This [actor-oriented architecture](/blog/the-case-for-actor-oriented-architecture/) provides process-level protection without runtime overhead.
 
 ## Conclave Runtime with WebSockets
 
@@ -1339,7 +1334,7 @@ The track derivation function maps actor addresses to MoQ track identifiers. The
 
 ### Multiplexed Actor Streams
 
-Head-of-line blocking represents a fundamental limitation of single-stream protocols. When multiple logical channels share one TCP connection (as with HTTP/2 or WebSocket), a delay in processing one message blocks all subsequent messages regardless of their destination. MoQ eliminates this problem by mapping each logical channel to an independent QUIC stream.
+Head-of-line blocking is a limitation of single-stream protocols. When multiple logical channels share one TCP connection (as with HTTP/2 or WebSocket), a delay in processing one message blocks all subsequent messages regardless of their destination. MoQ eliminates this problem by mapping each logical channel to an independent QUIC stream.
 
 For actor systems, this translates directly: each actor-to-actor relationship gets its own stream. A supervisor monitoring 50 child actors receives heartbeats on 50 independent streams. A slow heartbeat from one child does not delay processing of heartbeats from other children. This independence is particularly valuable for supervision, where timely failure detection prevents cascading outages.
 
@@ -1512,6 +1507,6 @@ The pipeline also illustrates actor model benefits for AI workloads, a theme exp
 
 Considering protocol separately from transport enables a clear actor architecture across different runtimes. BAREWire provides the common language; the transport adapts to each platform's strengths. By defining actor behaviors as pure functions that produce effects, and letting target-specific runtimes interpret those effects, we achieve a consistent developer experience without sacrificing platform-appropriate optimizations.
 
-Developers write actor logic once. The same `actor { }` computation expression compiles to Olivier actors communicating over IPC in Fidelity, Durable Object actors communicating over WebSocket in Conclave, or MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable; transport concerns stay in the runtime layer.
+Developers write actor logic once. The same `actor { }` computation expression is designed to compile to our Olivier actors communicating over IPC in Fidelity, to Durable Object actors communicating over WebSocket in Conclave, or to MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable; transport concerns stay in the runtime layer.
 
-This architectural direction enables several practical benefits: shared testing infrastructure for actor behaviors, gradual migration paths between deployment targets, reduced cognitive overhead for teams working across both frameworks, and the possibility of cross-target actor communication through transport bridges. As MoQ matures, the transport selection layer can incorporate it without disturbing actor code or protocol definitions. The actor model's fundamental abstraction, independent agents communicating through messages, translates cleanly to native, edge, and managed environments when protocol and transport are properly separated.
+This architectural direction is meant to carry several practical benefits: shared testing infrastructure for actor behaviors, gradual migration paths between deployment targets, reduced cognitive overhead for teams working across both frameworks, and cross-target actor communication through transport bridges. As MoQ matures, the transport selection layer can incorporate it without disturbing actor code or protocol definitions. The work continues toward that separation of protocol and transport, and I expect the actor abstraction to keep earning its place as more of the constellation comes online.

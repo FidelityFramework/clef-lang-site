@@ -11,16 +11,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Two capabilities define the architectural foundation of the Fidelity framework:
 - Deterministic Memory Management (DMM)
 - Dimensional Type System (DTS)
 
-While each addresses distinct engineering challenges, their real power emerges from a unifying insight: memory semantics and physical semantics are both dimensions. They survive compilation the same way, constrain code generation the same way, and enable verification the same way. This cohesion creates capabilities that no other toolchain provides.
+While each addresses distinct engineering challenges, they rest on a single insight: memory semantics and physical semantics are both dimensions. They survive compilation the same way, constrain code generation the same way, and enable verification the same way. We have found no other representative implementation of this cohesion in the standing literature we have reviewed.
 
 This document explores why these systems belong together, how they enable hardware-aware compilation from a single source, and what this means for developers building systems that interface with physical reality.
 
@@ -28,7 +23,7 @@ This document explores why these systems belong together, how they enable hardwa
 
 To understand why DMM and DTS matter now, we must understand the constraints that shaped the previous generation of language design.
 
-When Java, C#, Python, and F# emerged, the computing landscape looked fundamentally different. RAM was measured in single-digit megabytes. "Hardware" meant x86, perhaps SPARC. The operating system itself competed with applications for scarce resources. A single CPU with a single floating-point unit defined the execution model. In that context, language designers made reasonable engineering tradeoffs: erase type information early to reduce memory pressure, let garbage collectors handle memory so developers could focus on business logic, and treat the runtime as a trusted intermediary between programmer intent and machine execution.
+When Java, C#, Python, and F# emerged, the computing landscape looked very different. RAM was measured in single-digit megabytes. "Hardware" meant x86, perhaps SPARC. The operating system itself competed with applications for scarce resources. A single CPU with a single floating-point unit defined the execution model. In that context, language designers made reasonable engineering tradeoffs: erase type information early to reduce memory pressure, let garbage collectors handle memory so developers could focus on business logic, and treat the runtime as a trusted intermediary between programmer intent and machine execution.
 
 Python's lineage illustrates this particularly well. ABC was a teaching language at CWI Amsterdam in the 1980s. Python emerged in 1991 as Guido van Rossum's scripting tool. NumPy arrived in 2005 to give researchers fast arrays. PyTorch and TensorFlow followed a decade later. At every step, the assumption was consistent: a knowledgeable human supervises the computation. The professor knows that column three contains velocity in meters per second. The graduate student knows which tensor axis represents batch versus sequence. The researcher validates results against physical intuition before publication.
 
@@ -62,7 +57,7 @@ This distinction matters. Clef is to F#'s compiler heritage what [Chris Lattner'
 
 **Statically Resolved Type Parameters** that enable compile-time specialization without source-level duplication.
 
-These aren't incidental features; they form a coherent toolkit for expressing the kinds of abstractions that systems programming requires. The beauty is that these come from a 25-year long track record of success. The syntax remains largely unchanged. The semantics are preserved. The idioms work the same way. What changes is what survives "in the machinery" through our innovative compilation pathway.
+These aren't incidental features; they form a coherent toolkit for expressing the kinds of abstractions that systems programming requires. Clef inherits them from a 25-year track record in F#. The syntax remains largely unchanged. The semantics are preserved. The idioms work the same way. What changes is what survives "in the machinery" through our compilation pathway.
 
 In standard F#, Units of Measure erase before IL generation because the .NET BCL and CLR cannot represent dimensional metadata. The `inline` keyword is opt-in because aggressive inlining conflicts with the CLR JIT's assumptions. Both features are held out as optional features by platform constraints, not design flaws.
 
@@ -128,7 +123,7 @@ DTS occupies a specific, well-understood position on this spectrum:
 
 In their original form, F#'s Units of Measure (including the FSharp.UMX extension library) are phantom type parameters. They constrain the type checker but erase before code generation because the .NET runtime cannot represent them. By contrast, our DTS materializes these phantom types as structured refinements that persist through the compiler's intermediate representation. The pivotal restriction, inherited from the Liquid Haskell tradition, is that each dimensional category maps to a decidable SMT theory: physical unit algebra maps to abelian group theory, memory space compatibility to enum sorts, width constraints to bitvector theory, and so on. Because each theory is decidable, the solver always terminates with a definitive answer; no fuel heuristics, no "unknown" results, no divergence.
 
-The deliberate tradeoff: DTS gives up MLTT's full propositions-as-types in exchange for guaranteed decidability and the ability to preserve type information through compilation to multiple hardware targets. This is not a limitation but a design choice rooted in the observation that systems programming constraints: physical units, memory access modes, wire layouts, substrate compatibility, are inherently structured and finite. They do not require the full power of dependent types. They require the solver to always say yes or no.
+The deliberate tradeoff: our DTS gives up MLTT's full propositions-as-types in exchange for decidability and the ability to preserve type information through compilation to multiple hardware targets. This choice rests on an observation about systems programming constraints. Physical units, memory access modes, wire layouts, and substrate compatibility are inherently structured and finite. They do not require the full power of dependent types. They require the solver to always say yes or no.
 
 ### Samples of Dimensions in Fidelity
 
@@ -144,7 +139,7 @@ The deliberate tradeoff: DTS gives up MLTT's full propositions-as-types in excha
 
 **Domain identifiers**: customerId, orderId, sessionId. Preventing the common bug of passing the wrong ID to an API.
 
-These dimensions don't erase after type checking. They flow through the [Program Semantic Graph](/docs/design/program-semantic-graph/) and inform code generation for any target. Eventually they *are* erased, as a ***zero cost*** abstraction, but not until after they have provided all of information needed for an efficient, safe and fast compute graph.
+These dimensions don't erase after type checking. They flow through our [Program Semantic Graph](/docs/design/program-semantic-graph/) and inform code generation for any target. They are erased eventually, as a zero-cost abstraction, but not until after they have supplied the information needed for an efficient and safe compute graph.
 
 ```fsharp
 // Physical computation with verified dimensions
@@ -165,7 +160,6 @@ type TemperatureSensor = {
 }
 
 let readTemperature (sensor: TemperatureSensor) : float<celsius> =
-    // Compiler knows: read-only peripheral access returning celsius
     MemoryMapped.read sensor.Address
 ```
 
@@ -315,7 +309,7 @@ The proof obligations are allocation-agnostic. Whether `output` lives in an aren
 
 ## Differentiation Through Scope
 
-Other projects also target MLIR. Modular's Mojo compiles Python-syntax code through MLIR to optimized machine code. The question naturally arises: what distinguishes Fidelity's approach?
+Other projects also target MLIR. Modular's Mojo compiles Python-syntax code through MLIR to optimized machine code. The question naturally arises: what distinguishes our approach?
 
 The answer lies in scope, not competition. Modular has built excellent infrastructure for composing expert-written kernels for ML inference. Their graph compiler operates on tensor graphs that are already dataflow representations. When they fuse `matmul+bias+relu` into a single kernel, they're optimizing arithmetic on tensors of shape `[batch, sequence, hidden]`. This is valuable work that serves the ML inference use case well.
 
@@ -323,9 +317,9 @@ What Modular cannot preserve is dimensional semantics, because those semantics w
 
 Fidelity addresses a different problem. The [Program Semantic Graph](/docs/design/program-semantic-graph/) represents general Clef programs with control flow, recursion, closures, and pattern matching. Via the equivalence between SSA and functional programming established by Appel[^6], the same structure can be interpreted as control-flow graph (for CPU/sequential targets) or dataflow graph (for FPGA/spatial targets). Dimensional constraints are invariant across both interpretations.
 
-This isn't criticism. Different solution spaces require different architectures. But the asymmetry is worth noting: Fidelity's PSG can represent tensor computations and lower them through MLIR to optimized kernels. That's just dataflow with arithmetic, which the graph handles natively and with extreme efficiency. The reverse isn't true. Modular cannot reconstruct the semantic information it never had: dimensional constraints, physical invariants, or the control-flow/dataflow duality that enables targeting other advanced accelerators. They do their thing well. We can do their thing *and* everything else that our innovations make possible.
+This isn't criticism. Different solution spaces require different architectures. But the asymmetry is worth noting: our PSG can represent tensor computations and lower them through MLIR to optimized kernels. That's just dataflow with arithmetic, which the graph handles natively. The reverse isn't true. Modular cannot reconstruct the semantic information it never had: dimensional constraints, physical invariants, or the control-flow/dataflow duality that enables targeting other advanced accelerators. The infrastructure Modular has built serves its scope well, and the PSG covers that same tensor-kernel ground while retaining the semantic information their pipeline discards.
 
-This matters concretely. A physics-dependent neural network built with other tools may produce outputs that fit training data. But lurking behind the scenes are violations of conservation of energy, impossible accelerations, and mixed reference frames. This is "AI hallucination" in a nutshell. No standard compiler catches these errors because dimensional information was never encoded. Fidelity changes this: auto-differentiation respects dimensional constraints, gradients carry physical units, and loss functions are verified for dimensional consistency. The training dynamics stay grounded in physical reality because the type system won't allow otherwise.
+This matters concretely. A physics-dependent neural network built with other tools may produce outputs that fit training data. But lurking behind the scenes are violations of conservation of energy, impossible accelerations, and mixed reference frames. This is "AI hallucination" in a nutshell. No standard compiler catches these errors because dimensional information was never encoded. Our Fidelity design changes this. Auto-differentiation is designed to respect dimensional constraints, gradients carry physical units, and loss functions are checked for dimensional consistency. The training dynamics stay grounded in physical reality because the type system won't represent the alternative.
 
 ## The Ada/VHDL Heritage
 
@@ -367,7 +361,7 @@ Every framework asks developers to learn something new. The question is whether 
 
 For F# developers, the language is familiar. Computation expressions work the same way. Active patterns work the same way. Units of Measure work the same way, except now they don't erase. The new learning is understanding what compilation to native code means: deterministic memory lifetimes, explicit allocation strategies, preservation of dimensional information through to machine code.
 
-The verification depth is opt-in. Most code needs no SMT proofs. Developers add verification where the domain demands it: safety-critical paths, regulatory requirements, high-assurance components. The framework handles everything from casual tooling to the most stringent certification requirements.
+The verification depth is opt-in. Most code needs no SMT proofs. Developers add verification where the domain demands it: safety-critical paths, regulatory requirements, high-assurance components. The design is meant to span this range, from casual tooling to stringent certification requirements.
 
 ```fsharp
 // Simple code: no proofs needed
@@ -387,7 +381,7 @@ The same language, the same idioms, different levels of assurance based on the a
 
 Modern systems don't run on single architectures. A robotics application might process sensor data on an FPGA, run inference on a GPU, execute control logic on a CPU, and communicate over a network. Current practice requires different languages, different toolchains, and manual coordination at every boundary.
 
-Fidelity's unified representation enables a completely new set of options for designers, integrators and decision-makers. For the first time, the same elegant Clef semantics can compile to appropriate code for each target. Dimensional constraints verified once apply across all targets. Memory semantics appropriate to each platform are generated from the same source.
+Our unified representation is designed to open a new set of options for designers, integrators and decision-makers. The same Clef semantics would compile to appropriate code for each target. Dimensional constraints verified once apply across all targets. Memory semantics appropriate to each platform are generated from the same source.
 
 ```fsharp
 // Single source, multiple targets
@@ -406,17 +400,17 @@ let processAndControl (sensor: SensorInput<celsius>) =
     command
 ```
 
-This is the promise of DMM and DTS together: a coherent foundation for systems that span architectural boundaries while maintaining semantic consistency throughout. Not through magic, but through simply preserving the information that makes consistency verifiable.
+This is what our DMM and DTS aim for together: a coherent foundation for systems that span architectural boundaries while maintaining semantic consistency throughout. The mechanism is preserving the information that makes consistency verifiable.
 
 ## Conclusion
 
-The Fidelity framework bets on a specific thesis: that preserving semantic information through compilation yields capabilities worth the engineering investment. The ***zero-cost*** abstraction that enables these capabilities are potentially industry-changing. DMM provides deterministic memory management that makes resource lifetimes explicit and verifiable. DTS provides dimensional types that survive compilation to inform code generation in a way that has never existed before. Together, they enable hardware-aware compilation from a single source with verified consistency across targets.
+Our Fidelity framework bets on a specific thesis: that preserving semantic information through compilation yields capabilities worth the engineering investment. The zero-cost abstraction that carries this is what makes those capabilities reachable. DMM provides deterministic memory management that makes resource lifetimes explicit and verifiable. DTS provides dimensional types that survive compilation to inform code generation. We have found no other representative implementation of this combination in the standing literature we have reviewed. Together, they are designed to support hardware-aware compilation from a single source with verified consistency across targets.
 
 While this might not right approach for every domain, it has a high degree of reach. Web services don't need meters per second verified at compile time, but both .NET and Fable compiled versions of F# can handle that domain admirably. Business applications don't need deterministic microsecond-level resource cleanup, but F# has handled that efficiently for a generation. The tooling that exists serves those domains well.
 
-And while we see the Fidelity framework as a general systems platform that can span from the server to the microcontroller, we see particular strength in targeting systems that interface with physical reality. The language is concise and familiar. The compilation target is native code via MLIR. The semantic information that previous models would discard now survives to do mission-critical work.
+And while we see our Fidelity framework as a general systems platform that can span from the server to the microcontroller, we see particular strength in targeting systems that interface with physical reality. The language is concise and familiar. The compilation target is native code via MLIR. The semantic information that previous models would discard is meant to survive and do mission-critical work.
 
-The multi-stack world is here. The question is whether our tools will rise to meet it.
+The multi-stack world is already here, and it is the work we will keep building toward as the design comes into place.
 
 ---
 

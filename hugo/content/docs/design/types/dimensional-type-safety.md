@@ -11,22 +11,17 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 When the Mars Climate Orbiter burned up in the Martian atmosphere on September 23, 1999, it wasn't because of faulty sensors or software bugs in the traditional sense. The spacecraft's navigation software expected metric units while Lockheed Martin's ground software provided imperial[^1]. A simple dimensional mismatch, caught by neither compiler nor testing, destroyed a $327 million mission. This wasn't an isolated incident but a recurring pattern across safety-critical systems that the Ada programming language community had been working to prevent since the early 1980s[^2].
 
-Thirty years later, we're building the Fidelity framework with a bold claim: **the same Clef source code can target CPUs, GPUs, NPUs, FPGAs, and CGRAs**. This isn't aspirational marketing - it's a design consequence of choices we made when we hard-forked the F# compiler to create **Clef**. Central to this capability is something that might seem modest: the integration of units of measure as a compiler intrinsic rather than a library feature. But as Ada and VHDL demonstrated decades ago, dimensional type safety isn't just about catching unit conversion errors - it's the foundation for expressing programs in ways that naturally translate between control-flow and dataflow execution models.
+Thirty years later, we are building our Fidelity framework toward a design goal: **the same Clef source code can target CPUs, GPUs, NPUs, FPGAs, and CGRAs**. This is a design consequence of choices we made when we hard-forked the F# compiler to create **Clef**. Central to this capability is the integration of units of measure as a compiler intrinsic rather than a library feature. As Ada and VHDL demonstrated decades ago, dimensional type safety does more than catch unit conversion errors. It is the foundation for expressing programs in ways that translate between control-flow and dataflow execution models.
 
 This article examines why we made this architectural decision, how it relates to proven techniques in hardware synthesis, and what it means for the future of the Fidelity framework.
 
 ## A Note for .NET Developers: Why Clef Exists
 
-Before diving into the technical details, we should address a question that F# developers familiar with the .NET ecosystem will naturally ask: **Why fork the F# compiler?**
+F# developers familiar with the .NET ecosystem will ask a natural question: **Why fork the F# compiler?**
 
-The answer is not that we wanted to abandon .NET or create a competing ecosystem. The .NET runtime is excellent for what it does - managed execution with garbage collection, cross-platform deployment, and a rich standard library. For many F# applications, .NET is the right target. We here at SpeakEZ Technologies use it *every day*. It's the basis of our bootstrapping for the Composer compiler.
+The answer is not that we wanted to abandon .NET or create a competing ecosystem. The .NET runtime is well suited to managed execution with garbage collection, cross-platform deployment, and a rich standard library. For many F# applications, .NET is the right target. We use it daily as the basis of our bootstrapping for the Composer compiler.
 
 But Clef serves a different purpose. Our goal with the Fidelity framework is to compile Clef to native code for scenarios where:
 
@@ -34,9 +29,9 @@ But Clef serves a different purpose. Our goal with the Fidelity framework is to 
 - **Deterministic memory behavior** is required (real-time systems, AI, HPC)
 - **Non-Von Neumann architectures** are the target (FPGAs, CGRAs, spatial accelerators)
 
-These requirements fundamentally conflict with the assumptions baked into IL (Intermediate Language) and the CLR. IL assumes garbage collection. It assumes a sequential, Von Neumann execution model. It assumes reference semantics with managed heap allocation.
+These requirements conflict with the assumptions baked into IL (Intermediate Language) and the CLR. IL assumes garbage collection. It assumes a sequential, Von Neumann execution model. It assumes reference semantics with managed heap allocation.
 
-To target the full spectrum of modern compute architectures, we needed a compilation path that preserves semantic information all the way down to hardware - information that IL necessarily erases. This isn't a criticism of .NET; it's recognition that different targets require different compilation strategies.
+To target the full spectrum of modern compute architectures, we needed a compilation path that preserves semantic information all the way down to hardware, information that IL necessarily erases. This is not a criticism of .NET. Different targets require different compilation strategies.
 
 **Clef is not a replacement for .NET**. It's a transformation of Clef's semantic richness into a form that can flow through MLIR to diverse backends. The same Clef language, the same developer experience, but with a compilation path designed for native and hardware targets from the ground up. This means that the normal idioms that a .NET developer might expect will diminish with native Clef patterns. We don't have nulls (we use voption everywhere). We don't have BCL norms. And most salient here, we don't have FSharp.UMX as a separate library. It's built right into the Clef core.
 
@@ -148,7 +143,7 @@ let time : float<seconds> = 9.58<seconds>
 let velocity = distance / time  // float<meters/seconds>
 ```
 
-This is powerful but limited to numeric types (`float`, `decimal`, `int`, etc.). FSharp.UMX extended this through the `[<MeasureAnnotatedAbbreviation>]` attribute:
+This works but is limited to numeric types (`float`, `decimal`, `int`, etc.). FSharp.UMX extended this through the `[<MeasureAnnotatedAbbreviation>]` attribute:
 
 ```fsharp
 // FSharp.UMX approach (library-based)
@@ -162,13 +157,13 @@ let processCustomer (id: CustomerId) =
 
 This approach works within standard F# and .NET. It provides non-numeric dimensional safety through the existing type system. For .NET applications, FSharp.UMX is an excellent solution.
 
-**The Fidelity framework owes a conceptual debt to FSharp.UMX** for demonstrating the power of extending units of measure beyond numerics.
+**Our Fidelity framework owes a conceptual debt to FSharp.UMX** for demonstrating that units of measure extend beyond numerics.
 
 > Our approach differs from .NET implementation but shares the same fundamental insight: dimensional constraints are too valuable to limit to numbers.
 
 ## Beyond Library to Intrinsic: The Clef Decision
 
-In Clef and the Fidelity framework, we've integrated non-numeric units of measure as a **compiler intrinsic** rather than a library feature. This distinction matters enormously for code generation.
+In Clef and our Fidelity framework, we have integrated non-numeric units of measure as a **compiler intrinsic** rather than a library feature. This distinction matters for code generation.
 
 When units of measure are a library feature (as in FSharp.UMX on .NET), the compiler treats them as phantom types that are erased before code generation. The runtime sees no trace of the dimensional information - it exists purely for type checking.
 
@@ -393,7 +388,7 @@ Rust can target FPGAs through projects like Rust-GPU and various HLS tools. But 
 
 The dimensional type system does its work in a specific algebraic corner: the free abelian group on the base units, with operations that preserve the group structure. Within that corner, every consistency check reduces to integer linear algebra, every inference is decidable in polynomial time, and parametricity guarantees that the result of the check survives every parametric lowering pass. The engineer pays no annotation cost, because the type structure does the proof. This is the genuinely free fragment.
 
-The corner has a boundary, and it is worth being explicit about where it falls. Properties that involve *non-abelian* group actions (rotor conjugation in the Clifford algebra, gauge transformations in physics-aware models, permutation symmetries in graph neural networks) are equivariance properties rather than equality properties, and parametricity over the abelian dimensional group is silent about them. Mehta and Hsu's recent symmetry Hoare logic [(arXiv:2509.00587, OOPSLA '25)](https://arxiv.org/abs/2509.00587) is the natural assertional layer for this case: it generalizes Hoare's pre/postcondition discipline to group actions, where the precondition is "the input is in this orbit" and the postcondition is "the operation is equivariant under this group." The dimensional fragment is the abelian special case of that framework, where the group is free abelian and the equivariance reduces to vector equality. Equivariant neural networks, conservation-law verification, and gauge-aware physics models live one step further out, in the non-abelian regime where assertions become load-bearing.
+The corner has a boundary, and where it falls is the load-bearing question. Properties that involve *non-abelian* group actions (rotor conjugation in the Clifford algebra, gauge transformations in physics-aware models, permutation symmetries in graph neural networks) are equivariance properties rather than equality properties, and parametricity over the abelian dimensional group is silent about them. Mehta and Hsu's recent symmetry Hoare logic [(arXiv:2509.00587, OOPSLA '25)](https://arxiv.org/abs/2509.00587) is the natural assertional layer for this case: it generalizes Hoare's pre/postcondition discipline to group actions, where the precondition is "the input is in this orbit" and the postcondition is "the operation is equivariant under this group." The dimensional fragment is the abelian special case of that framework, where the group is free abelian and the equivariance reduces to vector equality. Equivariant neural networks, conservation-law verification, and gauge-aware physics models live one step further out, in the non-abelian regime where assertions become load-bearing.
 
 The Fidelity framework treats both fragments as compatible *sheaves over the same compilation poset*: the abelian sheaf is checked for free by Tier 1, and the symmetry sheaf would be checked by an assertional layer that reuses the same dual-pass discharge mechanism with a different stalk category. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) makes this categorical view precise, and the [triangle without mystery](/blog/a-triangle-without-mystery/) post sketches why the abelian and non-abelian cases share enough structure to live in the same framework.
 
@@ -414,13 +409,13 @@ At each stage, the dimensional types provide semantic information that improves 
 
 Ada proved that dimensional type safety catches real bugs in real systems. VHDL proved that dimensional information can guide hardware synthesis. FSharp.UMX proved that dimensional constraints extend naturally to non-numeric types. Decades of HLS research proved that control-flow programs can be automatically transformed to dataflow execution.
 
-The Fidelity framework combines these proven techniques with Clef's expressive type system and MLIR's flexible compilation infrastructure. By making dimensional types intrinsic to the compiler rather than a library feature, we preserve semantic information that has traditionally been lost during compilation.
+Our Fidelity framework combines these proven techniques with Clef's expressive type system and MLIR's flexible compilation infrastructure. By making dimensional types intrinsic to the compiler rather than a library feature, we preserve semantic information that has traditionally been lost during compilation.
 
-This isn't speculative research. The control-flow to dataflow transformation is implemented in production HLS tools. The dimensional type systems are proven in safety-critical Ada and VHDL codebases. The MLIR infrastructure provides a principled path to diverse backends.
+The pieces this rests on are not speculative. The control-flow to dataflow transformation is implemented in production HLS tools. The dimensional type systems are proven in safety-critical Ada and VHDL codebases. The MLIR infrastructure provides a principled path to diverse backends.
 
-What's new is putting these pieces together with a language designed for developer productivity. Clef developers can write expressive, concurrent code with rich type safety. That code can target CPUs today, GPUs soon, and spatial architectures as the ecosystem matures. The dimensional types don't just catch bugs - they carry semantic intent through the entire compilation pipeline.
+What is new is putting these pieces together under one language designed for developer productivity. Clef developers write expressive, concurrent code with rich type safety. That code can target CPUs today, GPUs soon, and spatial architectures as the ecosystem matures. The dimensional types carry semantic intent through the entire compilation pipeline rather than catching bugs alone.
 
-**This is why we created Clef**. Not to replace .NET, but to transform Clef's semantic richness into a form that can flow to any computational substrate. The same language, the same developer experience, but with a compilation path designed from the ground up for the heterogeneous computing future.
+This is the reason we built Clef as its own compilation path: to carry Clef's semantic richness into a form that can flow to any computational substrate. That is the design we will keep building toward as the framework reaches each new target.
 
 ---
 

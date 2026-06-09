@@ -60,7 +60,7 @@ In high-performance computing, the adjoint method computes sensitivities of simu
 
 In quantum mechanics, every unitary operator \(U\) has a conjugate \(U^\dagger\) such that \(UU^\dagger = U^\dagger U = I\). This is the quantum instance of the adjoint correspondence: forward evolution paired with its inverse, constrained by unitarity (the quantum analogue of the triangle identities).
 
-The mathematics are identical. The substrate differs.
+Across these three domains the adjoint structure is the same algebraic object; what changes is the substrate on which it runs.
 
 ## What This Means for Fidelity
 

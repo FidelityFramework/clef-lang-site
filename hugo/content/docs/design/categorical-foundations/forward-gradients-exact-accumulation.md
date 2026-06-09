@@ -18,7 +18,7 @@ Reverse-mode automatic differentiation (backpropagation) has a well-known memory
 
 This is a structural property of reverse-mode AD, not an implementation detail. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation that the computation imposes on its environment.
 
-Gradient checkpointing and other memory-reduction techniques trade compute for memory, recomputing activations during the backward pass to avoid storing them. These techniques reduce the constant factor but do not change the fundamental structure: reverse-mode AD requires either storing or recomputing intermediate values.
+Gradient checkpointing and other memory-reduction techniques trade compute for memory, recomputing activations during the backward pass to avoid storing them. These techniques reduce the constant factor but do not change the structure: reverse-mode AD requires either storing or recomputing intermediate values.
 
 ## The Forward Gradient
 
@@ -57,7 +57,7 @@ The multi-tangent extension preserves this property. \(K\) tangent vectors propa
 
 Forward-mode computes directional derivatives via inner products. The inner product \(\langle \nabla f(\theta), v \rangle\) is an accumulation of products, exactly the operation the posit quire makes exact.
 
-The quire holds intermediate multiply-add results without rounding. For posit32, the quire occupies \(n^2/2 = 512\) bits = 64 bytes, exactly one cache line. Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property is significant for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
+The quire holds intermediate multiply-add results without rounding. For posit32, the quire occupies \(n^2/2 = 512\) bits = 64 bytes, exactly one cache line. Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property matters for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
 
 The quire's coeffect profile in this context:
 
@@ -85,7 +85,7 @@ The accumulation loop that computes \(\langle \nabla f(\theta), v \rangle\) main
 
 The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le n^2/2\) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property; the framework derives it from the layer's parameter count, the posit width, and the quire width, which are all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
 
-The Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) is the structural reason the same invariant can be checked at every lowering pass: each lowering is a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair that survives the functor's action. In sheaf-theoretic language, the quire invariant is a section of the accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the broader compositional story; here it is enough to note that the quire's exactness is a verifiable property at every stage from PSG to native binary, not only at the high-level mathematical specification.
+The Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) is the structural reason the same invariant can be checked at every lowering pass: each lowering is a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair that survives the functor's action. In sheaf-theoretic language, the quire invariant is a section of our accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the broader compositional story; here it is enough to note that the quire's exactness is a verifiable property at every stage from PSG to native binary, not only at the high-level mathematical specification.
 
 ## Dimensional Consistency Under Differentiation
 

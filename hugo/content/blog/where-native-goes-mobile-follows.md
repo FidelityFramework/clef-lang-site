@@ -26,9 +26,9 @@ flowchart LR
     Composer --> MCU["STM32, RA6M5<br>bare ELF / picolibc"]
 ```
 
-In contrast to the mobile runtime ecosystems for mobile, our approach to mobile and embedded programming was built from **the *other* direction**. We embrace the solution space with direct, native compilation across heterogeneous platforms. The compiler architecture and binding tooling were chosen because they support producing native artifacts for various targets without a bulky runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary technologies. What follows walks through our early design decisions that reveal our unique approach to truly broad cross-platform native capability. Back end reach such as with LLVM platform tuples serve as the low-level substrate, with two adjacent UI patterns our framework supports today. Along with per-platform packaging, we share our design for a language and framework mechanism that lets one design ethos satisfy multiple platform targets, and the honest costs and sizable benefits the approach carries.
+Our approach to mobile and embedded programming was built from the other direction. We compile directly to native artifacts across heterogeneous platforms. The compiler architecture and binding tooling were chosen because they support producing native artifacts for several targets without a runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary. What follows walks through our early design decisions and the cross-platform native capability they produce. LLVM platform tuples serve as the low-level back end, with two adjacent UI patterns our framework supports today. We describe per-platform packaging, the language mechanism that lets one design satisfy multiple platform targets, and the costs and benefits the approach carries.
 
-The wrapper around each artifact is what differs across the platform set; the binary inside is what Composer produces from substantially shared Clef source code and deft handling of the compilation back end.
+The wrapper around each artifact is what differs across the platform set; the binary inside is what Composer produces from substantially shared Clef source code and per-target handling of the compilation back end.
 
 ## The Conventional Path and Its Costs
 
@@ -38,7 +38,7 @@ Working-set memory follows the same shape. A typical React Native application ma
 
 The security surface is the third axis. A JIT-compiled or interpreted runtime presents a substantially larger attack surface than a native binary that contains no runtime. JIT-spray attacks, garbage collector observability side-channels, the general property that any code path can be re-executed under attacker-controlled conditions, and the difficulty of formally auditing a runtime that may itself be patched after deployment, are concerns intrinsic to the runtime model. For applications with cryptographic obligations or constant-time requirements, this is the gating consideration. Any constant-time claim a developer might want is contingent on the runtime's behavior, and the runtime is free to reschedule, recompile, or interpret at moments outside the developer's control.
 
-These costs are the price of the runtime model. The trade is non-trivial: the runtime model accepts these costs in exchange for a uniform deployment story, the promise of a "single language" across platforms, and an iteration loop that includes hot reload. Naming the costs serves a specific purpose. The alternative path has to recover the conveniences the runtime model bundles together, and the alternative path opens properties that exist only on a binary the verifier reasoned about end-to-end. The remainder of this post is about both halves of that exchange.
+These costs are the price of the runtime model. The runtime model accepts them in exchange for a uniform deployment story, the promise of a "single language" across platforms, and an iteration loop that includes hot reload. The native path has to recover the conveniences the runtime model bundles together, and it opens properties that exist only on a binary our verifier reasoned about end-to-end. The remainder of this post covers both halves of that exchange.
 
 ## The Day-One Design Decision
 
@@ -60,13 +60,13 @@ Our memory model is free of garbage collection by design. Memory regions are exp
 
 ### Coeffect tracking for resource invariants
 
-Constant-time execution, allocation discipline, IO discipline, and syscall discipline are all coeffect properties expressible in Clef's compiler service and verified at design time through our coeffect-aware process ([Context-Aware Compilation](https://clef-lang.com/docs/internals/mlir/context-aware-compilation/) documents the mechanism). These properties are stated as preconditions, checked at compile time, and preserved through every nanopass to the emitted binary. Native compilation is the precondition that makes coeffect claims hold all the way to the loader; on every Fidelity target, mobile included, coeffect-tracked properties reach binary. This is the operational link between the mobile compilation account in this post and the broader verification story in [Cryptographic Certainty](https://clef-lang.com/blog/cryptographic-certainty/ "Cryptographic Certainty").
+Constant-time execution, allocation discipline, IO discipline, and syscall discipline are coeffect properties expressible in Clef's compiler service and checked at design time through our coeffect-aware process ([Context-Aware Compilation](https://clef-lang.com/docs/internals/mlir/context-aware-compilation/) documents the mechanism). These properties are stated as preconditions, checked at compile time, and designed to be preserved through every nanopass to the emitted binary. Native compilation is the precondition that lets coeffect claims hold all the way to the loader, and on every Fidelity target, mobile included, the design carries coeffect-tracked properties to binary. This is the link between the mobile compilation account in this post and the broader verification story in [Cryptographic Certainty](https://clef-lang.com/blog/cryptographic-certainty/ "Cryptographic Certainty").
 
 All five were in place before mobile compilation was a question, and each of them is non-trivial to retrofit into an existing runtime-first framework.
 
 ## The Platform Tuple as Compilation Substrate
 
-A platform tuple in our framework is the triple (architecture, libc, packaging). Composer reads the target tuple, selects matching module-signature implementations, routes through the appropriate LLVM backend, and emits an artifact in the platform's native format. The matrix today covers six platform classes:
+A platform tuple in our framework is the triple (architecture, libc, packaging). Composer reads the target tuple, selects matching module-signature implementations, routes through the appropriate LLVM backend, and emits an artifact in the platform's native format. The matrix spans six platform classes:
 
 | Platform                  | Architecture(s)               | Libc                   | Output format | Packaging wrapper       | UI substrate(s)                                  |
 |---------------------------|------------------------------|------------------------|---------------|-------------------------|--------------------------------------------------|
@@ -87,7 +87,7 @@ The signing model varies across platforms, and the binary inside each wrapper ha
 
 ## The UI Strategy: Two Reference Implementations
 
-Our framework supports two UI architectures today, each grounded in a published reference implementation. The two are complementary; neither subsumes the other, and the choice between them is operational, not ideological.
+Our framework supports two UI architectures today, each grounded in a published reference implementation. The two are complementary; neither subsumes the other, and the choice between them is an operational one.
 
 ### The HelloWayland pattern: native widgets, direct surface
 
@@ -244,7 +244,7 @@ Composer selects the implementation by target tuple. When the tuple specifies `a
 
 The arity property quoted from the specification is load-bearing: "Arities in a signature must be equal to or shorter than the corresponding arities in an implementation, and the prefix must match... function arity affects compilation. Clef functions with known arity compile to direct function calls, while function values require closure allocation. Signatures must contain enough information to reveal the desired arity for efficient native code generation." The consequence is that the cross-platform substitution does not introduce virtual dispatch, closure allocation, or runtime indirection; every call resolves to a direct platform-specific function call in the emitted binary.
 
-Signature-and-structure separation is a well-established ML-family mechanism, in place since Standard ML in the 1980s and exercised at scale by OCaml's functor system for decades. What our framework adds is the use of that mechanism as the load-bearing selector for platform-specific lowering, with the target tuple as the selection key, and the requirement that the conformance check produce direct native calls in the lowered IR.
+Signature-and-structure separation is a well-established ML-family mechanism, in place since Standard ML in the 1980s and exercised at scale by OCaml's functor system for decades. Our framework uses that mechanism as the load-bearing selector for platform-specific lowering, with the target tuple as the selection key and the requirement that the conformance check produce direct native calls in the lowered IR. We have found no other representative implementations that drive cross-platform native lowering this way in the standing literature we have reviewed.
 
 ## Honest Tradeoffs
 
@@ -252,7 +252,7 @@ The architectural account above presents the cross-platform native path in its m
 
 ### Per-platform shim code is real and not zero
 
-A WREN-style application needs platform-specific WebView host integration: Kotlin or Java on Android, Swift on iOS, GTK4 with WebKitGTK on Linux, a Tizen manifest with message-port handling on Tizen. A HelloWayland-style application needs the equivalent surface host: a `NativeActivity` on Android, a `UIViewController` hosting `MTKView` on iOS, a Wayland display connection on Linux. The shim is small, typically 50 to 200 lines per platform for a representative application, and it is not free. 
+A WREN-style application needs platform-specific WebView host integration: Kotlin or Java on Android, Swift on iOS, GTK4 with WebKitGTK on Linux, a Tizen manifest with message-port handling on Tizen. A HelloWayland-style application needs the equivalent surface host: a `NativeActivity` on Android, a `UIViewController` hosting `MTKView` on iOS, a Wayland display connection on Linux. The shim is small, typically 50 to 200 lines per platform for a representative application, and it remains real work the developer has to write and maintain.
 
 ### iOS specifically requires macOS for the build
 
@@ -260,13 +260,13 @@ Apple owns this constraint. The SDK requires Xcode, and Xcode requires macOS. A 
 
 ### No hot-reload story comparable to Flutter's
 
-Native compilation has real trade-offs. The iteration loop is compile, deploy, run. For UI iteration specifically, the WREN-stack pattern partially recovers the fast loop by hot-reloading the frontend with Vite or a similar tool while the backend runs on a "cold" reboot cycle. This is most of what Flutter's hot reload provides in practice for UI development. For pure-native HelloWayland-pattern work, the iteration loop is the compile-and-run loop, faster than C++ on the same hardware because Composer's incremental compilation is fast, and slower than a JavaScript runtime's hot reload. The honest characterization is that the framework offers incremental native rebuilds, and we anticipate that the cycle for backend work will measure in seconds, not the sub-second feedback an HMR engine provides. This is something we'll look to improve as time and technology progress.
+The iteration loop is compile, deploy, run. For UI iteration specifically, the WREN-stack pattern partially recovers the fast loop by hot-reloading the frontend with Vite or a similar tool while the backend runs on a "cold" reboot cycle. This is most of what Flutter's hot reload provides in practice for UI development. For pure-native HelloWayland-pattern work, the iteration loop is the compile-and-run loop, faster than C++ on the same hardware because Composer's incremental compilation is fast, and slower than a JavaScript runtime's hot reload. Our framework offers incremental native rebuilds, and we anticipate that the cycle for backend work will measure in seconds rather than the sub-second feedback an HMR engine provides. This is something we will look to improve as the work continues.
 
 ### App Store review may be more cautious on first submission
 
 App Store review for certain targets may be slower or more opinionated for a novel binary architecture. Fidelity-compiled Mach-O is structurally identical to Swift Mach-O at the loader level, but the metadata and the symbol table may be visibly different. We anticipate some additional review time on the first submissions that uses our framework. Subsequent submissions within the same application's lifecycle should pass at normal review pace once the reviewers have the application's pattern on file.
 
-We see these costs as bounded, and are acceptable initial costs of the choices we've made. The benefits compound across the platform matrix and across the verification story; the costs scale with the number of platforms targeted and have a logarithmic scaling factor that will eventually level off.
+We see these costs as bounded, and as acceptable initial costs of the choices we have made. The benefits compound across the platform matrix and across the verification story; the costs scale with the number of platforms targeted and have a logarithmic scaling factor that will eventually level off.
 
 ## Strategic Implications
 
@@ -276,7 +276,7 @@ The working-set numbers from the Conventional Path section are not abstract. For
 
 ### Security surface
 
-A native binary with no JIT, no garbage collector, no interpreter, and a small dependency set is a tractable target for formal-methods auditing. For our broader commercial thesis, this property is load-bearing. A [QuantumCredential](https://speakez.tech/portfolio/quantumcredential/) client running natively on an iPhone preserves the constant-time and side-channel-resistance properties that our coeffect verifier reasoned about, because the binary on the device is the binary the verifier saw.  Constant-time is a pillar of any verification stack, and it depends on the executing binary matching the audited code.
+A native binary with no JIT, no garbage collector, no interpreter, and a small dependency set is a tractable target for formal-methods auditing. For our broader commercial thesis, this property is load-bearing. A [QuantumCredential](https://speakez.tech/portfolio/quantumcredential/) client compiled to run natively on an iPhone would preserve the constant-time and side-channel-resistance properties that our coeffect verifier reasoned about, because the binary on the device is the binary the verifier saw. Constant-time is a pillar of any verification stack, and it depends on the executing binary matching the audited code.
 
 ### Cross-cutting verification across all targets
 
@@ -284,6 +284,6 @@ The four-tier verification architecture from [Cryptographic Certainty](https://c
 
 ### Where mobile lands on this roadmap
 
-Linux desktop and embedded targets are working today, and the HelloWayland UI is exhibit A in that arc. Linux mobile (primarily postmarketOS) and even Tizen TV are scoped and tractable additions to the target tuple matrix. the `libc` and packaging differences are real, and the architectural work is within reach. Android and iOS are the next tier up in platform-specific shim tooling; the architecture supports them inherently, and the Composer pipeline is built to produce the right output formats. The path forward is tooling and certificate logistics, with the compiler set up to provide full coverage.
+Linux desktop and embedded targets are working today, and the HelloWayland UI is our clearest demonstration of that arc. Linux mobile (primarily postmarketOS) and Tizen TV are scoped additions to the target tuple matrix. The `libc` and packaging differences are real, and the architectural work is within reach. Android and iOS are the next tier up in platform-specific shim tooling; our design accounts for them, and we are building the Composer pipeline to produce the right output formats. The path forward from here is tooling and certificate logistics.
 
-In the Fidelity Framework, native goes where Composer's IR reaches, and that reach was part of the design from the start.
+Native goes where our Composer IR reaches, and we made that reach part of the design from the start. Mobile and the rest of the matrix are targets we will keep building toward as the pipeline and the per-platform tooling come into place.

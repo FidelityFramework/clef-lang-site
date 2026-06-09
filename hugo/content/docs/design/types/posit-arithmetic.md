@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 IEEE 754 floating point has served numerical computing well for four decades. It emerged from genuine chaos: IBM used hexadecimal floating-point, CDC and Cray used ones' complement representation (admitting both +0 and -0), and DEC's VAX had its own format with different exponent biases and overflow thresholds. The standard was hard-won, requiring eight years of contentious debate (1977-1985) between the K-C-S (Kahan-Coonen-Stone) proposal from Berkeley and DEC's installed base. Achieving consensus meant compromise, and some of those compromises left marks on the final specification.
 
 The NaN (Not a Number) encoding illustrates this legacy. The 1985 standard left the signaling/quiet distinction underspecified, leading different processor families (PA-RISC and MIPS versus Intel and others) to implement it incompatibly. The "payload" bits that could carry diagnostic information were never standardized into usefulness. The result: for double precision, over 2^52 distinct bit patterns all represent "not a number," a flexibility that became waste rather than opportunity. Denormalized numbers, the most controversial feature, took years to resolve and still carry a performance penalty of one to two orders of magnitude on most hardware. Many implementations (GPUs, DSPs, AI accelerators) simply flush them to zero rather than pay that cost.
@@ -282,11 +277,11 @@ let result16 = dot posit16Weights posit16Inputs Posit16.zero
 let result32 = dot posit32Weights posit32Inputs Posit32.zero
 ```
 
-This is the power of SRTP: write the algorithm once, and it specializes at compile time for each posit type. No runtime dispatch, no boxing, no virtual calls. Just the specific bit manipulation for each configuration, inlined at the call site.
+SRTP lets us write the algorithm once and have it specialize at compile time for each posit type. No runtime dispatch, no boxing, no virtual calls. The specific bit manipulation for each configuration is inlined at the call site.
 
 ## The Quire: Exact Accumulation
 
-The most powerful feature of posit arithmetic is the *quire*: a large fixed-point accumulator that holds exact intermediate results. For Posit32, the quire is 512 bits.
+The defining feature of posit arithmetic is the *quire*: a large fixed-point accumulator that holds exact intermediate results. For Posit32, the quire is 512 bits.
 
 Why does this matter? Consider a dot product of 1000 elements. With IEEE 754, each multiply-add introduces rounding error. These errors accumulate, sometimes catastrophically. With a quire, each product is computed exactly and added to the accumulator exactly. Rounding happens once, at the very end, when converting the quire back to a posit.
 
@@ -628,7 +623,7 @@ This is where the posit story becomes qualitatively different from IEEE 754. You
 
 A demonstration is planned that will exercise this pipeline end-to-end: Clef posit arithmetic compiled through CIRCT to run on the Arty A7-100T, with the CPU handling orchestration and the FPGA handling the precision-critical computation. The intent is to make the case for FPGA-accelerated posit arithmetic not through benchmarks alone but through a workload where quire-exact accumulation produces qualitatively better results than any IEEE 754 path could.
 
-The compilation pipeline for this FPGA path requires no changes to FCS, PSG, nanopasses, or the zipper traversal. Alex's target-aware Bindings select the appropriate MLIR dialect emission, and the CIRCT toolchain handles the transposition from control flow to hardware. The same Clef function, compiled four ways by the same compiler, runs on CPU (sequential), GPU (SIMT parallel), NPU (spatial dataflow), and FPGA (custom arithmetic pipeline). That is the "same compiler, four targets" story. Posit arithmetic is the use case that makes the FPGA target not merely interesting but necessary.
+The compilation pipeline for this FPGA path requires no changes to FCS, PSG, nanopasses, or the zipper traversal. Alex's target-aware Bindings select the appropriate MLIR dialect emission, and the CIRCT toolchain handles the transposition from control flow to hardware. The design carries one Clef function through the same compiler to four targets: CPU (sequential), GPU (SIMT parallel), NPU (spatial dataflow), and FPGA (custom arithmetic pipeline). That is the "same compiler, four targets" story we are building toward. Posit arithmetic is the use case that makes the FPGA target necessary rather than optional.
 
 ## Where Posits Excel
 
