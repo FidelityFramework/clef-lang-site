@@ -165,7 +165,7 @@ The second rung stops treating the model as fixed. The two-pass tuning of the [b
 
 Latency improves because fewer propose-check-revise round trips are needed per satisfied goal. A model fluent in Clef and trained against the tool surface proposes elaborable programs more often, so the Composer-rejection loop runs fewer times, and the speed to a *useful* token, one that survives elaboration and dispatches a real domain call, drops even though the per-token speed of the model is unchanged. Velocity improves because the fine-tuning is low-rank adaptation, a swappable adapter over the base, so the organization can iterate the adapter as its own domain models and conventions evolve without retraining anything. This rung is where the flywheel starts turning: each adapter revision is cheap, and each makes the constellation fit the organization's work more closely.
 
-Sovereignty improves on this rung in a way worth naming. A fine-tuned open-weights model is yours, and the adapter encodes your conventions and your domain vocabulary. That adapter is trained on your data and stays in your control; it is not a contribution to a hyperscaler's next base model. The fine-tuning itself can run in-house or in a sovereign environment, and the artifact, the adapter, never leaves.
+Sovereignty improves on this rung as well. A fine-tuned open-weights model is yours, and the adapter encodes your conventions and your domain vocabulary. That adapter is trained on your data and stays in your control; it is not a contribution to a hyperscaler's next base model. The fine-tuning itself can run in-house or in a sovereign environment, and the artifact, the adapter, never leaves.
 
 ## Rung three: distill toward the edge
 

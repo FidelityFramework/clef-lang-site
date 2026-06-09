@@ -52,7 +52,7 @@ type JsExampleRole =
 
 *Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and structured handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
 
-The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the precise opposite of the goal.
+The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the opposite of the goal.
 
 ## What constrains the output, and when
 
@@ -76,7 +76,7 @@ The loop runs during tuning, on trajectories where the grammar already guarantee
 
 The deployment target is CPU, which sets what the tuning operates on. Two routes reach it. The dense-small-then-quantize route takes a one-to-three-billion-parameter code-capable model and quantizes to four-bit, which runs at roughly ten to fifteen tokens per second on a modern CPU with eight to sixteen gigabytes of memory. These carry strong code priors, which is also why they carry the strongest accent to suppress. The native-ternary route takes a model whose weights are already in the integer-add-and-subtract regime, which aligns with the CPU and low-precision interests directly but reaches a working artifact later, since the tuning tooling around such models is thinner.
 
-The scaffold article committed the architecture to precise arithmetic, and that commitment is in genuine tension with both CPU routes, because the rate-reduction operations the architecture depends on are worst-conditioned at low precision. The honest resolution, developed in the [architecture and arithmetic article]({{< ref "architecture-and-arithmetic" >}}), is that the foreign ternary format was always a borrowed terminal artifact, and a model built on the framework's own b-posit substrate is a candidate the borrowed format is not. The build path here, dense base, low-rank adaptation, quantize after tuning, is the route to a working artifact soonest; the substrate question is what determines whether that artifact is merely functional or actually sharp.
+The scaffold article committed the architecture to precise arithmetic, and that commitment is in genuine tension with both CPU routes, because the rate-reduction operations the architecture depends on are worst-conditioned at low precision. The honest resolution, developed in the [architecture and arithmetic article]({{< ref "architecture-and-arithmetic" >}}), is that the foreign ternary format was always a borrowed terminal artifact, and a model built on the framework's own b-posit substrate is a candidate the borrowed format is not. The build path here, dense base, low-rank adaptation, quantize after tuning, is the route to a working artifact soonest; the substrate question is what determines whether that artifact is merely functional or sharp.
 
 ## Deployment as a constellation citizen
 
