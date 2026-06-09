@@ -171,7 +171,7 @@ let myModule : NeuralModule<Float32, Float16> = {
 
 ### Direct Compilation Path
 
-While the Groq team works within the constraints of PyTorch → ONNX → Custom ML, our Firefly compiler is designed to give a direct path from Clef to MLIR:
+While the Groq team works within the constraints of PyTorch → ONNX → Custom ML, our Composer compiler is designed to give a direct path from Clef to MLIR:
 
 ```fsharp
 // Clef -> MLIR -> target, no out-of-band metadata
