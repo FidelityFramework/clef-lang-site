@@ -50,7 +50,7 @@ type JsExampleRole =
 
 *Damp* is the authoring-reflex class: writing imperative or dynamic JavaScript and Python as source logic, reaching for null and in-place mutation and exceptions as control flow, hand-rolling ad-hoc JSON shapes, and the supply-chain reflex of reaching for a package. These are the accents.
 
-*Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and typed handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
+*Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and structured handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
 
 The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the precise opposite of the goal.
 
@@ -70,7 +70,7 @@ let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Progr
     | Error diags -> trainAuthoring model goal (model.revise goal attempt diags)
 ```
 
-The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the typed models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
+The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
 
 ## Where the model runs, and the honest friction
 

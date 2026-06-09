@@ -33,11 +33,11 @@ The negative type is the additive adjoint that carries the backward transition a
 // Reconstructing a state k steps back runs the adjoint k times,
 // in place of storing k checkpoints.
 let reconstruct (current: HiddenState) (k: int) (step: ReversibleTransition) : HiddenState =
-    let inverse = Negative.adjoint step    // the backward transition, typed
+    let inverse = Negative.adjoint step    // the backward transition, type-informed
     Seq.fold (fun s _ -> inverse s) current (Seq.replicate k ())
 ```
 
-Because the access pattern is arbitrary, reversibility does not eliminate the cache; it changes the operating point. Recovering a state a few steps back is cheap; recovering one far back costs many inverse applications. The natural structure is hybrid: store sparse anchor checkpoints, and reconstruct the states between them by running the adjoint from the nearest anchor. This is the sparse-anchor-plus-reconstruction pattern of gradient checkpointing, transposed to inference recall and powered by the typed adjoint rather than by recomputation from a stored input.
+Because the access pattern is arbitrary, reversibility does not eliminate the cache; it changes the operating point. Recovering a state a few steps back is cheap; recovering one far back costs many inverse applications. The natural structure is hybrid: store sparse anchor checkpoints, and reconstruct the states between them by running the adjoint from the nearest anchor. This is the sparse-anchor-plus-reconstruction pattern of gradient checkpointing, transposed to inference recall and powered by the negative-type adjoint rather than by recomputation from a stored input.
 
 ## Verified-exact reconstruction is the load-bearing property
 

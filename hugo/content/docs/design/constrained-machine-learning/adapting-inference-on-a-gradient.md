@@ -12,18 +12,18 @@ draft: false
 
 Clef targets LLVM for CPU and native code today, and it does so deliberately and provisionally. LLVM is the pragmatic backend: mature, available now, and the fastest route to a real running artifact. It also carries baggage, an instruction-selection model and a set of assumptions Clef would not choose if it were designing the lowering from scratch, and the framework's longer arc contemplates novel backends that shed that baggage where doing so buys enough to justify the work. The point is not that LLVM is wrong. It is that LLVM is a *stage*: load-bearing now, deliberately temporary, used behind a stable interface so that the backend can be substituted underneath without disturbing everything above it.
 
-The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model the later rungs reach is the novel backend, clean of all of it. The interface between the language node and the typed constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
+The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model the later rungs reach is the novel backend, clean of all of it. The interface between the language node and the constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
 
 Four rungs, one interface fixed across all of them, and two quantities traced up the ladder: latency, the speed to first useful token, and velocity, the compounding flywheel that each rung hands to the next. Underneath both runs the question the audience for this technology actually asks first, which is where their data goes.
 
 ## The interface is the invariant
 
-Before the rungs, the boundary they share. The language node's job in the constellation is to take unstructured intent and route it to typed domain models that can satisfy it with guarantees. That routing is a tool-call surface, and it is defined in Clef against the typed models, not against any particular language model. The same surface is satisfied by a frontier API, a local open-weights model, a distilled model, or a from-scratch built model. Designing it first, at the rung where the model is least under your control, is what makes the later substitutions cheap.
+Before the rungs, the boundary they share. The language node's job in the constellation is to take unstructured intent and route it to typed domain models that can satisfy it with guarantees. That routing is a tool-call surface, and it is defined in Clef against the domain models, not against any particular language model. The same surface is satisfied by a frontier API, a local open-weights model, a distilled model, or a from-scratch built model. Designing it first, at the rung where the model is least under your control, is what makes the later substitutions cheap.
 
 The Clef in this article is illustrative of the idiom rather than a finalized API surface.
 
 ```fsharp
-// The stable interface. Defined once, against the typed domain models,
+// The stable interface. Defined once, against the domain models,
 // independent of which language model sits behind it. Every rung below
 // satisfies this same surface; only the implementation of `propose` changes.
 
@@ -70,7 +70,7 @@ The contract at the boundary is what makes this surface stable. The grammar-cons
 
 The first rung wraps a standing model and changes nothing inside it. All of the constraint lives outside the weights, in the interface above. This rung runs today, and it comes in two deployment variants that satisfy the identical interface.
 
-The API variant reaches a frontier or hosted model through a gateway. Using the Cloudflare AI Gateway, through the Fidelity.CloudEdge bindings, the gateway gives caching, rate limiting, and observability over the model call, and the typed domain models run as Workers or Durable Objects reached over BAREWire on a websocket.
+The API variant reaches a frontier or hosted model through a gateway. Using the Cloudflare AI Gateway, through the Fidelity.CloudEdge bindings, the gateway gives caching, rate limiting, and observability over the model call, and the domain models run as Workers or Durable Objects reached over BAREWire on a websocket.
 
 ```fsharp
 // Rung one, API variant. A hosted model behind the Cloudflare AI Gateway.
@@ -98,8 +98,8 @@ let apiNode (gateway: AiGateway) (grammar: ClefGrammar) : LanguageNode =
         let! raw = AiGateway.send request
         return ClefSource.ofConstrainedDecode raw } }
 
-// Typed domain models exposed as Workers, reached over BAREWire on a websocket.
-// BAREWire carries the typed request with no JSON round-trip and no runtime tags.
+// Domain models exposed as Workers, reached over BAREWire on a websocket.
+// BAREWire carries the structured request with no JSON round-trip and no runtime tags.
 let remoteDomainModel (ws: WebSocket) (schema: BareSchema<'Req,'Resp>) : DomainModel<'Req,'Resp> =
     { name   = schema.name
       wire   = schema
@@ -138,15 +138,15 @@ let localDomainModel (schema: BareSchema<'Req,'Resp>) (impl: 'Req -> Result<'Res
     { name = schema.name; wire = schema; invoke = impl }
 ```
 
-The worked example, end to end, is the same regardless of variant. A goal arrives, the node proposes grammar-valid Clef, Composer elaborates it, and the elaborated program dispatches typed calls to the domain models, which answer with guarantees that come from the typed domain models rather than the language node:
+The worked example, end to end, is the same regardless of variant. A goal arrives, the node proposes grammar-valid Clef, Composer elaborates it, and the elaborated program dispatches structured calls to the domain models, which answer with guarantees that come from the domain models rather than the language node:
 
 ```fsharp
 // One worked request, identical across both deployment variants.
 // A business goal that touches a domain where correctness must be guaranteed.
 
 let registry =
-    [ localDomainModel financeSchema  DimensionalFinance.invoke   // typed, exact
-      remoteDomainModel ws kinematicsSchema ]                     // typed, exact
+    [ localDomainModel financeSchema  DimensionalFinance.invoke   // domain, exact
+      remoteDomainModel ws kinematicsSchema ]                     // domain, exact
 
 let goal = Goal.ofText "Price this FX-denominated option book and flag any \
                         position whose currency dimensions are inconsistent."
@@ -169,11 +169,11 @@ Sovereignty improves on this rung in a way worth naming. A fine-tuned open-weigh
 
 ## Rung three: distill toward the edge
 
-The third rung compresses the fine-tuned model toward a size that runs resident on modest hardware, and it is where the constellation does something a conventional distillation cannot. Ordinary distillation trains a small student to imitate a large teacher's output distribution. Here the typed domain models supply a *verifiable* signal the teacher's raw output does not: a proposed program either elaborates and dispatches correct typed calls or it does not, so the distillation target is intended to be filtered to trajectories that satisfied the constellation, with Composer as the judge.
+The third rung compresses the fine-tuned model toward a size that runs resident on modest hardware, and it is where the constellation does something a conventional distillation cannot. Ordinary distillation trains a small student to imitate a large teacher's output distribution. Here the domain models supply a *verifiable* signal the teacher's raw output does not: a proposed program either elaborates and dispatches correct structured calls or it does not, so the distillation target is intended to be filtered to trajectories that satisfied the constellation, with Composer as the judge.
 
 The techniques, in outline. Sequence-level distillation on the propose-check-revise trajectories, keeping only the trajectories that terminated in an elaborable program that dispatched correct domain calls, so the student learns the routing behavior that worked rather than the teacher's unfiltered habits. On-policy distillation where the student proposes, Composer and the domain models judge, and the student is corrected toward the judged-correct proposal, which keeps the student's learning grounded in the same acceptance test that bounds it at inference. And low-rank adaptation throughout, with the [forward-mode path]({{< ref "forward-mode-and-adaptation" >}}) making the gradient cheap over the adapter's small rank, so distillation is a fast inner loop rather than a major training run.
 
-Latency is designed to take its largest single step here. A distilled model resident on a CPU or a modest GPU has a far shorter time to first token than an API round trip, because the network hop is gone and the model is small, and the constellation's habit of offloading the parts that need guarantees to fast typed domain models means the small model is asked to do less. The speed to a useful token is now bounded by local inference plus a few BAREWire calls, not by a hosted model's queue and the public internet. Velocity compounds because the verifiable distillation signal means each cycle of fine-tune-then-distill is intended to produce a better small model from a better teacher, and the typed models that supply the signal are themselves improving, so the flywheel turns faster at every revolution.
+Latency is designed to take its largest single step here. A distilled model resident on a CPU or a modest GPU has a far shorter time to first token than an API round trip, because the network hop is gone and the model is small, and the constellation's habit of offloading the parts that need guarantees to fast domain models means the small model is asked to do less. The speed to a useful token is now bounded by local inference plus a few BAREWire calls, not by a hosted model's queue and the public internet. Velocity compounds because the verifiable distillation signal means each cycle of fine-tune-then-distill is intended to produce a better small model from a better teacher, and the domain models that supply the signal are themselves improving, so the flywheel turns faster at every revolution.
 
 Sovereignty is near-complete on this rung. The resident distilled model runs entirely in-house, on hardware the organization controls, with no inference traffic leaving the building. The teacher it was distilled from may have been a standing model, but the deployed artifact is small, owned, and local.
 
@@ -183,13 +183,13 @@ The final rung is the novel backend. A model built from scratch to be structural
 
 An open, reproducible build methodology is the right vehicle. The OLMo approach, fully open training data, code, and checkpoints, is the model to follow, because a from-scratch model meant to be a sovereign asset must be reproducible and auditable by the organization that owns it. A model whose provenance is a signed record of data, recipe, and checkpoints, the version-record discipline the [building article]({{< ref "building-the-model" >}}) carries over from [ADM](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), is an asset an organization can stand behind, which an opaque downloaded checkpoint is not.
 
-This rung is where latency and velocity reach the regime the constellation is built for. The model is small because it is derived rather than over-parameterized, it runs on the b-posit substrate the rest of the framework uses, and it is trained by a forward-mode loop that makes adaptation cheap. It is also sub-quadratic in context, by the typed-generator construction the [constellation article]({{< ref "the-constellation" >}}) describes, so its cost grows linearly rather than quadratically as the context lengthens, which matters most exactly where a business workload has long documents or long histories to attend to. Small, sparse, and sub-quadratic compound: time to first useful token would be local inference on a compact model whose attention cost scales gently with context and which offloads aggressively to typed domain models. And the flywheel is fully closed: the built model is adapted by the same cheap forward-mode loop, distilled by the same verifiable signal, and improved alongside the typed domain models it routes to, with every part of the loop in-house. This is the velocity that justifies the build. A rented model gives capability; a built model gives a compounding asset, where each improvement to the domain models, the adapters, and the base reinforces the others.
+This rung is where latency and velocity reach the regime the constellation is built for. The model is small because it is derived rather than over-parameterized, it runs on the b-posit substrate the rest of the framework uses, and it is trained by a forward-mode loop that makes adaptation cheap. It is also sub-quadratic in context, by the typed-generator construction the [constellation article]({{< ref "the-constellation" >}}) describes, so its cost grows linearly rather than quadratically as the context lengthens, which matters most exactly where a business workload has long documents or long histories to attend to. Small, sparse, and sub-quadratic compound: time to first useful token would be local inference on a compact model whose attention cost scales gently with context and which offloads aggressively to domain models. And the flywheel is fully closed: the built model is adapted by the same cheap forward-mode loop, distilled by the same verifiable signal, and improved alongside the domain models it routes to, with every part of the loop in-house. This is the velocity that justifies the build. A rented model gives capability; a built model gives a compounding asset, where each improvement to the domain models, the adapters, and the base reinforces the others.
 
 Sovereignty is total. The data never leaves, the model is owned and reproducible, the training and adaptation run in-house, and nothing about the organization's work is mined for anyone else's model. For the business audience this technology is for, the audience that needs to keep its data in-house and out of a hyperscaler's training set, this rung is the destination the first rung was already pointed at.
 
 ## The ladder, read as one strategy
 
-The four rungs are not alternatives; they are stages of one substitution, the same shape as the compiler's path from LLVM to novel backends. Commit to a working artifact now, on the pragmatic backend, behind a stable interface. Then migrate the substrate underneath that interface as the value justifies it: damp the accent and instill the idiom, distill toward the edge against a verifiable signal, and finally build the structurally-compatible model that carries none of the rented backend's baggage. At every rung the interface holds, the typed domain models stay correct by construction, and the data-sovereignty posture strengthens. Latency falls as the model moves in-house and shrinks, and velocity rises as each rung makes the next cheaper, until the built model closes the flywheel.
+The four rungs are not alternatives; they are stages of one substitution, the same shape as the compiler's path from LLVM to novel backends. Commit to a working artifact now, on the pragmatic backend, behind a stable interface. Then migrate the substrate underneath that interface as the value justifies it: damp the accent and instill the idiom, distill toward the edge against a verifiable signal, and finally build the structurally-compatible model that carries none of the rented backend's baggage. At every rung the interface holds, the domain models stay correct by construction, and the data-sovereignty posture strengthens. Latency falls as the model moves in-house and shrinks, and velocity rises as each rung makes the next cheaper, until the built model closes the flywheel.
 
 An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and climbs as far as the value warrants, with each step a substitution behind the interface rather than a rebuild. That is the practical claim the whole section rests on: the constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model is a graded migration, not a cliff.
 
@@ -201,4 +201,4 @@ Whether the verifiable distillation signal, trajectories filtered by Composer an
 
 Whether the from-scratch model of rung four can be built at a scale an individual organization can afford, or whether it remains a shared-investment artifact that several organizations fund and then adapt sovereignly, is the economic question that decides how widely rung four is reached.
 
-How much of the latency improvement comes from model shrinkage versus from offloading to typed domain models is measurable, and the split matters, because it tells an organization how much benefit it captures at each rung before reaching the built model.
+How much of the latency improvement comes from model shrinkage versus from offloading to domain models is measurable, and the split matters, because it tells an organization how much benefit it captures at each rung before reaching the built model.
