@@ -67,13 +67,13 @@ This tightens the whole thread. The field's sub-quadratic models drift because t
 
 ## The case for reversibility: limiting drift in recall
 
-What reversibility buys is larger than the storage saving that motivated it. A sub-quadratic model works by compressing the entire past into a fixed-size state. When a later token needs something from earlier in the sequence, the model is relying on that state to still faithfully contain it. In the ordinary construction there is no way to check: the state is whatever the recurrence produced, recall is whatever the state yields, and if the state has quietly drifted from what the earlier tokens actually established, the model produces a confident answer from a corrupted memory and nothing flags it. This is the failure mode that makes long-context behavior in these models hard to trust, and it is invisible precisely because the model never reconstructs the earlier state to compare against.
+It is worth setting aside algebraic framing to present directly what reversibility buys, because the practical consequence is larger than the storage saving that motivated it. A sub-quadratic model works by compressing the entire past into a fixed-size state. When a later token needs something from earlier in the sequence, the model is relying on that state to still faithfully contain it. In the ordinary construction there is no way to check: the state is whatever the recurrence produced, recall is whatever the state yields, and if the state has quietly drifted from what the earlier tokens actually established, the model produces a confident answer from a corrupted memory with no recourse to correct it. This is the failure mode that makes long-context behavior in these models hard to trust, and it is invisible precisely because the model never reconstructs the earlier state to compare against.
 
 A reversible, verified transition changes the kind of guarantee available. Because the transition has an exact adjoint, an earlier state is not merely *estimated* from the current one; it is *recovered*, and recovered to the exact value it held, with the round-trip identity discharged rather than assumed. This moves the reliability of long-range recall from a property one hopes the training instilled to a property the construction guarantees, and it limits drift not by training against it but by making the backward step exact.
 
 ### Two senses of reversible, kept apart
 
-The claim has two senses that are easy to conflate and worth separating. There is *structural* reversibility, a static property carried in the type strata: the negative type is the adjoint of the transition, and the type system certifies that an inverse exists and that the round trip is the identity. And there is the *runtime traversal mechanism* itself: an attention head whose state actually steps backward, in real arithmetic on real hardware, to reconstruct an earlier value during inference. The first is a guarantee about the program; the second is a thing the program does. The framework's contribution is to make the second sound by discharging the first, but they are not the same claim, and the runtime mechanism deserves to be shown rather than asserted.
+The claim has two senses that are easy to conflate and therefore some treatment here offers to make them distinct. There is *structural* reversibility, a static property carried in the type strata: the negative type is the adjoint of the transition, and the type system certifies that an inverse exists and that the round trip is the identity. And there is the *runtime traversal mechanism* itself: an attention head whose state actually steps backward, in real arithmetic on real hardware, to reconstruct an earlier value during inference. The first is a guarantee about the program; the second is a thing the program does. The framework's contribution is to make the second sound by discharging the first, but they are not the same claim.
 
 Structurally, the transition and its adjoint are a typed pair. The forward step advances the state; the backward step is the adjoint, and the type discipline certifies they compose to the identity:
 
@@ -98,9 +98,7 @@ The runtime traversal is where this becomes a mechanism rather than a guarantee.
 
 ```fsharp
 // Runtime traversal: the head's state actually steps backward to reconstruct
-// an earlier position. This runs at inference, in the head, on the b-posit and
-// quire substrate that makes the backward arithmetic compose to the forward's
-// inverse rather than merely close to it.
+// an earlier position. 
 let recallAt (head: ReversibleHead) (current: HeadState) (stepsBack: int) : HeadState =
     // Each backward application is one position of the recurrence run in reverse.
     // Because the step is generator-based and the arithmetic is exact, the state
@@ -112,7 +110,7 @@ let recallAt (head: ReversibleHead) (current: HeadState) (stepsBack: int) : Head
         else retreat (step.backward state) (n - 1)
     retreat current stepsBack
     // The recalled state can now be compared against, or attended to, with the
-    // certainty that it is what the head actually held, not a plausible estimate.
+    // certainty that it is what the head actually held, not an estimate.
 ```
 
 ### How this behaves in the runtime strata of the heads
@@ -150,7 +148,7 @@ graph LR
 
 In the heads, this means a recall is not a memory lookup but a short backward recurrence, executed in the same head that runs the forward pass, on the same b-posit and quire arithmetic. The exactness is what the substrate is carrying: a backward step in IEEE-754 would not land on the forward step's inverse, and the reconstructed state would drift from the true one, which would defeat the entire purpose; the quire's exact accumulation is what makes `backward (forward s)` equal to `s` on the machine and not merely in the idealized algebra. The diagram's two anchors and three-step retreat are the operating point the compiler chose; a memory-richer target would place anchors more densely and retreat fewer steps, a memory-poorer one would place them sparsely and retreat more, and the recall is exact regardless of where on that spectrum the target sits.
 
-There is a real cost and it should be named. A reversible head trades compute for trust: where an ordinary head reads whatever its single state yields, a reversible head may run several backward steps to reconstruct the state it needs, and it accepts the constraint that its transition be information-preserving, which the [binding constraint]({{< ref "reversible-cores" >}}) section above states is not free. What the trade buys is the thing the ordinary head cannot offer at any price: a recall that is provably the value the head held, on hardware, at inference time, rather than an estimate the model hopes is faithful. For an attention mechanism meant to carry information across a long context, the difference between "the state probably still contains this" and "the state provably still contains this" is the difference between a mechanism you must validate empirically and one whose recall is correct by the same discipline that bounds the rest of the constellation. Reliability stops being a thing measured after training and becomes a thing built into the traversal, which is the whole posture the framework takes everywhere else, now reaching the one place a sub-quadratic model is most likely to fail silently.
+A reversible head trades compute for trust: where an ordinary head reads whatever its single state yields, a reversible head may run several backward steps to reconstruct the state it needs, and it accepts the constraint that its transition be information-preserving, which the [binding constraint]({{< ref "reversible-cores" >}}) section above states is not free. What the trade buys is the thing the ordinary attention head cannot offer: a recall that is provably the value the head held, on hardware, at inference time, rather than an estimate the model hopes is faithful. For an attention mechanism meant to carry information across a long context, the difference between "the state probably still contains this" and "the state provably still contains this" is the difference between a mechanism you must validate empirically and one whose recall is correct by the same discipline that bounds the rest of the constellation. Reliability stops being a thing measured after training and becomes a thing built into the traversal, which is the entire posture our framework takes everywhere else, now reaching with confidence the places a sub-quadratic model is most likely to fail silently.
 
 ## The bookend: a graded generator on both sides
 
