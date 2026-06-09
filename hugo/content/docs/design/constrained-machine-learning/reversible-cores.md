@@ -26,6 +26,8 @@ This is an inference-time concern, and the distinction from training-time activa
 
 If the recurrent state transition is reversible, the earlier states need not be stored at all. The model holds the current state, and a state from some steps back is reconstructed by applying the inverse transition that many times. This is the established reversible-computing answer to a storage-versus-recomputation tradeoff, and the substitution itself is prior art from the reversible-residual and reversible-RNN literature. What our framework adds is a type discipline and an exactness guarantee.
 
+A [CRATE-style layer]({{< ref "architecture-and-arithmetic" >}}) is a residual block, a gradient step on the coding rate added back to its input, and a residual block is the form that admits a reversible variant. Where the block's step carries a typed adjoint, the layer runs backward as well as forward, which is what turns the storage-versus-recomputation tradeoff above into exact recall.
+
 The negative type is the additive adjoint that carries the backward transition as a first-class construct. The same machinery our memory model uses for inferring lifetimes and reasoning about reversible allocation supplies, here, an inverse transition that exists by the type discipline rather than by architectural convention:
 
 ```fsharp

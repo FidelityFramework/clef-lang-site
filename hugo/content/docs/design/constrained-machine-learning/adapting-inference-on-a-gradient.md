@@ -180,6 +180,8 @@ Sovereignty is total. The data never leaves, the model is owned and reproducible
 
 The four rungs are not alternatives; they are stages of one substitution, the same shape as the compiler's path from LLVM to novel backends. Commit to a working artifact now, on the pragmatic backend, behind a stable interface. Then migrate the substrate underneath that interface as the value justifies it: damp the accent and instill the idiom, distill toward the edge against a verifiable signal, and finally build the structurally-compatible model that carries none of the rented backend's baggage. At every rung the interface holds, the domain models stay correct by construction, and the data-sovereignty posture strengthens. Latency falls as the model moves in-house and shrinks, and velocity rises as each rung makes the next cheaper, until the built model closes the flywheel.
 
+A fully closed flywheel is the unit Ma calls closed-loop transcription: a model that goes on revising its own representation against feedback instead of freezing when a training run ends. Closing it is what the ladder has been climbing toward, with the same forward-mode loop and verifiable signal driving every revolution.
+
 An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and climbs as far as the value warrants, with each step a substitution behind the interface rather than a rebuild. That is the practical claim the whole section rests on: the constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model is a graded migration, not a cliff.
 
 ## Open questions
