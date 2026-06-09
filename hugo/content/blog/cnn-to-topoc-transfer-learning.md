@@ -374,46 +374,11 @@ The improvement in position drift comes from the topological continuity constrai
 
 ### Safety Certification Pathway
 
-Perhaps most significantly, our dimensionally-constrained approach creates a clear pathway toward safety certification:
-
-```fsharp
-// Safety property specification for INS
-let specifyINSSafetyProperties (ins: InertialNavigationSystem) =
-    [
-        // Physical continuity of position
-        Property.continuous<m * Dimension> ins.Position;
-
-        // Bounded acceleration (physical limitation)
-        Property.bounded<mps2> ins.Acceleration (-20.0<mps2>, 20.0<mps2>);
-
-        // Conservation of energy within sensor noise bounds
-        Property.conserves ins.TotalEnergy EnergyTolerance.SensorNoise;
-
-        // Topological consistency of trajectory
-        Property.topologicalInvariant ins.Trajectory HomologyClass.PathConnected
-    ]
-```
-
-These properties can be formally verified through the F*/Fidelity bridge, moving safety-critical navigation systems from traditional test-based validation to provable correctness guarantees.
+The dimensional discipline also points toward safety certification, because the properties a certifier asks about line up with the framework's tiered verification rather than with a test campaign. The structural ones, dimensional consistency and the grade of the navigation state, follow from the types themselves at no cost. The harder ones, like a bounded-acceleration limit or the topological consistency of the trajectory, are obligations we discharge further up the proof tiers, by the solver where they are decidable and by the relational layer where they are not. Each property travels with its evidence at the tier its difficulty demands, rather than as a claim that testing can only sample.
 
 ## The Path Forward: Dimensions as Formal Verification
 
-Beyond our INS reference design, we are exploring broader applications of dimensional constraints for formal verification:
-
-```fsharp
-// Formal verification of topological invariance
-let verifyTopologicalInvariance (model: Model<'input, 'output>) =
-    // Prove that small perturbations in input preserve
-    // topological features in output
-    let theorem =
-        forall (x: 'input) (delta: 'input) ->
-            when (norm delta < epsilon) ->
-                topologicalDistance(model.forward(x),
-                                   model.forward(x + delta)) < delta'
-
-    // Verify through F*/Fidelity bridge
-    FidelityVerifier.prove theorem
-```
+Beyond our INS reference design, our broader aim is to carry these constraints from shape correctness into deeper mathematical properties, for instance that small perturbations of an input preserve a model's topological features. A property of that kind is not a free theorem from the types; it is a higher-tier obligation, the sort the proof stack reaches where structural typing alone cannot, through the solver's probabilistic fragment or the relational layer that reasons about a model's behavior across paired runs.
 
 While these capabilities are still being developed, they represent the logical extension of our dimensional constraint system - moving from ensuring correct shapes to proving deeper mathematical properties of the models we deploy.
 

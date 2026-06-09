@@ -13,29 +13,25 @@ draft: false
 The [Adaptive Domain Models paper](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), describes a constellation of domain models, each typed by the structure of its domain. A model of rigid-body kinematics carries the grade types of projective geometric algebra; a model of spacetime dynamics carries the Lorentz structure of spacetime algebra; a dimensional finance model carries currency dimensions and the fractional-time dimension of volatility. Each is correct by construction in its domain, and each exchanges values with the others through a shared substrate that preserves those types.
 
 ```fsharp
-// Rigid-body kinematics over projective geometric algebra.
 module Kinematics =
     [<Measure>] type m
     [<Measure>] type s
 
     type Point = Grade1<Pga, m>          // a dimensioned position
-    type Motor = Even<Pga>               // a screw motion: rotation and translation as one
-    type Twist = Grade2<Pga, m/s>        // the bivector a motor exponentiates from
+    type Motor = Even<Pga>               // a screw motion
+    type Twist = Grade2<Pga, m/s>        // a velocity bivector
 
     type Step  = { pose: Point; twist: Twist; dt: float<s> }
-    type Model = DomainModel<Step, Point>     // the constellation's shared request/response interface
+    type Model = DomainModel<Step, Point>
 
-    // f(g·x) = g·f(x), discharged by the verifier
-    let equivariance : Obligation =
-        forall (g: Motor) (x: Step) -> step (act g x) =. act g (step x)
+    let act (g: Motor) (p: Point) : Point = sandwich g p   // grade-preserving sandwich
 
-// The same shape in two more of the domains the prose names.
-type RelativityStep = { frame: Even<Sta>; event: Vector<Sta> }   // Lorentz (1,3): a boost and a four-vector
+type RelativityStep = { frame: Even<Sta>; event: Vector<Sta> }   // Lorentz (1,3)
 
 [<Measure>] type USD
 [<Measure>] type yr
 type OptionQuote<[<Measure>] 'ccy> =
-    { spot: float<'ccy>; vol: float<'ccy^0 / yr^(1/2)> }         // volatility carries yr^-(1/2)
+    { spot: float<'ccy>; vol: float<'ccy^0 / yr^(1/2)> }   // volatility carries yr^-(1/2)
 ```
 
 
