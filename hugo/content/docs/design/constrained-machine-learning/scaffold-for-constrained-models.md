@@ -14,7 +14,7 @@ The [*Adaptive Domain Models*]({{< ref "why-adaptive-domain-models" >}}) article
 
 That boundary is usually read as a limit on ADM. Read the other way, it is a specification for the language node. It says exactly what is missing in the language case, the formal prior the domain models rely on, and forces the question this article answers: with the type scaffold unavailable, what carries the weight instead?
 
-The answer is not chosen freely. It is what the framework's existing commitments produce when they are pointed at a domain without a formal prior. Clef already insists that structure be carried through compilation, that arithmetic be precise, and that guarantees come from the toolchain rather than from trust in the source. We have taken that discipline into a model before: an earlier [CNN-to-TopOC transfer-learning design]({{< ref "/blog/cnn-to-topoc-transfer-learning" >}}) carried Units-of-Measure dimensions from a convolutional backbone through a topological transform and on to FPGA and ASIC targets, so a dimensional inconsistency could not survive compilation. Follow those three commitments into the territory of generative models and they land on a specific architecture: the structure is derived rather than searched, the arithmetic is precise rather than approximate, and the guarantees are moved outside the weights into deterministic machinery the framework already owns. None of these is a substitute for the ADM type discipline. Each is what that discipline's underlying commitments imply once the type-level scaffold itself is unavailable.
+The answer is not chosen freely. It is what our framework's existing commitments produce when they are pointed at a domain without a formal prior. Clef already insists that structure be carried through compilation, that arithmetic be precise, and that guarantees come from the toolchain rather than from trust in the source. We have taken that discipline into a model before: an earlier [CNN-to-TopOC transfer-learning design]({{< ref "/blog/cnn-to-topoc-transfer-learning" >}}) carried Units-of-Measure dimensions from a convolutional backbone through a topological transform and on to FPGA and ASIC targets, so a dimensional inconsistency could not survive compilation. Follow those three commitments into the territory of generative models and they land on a specific architecture: the structure is derived rather than searched, the arithmetic is precise rather than approximate, and the guarantees are moved outside the weights into deterministic machinery the framework already owns. None of these is a substitute for the ADM type discipline. Each is what that discipline's underlying commitments imply once the type-level scaffold itself is unavailable.
 
 What this arrangement produces is a claim about cost. Building and adapting a model this way should be orders of magnitude cheaper than the standard deep-learning pipeline, and the saving is not a tuning trick. It is structural. A derived architecture has few enough meaningful degrees of freedom that the gradient can be obtained by propagating tangents forward through them, in place of storing an activation tape and sweeping a backward graph over a parameter cloud most of which does no identifiable work. The emergent loss is computed over the degrees of freedom that the architecture's own derivation exposes, and there are far fewer of them than an unstructured model carries. The efficiency is what falls out when the loss is computed over structure instead of over an undifferentiated parameter space.
 
@@ -42,7 +42,7 @@ This is where the efficiency thesis stated at the outset is paid for. The derive
 
 That is the setting where forward-mode with multiple tangents becomes competitive, and then preferable. A multi-tangent forward pass propagates a batch of directional derivatives alongside the primal computation, in a single pass, with no stored activation tape and no backward graph. Its classic weakness is that it costs one pass per direction, which loses badly when the directions are the whole parameter cloud. But over a derived low-rank structure the meaningful directions are few, and the tangent set spans only them. The architecture supplies the low rank that makes the tangent set affordable; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case.
 
-The shape of the step makes the bargain concrete: the tangent set is indexed by the derived rank, rather than using the more lenient ambient parameter count. 
+The shape of the step, as we currently lay it out, makes the bargain concrete: the tangent set is indexed by the derived rank, rather than using the more lenient ambient parameter count. 
 
 ```fsharp
 // A dual number over b-posit: primal carried with a tangent, accumulated through the quire.
@@ -77,8 +77,7 @@ Everything above improves the probabilistic substrate. The guarantee lives outsi
 A grammar-constrained decoder, driven by a grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of what the weights prefer. This is a deterministic guard over a probabilistic model, and it splits the labor cleanly:
 
 ```fsharp
-// The decoder is constrained by a grammar, not by the model's habits.
-// Whatever the weights propose, only well-formed Clef survives the filter.
+// Grammar filters the sampler; Composer decides meaning.
 let decode (model: Model) (grammar: ClefGrammar) (prompt: Tokens) : ClefSource =
     model
     |> sampleUnder grammar      // syntactic validity is guaranteed here

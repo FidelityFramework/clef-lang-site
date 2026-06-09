@@ -12,20 +12,16 @@ draft: false
 
 Clef targets LLVM for CPU and native code today, and it does so deliberately and provisionally. LLVM is the pragmatic backend: mature, available now, and the fastest route to a real running artifact. It also carries baggage, an instruction-selection model and a set of assumptions Clef would not choose if it were designing the lowering from scratch, and the framework's longer arc contemplates novel backends that shed that baggage where doing so buys enough to justify the work. The point is not that LLVM is wrong. It is that LLVM is a *stage*: load-bearing now, deliberately temporary, used behind a stable interface so that the backend can be substituted underneath without disturbing everything above it.
 
-The language model in an ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model the later rungs reach is the novel backend, clean of all of it. The interface between the language node and the constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
+The language model in our ADM constellation follows the same strategy exactly. A standing language model, whether a local open-weights model on your own GPU or CPU, or a frontier model reached through an API, is the LLVM of this story. It is the pragmatic backend: it works now, it gets you a running constellation today, and it carries baggage, opaque weights with no formal status, a parameter space that holds capability you do not need, and, on the API path, your data leaving the building. Each rung of the migration sheds more of that baggage, and the fully built model the later rungs reach is the novel backend, clean of all of it. The interface between the language node and the constellation is the stable boundary, designed once at the first rung and held constant while the model behind it matures.
 
-Four rungs, one interface fixed across all of them, and two quantities traced up the ladder: latency, the speed to first useful token, and velocity, the compounding flywheel that each rung hands to the next. Underneath both runs the question the audience for this technology actually asks first, which is where their data goes.
 
 ## The interface is the invariant
 
-Before the rungs, the boundary they share. The language node's job in the constellation is to take unstructured intent and route it to typed domain models that can satisfy it with guarantees. That routing is a tool-call surface, and it is defined in Clef against the domain models, not against any particular language model. The same surface is satisfied by a frontier API, a local open-weights model, a distilled model, or a from-scratch built model. Designing it first, at the rung where the model is least under your control, is what makes the later substitutions cheap.
+Before the rungs, the boundary they share. The language node's job in the constellation is to take unstructured intent and route it to typed domain models that can satisfy it with structurally supported inference. That routing is a tool-call surface, and it is defined in Clef against the domain models, not against any particular language model. The same surface is satisfied by a frontier API, a local open-weights model, a distilled model, or a from-scratch built model. Designing it first, at the rung where the model is least under your control, is what makes the later substitutions cheap.
 
 The Clef in this article is illustrative of the idiom rather than a finalized API surface.
 
 ```fsharp
-// The stable interface. Defined once, against the domain models,
-// independent of which language model sits behind it. Every rung below
-// satisfies this same surface; only the implementation of `propose` changes.
 
 /// A typed domain model in the constellation, correct by construction in its domain.
 type DomainModel<'Request, 'Response> =
@@ -36,29 +32,22 @@ type DomainModel<'Request, 'Response> =
       /// BAREWire schema for zero-copy interchange across the wire.
       wire        : BareSchema<'Request, 'Response> }
 
-/// The language node's contract. It proposes Clef under the grammar; the
-/// Olivier domain actors receive the request over BAREWire. The model behind
-/// `propose` is the variable.
+
 type LanguageNode =
     { /// Propose a Clef request for a goal. Grammar-constrained at decode time.
       propose : Goal -> Async<ClefRequest>
       /// Revise against a dimensional mismatch surfaced at the message fabric.
       revise  : Goal -> ClefRequest -> Mismatch -> Async<ClefRequest> }
 
-/// The routing loop is identical at every rung. Propose under grammar, send the
-/// request to the Olivier actors over BAREWire, revise on a contract mismatch.
-/// The grammar holds syntax at decode; the BAREWire contract, known to both
-/// sides by construction, holds dimensional fit; the loop works the same
-/// whichever model `node` wraps.
+/// The routing loop is identical at every rung. 
 let rec satisfy (node: LanguageNode) (registry: DomainActor list) (goal: Goal) =
     async {
         let! request = node.propose goal
         match registry |> send request with          // BAREWire structured contract
         | Mismatch m ->
             let! _ = node.revise goal request m
-            return! satisfy node registry goal       // bounded retry elided
+            return! satisfy node registry goal       // bounded retry
         | Satisfied result ->
-            // The request reached an actor whose contract it honored;
             // each call is correct by construction.
             return result
     }
@@ -138,7 +127,7 @@ let localDomainModel (schema: BareSchema<'Req,'Resp>) (impl: 'Req -> Result<'Res
     { name = schema.name; wire = schema; invoke = impl }
 ```
 
-The worked example, end to end, is the same regardless of variant. A goal arrives, the node proposes grammar-valid Clef, Composer elaborates it, and the elaborated program dispatches structured calls to the domain models, which answer with guarantees that come from the domain models rather than the language node:
+One full request, from the goal to the dispatched domain call, runs the same way in either variant. A goal arrives, the node proposes grammar-valid Clef, Composer elaborates it, and the elaborated program dispatches structured calls to the domain models, which answer with the structural guarantees their own types carry, not anything the language node supplies:
 
 ```fsharp
 // One worked request, identical across both deployment variants.
@@ -153,11 +142,11 @@ let goal = Goal.ofText "Price this FX-denominated option book and flag any \
 
 // The language node proposes Clef that calls the finance domain model.
 // If it proposes a currency-mismatched call, the finance model's request type
-// rejects it: the dimensional error is unrepresentable, not merely unlikely.
+// rejects it: the dimensional error is unrepresentable.
 let result = satisfy node registry goal |> Async.RunSynchronously
 ```
 
-This is the rung that establishes the data-sovereignty position, and the two variants are precisely the two sovereignty postures. The API variant is the weakest: your prompts, and whatever context they carry, transit a third party, and even with a gateway in front the data has left the building. It is the right rung to start on for the same reason LLVM is the right first backend: it works now and proves the constellation. The local variant keeps everything in-house from the first day, at the cost of running the model yourself. Both satisfy the same interface, so an organization can begin on the API variant to validate the constellation and move to local without touching the routing, the tool surface, or the domain models. The migration that matters most for sovereignty is available at the very first rung, and it is a one-line substitution.
+This is the rung that establishes the data-sovereignty position, and the two variants are precisely the two sovereignty postures. The API variant is the weakest: your prompts, and whatever context they carry, transit a third party, and even with a gateway in front the data has left the building. The local variant keeps everything in-house from the first day. Both satisfy the same interface, so an organization can begin on e API variant to validate the constellation and move to local without touching the routing, the tool surface, or the domain models. The migration that matters most for sovereignty is available at the very first rung, and it is a one-line substitution.
 
 ## Rung two: fine-tune a standing model
 

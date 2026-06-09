@@ -18,7 +18,7 @@ That accounting rests on two assumptions. The parameter space is large and unstr
 
 Forward-mode differentiation propagates a directional derivative alongside the primal computation, in the same forward pass, with no tape and no backward sweep. Its textbook weakness is that one forward pass yields the derivative along one direction, so recovering a full gradient costs one pass per input dimension, which is hopeless when the input dimension is the whole parameter space. This is why reverse-mode dominates: for a model with millions of parameters, millions of forward passes is absurd and one backward pass is not.
 
-The derived architecture removes the premise of that weakness. The directions along which the objective actually moves are not the full ambient parameter space; they are the low-dimensional subspace structure the architecture is built around. The coding-rate objective operates on a union of low-dimensional subspaces, and the meaningful gradient directions live in that union, not in the undifferentiated cloud of all parameters. So the number of tangent directions that need propagating is set by the rank of the derived structure, not by the raw parameter count.
+Our derived architecture removes the premise of that weakness. The directions along which the objective actually moves are not the full ambient parameter space; they are the low-dimensional subspace structure the architecture is built around. The coding-rate objective operates on a union of low-dimensional subspaces, and the meaningful gradient directions live in that union, not in the undifferentiated cloud of all parameters. So the number of tangent directions that need propagating is set by the rank of the derived structure, not by the raw parameter count.
 
 ```fsharp
 // Multi-tangent forward-mode: propagate a batch of directional derivatives
@@ -33,7 +33,7 @@ let forwardGradient
     |> assembleGradient                  // gradient over the structured subspace
 ```
 
-Multiple tangents are what make this competitive. A multi-tangent forward pass carries a batch of directional derivatives at once, and if that batch spans the derived structure's rank, a single structured forward pass would yield the gradient over the directions that matter, with no tape. The architecture supplies the low rank that makes the tangent set small; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case, and neither rescue is available to a black-box model, which has no principled small set of directions, or to a floating-point model, whose accumulated tangents would be too noisy to trust at the bit-widths in play.
+Multiple tangents are what make this competitive. A multi-tangent forward pass carries a batch of directional derivatives at once, and if that batch spans the derived structure's rank, a single structured forward pass would yield the gradient over the directions that matter, with no tape. Our architecture supplies the low rank that makes the tangent set small; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case, and neither rescue is available to a black-box model, which has no principled small set of directions, or to a floating-point model, whose accumulated tangents would be too noisy to trust at the bit-widths in play.
 
 One designated primitive of that pass, written out. A dual value carries the primal and the whole batch of tangents together, and a single op advances both in lockstep, so the derivative travels alongside the value with no tape recording it:
 
@@ -44,8 +44,7 @@ type Dual<[<Measure>] 'Dim> =
     { Primal   : BPosit<'Dim>
       Tangents : BPosit<'Dim>[] }          // length r, one per basis direction
 
-// One forward-mode step over the subspace compression op: advance primal and
-// all r tangents through the same primitive in a single pass. 
+// One forward-mode step: advance the primal and all r tangents in a single pass.
 let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
     z
     |> Array.map (fun d ->
@@ -57,8 +56,7 @@ let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
                 |> Quire.accumulate)                         // no intermediate rounding
             |> Array.map Quire.round
         { Primal = p; Tangents = dt })
-// No backward sweep and no activation tape: the gradient over the r directions
-// is read straight off the Tangents fields after the single pass.
+// The gradient over the r directions is read off the Tangents fields.
 ```
 
 ## Precise arithmetic is what makes the tangents trustworthy
@@ -72,9 +70,7 @@ The payoff is sharpest where this section's models are built and rebuilt. The [b
 The adapter's rank is carried in its type, which is what makes the tangent set the right size by construction rather than by choice. The Clef here is illustrative of the idiom rather than a finalized API surface:
 
 ```fsharp
-// A low-rank adapter as a factored object: the update is A·Bᵀ, and its rank r
-// is a parameter of the type, not a hyperparameter measured after the fact.
-// The base stays frozen; only A and B are trainable.
+// A low-rank adapter, update A·Bᵀ, with rank r in the type and the base frozen.
 type LoraAdapter<[<Measure>] 'Dim, 'Rank> =
     { Down : Matrix<BPosit<'Dim>, 'Rank>     // B: full dim down to rank r
       Up   : Matrix<BPosit<'Dim>, 'Rank> }   // A: rank r back up to full dim

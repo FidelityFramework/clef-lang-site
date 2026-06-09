@@ -18,7 +18,7 @@ We read context rot as a consequence of holding everything in a closed loop. The
 
 Our recurrence design moves through three stages, set out in full in [Typed Recurrence and Categorical Control of Inference]({{< ref "/docs/design/categorical-foundations/typed-recurrence-categorical-control" >}}). The Hidden Recurrent Model is the baseline. A single recurrent loop, an MLGRU in the [matmul-free lineage](https://arxiv.org/abs/2406.02528) our design follows, processes input sequentially with an opaque hidden state, and the loop is closed: it must encode every piece of reasoning, including any domain knowledge it needs, inside its own recurrence. Context rot lives here, in the state vector forced to hold what a long sequence keeps adding to it.
 
-Our Resonant Recurrent Model adds structure inside that loop. The recurrence runs at N resonant levels with learned coupling between them, so information circulates at several timescales at once, the Alpha, Beta, and Gamma rates. This organizes the computation into interacting temporal scales and mitigates the decay within the loop, and the loop stays closed to external state. It is the bounded recurrence our [sub-quadratic generator]({{< ref "the-constellation" >}}) carries: a complex-rotational state that summarizes the past instead of re-attending to it, and the type discipline is designed to keep its decomposition exact through training. A bounded recurrence has nothing to evict, because the state already is the summary the past was compressed into.
+Our Resonant Recurrent Model adds structure inside that loop. The recurrence runs at N resonant levels with learned coupling between them, so information circulates at several timescales at once, the Alpha, Beta, and Gamma rates. This organizes the computation into interacting temporal scales and mitigates the decay within the loop, and the loop stays closed to external state. This Resonant Recurrent Model is the bounded recurrence our [sub-quadratic generator]({{< ref "the-constellation" >}}) carries: a complex-rotational state that summarizes the past instead of re-attending to it, and the type discipline is designed to keep its decomposition exact through training. A bounded recurrence has nothing to evict, because the state already is the summary the past was compressed into.
 
 Our Porous Recurrent Model opens the loop. At designated steps the MLGRU suspends mid-recurrence, emits a structured query to a domain-specific actor, an Adaptive Domain Model, and integrates the structured response as intermediate state before resuming. The query is not "process this text" but a request for the posterior over a domain question given the current recurrent state and its dimensional properties. The response re-enters the loop as a StructuredFact carrying Value, Dimension, Confidence, and Certificate fields, and it crosses over BAREWire, the structured contract both the recurrence and the actor were built to interpret, so the fact arrives with its dimensional annotations intact. It bypasses the tokenization, embedding, and attention path entirely, the path that would have flattened its native structure into a stream. The model no longer encodes all domain knowledge in its weights; it consults a domain specialist and integrates the answer under dimensional and coeffect constraints.
 
@@ -42,25 +42,20 @@ flowchart TB
     HRM --> RRM --> POR
 ```
 
-The shape of one designated step, in the section's illustrative idiom. The Clef here is illustrative of the idiom rather than a finalized API surface, and the four StructuredFact fields are fixed by the recurrence entry.
+One designated step takes the shape we sketch below. The Clef here conveys the idiom rather than a finalized API surface, and the four StructuredFact fields are fixed by the recurrence entry.
 
 ```fsharp
-// The fact an Adaptive Domain Model returns into the recurrence.
-// It crosses BAREWire as native structure: the Dimension and Certificate
-// would not survive a tokenize-embed-attend round trip.
+// What an ADM returns into the recurrence, as native structure over BAREWire.
 type StructuredFact<[<Measure>] 'Dim> =
     { Value      : float<'Dim>            // dimensioned, e.g. mol/L or USD
       Dimension  : DimensionalType<'Dim>  // the DTS annotation, checked at the fabric
       Confidence : Interval               // the ADM's Bayesian posterior, not a softmax
       Certificate: PhgCertificate }       // the actor's discharged structural proof
 
-// A structured query carries the recurrent state and its dimensional properties,
-// not a tokenized prompt.
+// The query: recurrent state plus dimensional properties, not a prompt.
 type DomainQuery = { State : RecurrentState; Props : DimensionalType list }
 
-// One designated step of the porous loop: advance the resonant recurrence,
-// and on a relevance gate suspend, consult a domain actor over BAREWire,
-// integrate the returned fact as intermediate state, resume.
+// One designated step: advance, or suspend to consult an actor and integrate the fact.
 let porousStep (mlgru: MLGRU) (adm: DomainActor) (h: RecurrentState) : RecurrentState =
     if not (mlgru.IsDesignatedStep h) then
         mlgru.Advance h                       // closed-loop advance, as in the RRM

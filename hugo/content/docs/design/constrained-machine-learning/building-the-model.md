@@ -20,22 +20,10 @@ Instilling Clef and removing the inherited accent are different problems, and co
 
 The order is the subtle part. The conventional sequence is competence first, preference last, but that ordering lets the final preference pass re-import the accent it was meant to remove, because the pass that runs last shapes the final distribution. Running damping first introduces its own tension: a preference method suppresses a direction relative to a positive target, and a model with no Clef competence yet has no positive side to point at.
 
-Both tensions resolve by reframing the first pass as generic functionalization rather than Clef-specific instilling. Pass one damps imperative and dynamically-typed reflexes toward the ML-family functional idiom, using F#, OCaml, and Haskell as the positive direction. That target is high-resource and exists independent of Clef, so the preference objective has something concrete to push toward. Pass one shapes the model's computational temperament:
 
-```fsharp
-// The temperament pass one instills, stated as the transformations it favors:
-//   loops            ~>  folds and recursion
-//   null             ~>  Option
-//   exceptions       ~>  Result
-//   class hierarchy  ~>  discriminated unions
-//   in-place mutation ~> persistent structures and explicit regions
-```
+## The damping taxonomy
 
-Pass two then specializes that functional substrate to Clef proper: the language's opinions, its grammar, and its tool calls. Two safeguards hold the order in place. A small slice of the pass-one contrastive pairs is replayed into pass two, so the final pass reinforces the damping instead of eroding it. And pass one is scoped to coding idiom only, leaving the model's tool-call and structured-output protocol intact, because pass two builds the compiler and language-server tool reflexes on top of that protocol.
-
-## The damping taxonomy: do not teach the model to distrust its own compiler
-
-JavaScript is the case that forces precision, and it is where a naive damping scheme does real harm. Clef emits JavaScript: it lowers through Alex to a JavaScript intermediate representation and produces JavaScript whose verification lives in the shared middle-end. A separate path reads TypeScript surfaces to produce Clef externs with witnessing rules. So JavaScript competence is load-bearing in two roles the framework depends on, reading it to bind it, and recognizing well-formed emitted output, and a damping pass that simply suppressed JavaScript would corrupt both.
+JavaScript is the case that forces precision, and it is where a naive damping scheme does real harm. Clef emits JavaScript: it lowers through Alex to a JavaScript intermediate representation and produces JavaScript whose verification lives in the shared middle-end. A separate path reads TypeScript surfaces to produce Clef externs with witnessing rules. So JavaScript competence is load-bearing in two roles our framework depends on, reading it to bind it, and recognizing well-formed emitted output, and a damping pass that simply suppressed JavaScript would corrupt both.
 
 The landscape therefore has to be stratified into three classes, and every JavaScript example in the contrastive catalog carries one of three labels set by the role it plays:
 
@@ -56,18 +44,16 @@ The discriminating question for every example is whether the JavaScript is autho
 
 ## What constrains the output, and when
 
-Tuning shapes what the model prefers; the grammar guarantees the form it emits. At runtime the grammar does that work: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node deploys on the grammar alone.
+Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node deploys on the grammar alone.
 
 Semantic correctness is a separate matter, and the build settles it. During tuning, Composer is the teacher: the model proposes Clef, the compiler elaborates it or hands back diagnostics, the model revises, and producing elaborable Clef becomes a trained reflex the model carries into deployment.
 
 ```fsharp
-// Build time only. The compiler is the teacher here:
-// the model proposes Clef, Composer elaborates it or returns diagnostics,
-// and the model revises until elaborable Clef is a learned reflex.
+// Build-time only: revise until Composer elaborates the attempt.
 let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Program =
     match Composer.elaborate attempt with
-    | Ok program  -> program
-    | Error diags -> trainAuthoring model goal (model.revise goal attempt diags)
+    | Ok program  -> program                                             // accepted
+    | Error diags -> trainAuthoring model goal (model.revise goal attempt diags)   // revise on the diagnostics
 ```
 
 The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
