@@ -14,7 +14,7 @@ The [*Adaptive Domain Models*]({{< ref "why-adaptive-domain-models" >}}) article
 
 That boundary is usually read as a limit on ADM. Read the other way, it is a specification for the language node. It says exactly what is missing in the language case, the formal prior the domain models rely on, and forces the question this article answers: with the type scaffold unavailable, what carries the weight instead?
 
-The answer is not chosen freely. It is what the framework's existing commitments produce when they are pointed at a domain without a formal prior. Clef already insists that structure be carried through compilation, that arithmetic be precise, and that guarantees come from the toolchain rather than from trust in the source. Follow those three commitments into the territory of generative models and they land on a specific architecture: the structure is derived rather than searched, the arithmetic is precise rather than approximate, and the guarantees are moved outside the weights into deterministic machinery the framework already owns. None of these is a substitute for the ADM type discipline. Each is what that discipline's underlying commitments imply once the type-level scaffold itself is unavailable.
+The answer is not chosen freely. It is what the framework's existing commitments produce when they are pointed at a domain without a formal prior. Clef already insists that structure be carried through compilation, that arithmetic be precise, and that guarantees come from the toolchain rather than from trust in the source. We have taken that discipline into a model before: an earlier [CNN-to-TopOC transfer-learning design]({{< ref "/blog/cnn-to-topoc-transfer-learning" >}}) carried Units-of-Measure dimensions from a convolutional backbone through a topological transform and on to FPGA and ASIC targets, so a dimensional inconsistency could not survive compilation. Follow those three commitments into the territory of generative models and they land on a specific architecture: the structure is derived rather than searched, the arithmetic is precise rather than approximate, and the guarantees are moved outside the weights into deterministic machinery the framework already owns. None of these is a substitute for the ADM type discipline. Each is what that discipline's underlying commitments imply once the type-level scaffold itself is unavailable.
 
 What this arrangement produces is a claim about cost. Building and adapting a model this way should be orders of magnitude cheaper than the standard deep-learning pipeline, and the saving is not a tuning trick. It is structural. A derived architecture has few enough meaningful degrees of freedom that the gradient can be obtained by propagating tangents forward through them, in place of storing an activation tape and sweeping a backward graph over a parameter cloud most of which does no identifiable work. The emergent loss is computed over the degrees of freedom that the architecture's own derivation exposes, and there are far fewer of them than an unstructured model carries. The efficiency is what falls out when the loss is computed over structure instead of over an undifferentiated parameter space.
 
@@ -41,6 +41,30 @@ There is an honest hazard here. Posit precision is not uniform; it is densest ne
 This is where the efficiency thesis stated at the outset is paid for. The derived architecture has few meaningful degrees of freedom, and the gradient of the emergent loss can be taken over exactly those, which is what makes the saving structural rather than incidental. Reverse-mode automatic differentiation earns its reputation by amortizing one backward pass over many parameters, but that accounting assumes a large, unstructured parameter space and cheap, noisy arithmetic. A derived architecture violates the first assumption in our favor: the directions the objective actually moves along are not the full ambient parameter space but the low-dimensional subspace structure the architecture is built around.
 
 That is the setting where forward-mode with multiple tangents becomes competitive, and then preferable. A multi-tangent forward pass propagates a batch of directional derivatives alongside the primal computation, in a single pass, with no stored activation tape and no backward graph. Its classic weakness is that it costs one pass per direction, which loses badly when the directions are the whole parameter cloud. But over a derived low-rank structure the meaningful directions are few, and the tangent set spans only them. The architecture supplies the low rank that makes the tangent set affordable; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case.
+
+The shape of the step makes the bargain concrete: the tangent set is indexed by the derived rank, rather than using the more lenient ambient parameter count. 
+
+```fsharp
+// A dual number over b-posit: primal carried with a tangent, accumulated through the quire.
+type Dual = { Primal: BPosit; Tangent: BPosit }
+
+// One forward step of the derived block, propagating r tangents at once.
+// r = the derived rank, not the parameter count.
+let forwardStep
+        (block: GradedSubspaceBasis<Bivector>[])   // the derived block, grade-typed
+        (z: Dual[])                                 // primal field carrying r tangents
+        : Dual[] =
+    block
+    |> Array.map (fun u ->
+        z
+        |> compressAgainst u            // the same rate-reduction step, run on duals
+        |> Quire.accumulateDual)        // primal and tangent, one quire, no rounding
+    |> SubspaceAggregation.byGrade      // off-block directions never enter the tangent
+
+// gradient = the tangents of one forward pass.
+let gradient (block: GradedSubspaceBasis<Bivector>[]) (x: Dual[]) : BPosit[] =
+    forwardStep block x |> Array.map (fun d -> d.Tangent)
+```
 
 The payoff concentrates exactly where this section's models are built and adapted. Tuning is planned as low-rank adaptation throughout: a stable functional base with a swappable Clef-specific adapter over it. A low-rank adapter is the ideal target for multi-tangent forward-mode, because the tangent set spans the adapter's rank, which is small by construction. Distillation and fine-tuning, the regimes this whole program operates in, are precisely the regimes where a few storage-free forward passes cost less than reverse-mode with its activation tape. The precision argument and the efficiency argument turn out to be one argument seen from two ends: precise arithmetic lets the accumulated tangents be trusted, and the derived structure lets there be few enough of them to be cheap.
 

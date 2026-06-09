@@ -35,6 +35,32 @@ let forwardGradient
 
 Multiple tangents are what make this competitive. A multi-tangent forward pass carries a batch of directional derivatives at once, and if that batch spans the derived structure's rank, a single structured forward pass would yield the gradient over the directions that matter, with no tape. The architecture supplies the low rank that makes the tangent set small; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case, and neither rescue is available to a black-box model, which has no principled small set of directions, or to a floating-point model, whose accumulated tangents would be too noisy to trust at the bit-widths in play.
 
+One designated primitive of that pass, written out. A dual value carries the primal and the whole batch of tangents together, and a single op advances both in lockstep, so the derivative travels alongside the value with no tape recording it:
+
+```fsharp
+// A dual value: the primal and the batch of directional derivatives that ride
+// with it. The tangent width is the derived structure's rank r, so the batch is small for a structural reason.
+type Dual<[<Measure>] 'Dim> =
+    { Primal   : BPosit<'Dim>
+      Tangents : BPosit<'Dim>[] }          // length r, one per basis direction
+
+// One forward-mode step over the subspace compression op: advance primal and
+// all r tangents through the same primitive in a single pass. 
+let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
+    z
+    |> Array.map (fun d ->
+        let p  = compressAgainst u d.Primal |> Quire.round   // primal advances
+        let dt =
+            d.Tangents
+            |> Array.map (fun t ->
+                jvp (compressAgainst u) d.Primal t           // J·t, the directional derivative
+                |> Quire.accumulate)                         // no intermediate rounding
+            |> Array.map Quire.round
+        { Primal = p; Tangents = dt })
+// No backward sweep and no activation tape: the gradient over the r directions
+// is read straight off the Tangents fields after the single pass.
+```
+
 ## Precise arithmetic is what makes the tangents trustworthy
 
 The forward-propagated tangent is itself a long accumulation, and its quality is the same accumulation-precision question the [architecture article]({{< ref "architecture-and-arithmetic" >}}) raised for the rate objective. This is why the precision pillar and the efficiency pillar are not two separate choices. The quire that keeps the coding-rate separation sharp is the same quire that keeps the forward tangent accurate, because both are long accumulations carried without intermediate rounding. Committing to b-posit and the quire for the architecture's sake is intended to give the trustworthy tangents the efficiency mechanism needs, at no additional cost. The two pillars share one substrate decision.
@@ -42,6 +68,23 @@ The forward-propagated tangent is itself a long accumulation, and its quality is
 ## Where the saving concentrates: adaptation and distillation
 
 The payoff is sharpest exactly where this section's models are built and rebuilt. The [building article]({{< ref "building-the-model" >}}) commits the tuning to low-rank adaptation throughout: a stable functional base with a swappable Clef adapter over it, the adapter warm-rotating as the language evolves. A low-rank adapter is a natural fit for multi-tangent forward-mode, because the adapter's trainable space is already low-rank by construction, so the tangent set that spans it is small for a reason independent of the architecture's own rank. Adapting the model means taking gradients over the adapter's handful of dimensions, in a few storage-free forward passes, instead of taping activations through the entire base for a backward sweep.
+
+The adapter's rank is carried in its type, which is what makes the tangent set the right size by construction rather than by choice. The Clef here is illustrative of the idiom rather than a finalized API surface:
+
+```fsharp
+// A low-rank adapter as a factored object: the update is A·Bᵀ, and its rank r
+// is a parameter of the type, not a hyperparameter measured after the fact.
+// The base stays frozen; only A and B are trainable.
+type LoraAdapter<[<Measure>] 'Dim, 'Rank> =
+    { Down : Matrix<BPosit<'Dim>, 'Rank>     // B: full dim down to rank r
+      Up   : Matrix<BPosit<'Dim>, 'Rank> }   // A: rank r back up to full dim
+
+// The tangent basis is the adapter's 2·r columns, derived from the type.
+// The forward pass needs no more tangents than this.
+let tangentBasis (adapter: LoraAdapter<'Dim, 'Rank>) : TangentBasis =
+    TangentBasis.spanning [ Param.columns adapter.Down
+                            Param.columns adapter.Up ]   // |basis| = 2·r
+```
 
 Distillation has the same shape. Distilling from a teacher into a student adapter, or refreshing the Clef adapter against an evolved grammar, is a low-rank fine-tuning operation, the one performed most often in practice. These are precisely the regimes where a few storage-free forward passes cost less than a full reverse-mode pass with its tape, and they are the regimes the constellation lives in, because a constellation of domain models plus a language component is rebuilt and re-adapted far more often than it is trained from scratch.
 

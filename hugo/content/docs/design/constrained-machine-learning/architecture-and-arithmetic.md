@@ -70,6 +70,18 @@ This is the offer, stated plainly. The published operator and the reframed one d
 
 The two readings produce different artifacts from the same text, and the difference is the substrate, not the intelligence of the reader. The book itself does not choose between them; it is, in its own framing, a theory of what the structure *is*. A substrate that can hold structure as a typed, discharged, precisely-accumulated invariant can take the second reading. Where the framework engages the book by name from here on, it is this second reading that is meant, offered as an invitation to anyone whose substrate can support it.
 
+The layer's other operator reframes the same way: CRATE pairs each compression step with a sparsification step, the ISTA block from `model/crate.py`. 
+
+```fsharp
+// D is the learned dictionary; one proximal-gradient step toward sparsity.
+let istaStep (d: Dictionary<BPosit>) (lambda: BPosit) (step: BPosit) (x: TokenField) : TokenField =
+    let dx   = d * x                          // D x
+    let dtdx = Dictionary.adjoint d * dx      // Dᵀ (D x)
+    let dtx  = Dictionary.adjoint d * x       // Dᵀ x
+    let grad = step * (dtx - dtdx) - step * lambda    // negative-gradient update, in the quire
+    x + grad |> TokenField.map (max BPosit.zero)      // ReLU: soft-threshold toward sparsity
+```
+
 
 ## Why convergence is not enough on its own
 

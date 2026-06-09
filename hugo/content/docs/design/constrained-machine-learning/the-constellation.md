@@ -12,6 +12,33 @@ draft: false
 
 The [Adaptive Domain Models paper](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), describes a constellation of domain models, each typed by the structure of its domain. A model of rigid-body kinematics carries the grade types of projective geometric algebra; a model of spacetime dynamics carries the Lorentz structure of spacetime algebra; a dimensional finance model carries currency dimensions and the fractional-time dimension of volatility. Each is correct by construction in its domain, and each exchanges values with the others through a shared substrate that preserves those types.
 
+```fsharp
+// Rigid-body kinematics over projective geometric algebra.
+module Kinematics =
+    [<Measure>] type m
+    [<Measure>] type s
+
+    type Point = Grade1<Pga, m>          // a dimensioned position
+    type Motor = Even<Pga>               // a screw motion: rotation and translation as one
+    type Twist = Grade2<Pga, m/s>        // the bivector a motor exponentiates from
+
+    type Step  = { pose: Point; twist: Twist; dt: float<s> }
+    type Model = DomainModel<Step, Point>     // the constellation's shared request/response interface
+
+    // f(g·x) = g·f(x), discharged by the verifier
+    let equivariance : Obligation =
+        forall (g: Motor) (x: Step) -> step (act g x) =. act g (step x)
+
+// The same shape in two more of the domains the prose names.
+type RelativityStep = { frame: Even<Sta>; event: Vector<Sta> }   // Lorentz (1,3): a boost and a four-vector
+
+[<Measure>] type USD
+[<Measure>] type yr
+type OptionQuote<[<Measure>] 'ccy> =
+    { spot: float<'ccy>; vol: float<'ccy^0 / yr^(1/2)> }         // volatility carries yr^-(1/2)
+```
+
+
 A language component cannot be a citizen of that kind. The prior structure of language admits no compact formal specification, so there is no grade to type and no invariant to discharge. The entire section to this point has been an argument that this does not exile the language component from the constellation; it changes the terms of its membership. The component is precise by construction, through the [arithmetic]({{< ref "architecture-and-arithmetic" >}}), and bounded by the compiler, through the [constraint layer]({{< ref "building-the-model" >}}), and it shares the substrate, the provenance discipline, and the numeric format of every domain model around it. It is a citizen that wears no type but observes every other law. The right image for it is a porous node.
 
 ## Porous in a specific sense
@@ -33,6 +60,19 @@ The framework's claim is that this meeting is governed, not chaotic, because bot
 A result from outside the framework, [Puranik's group-theoretic analysis of positional encodings](https://blog.janestreet.com/using-group-theory-to-explore-positional-encodings-attention/) and the related [GRAPE](https://arxiv.org/abs/2512.07805) work of Zhang et al., supplies the bridge. Any positional encoding satisfying linearity, translation invariance, and continuity must take the form of a one-parameter matrix group, the exponential of a fixed generator. The design space of positional encodings reduces to the choice of that generator, and the generators classify by canonical form: a generator with a real negative eigenvalue gives the exponential decay of linear-attention variants, a complex-pair generator gives the constant-frequency rotation of RoPE, a generator with both gives damped RoPE, and a defective nilpotent generator gives the linear-in-position behavior of ALiBi.
 
 This is exactly the object the ADM substrate is built on. A rotor is the exponential of a bivector; the group action is the sandwich product; equivariance is the exactness of that one-parameter group under the algebra's metric. The external classification, reached by generic linear algebra, is the grade decomposition of the generator reached by geometric algebra. RoPE is a blockwise bivector exponential. The external result's non-interacting subspaces are the framework's structural zeros, the provably-zero off-block entries of a block-diagonal exponential. And the external result's unexplored defective class, the one its author marks as probably impractical, is the translator subgroup that projective geometric algebra represents natively, where a null bivector squares to zero and the translator truncates to its linear term.
+
+The two cases, in the section's idiom. The Clef here is illustrative of the idiom rather than a finalized API surface.
+
+```fsharp
+// The rotor case: a block-diagonal bivector generator.
+let rotor (b: BlockDiagonal<Bivector<Pga>>) : Even<Pga> =
+    Ga.exp b                                 // block-diagonal in, block-diagonal out; off-block has no storage
+
+// The defective case PGA carries natively: a null bivector.
+let translate (n: NullBivector<Pga>) : Motor<Pga> =
+    Motor.one + n                            // n*n = 0, so exp(n) = 1 + n exactly
+```
+
 
 So positional encoding is a subsystem of an attention model where the structure is known with certainty before any training example arrives: it is a small, group-theoretically closed family characterized by a single graded generator. That is precisely the ADM admissibility condition. The generator can be typed as a graded element, the one-parameter-group constraint enforced at design time, and the encoding made grade-preserving, sparsity-stable, and exactly equivariant through [forward-mode and quire training]({{< ref "forward-mode-and-adaptation" >}}), with no claim made about the rest of the model. The constructed-structure discipline reaches exactly this far into the attention model and no further, and the external result marks where the boundary sits.
 

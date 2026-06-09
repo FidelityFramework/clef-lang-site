@@ -20,9 +20,43 @@ Four points from the pre-print carry the weight of everything downstream.
 
 **Structure becomes a type, and the type is exact.** The pre-print's central move is to express domain structure in a grade-typed algebra, geometric algebra for the physical domains, so that a quantity's grade, a scalar, a vector, a bivector, is a type-level fact. Operations that would violate the grade structure do not type-check, and the structure that survives is exact, not a learned approximation, because the type governs it directly, fixing it in the weights the model fits.
 
+```fsharp
+// A domain model whose request and response carry the domain's grade and
+// dimension at the type level.
+type AdaptiveDomainModel<'Req, 'Resp> =
+    { algebra : GeometricAlgebra<Pga>              // the domain's grade structure, fixed
+      invoke  : DimensionalType<'Req> -> Result<DimensionalType<'Resp>, DomainError>
+      wire    : BareSchema<'Req, 'Resp> }          // BAREWire layout for the boundary
+
+// A velocity is a Grade1 element; the sandwich product preserves grade.
+let step (m: AdaptiveDomainModel<_,_>) (motor: Even) (v: Grade1) : Grade1 =
+    sandwich motor v          // M v M~ stays Grade1; a Grade2 result would not type-check
+
+// An equivariance obligation over the motor group.
+let equivariance : Obligation =
+    forall (fun (g: Even) (v: Grade1) ->
+        step m (compose g motor) v = sandwich g (step m motor v))   // discharged, not learned
+```
+
 **Precision survives training, where generic statistical structure can drift.** A learned regularity degrades under the very process that produced it: continued training, fine-tuning, distribution shift all erode a structure that was only ever an average. A typed invariant does not, because training optimizes within the admissible space the type defines rather than toward a structure it might leave. The pre-print's forward-mode-plus-quire discipline is what holds the invariant exact through training in finite-precision arithmetic, closing the gap between exact-arithmetic structure and machine structure.
 
 **The structural zeros are provable, and useful.** A block-diagonal generator has a block-diagonal exponential, and the off-block entries are provably zero by the grade structure. Where a monolithic model would spend capacity learning that certain interactions are absent, and spend it imperfectly, an ADM has those absences as type-level facts. The model carries no parameters for interactions the domain forbids, which is the first hint of the hardware argument below.
+
+The distinction the paragraph draws, the absent zero against the learned-near-zero, in the idiom. The Clef here is illustrative of the idiom rather than a finalized API surface.
+
+```fsharp
+// Dense: every interaction is a parameter.
+type DenseGenerator = float<1>[,]               // n*n entries, all representable
+
+// Structured: block-diagonal by type; off-block entries have no storage.
+type BlockGenerator =
+    { blocks : GradedBlock<Bivector>[] }        // only on-block entries exist
+
+let exponential (g: BlockGenerator) : BlockTransform =
+    g.blocks
+    |> Array.map expBlock                       // block-diagonal in, block-diagonal out
+    |> BlockTransform.assemble                  // off-block zeros never enter the sum
+```
 
 **The obligations are tiered and discharged, not asserted.** Structure that is decidable is discharged automatically at the appropriate tier; structure that is not is carried as an explicit obligation to a relational backend, with the faithfulness of each result recorded rather than assumed. The model does not merely claim its invariants; it carries the evidence that they hold, into the running artifact.
 
