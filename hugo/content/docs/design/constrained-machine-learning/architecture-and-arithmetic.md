@@ -12,14 +12,6 @@ draft: false
 
 The section index attributes the architectural half of this program to Buchanan, Pai, Wang, and Ma's [*Principles and Practice of Deep Representation Learning*](https://ma-lab-berkeley.github.io/deep-representation-learning-book/). One idea grounds it: a network layer is one step of an optimization algorithm. The algorithm climbs an information-theoretic objective, the coding-rate reduction, whose maximization drives a representation toward a union of low-dimensional, mutually incoherent subspaces. The attention block emerges as the step that compresses the representation against those subspaces; the feed-forward block emerges as the step that sparsifies. The architecture is the unrolled optimizer, and the resulting [CRATE](https://github.com/Ma-Lab-Berkeley/CRATE) family, now with a causal variant for sequences, has a closed-form reason for every block it contains.
 
-The objective has two terms, and the step moves opposite ways on them: it raises the coding rate of the whole representation \(R(\mathbf{Z})\) and lowers the coding rate of each class \(R^{c}\). The quantity it climbs is their difference, the coding-rate reduction \(\Delta R\):
-
-\[
-\Delta R(\mathbf{Z}\mid\mathbf{\Pi}) = \underbrace{\tfrac{1}{2}\log\det\!\left(\mathbf{I} + \tfrac{d}{\varepsilon^{2}}\tfrac{\mathbf{Z}\mathbf{Z}^{\top}}{m}\right)}_{R(\mathbf{Z})} - \underbrace{\sum_{k=1}^{K}\tfrac{\operatorname{tr}(\mathbf{\Pi}_k)}{2m}\log\det\!\left(\mathbf{I} + \tfrac{d}{\varepsilon^{2}}\tfrac{\mathbf{Z}\mathbf{\Pi}_k\mathbf{Z}^{\top}}{\operatorname{tr}(\mathbf{\Pi}_k)}\right)}_{R^{c}(\mathbf{Z}\mid\mathbf{\Pi})}
-\]
-
-Each layer is one gradient-ascent step on it, \(\mathbf{Z}^{\ell+1} = \mathbf{Z}^{\ell} + \eta\,\partial\Delta R/\partial\mathbf{Z}\), and the attractor is the union of incoherent subspaces the derivation turns on.
-
 The consequence that matters here is accountability of parameters. A black-box transformer offers no principled account of which weights do what, so the only way to make it smaller is to prune after training and measure what broke. A derived architecture inverts this. You instantiate the blocks the objective requires and no others, and the representation the trained model carries is, by the derivation, a set of separated subspaces. There is a known answer to the question "what is this part of the model doing," and the answer is the same for every model of the family.
 
 That separated-subspace target is the point of contact with ADM. The [ADM substrate](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), enforces block-separated structure by construction: a block-diagonal generator has a block-diagonal exponential, and the off-block entries are provably zero by the grade type system. The derived architecture reaches the same geometry by a different road, as the attractor of an optimization rather than as a typed invariant. The [positional-encoding analysis]({{< ref "the-constellation" >}}) elsewhere in this section shows the two roads meeting on one concrete subsystem; here the claim is the general one. Same target geometry, construction in one case, convergence in the other.
@@ -30,7 +22,7 @@ That construction is a prior on weights. For a Clifford layer between grades \(k
 p(W) \propto \mathbf{1}\!\left[\,W \in \mathcal{W}_{\mathrm{adm}}\,\right]\,\tilde{p}(W)
 \]
 
-The orthogonal projector \(\Pi_{\mathrm{adm}}\) onto \(\mathcal{W}_{\mathrm{adm}}\) is a deterministic function of the layer's type signature, so configurations at forbidden grade pairs hold zero probability and leave the support. That is the difference between a filter and a regularizer: the coding-rate ascent admits incompatible structure at an energy cost it then pays down, where the type system drops it from the support outright.
+The orthogonal projector \(\Pi_{\mathrm{adm}}\) onto \(\mathcal{W}_{\mathrm{adm}}\) is a deterministic function of the layer's type signature, so configurations at forbidden grade pairs hold zero probability and leave the support. That projector is where the two roads meet: the coding-rate compression projects a representation onto its subspaces, and this prior projects a weight onto the grades its type allows. The same operator, reached by an optimization that converges to it or by a type that declares it from the start. We're gratified to see our work coincide with Ma's thesis.
 
 ## Two readings of the same book
 
