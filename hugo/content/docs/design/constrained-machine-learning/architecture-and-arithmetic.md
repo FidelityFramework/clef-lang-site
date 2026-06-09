@@ -139,8 +139,8 @@ It also sets up the section's sharpest efficiency contrast, developed in the [co
 
 ## Open questions
 
-Whether posit's tapered precision aligns with the rate objective's numerical stress, or whether the quire must carry the tails, is the bench experiment named above.
+Whether posit's tapered precision aligns with the rate objective's numerical stress, or whether the quire must carry the tails, is a bench experiment in waiting.
 
-Whether a derived architecture trained on b-posit reaches target representation quality at lower parameter count than the same architecture on floating point, as the noise-hedge argument predicts, is measurable on the same bench.
+Determining how a derived architecture trained on b-posit reaches target representation quality at lower parameter count than the same architecture on floating point, as the noise-hedge argument predicts, is measurable on the same bench.
 
-Whether the causal CRATE variant's rate operations remain well-conditioned under the framework's arithmetic across the full sequence length, or degrade with context, is a conditioning question specific to the sequence case.
+And how might a causal CRATE variant's rate operations remain well-conditioned under the framework's arithmetic across the full sequence length, or degrade with context, is a conditioning question specific to the sequence case. All of these are worthy subjects in pursuit of what Ma frames as "AI 2.0."
