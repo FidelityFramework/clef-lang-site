@@ -22,7 +22,7 @@ That construction is a prior on weights. For a Clifford layer between grades \(k
 p(W) \propto \mathbf{1}\!\left[\,W \in \mathcal{W}_{\mathrm{adm}}\,\right]\,\tilde{p}(W)
 \]
 
-The orthogonal projector (\Pi_{\mathrm{adm}}) onto (\mathcal{W}_{\mathrm{adm}}) is a deterministic function of the layer's type signature, so configurations at forbidden grade pairs hold zero probability and leave the support. It is the operation both approaches reach: the coding-rate compression projects a representation onto its subspaces, and this prior projects a weight onto the grades its type allows. We're gratified to see our work coincide with Ma's thesis.
+The orthogonal projector \(\Pi_{\mathrm{adm}}\) onto \(\mathcal{W}_{\mathrm{adm}}\) is a deterministic function of the layer's type signature, so configurations at forbidden grade pairs hold zero probability and leave the support. It is the operation both approaches reach: the coding-rate compression projects a representation onto its subspaces, and this prior projects a weight onto the grades its type allows. We're gratified to see our work coincide with Ma's thesis.
 
 ## Two readings of the same book
 
