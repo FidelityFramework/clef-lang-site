@@ -22,14 +22,6 @@ Four points from our ADM pre-print carry the weight of everything downstream.
 
 **Structure becomes a type, and the type is exact.** The pre-print's central move is to express domain structure in a grade-typed algebra, geometric algebra for the physical domains, so that a quantity's grade, a scalar, a vector, a bivector, is a type-level fact. Operations that would violate the grade structure do not type-check, and the structure that survives is exact, not a learned approximation, because the type governs it directly, fixing it in the weights the model fits.
 
-```fsharp
-type AdaptiveDomainModel<'Req, 'Resp> =
-    { algebra : GeometricAlgebra<Pga>
-      invoke  : DimensionalType<'Req> -> Result<DimensionalType<'Resp>, DomainError>
-      wire    : BareSchema<'Req, 'Resp> }
-
-let step (motor: Even) (v: Grade1) : Grade1 = sandwich motor v   // M v M~, grade-preserving
-```
 
 **Precision survives training, where generic statistical structure can drift.** A learned regularity degrades under the very process that produced it: continued training, fine-tuning, distribution shift all erode a structure that was only ever an average. A typed invariant does not, because training optimizes within the admissible space the type defines rather than toward a structure it might leave. The pre-print's forward-mode-plus-quire discipline is what holds the invariant exact through training in finite-precision arithmetic, closing the gap between exact-arithmetic structure and machine structure.
 
