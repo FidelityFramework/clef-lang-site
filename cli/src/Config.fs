@@ -91,6 +91,10 @@ module Config =
         LastSyncTimestamp: DateTime option
         LastDeployedCommit: string option
         LastGoSumHash: string option
+        // Resolved go-module version of clef-lang-spec at the last deploy
+        // (pseudo-version embeds the fidelity-branch commit). Used to detect
+        // upstream spec changes without first pulling the module.
+        LastSpecVersion: string option
     }
 
     let loadConfig () : Result<CloudflareConfig, string> =
@@ -145,4 +149,5 @@ module Config =
         LastSyncTimestamp = None
         LastDeployedCommit = None
         LastGoSumHash = None
+        LastSpecVersion = None
     }

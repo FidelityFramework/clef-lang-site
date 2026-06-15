@@ -195,6 +195,7 @@ module Provision =
                 LastSyncTimestamp = existing.LastSyncTimestamp
                 LastDeployedCommit = existing.LastDeployedCommit
                 LastGoSumHash = existing.LastGoSumHash
+                LastSpecVersion = existing.LastSpecVersion
             }
 
             Config.saveState state

@@ -1,6 +1,7 @@
 namespace ClefLang.CLI.Commands
 
 open System
+open System.Diagnostics
 open System.IO
 open System.Security.Cryptography
 open ClefLang.CLI
@@ -16,6 +17,82 @@ module SmartDeploy =
             let bytes = sha.ComputeHash(stream)
             Some (BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant())
         else None
+
+    /// Run a process with extra environment variables and capture stdout (Ok) or stderr (Error)
+    let private runProcessOut
+        (name: string)
+        (args: string)
+        (workingDir: string)
+        (env: (string * string) list)
+        : Result<string, string> =
+        try
+            let psi = ProcessStartInfo(name, args)
+            psi.WorkingDirectory <- workingDir
+            psi.RedirectStandardOutput <- true
+            psi.RedirectStandardError <- true
+            psi.UseShellExecute <- false
+            psi.CreateNoWindow <- true
+            for key, value in env do
+                psi.Environment.[key] <- value
+            use proc = Process.Start(psi)
+            let stdout = proc.StandardOutput.ReadToEnd()
+            let stderr = proc.StandardError.ReadToEnd()
+            proc.WaitForExit()
+            if proc.ExitCode = 0 then Ok stdout else Error stderr
+        with ex -> Error ex.Message
+
+    /// The clef-lang-spec go-module import path, read from hugo/go.mod.
+    /// This is the stable module identifier; it does NOT change when the backing
+    /// git remote moves hosts (e.g. github.com → forge.spkez.dev), so we never
+    /// hardcode a remote URL here.
+    let private specModulePath (workingDir: string) : string option =
+        let goMod = Path.Combine(workingDir, "hugo", "go.mod")
+        if File.Exists(goMod) then
+            File.ReadAllLines(goMod)
+            |> Array.tryPick (fun line ->
+                let parts = line.Trim().Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+                if parts.Length >= 1 && parts.[0].Contains("clef-lang-spec") then Some parts.[0]
+                else None)
+        else None
+
+    /// The spec version currently pinned in hugo/go.mod (what is vendored/deployed locally)
+    let private pinnedSpecVersion (workingDir: string) : string option =
+        let goMod = Path.Combine(workingDir, "hugo", "go.mod")
+        if File.Exists(goMod) then
+            File.ReadAllLines(goMod)
+            |> Array.tryPick (fun line ->
+                let parts = line.Trim().Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+                if parts.Length >= 2 && parts.[0].Contains("clef-lang-spec") then Some parts.[1]
+                else None)
+        else None
+
+    /// The latest upstream spec version on the fidelity branch, resolved via go's
+    /// module machinery. Host-agnostic and read-only: `go list -m` follows whatever
+    /// GOPROXY/insteadOf is configured and does not mutate go.mod/go.sum, so it can
+    /// run BEFORE the deploy pulls the module — fixing the chicken-and-egg where
+    /// go.sum only changes after the deploy's spec refresh.
+    let private latestSpecVersion (workingDir: string) : string option =
+        match specModulePath workingDir with
+        | None -> None
+        | Some modulePath ->
+            let hugoDir = Path.Combine(workingDir, "hugo")
+            // Bypass the Go module proxy so we resolve the fidelity branch directly from
+            // Git, matching the deploy's refresh (the proxy can serve stale branch HEADs).
+            // Derive the no-proxy pattern from the module's org prefix so it follows the
+            // remote if the host moves (e.g. github.com → forge.spkez.dev).
+            let orgPrefix =
+                let segs = modulePath.Split('/')
+                if segs.Length >= 2 then $"{segs.[0]}/{segs.[1]}/*" else $"{modulePath}*"
+            let env = [
+                "GONOPROXY", orgPrefix
+                "GONOSUMDB", orgPrefix
+                "GONOSUMCHECK", orgPrefix
+            ]
+            match runProcessOut "go" $"list -m {modulePath}@fidelity" hugoDir env with
+            | Ok out ->
+                let parts = out.Trim().Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+                if parts.Length >= 2 then Some parts.[1] else None
+            | Error _ -> None
 
     /// Determine which workers need redeployment from changed file paths
     let private changedWorkers (workerFiles: string list) : Set<string> =
@@ -113,7 +190,15 @@ module SmartDeploy =
         let state = Config.loadState () |> Option.defaultValue Config.defaultState
         let sha = resolveHeadSha workingDir
         let goSumHash = hashFile (Path.Combine(workingDir, "hugo", "go.sum"))
-        let updated = extra { state with LastDeployedCommit = Some sha; LastGoSumHash = goSumHash }
+        // Record the spec version actually deployed (go.mod is refreshed to the
+        // fidelity-branch HEAD during the deploy). Keep the previous value if go.mod
+        // can't be read so we never blank out the tracking.
+        let specVersion = pinnedSpecVersion workingDir |> Option.orElse state.LastSpecVersion
+        let updated =
+            extra { state with
+                        LastDeployedCommit = Some sha
+                        LastGoSumHash = goSumHash
+                        LastSpecVersion = specVersion }
         Config.saveState updated
 
     /// Check for changes beyond committed git diffs:
@@ -127,16 +212,31 @@ module SmartDeploy =
         let mutable reasons = []
         let mutable scope = Config.NoDeploy
 
-        // Hugo module changes (go.sum hash differs from last deploy)
+        // clef-lang-spec upstream changes — resolve the latest fidelity-branch version
+        // via `go list -m` and compare to what we last deployed. This runs BEFORE the
+        // module is pulled, so an upstream spec commit is detected without first having
+        // to refresh go.sum (which only changes during the deploy's spec refresh).
+        let lastSpecVersion = state |> Option.bind (fun s -> s.LastSpecVersion)
+        match latestSpecVersion workingDir, lastSpecVersion with
+        | Some latest, Some last when latest <> last ->
+            reasons <- $"clef-lang-spec updated ({last} -> {latest})" :: reasons
+            scope <- broaderScope scope Config.PagesAndR2
+        | Some latest, None ->
+            reasons <- $"clef-lang-spec version not yet tracked (now {latest})" :: reasons
+            scope <- broaderScope scope Config.PagesAndR2
+        | _ -> ()
+
+        // Hugo module changes (go.sum hash differs from last deploy) — catches other
+        // already-vendored module updates (e.g. theme) that the spec probe won't see.
         let currentGoSumHash = hashFile (Path.Combine(workingDir, "hugo", "go.sum"))
         let lastGoSumHash = state |> Option.bind (fun s -> s.LastGoSumHash)
         match currentGoSumHash, lastGoSumHash with
         | Some current, Some last when current <> last ->
             reasons <- "Hugo modules updated (go.sum changed)" :: reasons
-            scope <- Config.PagesAndR2  // Module changes affect content + pages
+            scope <- broaderScope scope Config.PagesAndR2  // Module changes affect content + pages
         | Some _, None ->
             reasons <- "Hugo modules detected (first tracked deploy)" :: reasons
-            scope <- Config.PagesAndR2
+            scope <- broaderScope scope Config.PagesAndR2
         | _ -> ()
 
         (scope, List.rev reasons)
@@ -211,7 +311,7 @@ module SmartDeploy =
 
                 let hasContentChanges =
                     let gitContent = gitAnalysis |> Option.map (fun a -> a.ContentFilesChanged.Length > 0) |> Option.defaultValue false
-                    let extraContent = extraReasons |> List.exists (fun r -> r.Contains("content") || r.Contains("module"))
+                    let extraContent = extraReasons |> List.exists (fun r -> r.Contains("content") || r.Contains("module") || r.Contains("spec"))
                     gitContent || extraContent
 
                 printfn "Recommended scope: %A" mergedScope
