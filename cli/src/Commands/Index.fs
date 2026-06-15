@@ -296,6 +296,16 @@ module Index =
             let mutable totalIndexed = 0
             let mutable totalUnchanged = 0
             let mutable totalFailed = 0
+            // Distinct per-section failure messages → count. The worker reports the real
+            // cause (e.g. "VECTOR_UPSERT_ERROR (code = 40041): Too Many Requests") per
+            // section; surface it here so a future quota/API change is visible immediately
+            // instead of hiding behind a bare failure count.
+            let failureReasons = System.Collections.Generic.Dictionary<string, int>()
+            let recordReason (msg: string) =
+                let key = msg.Trim()
+                match failureReasons.TryGetValue(key) with
+                | true, n -> failureReasons.[key] <- n + 1
+                | false, _ -> failureReasons.[key] <- 1
 
             for i, batch in batches |> List.indexed do
                 printf "  Batch %d/%d (%d sections)..." (i + 1) batches.Length batch.Length
@@ -318,12 +328,22 @@ module Index =
                         totalIndexed <- totalIndexed + indexed
                         totalUnchanged <- totalUnchanged + unchanged
                         totalFailed <- totalFailed + failed
+                        // Capture the actual failure reason from each unsuccessful section
+                        if failed > 0 && root.TryGetProperty("results", &elem) && elem.ValueKind = JsonValueKind.Array then
+                            for res in elem.EnumerateArray() do
+                                let mutable ok = Unchecked.defaultof<JsonElement>
+                                let mutable m = Unchecked.defaultof<JsonElement>
+                                let isFailure = res.TryGetProperty("success", &ok) && not (ok.GetBoolean())
+                                if isFailure && res.TryGetProperty("message", &m) then
+                                    recordReason (m.GetString())
                         printfn " %d indexed, %d unchanged, %d failed" indexed unchanged failed
                     else
                         printfn " failed: %s" responseBody
+                        recordReason $"HTTP {int response.StatusCode}: {responseBody}"
                         totalFailed <- totalFailed + batch.Length
                 with ex ->
                     printfn " error: %s" ex.Message
+                    recordReason ex.Message
                     totalFailed <- totalFailed + batch.Length
 
             printfn ""
@@ -331,6 +351,12 @@ module Index =
             printfn "  Indexed:   %d sections" totalIndexed
             printfn "  Unchanged: %d sections" totalUnchanged
             printfn "  Failed:    %d sections" totalFailed
+
+            if failureReasons.Count > 0 then
+                printfn ""
+                printfn "Failure reasons:"
+                for kv in failureReasons |> Seq.sortByDescending (fun kv -> kv.Value) do
+                    printfn "  [%dx] %s" kv.Value kv.Key
 
             if totalFailed > 0 then
                 return Error $"Indexing partially failed: {totalFailed} sections"
