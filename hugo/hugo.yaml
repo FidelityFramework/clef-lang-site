@@ -55,13 +55,13 @@ markup:
 
 menu:
   main:
-    - identifier: docs
-      name: Documentation
-      pageRef: /docs
-      weight: 1
     - identifier: spec
       name: Specification
       pageRef: /spec
+      weight: 1
+    - identifier: docs
+      name: Docs
+      pageRef: /docs
       weight: 2
     - identifier: blog
       name: Blog

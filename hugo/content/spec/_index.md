@@ -4,15 +4,9 @@ cascade:
   type: docs
   params:
     spec: true
-    editURL:
-      base: https://github.com/FidelityFramework/clef-lang-spec/edit/main/
 ---
 
 The Clef Language Specification defines the syntax and semantics of Clef, a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators.
-
-{{< callout type="info" >}}
-The specification is maintained in the [clef-lang-spec](https://github.com/FidelityFramework/clef-lang-spec) repository. Use the "Edit this page" and "Discuss this section" links on any spec page to contribute.
-{{< /callout >}}
 
 ## Versions
 
