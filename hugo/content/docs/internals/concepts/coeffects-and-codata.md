@@ -6,6 +6,9 @@ weight: 30
 date: 2025-08-01
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
+aliases:
+  - /blog/coeffects-and-codata-in-composer/
+  - /blog/coeffects-and-codata-in-firefly/
 params:
   originally_published: 2025-08-01
   original_url: "https://speakez.tech/blog/coeffects-and-codata-in-firefly/"

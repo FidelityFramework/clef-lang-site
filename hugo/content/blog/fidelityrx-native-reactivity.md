@@ -13,7 +13,7 @@ params:
 
 Reactive programming sits at the intersection of practical engineering and algorithmic integrity in our Fidelity framework. While exploring reactive models, we drew on [Ken Okabe's Timeline library](https://github.com/ken-okabe/timeline), a minimalist F# implementation that built a reactive system with little code. That economy was a key inspiration for Fidelity.Rx, though we evolved the concepts to fit the framework's architectural requirements.
 
-The driver for our Fidelity.Rx is that reactive programming patterns represent a distinct form of codata, one where the observation method registers callbacks rather than explicitly pulling. This foundation would let the Composer compiler apply [the same analysis techniques](/blog/coeffects-and-codata-in-firefly/) to reactive code that it uses for async operations, while keeping the transparency and efficiency the framework is built around.
+The driver for our Fidelity.Rx is that reactive programming patterns represent a distinct form of codata, one where the observation method registers callbacks rather than explicitly pulling. This foundation would let the Composer compiler apply [the same analysis techniques](/blog/coeffects-and-codata-in-composer/) to reactive code that it uses for async operations, while keeping the transparency and efficiency the framework is built around.
 
 ### Architectural Update: The Signal-Actor Isomorphism
 

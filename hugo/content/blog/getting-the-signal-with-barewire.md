@@ -152,7 +152,7 @@ A tension emerges when bringing signal-based reactivity to [our Clef language](h
 
 Our Fidelity Framework takes deliberate leave from these conventions. As explored in our discussion of [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), our Composer compiler is designed to perform scope analysis during IR lowering and insert cleanup code automatically. Developers write signal operations; the compiler determines where cleanup belongs based on actor lifecycle boundaries and continuation points.
 
-This reflects a position we hold: resource management is a compiler concern, not a developer burden. The same [coeffect analysis](/blog/coeffects-and-codata-in-firefly/) that tracks async boundaries and memory access patterns also tracks resource lifetimes. When the compiler knows that a signal exists within an actor's arena, it knows when that arena will be released. No `Dispose` call needed; no `IDisposable` interface required.
+This reflects a position we hold: resource management is a compiler concern, not a developer burden. The same [coeffect analysis](/blog/coeffects-and-codata-in-composer/) that tracks async boundaries and memory access patterns also tracks resource lifetimes. When the compiler knows that a signal exists within an actor's arena, it knows when that arena will be released. No `Dispose` call needed; no `IDisposable` interface required.
 
 ```fsharp
 // .NET convention: explicit disposal
@@ -560,7 +560,7 @@ Our Fidelity Framework targets three distinct compilation paths: native executio
 
 ### Native Target (Fidelity/MLIR)
 
-The native target has full control over memory layout and threading. Buffer signals can use raw pointers into arena-allocated memory. Thread-local storage provides tracking context. RAII semantics ensure cleanup when scopes exit, with the Composer compiler inserting cleanup code during IR lowering based on [coeffect analysis](/blog/coeffects-and-codata-in-firefly/).
+The native target has full control over memory layout and threading. Buffer signals can use raw pointers into arena-allocated memory. Thread-local storage provides tracking context. RAII semantics ensure cleanup when scopes exit, with the Composer compiler inserting cleanup code during IR lowering based on [coeffect analysis](/blog/coeffects-and-codata-in-composer/).
 
 ```fsharp
 // Native implementation sketch
@@ -1165,7 +1165,7 @@ The signal model's performance depends heavily on the target environment and usa
 
 The signal model outlined here departs from subscription-based reactive programming. By making dependency tracking implicit in signal reads, we remove a category of resource management concerns. By integrating signals with BAREWire's [capability-based memory architecture](/blog/byref-resolved/), we aim to handle large data volumes without allocation overhead. By aligning signal lifecycle with actor boundaries through [RAII principles](/blog/raii-in-olivier-and-prospero/), we provide deterministic cleanup without garbage collection.
 
-By having our Composer compiler manage cleanup through [scope analysis and coeffect tracking](/blog/coeffects-and-codata-in-firefly/), we free developers from the `IDisposable` ceremony that pervades .NET code. This reflects a principle of our framework: infrastructure concerns belong in the compiler, not in application code.
+By having our Composer compiler manage cleanup through [scope analysis and coeffect tracking](/blog/coeffects-and-codata-in-composer/), we free developers from the `IDisposable` ceremony that pervades .NET code. This reflects a principle of our framework: infrastructure concerns belong in the compiler, not in application code.
 
 The architectural implications carry through application design:
 
@@ -1185,7 +1185,7 @@ This is the direction we will keep building toward: a reactive system where data
 
 ---
 
-*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-firefly/), [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), [ByRef Resolved](/blog/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/alloyrx-native-reactivity-in-fidelity/).*
+*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), [ByRef Resolved](/blog/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/alloyrx-native-reactivity-in-fidelity/).*
 
 [^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef. See [The SPEC Stack: A Proposal](/blog/spec-stack/) for the full architectural overview.
 
