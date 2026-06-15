@@ -1,0 +1,44 @@
+{{- /*
+  Project override of Hextra's render-link hook.
+  Adds resolution of RELATIVE *.md cross-references (e.g. `lazy-representation.md`)
+  so they point at the sibling page URL (/spec/draft/lazy-representation/) instead of
+  being resolved by the browser against the current page
+  (/spec/draft/seq-representation/lazy-representation.md). Everything else is unchanged
+  from the upstream hook.
+*/ -}}
+{{- $dest := .Destination -}}
+{{- $url := urls.Parse $dest -}}
+
+{{- if and $dest (hasPrefix $dest "/") -}}
+  {{- with or (.PageInner.GetPage $url.Path) (.PageInner.Resources.Get $url.Path) (resources.Get $url.Path) -}}
+    {{- $query := cond $url.RawQuery (printf "?%s" $url.RawQuery) "" -}}
+    {{- $fragment := cond $url.Fragment (printf "#%s" $url.Fragment) "" -}}
+    {{- $dest = printf "%s%s%s" .RelPermalink $query $fragment -}}
+  {{- else -}}
+    {{- $dest = (relURL (strings.TrimPrefix "/" $dest)) -}}
+  {{- end -}}
+{{- else if and $url.Path (not $url.IsAbs) (strings.HasSuffix $url.Path ".md") -}}
+  {{- $fragment := cond $url.Fragment (printf "#%s" $url.Fragment) "" -}}
+  {{- $base := strings.TrimSuffix ".md" (path.Base $url.Path) -}}
+  {{- $target := or (.PageInner.GetPage $url.Path) (.PageInner.GetPage $base) -}}
+  {{- if $target -}}
+    {{- $dest = printf "%s%s" $target.RelPermalink $fragment -}}
+  {{- else -}}
+    {{- with .PageInner.Parent -}}
+      {{- $dest = printf "%s%s/%s" .RelPermalink $base $fragment -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- with . -}}
+{{- $isExternal := strings.HasPrefix .Destination "http" -}}
+<a href="{{ $dest | safeURL }}"
+   {{- with .Title -}}title="{{ . }}"{{- end -}}
+   {{- if $isExternal -}}target="_blank" rel="noopener"{{- end -}}
+>
+  {{- .Text | safeHTML -}}
+  {{- if and .Page.Site.Params.externalLinkDecoration $isExternal -}}
+    {{- partial "utils/icon.html" (dict "name" "arrow-up-right" "attributes" `class="hx:inline hx:rtl:rotate-270 hx:align-baseline" height="1em"`) -}}
+  {{- end -}}
+</a>
+{{- end -}}
