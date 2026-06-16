@@ -11,10 +11,6 @@ params:
   migration_date: 2026-02-25
 ---
 
-> This article is part of the [Transparent Verification](..) series. It builds
-> on the [Decidability Sweet Spot](../decidability-sweet-spot) to show how the
-> same transparent SMT mechanism is designed to extend from dimensional constraints to memory safety.
-
 The transparent verification model extends beyond dimensional constraints to encompass memory safety. Deterministic Memory Management in Clef is designed to be formalized as a **coeffect discipline** within the same PSG that enforces dimensional consistency.
 
 Effects describe what a computation *does* to its environment (mutation, I/O, exceptions). Coeffects describe what a computation *requires from* its environment (capabilities, resources, contextual assumptions). Memory allocation strategy is a coeffect: a function that allocates from an arena requires that an arena exists in its calling context; a function that places values on the stack requires that the stack frame outlives those values.

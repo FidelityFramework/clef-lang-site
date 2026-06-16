@@ -11,13 +11,6 @@ params:
   migration_date: 2026-05-12
 ---
 
-> This article extends the [Transparent Verification](..) series. It builds on
-> [The Decidability Sweet Spot](../decidability-sweet-spot) and the [compilation sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/)
-> design to address how the Program Hypergraph's verification tiers connect
-> structurally, rather than through operational decisions. The structural insight
-> developed here draws on Hăvărneanu's recent work on adjoint classical logic
-> with uniform mode connectives.
-
 Recent work by Aram Hăvărneanu on adjoint classical logic with uniform mode connectives, extending Pfenning's adjoint logic and Paykin and Zdancewic's polarized classical linear logic, has recently been published on X. 
 
 {{< x user="aramh" id="2053874165795405860" >}}

@@ -11,10 +11,6 @@ params:
   migration_date: 2026-02-25
 ---
 
-> This article is part of the [Transparent Verification](..) series. It follows
-> the verified PSG from [Memory Coeffect Algebra](../memory-coeffect-algebra)
-> through MLIR lowering to the final cryptographic release certificate.
-
 ## Translation Validation via the MLIR SMT Dialect
 
 After the PSG reaches saturation, with every node stamped with its dimensional proof certificate and its coeffect resolution, the code is lowered to MLIR. Lowering introduces a new risk: optimizations can violate verified properties. The MLIR SMT dialect is designed to close this gap through **translation validation**.

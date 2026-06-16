@@ -11,10 +11,6 @@ params:
   migration_date: 2026-02-25
 ---
 
-> This article is part of the [Transparent Verification](..) series documenting
-> how the Fidelity Framework is designing zero-annotation formal verification
-> for the Clef language.
-
 Creating software with strong correctness guarantees has historically required a difficult compromise. Practical languages offer productivity and familiarity but leave correctness to testing. Formal verification languages offer mathematical rigor but exact a steep price in annotation overhead. The developer ends up writing the program twice: once in the implementation language, and once in the specification language that tells the prover what the program is supposed to do.
 
 This compromise has deep roots. The tradition of software verification, from Floyd-Hoare logic through separation logic to modern refinement types, has consistently required the developer to express intent in two separate forms. The implementation says *how*. The annotation says *what*. Keeping those two descriptions in sync across a large codebase becomes its own engineering discipline, one where the annotation burden grows at least linearly with the code.

@@ -11,9 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This entry builds on concepts explored in [Unexpected Fusion](/blog/unexpected-fusion/), which outlines how F# synthesizes OCaml's type-safe functional programming with Erlang's actor model through the `MailboxProcessor` primitive. That foundation informs the unified abstraction proposed here.
-
-
 The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? The answer lies in recognizing that actors are defined by their semantics, not their implementation details.
 
 This entry explores the architectural decisions behind a unified actor abstraction designed to compile to our Olivier actors in Fidelity and to Durable Object-backed actors in Conclave. By designing at the right level of abstraction, developers would write actor behaviors once and deploy them to either target without modification.

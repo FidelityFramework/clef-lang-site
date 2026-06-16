@@ -11,10 +11,6 @@ params:
   migration_date: 2026-02-25
 ---
 
-> This article is part of the [Transparent Verification](..) series. It builds
-> on [From Double Annotation to Discovery](../double-annotation-discovery) to explain the
-> algebraic foundation that makes zero-annotation verification decidable.
-
 ## DTS: A Distinct Formal Category
 
 The fundamental advantage of the Dimensional Type System (DTS) is its restriction to a specific algebraic niche that general dependent type systems cannot exploit.
