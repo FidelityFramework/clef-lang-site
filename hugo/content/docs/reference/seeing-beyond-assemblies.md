@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The .NET platform introduced the concept of assemblies over two decades ago, a fundamental building block that has served as the cornerstone of .NET development since its inception in 2002. Assemblies, typically manifested as DLL or EXE files, represented a significant advancement in software componentization at the time. They combined compiled Intermediate Language (IL) code with rich metadata about types, references, and versions into a cohesive deployment unit that could be shared across applications.
 
 ## The Legacy of .NET Assemblies

@@ -12,11 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The Fidelity Framework faces a fascinating challenge: how do we identify opportunities for massive parallelism hidden within sequential-looking Clef code? The answer lies in an elegant application of graph coloring to our Program Hypergraph (PHG), using bidirectional zippers to traverse and analyze control flow and data flow patterns. This approach, inspired by insights from Ramsey graph theory, enables automatic discovery of where async and continuation-based code can be transformed into interaction nets for parallel execution.
 
 This blog explores how compound graph construction principles from Ramsey theory guide our compilation strategy, helping us identify "purely parallel" regions that can leverage MLIR's interaction net dialect for dramatic performance improvements across diverse hardware.

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 In the landscape of modern compiler design, a fundamental tension exists between preserving the elegance of high-level abstractions and generating efficient machine code. The Fidelity framework confronts this challenge head-on. By leveraging a powerful insight, referential transparency, the Composer compiler provides a natural decision point for compilation strategies.
 
 At the heart of our Clef native compiler lies the Program Hypergraph (PHG), which analyzes code to identify any referentially transparent regions. This analysis drives a sophisticated compilation strategy that chooses between two powerful computational models: interaction nets for pure, concurrent computations and delimited continuations for effectful, sequential operations. This isn't merely an optimization technique - it's a fundamental rethinking of how functional programs should be compiled for modern heterogeneous hardware.

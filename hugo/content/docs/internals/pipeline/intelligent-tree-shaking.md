@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce truly minimal native executables. In the world of traditional .NET development, your "Hello World" application carries the weight of the entire runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, this overhead is unacceptable. Our solution involves a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what's actually needed while preserving the rich type information required by subsequent compiler phases.
 
 ## Concrete Example: HelloWorld with CCS Intrinsics

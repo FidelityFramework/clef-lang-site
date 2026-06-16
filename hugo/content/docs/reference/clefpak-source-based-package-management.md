@@ -12,11 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The journey from managed code to native compilation in Clef represents a significant architectural shift. As the Fidelity Framework charts a course toward bringing Clef to new levels of hardware/software co-design, we face a fundamental question: how do we distribute and manage packages in a world where the comfortable-yet-constraining assumptions afforded in the .NET ecosystem no longer hold? This article explores ClefPak, a forward-looking package management system that reimagines Clef code distribution for the age of multi-platform native compilation.
 
 ## One Size No Longer Fits All

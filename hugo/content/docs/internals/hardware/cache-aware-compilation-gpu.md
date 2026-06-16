@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 As we explored in our [companion piece on CPU cache optimization](https://speakez.tech/blog/cache-aware-compilation-cpu/), the Composer compiler is being designed to perform sophisticated transformations that would align Clef code with hardware memory hierarchies. When we consider GPU architectures, we encounter a fundamentally different memory landscape that would require equally different optimization strategies.
 
 While GPUs currently dominate parallel computing workloads, we view them as a necessary bridge to more efficient architectures. As discussed in ["The Uncomfortable Truth of Comfortable Dysfunction"](https://speakez.tech/blog/uncomfortable-truth/), the industry's reliance on GPU architectures represents both a practical reality we must address and an architectural compromise we're working to transcend. This exploration examines how Composer could adapt to these challenges while maintaining our vision of unified heterogeneous computing that extends beyond current limitations.

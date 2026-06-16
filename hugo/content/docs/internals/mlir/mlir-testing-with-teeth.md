@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The MLIR ecosystem has a dirty secret: its testing infrastructure is built on regex and prayer. While MLIR itself represents a triumph of progressive lowering and type-safe compilation, the tools used to verify its correctness, `lit` and `FileCheck`, operate at the level of untyped string matching. This isn't just an aesthetic concern. For frameworks like Fidelity that need to prove semantic preservation through compilation, text-based testing is fundamentally inadequate.
 
 This entry examines the structural limitations of mainstream MLIR testing and explains why the Fidelity Framework requires, and is building, a fundamentally different approach. Using parser combinators, semantic graphs, and proof-carrying hyperedges, Composer's testing infrastructure treats verification as a first-class compilation concern. The goal isn't merely better ergonomics; it's establishing a foundation for compiler correctness proofs that text-based tools cannot provide.

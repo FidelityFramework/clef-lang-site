@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Most compilers follow a familiar structure, as we touched on in our blog entry [Frontend Unfuzzled](/docs/design/frontend-unfuzzled/). The "front end" parses developer source into an abstract syntax tree, often with type-related and other syntatic checks. The compiler's "middle end" performs transforms on intermediate representations, and "back end" generates machine code. Managed runtime compilation, as practiced by .NET and Java, represents a different category altogether. Those systems target virtual machines with garbage collection and JIT compilation, abstracting to 'assemblies' handed over to a runtime to manage the workload.
 
 Traditional ahead-of-time native compilation employs varied implementation strategies, though most established compilers share a common architecture: monolithic passes that recursively process entire program structures through intertwined transformations. This approach emerged from practical necessities. When memory was measured in kilobytes and disk space was precious, minimizing intermediate representations and performing multiple transformations in single traversals made economic sense. It evolved as standard practice for languages with stable semantics targeting mature platforms; a pattern that newer systems languages have largely adopted even as those original resource constraints faded into history. While this architecture represents decades of hard-won engineering stability, it quickly reveals its limits when compiler infrastructure must adapt to emerging hardware architectures and novel execution models.

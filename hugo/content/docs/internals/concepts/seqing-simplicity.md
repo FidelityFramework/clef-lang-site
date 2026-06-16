@@ -23,11 +23,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 There is a peculiar satisfaction in watching complex machinery disappear behind a simple interface. The best APIs feel inevitable, as though any other design would have been wrong. Clef's sequence expressions belong to this category. You write `seq { yield 1; yield 2; yield 3 }` and receive something that walks and talks like a list but evaluates dynamically. You write `seq { for x in xs do yield f x }` and transformation happens on demand. The syntax is declarative; the semantics are [lazy](https://speakez.tech/blog/why-lazy-is-hard/); the implementation is invisible.
 
 That invisibility is precisely the point. Simon Peyton Jones once observed that the measure of a good abstraction is how much it lets you forget. Sequence expressions let you forget about iteration state, about memory allocation patterns, about the machinery of resumption. You describe what values to produce; the language handles when and how.

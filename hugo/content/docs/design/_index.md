@@ -15,5 +15,3 @@ The articles are organized into focused sub-sections:
 - **[JavaScript Targeting](/docs/design/javascript-targeting/)**: JSIR, MLIR-based JavaScript emission, and type safety across the erasure boundary
 
 General design articles covering topics like metaprogramming, verification, inlining, posit arithmetic, and the broader structural decisions behind Clef remain at this level.
-
-Many of these documents were originally published on the [SpeakEZ Technologies blog](https://speakez.tech) during the early design phase of the Fidelity Framework and have been updated to reflect current naming and project structure.

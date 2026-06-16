@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 SpeakEZ's Fidelity framework with its innovative BAREWire technology is uniquely positioned to take advantage of emerging memory coherence and interconnect technologies like CXL, NUMA, and recent PCIe enhancements. By combining BAREWire's zero-copy architecture with these hardware innovations, Fidelity can put the developer in unprecedented control over heterogeneous computing environments with the elegant semantics of [the Clef language](https://clef-lang.com).
 
 This innovation represents a fundamental shift in how distributed memory systems interact and the cognitive demands it places on the software engineering process. This breakthrough stands to revolutionize distributed model training by eliminating the traditional boundaries in memory management that have constrained AI workloads and the teams that build them.

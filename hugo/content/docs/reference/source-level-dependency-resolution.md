@@ -18,11 +18,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The Composer compiler represents a fundamental shift in how Clef code gets compiled to native executables. Unlike traditional F# compilation that relies on pre-compiled assemblies and the .NET runtime, Composer compiles Clef directly to native code through MLIR and connected "back ends", right now primarily LLVM, creating truly dependency-free executables. This architectural choice creates an interesting challenge: how do we handle library dependencies when we can't rely on traditional assembly resolution?
 
 ## Beyond Assembly-Based Dependencies

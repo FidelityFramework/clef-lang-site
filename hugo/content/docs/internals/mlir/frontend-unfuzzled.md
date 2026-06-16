@@ -12,11 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 For .NET developers, the term "frontend" already carries rich meaning. It might evoke XAML-based technologies like WPF or UWP, the hybrid approach of Blazor, or perhaps JavaScript visualization frameworks such as Angular, Vue or React. Within the .NET ecosystem, "frontend" generally refers to user interface technologies - the presentation layer of applications.
 
 When that same .NET developer encounters terminology like "MLIR C/C++ Frontend Working Group," something doesn't quite compute. This clearly isn't referring to user interfaces or presentation technologies. Instead, it points to a completely different technical meaning of "frontend" from the world of compiler design - one that predates modern UI frameworks by decades. This terminology collision isn't a case of deliberate obfuscation but rather a fascinating artifact of parallel evolution in the computing landscape.

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The Fidelity framework's Farscape CLI addresses a pressing challenge in modern software development: how to enhance the safety of battle-tested C/C++ tools without disrupting the countless systems that depend on them. Every day, organizations rely on command-line tools like OpenSSL, libzip, and many others that represent decades of engineering expertise but carry the inherent memory safety risks of their C/C++ heritage. Building on Farscape's current capability -- generating `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding declarations from C headers -- the "shadow-api" design vision extends the tool toward a more ambitious goal: generating drop-in replacements for critical tools that maintain perfect compatibility while adding comprehensive type and memory safety guarantees.
 
 These aren't just bindings or wrappers. They're transparent recompilations to native binaries capable of passing the same integration tests, processing the same inputs, and producing identical outputs to their C/C++ predecessors. Crucially, the safety abstractions employ Clef's zero-cost abstraction principles, where all type safety and bounds checking compile away to efficient native code, unlike many C++ safety extensions or custom compiler approaches that can impose significant runtime overhead.

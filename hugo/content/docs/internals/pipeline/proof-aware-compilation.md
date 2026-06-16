@@ -12,11 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Software verification has always forced a cruel choice: accept runtime overhead for safety checks, or trust that your optimizing compiler won't break critical invariants. Traditional compilers treat proofs as obstacles to optimization, while proof assistants have a reputation (earned or not) that they generate code too conservative for production use. But what if verification and optimization weren't opposing forces but complementary dimensions of the same compilation process? The Fidelity Framework's hypergraph architecture makes this vision real by treating proof obligations as first-class hyperedges that guide, not hinder, aggressive optimization.
 
 What's more, there's a feed-forward effect to this approach which allows developers to take advantage of verification "for free" along with application development while keeping the process close to a "standard" [Clef language](https://clef-lang.com) design-time experience. The process and tooling will be fully opt-in, and much of the instrumentation is designed with low-overhead automation built into the compiler internals. So this not only makes formalism restrained and approachable, but it also means that developers don't have to become experts with proofs in order to leverage their advantages.

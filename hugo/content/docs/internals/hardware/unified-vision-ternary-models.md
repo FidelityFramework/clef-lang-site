@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 While this idea might be met with controversy in the current swarm of AI hype, we believe that the advent of sub-quadratic AI models, heterogeneous computing, and unified memory architectures will show themselves as pivotal components to next generation AI system design. The elements are certainly taking shape. As we stand at this technological crossroads, AMD's hardware trajectory tells the story at two scales: in the datacenter, the MI300A and its successors (MI325, MI350, MI400) unify CPU and GPU on a single coherent memory fabric; on the desktop and edge, the Strix Halo APU integrates Zen 5 CPU, RDNA 3.5 GPU, and XDNA 2 NPU on a single die with up to 128GB of shared memory. Combined with AMD's strategic acquisition of Xilinx for FPGA acceleration, both paths offer concrete platforms for re-imagining how AI models can operate.
 
 This exploration examines how the Fidelity framework, with its BAREWire zero-copy technology and [the Clef language](https://clef-lang.com)'s type-safe bit manipulation, is positioned to leverage AMD's heterogeneous architectures for a new approach to AI inference, from datacenter-scale ensemble serving to single-user local deployment.

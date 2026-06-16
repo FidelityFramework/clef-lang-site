@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The embedded systems industry has operated under a fundamental assumption for decades: achieving hardware control requires sacrificing high-level abstractions and type safety. This assumption has created a divide between embedded development and modern software engineering practices, forcing developers to choose between expressiveness and efficiency. The Fidelity Framework aims to challenge this paradigm by delivering hardware type safety with truly zero runtime cost through principled hardware/software co-design.
 
 > **December 2025 Update**: As part of our ongoing effort to keep the SpeakEZ blog current with laboratory progress, this article has been revised to reflect architectural evolution in the Fidelity Framework. The core vision remains unchanged: Clef on bare metal with zero runtime cost. This article provides the foundation, and the companion article [Clef on Metal Revisited](https://speakez.tech/blog/fsharp-on-metal-revisited/) presents the next progression in this evolution.

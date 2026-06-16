@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 A compiler without proper tooling is like a sports car without a steering wheel: basically, what would be the point without it? As the Fidelity Framework matures from experimental compiler to practical development platform, we face a critical question: how do we provide the developer experience that [the Clef language](https://clef-lang.com) programmers expect while building something distinct from the .NET and Fable ecosystems? This article explores our approach to extending F# language services to support the Fidelity compilation model, preserving developer productivity while signaling that a genuinely new paradigm is at hand.
 
 ## The Innovation Budget

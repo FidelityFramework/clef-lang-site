@@ -15,11 +15,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Modern async and parallel programming presents an engineering challenge: we need both the performance of low-level control and the safety of high-level abstractions. Nearly 20 years ago, the .NET ecosystem pioneered the `async`/`await` syntactic pattern, making concurrent code accessible to millions of developers and influencing other technology stacks in following years. However, this pattern comes with tradeoffs - runtime machinery that, while powerful, can become opaque when we need to understand or optimize workload behavior.
 
 Composer explores a fresh perspective in that design space: what if we could preserve Clef's elegant async abstractions while compiling them to transparent, predictable machine code? By applying mathematical concepts from programming language theory - specifically **coeffects** (tracking what code needs from its context) and **codata** (recognizing demand-driven computation patterns) - the Composer compiler design aims to transform high-level Clef async code into efficient implementations tailored for speed and safety.

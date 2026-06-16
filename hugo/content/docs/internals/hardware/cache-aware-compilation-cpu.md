@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Modern computing systems present a fundamental paradox: while processor speeds have increased exponentially, memory latency improvements have been modest, creating an ever-widening performance gap. This disparity manifests most acutely in the cache hierarchy, where the difference between an L1 cache hit (approximately 4 cycles) and main memory access (200+ cycles) represents a fifty-fold performance penalty. For systems pursuing native performance without runtime overhead, understanding and exploiting cache behavior becomes not merely an optimization, but an architectural imperative.
 
 The Fidelity framework's Prospero orchestration layer is designed to address this challenge through what we term "cache-conscious memory management," a systematic approach that extends beyond traditional memory awareness to encompass the full memory hierarchy from L1 cache through main memory. This design philosophy recognizes that effective cache utilization cannot be achieved through OS-level allocation alone, but requires coordinated effort across compilation, memory management, and actor placement strategies.

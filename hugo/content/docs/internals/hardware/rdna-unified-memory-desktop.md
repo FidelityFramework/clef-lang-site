@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Between the server-scale memory coherence of CXL and the constrained world of edge accelerators lies a third tier of heterogeneous computing that is becoming more common: the unified memory SoC. This is not simply a GPU bolted onto a laptop. It represents a fundamentally different programming model where CPU, GPU, and NPU share a coherent virtual address space backed by the same physical memory pool. AMD's Strix Halo architecture, found in devices like the ASUS ROG Flow Z13, exemplifies this approach with its unified LPDDR5X and AMD's Heterogeneous System Architecture providing hardware coherence across all compute agents.
 
 Our companion pieces on [CXL memory coherence](/blog/next-generation-memory-coherence) and [RDMA network communication](/blog/rdma-accelerating-network-comms) explored how BAREWire's zero-copy architecture extends across system boundaries. This article turns inward, examining how Fidelity can leverage unified memory architectures for local inference pipelines where voice-to-text on the NPU feeds directly into LLM inference on the GPU without explicit buffer management or programmer-visible copies.

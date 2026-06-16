@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because choosing the right parallel execution strategy requires understanding not just what your code does, but what it needs from its environment. This is where coeffects transform compilation.
 
 ## The Parallelism Predicament

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The challenge of binding [the Clef language](https://clef-lang.com) to C++ libraries has historically forced developers into compromising positions: accept the limitations of C-style APIs, manually write error-prone binding code, or rely on runtime marshaling that imposes performance penalties. Farscape's design targets Plugify's C++ ABI intelligence. This represents a paradigm shift in this space, enabling automatic generation of type-safe Clef bindings that compile away to zero-cost abstractions through LLVM's Link-Time Optimization.
 
 This architectural roadmap outlines how Farscape will evolve from its current C-focused binding generation to comprehensive C++ support by leveraging Plugify's battle-tested understanding of C++ ABIs. The result will be a tool that generates safe, idiomatic Clef bindings for any C++ library, with those bindings compiling through the Fidelity framework to native code that's as efficient as hand-written C++.

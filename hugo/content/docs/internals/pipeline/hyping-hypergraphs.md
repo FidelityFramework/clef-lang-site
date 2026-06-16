@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 The industry is witnessing an unprecedented \$4 billion investment to finally set aside the 80-year-old Harvard/Von Neumann computer design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building novel, alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Yet compiler architectures remain trapped in antiquated patterns - forcing stilted relationships into artificial constructions, obscuring the natural alignment with the emerging dominance of dataflow patterns. What if targeting both traditional and revolutionary architectures lies not in choosing sides, but in recognizing that programs are "hypergraphs" by nature? The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) isn't just nomenclature - it's the architectural insight that will enable Fidelity to produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors that promise to revolutionize throughput and efficiency.
 
 But there's a deeper vision: what if this hypergraph could transform into a learning system? The future design of a full-fledged temporal graph could improve design and efficiency with each application, or even with each iteration. This isn't speculative - it's the natural evolution of combining recursion schemes, bidirectional zippers, and event-sourced compilation telemetry. These are all well-established algorithmic tools that are finally meeting their moment with today's new Cambrian explosion of modern compute hardware. Within the Fidelity framework we can revolutionize efficiency and safety in the "old guard" architectures while seamlessly profiling and targeting new architectures from the same principled framework.

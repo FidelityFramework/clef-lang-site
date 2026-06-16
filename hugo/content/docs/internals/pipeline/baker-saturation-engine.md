@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Gerard Huet's [1997 paper](https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf) on "The Zipper" introduced a method for navigating immutable tree structures by carrying context during traversal. For years many have viewed this as a purely functional curiosity. But in the architecture of Composer, it solves a problem that often baffles developers coming from managed runtimes or imperative systems programming: bridging the gap between high-level intent and low-level execution while maintaining what is essential to both.
 
 For the .NET developer, the "floor" of abstraction is often the Intermediate Language (IL). You trust the JIT to handle the messy details of memory and registers. For the Rust or Go developer, you are accustomed to seeing the metal, but often at the cost of the expressiveness that functional programming offers.

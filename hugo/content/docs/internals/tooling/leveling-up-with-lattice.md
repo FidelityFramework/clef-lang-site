@@ -11,11 +11,6 @@ params:
   migration_date: 2026-03-12
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 In chemistry, ions are individual charged particles, independent, reactive, fundamental. When these ions bond together in organized three-dimensional structures, they form **crystal lattices**. The lattice isn't just a collection of ions; it's a new phase of matter with emergent properties: conductivity, strength, characteristics that no individual ion possesses.
 
 > This metaphor perfectly captures our toolchain evolution from Ionide to **Lattice**.

@@ -11,11 +11,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-> This article was originally published on the
-> [SpeakEZ Technologies blog](https://speakez.tech) as part of our early
-> design work on the Fidelity Framework. It has been updated to reflect
-> the Clef language naming and current project structure.
-
 Compiler development differs fundamentally from application development. Where application code flows in one direction from input to output, compiler pipelines are multi-stage transformations where decisions at each layer cascade through everything downstream. The Composer compiler has reached a significant milestone: native code generation from Clef source through a nanopass architecture that preserves semantic fidelity at every stage. This article demonstrates what that achievement enables and the architectural vision it unlocks.
 
 ## The Sample Under Test
