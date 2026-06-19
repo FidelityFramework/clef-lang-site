@@ -73,7 +73,7 @@ This isn't a Rust-specific problem. Deadlock freedom in the general case is unde
 
 A `PostAndReply` suspends the caller's continuation until the callee answers, and that suspension is a wait-for edge from caller to callee. A fire-and-forget `Tell` posts to a mailbox and returns, adding no edge, so the asynchronous fraction of a program cannot deadlock through this at all. We collect the synchronous edges into a wait-for relation on our Program Hypergraph, on the same joint-constraint axis that already carries region and lifetime hyperedges. For the fragment where every callee is a statically resolvable actor reference, deadlock freedom is acyclicity of that relation, and acyclicity is a rank function: an integer per actor behavior such that every edge `u -> v` has `r(u) < r(v)`, which exists exactly when the relation has no cycle. That constraint is QF_LIA, an ordinary Tier-2 obligation discharged by the same solver that handles our interval and bound checks.
 
-Where the callee is chosen by live data (content-based routing, an actor handle passed in a message), the relation is not statically resolvable, and acyclicity over it is undecidable. That call downgrades visibly to supervised execution with a timeout, and our compiler names the call that crossed the boundary. The visible fragment carries a proof, the dynamic one carries a guard and a label, and neither path goes quiet.
+Where the callee is chosen by live data (content-based routing, an actor handle passed in a message), the relation is not statically resolvable, and acyclicity over it is undecidable. That call downgrades visibly to supervised execution with a timeout, and our compiler design identifies the call that crossed the boundary. The visible fragment carries a proof, the dynamic one carries a guard and a label. Neither path goes quiet and there are no runtime surprises.
 
 A handler doing a synchronous request looks like ordinary code:
 
@@ -87,7 +87,7 @@ let handleOrder (order: Order) = actor {
 }
 ```
 
-A cycle is two of those pointing back at each other. Order asks Inventory whether it can reserve; Inventory, mid-reply, asks Order to confirm a pending hold; both park on a reply only the other can send:
+A cycle is two of those pointing back at each other. Order asks Inventory whether it can reserve; Inventory, mid-reply, asks Order to confirm a pending hold. Each parks on a reply only the other can send:
 
 ```fsharp
 let handleFoo order = actor {
@@ -101,7 +101,7 @@ let handleBar q = actor {
 }
 ```
 
-Our compiler reports the path the way escape analysis reports an escape, the actual chain rather than a generic warning:
+Our compiler would report the path the way escape analysis reports an escape, the actual chain rather than a generic warning:
 
 ```
 CCS8031: synchronous wait cycle
@@ -113,7 +113,6 @@ CCS8031: synchronous wait cycle
 The lowering underneath makes the diagnostic and the proof the same object. This is illustrative dialect, the real attribute names are still settling as Composer is built. Each `PostAndReply` lowers to a blocking op carrying only its own wait edge as local fact, because no single op can see the whole set:
 
 ```mlir
-// illustrative
 %r = dcont.suspend_on_reply %callee : !actor.ref<"inventory">
        { rpc.wait_edge = #wait<from = "order", to = "inventory"> }
 ```
@@ -121,7 +120,6 @@ The lowering underneath makes the diagnostic and the proof the same object. This
 The acyclicity obligation rides on the enclosing scope, the smallest region closed under "can send a synchronous reply to," which instructs the seam to gather every edge in the region and prove a rank exists:
 
 ```mlir
-// illustrative
 module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
   // actor behaviors and their suspend_on_reply ops
 }
@@ -130,14 +128,13 @@ module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
 Lowering emits the verification condition into the SMT dialect, and the solver discharges it like any interval check:
 
 ```mlir
-// illustrative
 %edges = collect rpc.wait_edge in @order_system
 smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
 smt.check   // sat: a rank exists, acyclic. unsat: the core is the cycle.
  
 ```
 
-When the relation cannot be ranked, the unsat core the solver returns is the minimal set of edges that cannot be jointly ordered, which is the cycle. The `CCS8031` chain the developer reads is that core, formatted. One object serves as both the proof failure and the diagnostic, rather than a heuristic warning sitting next to a separate check. The full treatment, including the orderable-cyclic case where our compiler infers the priority a developer would otherwise hand-write, is in [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/). It's something that we plan to address with more analyzer support in our LSP and Lattice toolchain. Liveness deserves the same visible, steerable machinery we gave memory, and that is the direction our actor runtime keeps growing toward as the work continues.
+When no such ranking exists, the relation has a cycle, and the developer sees a `CCS8031` error that spells it out: the chain of calls that wait on each other, `A.handleFoo waits on B.query waits on A.handleBar`. Because this analysis rides the program graph, it surfaces while you write, in the editor, the same place the type errors show up, not only at the end in a batch compile. And the error is the proof itself failing, not a separate heuristic warning bolted on beside the real check, so there is nothing to second-guess. The full treatment, including the orderable-cyclic case where our compiler infers the priority a developer would otherwise hand-write, is in [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/), and the design-time surfacing is what we are building out in our LSP and Lattice toolchain. Liveness deserves the same visible, steerable machinery we gave memory, and that is the direction our actor runtime keeps growing toward as the work continues.
 
 ## An analyzer and the structure it rides
 
