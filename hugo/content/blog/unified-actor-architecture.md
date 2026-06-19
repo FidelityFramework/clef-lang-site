@@ -46,15 +46,15 @@ This separation yields a concrete benefit: a Fidelity actor and a Conclave actor
 
 ## The Shared Abstraction
 
-The abstraction lives in a shared library that both frameworks reference. This library, `Alloy.Actors`, defines the types and interfaces that actor code depends upon. Crucially, it contains no implementation; each target provides its own runtime that interprets these abstractions.
+The abstraction is intrinsic to the compiler. CCS defines the actor types and interfaces that actor code depends upon, the same way it owns the rest of the Native Type Universe, so there is no shared library for the targets to link against. The compiler carries no execution policy with those types; each target provides its own runtime that interprets them, the native Olivier runtime on one side and our [Conclave](https://speakez.tech/blog/conclave-a-speakez-platform-service) edge platform on Cloudflare on the other.
 
 The core types form a vocabulary for describing actor behavior without committing to execution details. An `ActorRef` is an opaque handle for sending messages; how the message reaches its destination is the runtime's concern. An `ActorBehavior` specifies how an actor responds to messages; how that specification executes depends on the target. This separation enables the "write once, deploy anywhere" property.
 
 Readers familiar with Erlang/OTP, Akka, or Orleans will recognize these patterns. The discriminated union `ActorEffect` resembles the behavior return types in those systems. The `SupervisionStrategy` cases mirror OTP's supervision tree options, explored in depth in [Erlang Lessons in Fidelity](/blog/ode-to-erlang---lessons-from-fez/). The novelty lies not in the patterns themselves but in their application across compilation targets as different as native code and JavaScript on edge infrastructure.
 
 ```fsharp
-// Alloy.Actors - Core abstraction shared across targets
-namespace Alloy.Actors
+// Olivier - actor types intrinsic to CCS, shared across targets
+namespace Olivier
 
 /// Marker for actor message types
 type IActorMessage = interface end
@@ -118,7 +118,7 @@ While the types above fully specify actor behavior, writing handlers by manually
 Readers unfamiliar with Clef computation expressions can think of them as programmable syntax. The builder type defines how expressions within the `{ }` block translate to method calls. This mechanism powers Clef's `async`, `seq`, and `query` expressions; we apply the same technique to actor behaviors.
 
 ```fsharp
-module Alloy.Actors.Builder
+module Olivier.Builder
 
 type ActorBuilder() =
     member _.Yield(_) = Continue Unchecked.defaultof<_>
@@ -217,7 +217,7 @@ The implementation pairs each actor with a memory arena, a pre-allocated region 
 // Olivier.Runtime - Native compilation target
 namespace Olivier.Runtime
 
-open Alloy.Actors
+open Olivier
 
 /// Native actor instance with memory arena
 type OlivierActor<'State, 'Message when 'Message :> IActorMessage>
@@ -272,7 +272,7 @@ The implementation below shows how a Conclave actor handles WebSocket upgrades, 
 // Conclave.Runtime - WebSocket-based actor
 namespace Conclave.Runtime
 
-open Alloy.Actors
+open Olivier
 open Fable.Core
 
 [<AttachMembers>]
@@ -389,8 +389,8 @@ Both runtimes need a way to send and receive byte streams. The channel abstracti
 This separation allows Fidelity actors to communicate over IPC endpoints (OS-level primitives optimized for local communication) while Conclave actors use WebSockets (the only persistent connection mechanism available in the Cloudflare environment). Both present the same interface to actor code:
 
 ```fsharp
-// Alloy.Actors.Channels - Transport abstraction
-namespace Alloy.Actors
+// Olivier.Channels - Transport abstraction
+namespace Olivier.Channels
 
 /// Bidirectional persistent channel between actors
 /// Carries BAREWire-encoded frames over transport
@@ -552,8 +552,8 @@ Regardless of transport mechanism, all actor messages use BAREWire encoding. BAR
 The message envelope wraps every actor-to-actor communication. It contains routing information (source and target actor IDs), optional correlation ID for request-response matching, message type discriminator, the payload itself, and a timestamp for debugging and ordering purposes.
 
 ```fsharp
-// Alloy.Actors.Protocol - BAREWire message framing
-namespace Alloy.Actors
+// Olivier.Protocol - BAREWire message framing
+namespace Olivier.Protocol
 
 /// Actor message envelope (BAREWire-encoded on all targets)
 type MessageEnvelope = {
@@ -608,8 +608,8 @@ State management represents the most significant divergence between targets. Fid
 The `IActorState` interface defines three operations: load the current state, save a new state, and execute a transactional update. The transactional operation is particularly important for Conclave, where state mutations must be atomic to maintain consistency across hibernation cycles.
 
 ```fsharp
-// Alloy.Actors.State - Abstraction over state persistence
-namespace Alloy.Actors
+// Olivier.State - Abstraction over state persistence
+namespace Olivier.State
 
 type IActorState<'State> =
     abstract member Load: unit -> Async<'State option>
@@ -666,7 +666,7 @@ The abstraction boundaries clarify what's shared and what's target-specific:
 
 ## Addendum: Production-Ready .NET Actors
 
-While Alloy.Actors provides the unified abstraction for Fidelity and Conclave, developers working exclusively in .NET often ask: "How do we build production-ready actors with `MailboxProcessor`?" This addendum addresses that question with patterns that stand alone from the Alloy ecosystem.
+While the compiler-intrinsic actor types provide the unified abstraction for Fidelity and Conclave, developers working exclusively in .NET often ask: "How do we build production-ready actors with `MailboxProcessor`?" This addendum addresses that question with patterns that stand alone from the native compilation path.
 
 ### The .NET Actor Landscape
 
@@ -1203,7 +1203,7 @@ let newActor =
     })
 ```
 
-Existing .NET code migrates to the scaffolded model, gaining supervision, error policies, and observability without rewriting business logic. While these patterns are inspired by the Alloy abstraction, they stand alone for .NET-only deployments.
+Existing .NET code migrates to the scaffolded model, gaining supervision, error policies, and observability without rewriting business logic. While these patterns are inspired by the intrinsic actor abstraction, they stand alone for .NET-only deployments.
 
 ## Transport Evolution: Media over QUIC
 
@@ -1271,8 +1271,8 @@ Each system maintains its internal transport (IPC for Fidelity, WebSocket for Co
 MoQ's track model maps naturally to actor addressing:
 
 ```fsharp
-// Alloy.Actors.Transport.MoQ
-namespace Alloy.Actors.Transport
+// Olivier.Transport.MoQ
+namespace Olivier.Transport
 
 /// MoQ track corresponds to an actor's message stream
 type MoQActorTrack = {
