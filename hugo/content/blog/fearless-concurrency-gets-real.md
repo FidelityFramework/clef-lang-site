@@ -23,7 +23,7 @@ A language that sells you zero-cost memory safety hands you reference counting b
 
 > Does a concurrent language have to make you contort your code to fit the checker, or can the toolchain be structured to fit the shape of the problem space? 
 
-Rust coined the catch-phrase "fearless concurrency," and it is partially earned for their memory story. The goal here with the Clef language is to take the phrase the rest of the way, into ***liveness***, and show how the Fidelity Framework builds on its ML-family inheritance to actually make good on fearless concurrency, from a more principled starting point than Rust. Our goal is stronger guarantees carried with lighter developer burden.
+Rust coined the catch-phrase "fearless concurrency," and it is partially earned for their memory story. The goal here with the Clef language is to take the phrase the rest of the way, into ***liveness***, and show how the Fidelity Framework builds on its ML-family inheritance to actually make good on fearless concurrency, from a more principled starting point than Rust. Our goal is to provide stronger guarantees carried with lighter developer burden.
 
 ## A challenging landscape
 
