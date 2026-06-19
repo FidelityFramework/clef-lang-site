@@ -17,9 +17,7 @@ That concern has two faces, and we have written about both. The first is correct
 
 Concurrency is a wider domain than correctness alone, and the cost of coordinating concurrent work is its own structural problem. We have addressed it the same way, by building the answer into how a program is organized, so that the cost is not left for a developer to tune away by hand.
 
-A recent talk states that performance problem better than we could, so we will start there.
-
-Jon Gjengset gave it this spring, "The Cost of Concurrency Coordination," and it walks the cost of multi-threaded coordination all the way down to the CPU cache line. The slide framing is "Are Mutexes Slow?", and the answer he builds toward is that the question was never really about mutexes. It is worth watching in full, because the reasoning is careful and the conclusion lands somewhere more interesting than the title suggests.
+A recent talk states that performance problem as well as anyone, so we will start there. Jon Gjengset gave it this spring, "The Cost of Concurrency Coordination," and it walks the cost of multi-threaded coordination all the way down to the CPU cache line. The slide framing is "Are Mutexes Slow?", and the answer he builds toward is that the question was never really about mutexes. It is worth watching in full, because the reasoning is careful and the conclusion lands somewhere more interesting than the title suggests.
 
 ---
 
