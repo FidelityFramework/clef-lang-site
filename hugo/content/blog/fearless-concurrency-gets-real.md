@@ -23,9 +23,9 @@ A language that sells you zero-cost memory safety hands you reference counting b
 
 > Does a concurrent language have to make you contort your code to fit the checker, or can the toolchain be structured to fit the shape of the problem space? 
 
-Rust coined the catch-phrase "fearless concurrency," and it is partially earned for their memory story. The goal here with the Clef language is to take the phrase the rest of the way, into ***liveness***, and show how the Fidelity Framework builds on its ML-family inheritance to actually make good on fearless concurrency, from a more principled starting point than Rust. The result is stronger guarantees carried with less developer burden.
+Rust coined the catch-phrase "fearless concurrency," and it is partially earned for their memory story. The goal here with the Clef language is to take the phrase the rest of the way, into ***liveness***, and show how the Fidelity Framework builds on its ML-family inheritance to actually make good on fearless concurrency, from a more principled starting point than Rust. Our goal is stronger guarantees carried with lighter developer burden.
 
-## Why ML heritage is a better substrate
+## A challenging landscape
 
 The usual hazard in concurrent code is two pieces of work touching the same data, one writing while the other reads. If a value can't change after it's bound, two parts of a program that don't share a mutable cell have nothing to fight over, so running them at the same time is safe. The terms of art for those two facts are referential transparency and parametricity, and they are what let our compiler treat the pure parts of a program as safe to run in parallel for free.
 
