@@ -21,7 +21,7 @@ I've written about Rust before (see [the prior post](/blog/rust-revisited/)), an
 
 A language that sells you zero-cost memory safety hands you reference counting by hand at exactly the points where its static analysis is needed most, and asks you to reshape your program until the analyzer is happy. The burden sits on the designer. Which raises the question: 
 
-> Does a concurrent language have to make you contort your data to fit the checker, or can the toolchain be structured to fit the data? 
+> Does a concurrent language have to make you contort your code to fit the checker, or can the toolchain be structured to fit the shape of the problem space? 
 
 Rust coined the catch-phrase "fearless concurrency," and it is partially earned for their memory story. The goal here with the Clef language is to take the phrase the rest of the way, into ***liveness***, and show how the Fidelity Framework builds on its ML-family inheritance to actually make good on fearless concurrency, from a more principled starting point than Rust. The result is stronger guarantees carried with less developer burden.
 
