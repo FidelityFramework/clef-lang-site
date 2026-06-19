@@ -9,15 +9,17 @@ params:
   originally_published: 2026-06-18
 ---
 
-Our actor model gives every actor an arena that lives exactly as long as the actor, and Prospero reclaims it deterministically when the actor dies. That discipline forecloses the memory failures of an actor system: use-after-free, dangling byref, a byref escaping its frame, a reference into a dead actor. It does not foreclose deadlock. Two actors can each park a continuation on a reply that only the other could send, every arena intact, every sentinel reading `Valid`, every lifetime correct, and the system makes no progress while reporting green. This is the gap this document closes, in the same general shape as [managed mutability](/docs/design/managed-mutability/).
+Our actor model gives every actor an arena that lives exactly as long as the actor, and Prospero reclaims it deterministically when the actor dies. That discipline, Resource Acquisition Is Initialization (RAII) drawn to the actor boundary, forecloses the memory failures of an actor system: use-after-free, dangling byref, a byref escaping its frame, a reference into a dead actor. **However, it does not foreclose deadlock.** Two actors can each park a continuation on a reply that only the other could send, every arena intact, every sentinel reading `Valid`, every lifetime correct, and the system makes no progress while reporting green. This is the gap this document closes, in the same general shape as [managed mutability](/docs/design/managed-mutability/).
 
-## Two different properties wearing the same word "safe"
+## Two properties use the word "safe"
 
 Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes RAII was built to kill, and in [Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/) it kills them.
 
 Deadlock is a liveness property: something good eventually happens. A set of actors each blocked waiting for a message that only another blocked actor in the set could send will sit there indefinitely. Prospero never retires any of them, because none has crashed or completed. They are all alive and quiescent. The entire memory apparatus stays consistent while the program stops doing anything.
 
-Safety and liveness are independent axes. Our RAII work drove the safety axis to the floor and left the liveness axis to runtime contingency, because the references are what RAII validates, and the wait-for graph is a different object that nothing in the memory model inspects.
+> Safety and liveness are independent axes. 
+
+Our RAII work drove the safety axis to the floor and left the liveness axis to runtime contingency, because the references are what RAII validates, and the wait-for graph is a different object that nothing in the memory model inspects.
 
 ## Where the deadlock edge actually enters
 
@@ -25,13 +27,13 @@ The hazard rides in on one construct: a synchronous reply expectation across act
 
 A fire-and-forget `Tell` adds no such edge. The sender posts to a mailbox and returns, so the asynchronous fraction of a program is invisible to this hazard and cannot deadlock through it. The synchronous request and response carries the whole risk, because that is the only place a caller's progress is contingent on a specific message another actor is contractually bound to produce.
 
-We want RPC available. It is genuinely useful in systems work, and closed-loop request and response is a pattern worth keeping rather than legislating away in favor of pervasive callbacks. So the synchronous edge stays in the model. The question is how to make its liveness visible, not how to delete the construct that carries it.
+We want remote procedure call (RPC) available. It is genuinely useful in systems work, and closed-loop request and response is much better than legislating it away in favor of pervasive callbacks. So the synchronous edge stays in the model. The question is how to make its liveness visible in a way that fits our design-time norms.
 
-## What the session-types literature gets, and what it costs
+## What session-types get, and what it costs
 
-Classical Linear Logic gives one well-studied route to deadlock freedom for synchronous communication. In Wadler's CP and its hypersequent successor HCP, a well-typed process cannot deadlock, established as a corollary of the proof structure. The mechanism in CP fuses channel creation and parallel composition under a single cut rule, which forces the communication topology to be a tree. Deadlock freedom follows because a tree has no cycles to wait around. The price is stated plainly in that work: the only processes allowed are tree-structured. Two actors that hold references to each other are already outside the fragment, and that pattern is common in real supervision graphs.
+Classical Linear Logic (CLL) gives one well-studied route to deadlock freedom for synchronous communication. Wadler's [Classical Processes (CP)](https://homepages.inf.ed.ac.uk/wadler/papers/propositions-as-sessions/propositions-as-sessions.pdf) put session-typed communication in exact correspondence with CLL, and in CP and its successor Hypersequent Classical Processes (HCP) a well-typed process cannot deadlock, established as a corollary of the proof structure. The mechanism in CP fuses channel creation and parallel composition under a single cut rule, which forces the communication topology to be a tree. Deadlock freedom follows because a tree has no cycles to wait around. The price is stated plainly in that work: the only processes allowed are tree-structured. Two actors that hold references to each other are already outside the fragment, and that pattern is common in real supervision graphs.
 
-Priority CP, following Kobayashi and Padovani, buys the cyclic topologies back. It annotates communication actions with priorities, a partial order, and the type checker verifies that the order has no cycle. Cyclic connection graphs become typeable as long as the priorities prove the wait-for relation stays acyclic. The recognized cost is compositionality: priorities are non-local, so a library actor's priorities surface in the types of everything that calls it, and the programmer threads those annotations through by hand.
+Priority CP (PCP), following Kobayashi and Padovani, buys the cyclic topologies back. It annotates communication actions with priorities, a partial order, and the type checker verifies that the order has no cycle. Cyclic connection graphs become typeable as long as the priorities prove the wait-for relation stays acyclic. The recognized cost is compositionality: priorities are non-local, so a library actor's priorities surface in the types of everything that calls it, and the programmer threads those annotations through by hand.
 
 Neither shape fits our constraints as written. The tree restriction forbids reasonable systems patterns. Pervasive priority annotation is the ceremony I am declining when I say I do not want to write Clef as though it were Haskell. And a compiler pass that silently rejects programs with a cyclic wait-for graph, with no surface the developer reads or steers, is the hidden guard I refuse on principle. Memory safety in our model is not a hidden analysis. The `let mutable` is visible syntax, the escape classification is inspectable, and the allocation decision is reachable by a library author. Deadlock freedom should be a citizen of the same kind.
 
@@ -49,11 +51,15 @@ Every synchronous RPC call site gets a wait classification, deliberately the sam
 
 ```fsharp
 type WaitClass =
-    | AcyclicStatic                     // callee static, W acyclic: guaranteed, silent
-    | OrderedCyclic of priority: int    // callee static, in a connection cycle but
-                                        //   priority-orderable: guaranteed, priority inferred
-    | Unresolved of routing: RoutingKind // callee value-carried: visible downgrade to
-                                        //   supervised timeout, diagnostic emitted
+    // callee static, W acyclic: guaranteed, silent
+    | AcyclicStatic    
+    // callee static, in a connection cycle but                 
+    //   priority-orderable: guaranteed, priority inferred
+    | OrderedCyclic of priority: int    
+    // callee value-carried: visible downgrade to     
+    //   supervised timeout, diagnostic emitted                               
+    | Unresolved of routing: RoutingKind 
+                                        
 ```
 
 `AcyclicStatic` is the common case under a mostly-static topology, and it carries no annotation, no marker, and no ceremony. The check ran, the graph was acyclic, and the developer never hears about it.
@@ -127,6 +133,7 @@ This is not HCP's whole-calculus theorem, and the claim is not that Clef is dead
 
 ### External References
 
+- [Propositions as Sessions](https://homepages.inf.ed.ac.uk/wadler/papers/propositions-as-sessions/propositions-as-sessions.pdf), Wadler (ICFP 2012) - CP and the exact correspondence between session types and Classical Linear Logic
 - [Better Late Than Never: A Fully-Abstract Semantics for Classical Processes](https://arxiv.org/abs/1811.02209), Kokke, Montesi, Peressotti (POPL 2019) - HCP and deadlock freedom by typing
 - [Prioritise the Best Variation](https://arxiv.org/abs/2103.14466), Kokke, Dardha - Priority GV and deadlock freedom for cyclic topologies
 - [Deadlock Freedom for Asynchronous and Cyclic Process Networks](https://arxiv.org/pdf/2110.00146) - The asynchronous-and-cyclic fragment and its priority discipline
