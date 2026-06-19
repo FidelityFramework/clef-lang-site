@@ -2,7 +2,7 @@
 title: "Counting the Cost of Coordination"
 linkTitle: "Counting the Cost of Coordination"
 description: "Concurrency coordination is expensive at the CPU cache line. Our actor and arena model treats that cost as a structural property instead of leaving it to be hand-tuned away."
-date: 2026-06-19T10:00:00-04:00
+date: 2026-06-19T00:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["Concurrency", "Performance", "Architecture"]
 params:
