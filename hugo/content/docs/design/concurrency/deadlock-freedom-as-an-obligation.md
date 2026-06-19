@@ -58,7 +58,7 @@ type WaitClass =
 
 `AcyclicStatic` is the common case under a mostly-static topology, and it carries no annotation, no marker, and no ceremony. The check ran, the graph was acyclic, and the developer never hears about it.
 
-`OrderedCyclic` is the case CP's tree restriction wrongly forbids: two actors hold references to each other and call in both directions, forming a cycle in the connection graph but not in the wait-for graph, because their calls are ordered so that no execution waits around the loop. A consistent priority assignment exists exactly when the action-dependency graph is itself a DAG, which the compiler checks by topological ordering. The priority is inferred from the wait-for edges. The developer writes nothing. This is the place our inference thesis earns the difference from textbook Priority CP, where the same priority would be a hand-written annotation. Width is inferred from type structure and surfaced only when inference needs help; the synchronous-action priority is the same inference one axis over.
+`OrderedCyclic` is the case CP's tree restriction wrongly forbids: two actors hold references to each other and call in both directions, forming a cycle in the connection graph but not in the wait-for graph, because their calls are ordered so that no execution waits around the loop. The order is a rank: an integer assigned to each actor behavior such that every wait-for edge strictly increases it, which exists exactly when the relation is acyclic. The priority annotation a developer might write is that rank, and in the common case the solver finds it. The developer writes nothing. This is the place our inference thesis earns the difference from textbook Priority CP, where the same priority would be a hand-written annotation. Width is inferred from type structure and surfaced only when inference needs help; the synchronous-action priority is the same inference one axis over.
 
 `Unresolved` is the genuinely dynamic case, where the callee is value-carried through `Actor.self()`-passing, content-based routing, or a runtime-spawned handle whose identity is not statically pinned. Acyclicity over such routing is undecidable in general, which is the wall the asynchronous-and-cyclic process-network literature documents and works around. The program is neither forbidden nor silently admitted. The call site drops out of the static guarantee, the compiler says which call dropped and why, and that call falls back to supervised execution with a timeout. RPC stays available, and the boundary of the guarantee is visible at the exact call that crosses it.
 
@@ -72,9 +72,41 @@ Writing an explicit priority is the only place priorities-as-syntax appear, and 
 
 ## How it rides the architecture
 
-The wait-for edges are hyperedges on the joint-constraint axis our [tier architecture](/docs/internals/verification/) already defines, so deadlock freedom is a section over that axis being free of cycles. The `AcyclicStatic` and `OrderedCyclic` obligations discharge at Tier 2 by graph algorithm, sitting alongside the QF_LIA obligations rather than introducing a new mechanism. When a sub-protocol's acyclicity depends on a fact about a library actor, for instance that a supervised pool never calls back into its caller, a mode shift carries the obligation that the Tier 2 structure admits the Tier 3 refinement supplying that ordering, then projects the result back down, which is the worked traversal shape the architecture uses elsewhere.
+The wait-for edges are hyperedges on the joint-constraint axis our [tier architecture](/docs/internals/verification/) already defines, so deadlock freedom is a section over that axis being free of cycles. Acyclicity is not a graph algorithm that needs its own machinery; it encodes as the rank constraint, \(\forall (u \to v) \in W.\ r(u) < r(v)\), which is satisfiable exactly when the relation is acyclic, and that constraint is QF_LIA. So the `AcyclicStatic` and `OrderedCyclic` obligations are ordinary Tier 2 obligations in the same fragment as our interval and bound checks, discharged by the same solver, with the inferred rank serving as the priority witness. When a sub-protocol's acyclicity depends on a fact about a library actor, for instance that a supervised pool never calls back into its caller, a mode shift carries the obligation that the Tier 2 structure admits the Tier 3 refinement supplying that ordering, then projects the result back down, which is the worked traversal shape the architecture uses elsewhere.
 
 Parametricity does not reach this property. Free theorems give independence of pure regions for the interaction-net path, and they say nothing about the liveness of effectful interaction. Deadlock freedom is Tier 2 work and never Tier 1 free. It is free of annotation in the common case, and it is not free of analysis. That is the same line the framework holds between a property that is free by parametricity and an obligation that is discharged.
+
+## How it survives lowering
+
+A check that runs only in the front end and evaporates before code generation is theater. The CakeML standard is the right bar: the property is established once and carried to the target, rather than asserted at the source and hoped for below. For deadlock freedom that carrying is direct, because the obligation is already a Tier 2 verification condition and Tier 2 conditions already lower to the MLIR SMT dialect and discharge at the seam. There is no separate mechanism for this one.
+
+The shape in MLIR answers a question worth making explicit: is deadlock freedom a structural invariant of an op, or a proof obligation on a scope? It is the second. A single blocking call cannot carry acyclicity, because acyclicity is a property of the whole set of wait edges and no individual op can see the set. SSA dominance can make use-after-definition structurally impossible at the op level, and there is no analogue here. So each synchronous RPC lowers to a blocking primitive that carries only its own wait edge as local fact:
+
+```mlir
+// each PostAndReply lowers to a suspend that names who it waits on
+%r = dcont.suspend_on_reply %callee : !actor.ref<"inventory">
+    { rpc.wait_edge = #wait<from = "order", to = "inventory"> }
+```
+
+The acyclicity proof is hung on the scope that encloses the set of those edges. The enclosing region carries the obligation as an attribute, which instructs the seam to gather every wait edge in the region and prove the relation admits a rank:
+
+```mlir
+module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
+  // actor behaviors and their suspend_on_reply ops
+}
+```
+
+Lowering emits the verification condition for that scope into the SMT dialect, and Z3 discharges it exactly as it discharges an interval obligation:
+
+```mlir
+%edges = collect rpc.wait_edge in @order_system
+smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
+smt.check   // sat: acyclic. unsat: the core is the cycle, reported as CCS8031.
+```
+
+The unsat core is the wait-for path the front-end diagnostic names. The solver returns it as the minimal set of edges that cannot be jointly ranked, which is precisely the cycle, so the proof failure and the developer-facing message are the same object.
+
+The scope is the part to choose deliberately. The wait relation ranges over the actors that can address one another, so the obligation belongs on the smallest region closed under "can send a synchronous reply to." That is a `module` when an actor system is a module, and a dedicated actor-system region when actors span modules. A smaller scope is a cheaper proof, and a synchronous call that crosses a scope boundary is an `Unresolved` site by the same definition the front end already applies, because the callee is outside the relation the scope can see.
 
 ## The honest ledger
 
