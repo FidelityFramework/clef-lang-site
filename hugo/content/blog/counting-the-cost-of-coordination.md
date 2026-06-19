@@ -13,7 +13,7 @@ Concurrency has been the through-line of our work from the start. We describe Cl
 
 That concern has two faces, and we have written about both. The first is correctness: whether a concurrent program stays safe and makes progress. We took that up in [Fearless Concurrency Gets Real](/blog/fearless-concurrency-gets-real/), prompted by an interview where a Rust maintainer described that language's borrow checker fighting the developer, and in that entry we argued that our compiler should carry that burden, not the person at the keyboard. 
 
-> This post is the second face: performance. 
+> This post addresses the second face: **performance**. 
 
 Concurrency is a wider domain than correctness alone, and the cost of coordinating concurrent work is its own structural problem. We have addressed it the same way, by building the answer into how a program is organized, so that the cost is not left for a developer to tune away by hand.
 
