@@ -37,7 +37,7 @@ And the actors are not an invention we reached for to make concurrency tractable
 
 ## Why "the fight" happens
 
-"The fight" Ryhl describes has a cause worth understanding. Her words point at it: the borrow checker checks a reference's scope "by just looking at a single function." It reasons locally by default, function by function, and where a value's lifetime crosses a boundary you bridge the gap by hand, with lifetime annotations on the signatures the value passes through. Rust gives you the tools to thread that lifetime across functions. Threading it is the work.
+"The fight" Ryhl describes is worth understanding. Her words point at it: the borrow checker checks a reference's scope "by just looking at a single function." It reasons locally by default, function by function, and where a value's lifetime crosses a boundary you bridge the gap by hand, with lifetime annotations on the signatures the value passes through. Rust gives you the tools to thread that lifetime across functions. Threading it is the work.
 
 For a value that flows through three functions, you annotate three signatures so each local check has what it needs. Most of the time the annotating is mechanical and you stop noticing. The fight starts where the annotations stop reaching: a struct that holds a reference and gets passed around, a sharing pattern the borrow checker cannot express in the lifetime vocabulary available, a relationship decided at runtime rather than written in a type. At that point the static analysis has gone as far as it can, and you reach for something that takes over from there.
 
