@@ -3,6 +3,7 @@ title: "The Continuation Preservation Paradox"
 linkTitle: "Continuation Preservation"
 description: "How Deep Can Delimited Continuations Survive in a Systems Compiler?"
 date: 2025-07-29T00:00:00+04:00
+weight: 20
 authors:
   - SpeakEZ
 tags: ["architecture", "design", "innovation"]
@@ -359,6 +360,6 @@ Designing Composer has shifted how we think about compilation. It is not only ab
 
 On the WAMI path they survive into the runtime largely unchanged. On the LLVM path they compile away and leave behind efficient implementations. Both belong in a functional systems programming toolkit.
 
-The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work. This per-call-site choice is the same inferred-with-override discipline the framework uses elsewhere: the compiler infers a default, the developer reads it where it surfaces, and an annotation overrides it at the one site that needs steering. Escape classification assigns it to every mutable binding in [managed mutability](/docs/design/managed-mutability/), and the [wait classification for deadlock freedom](/docs/design/deadlock-freedom-as-an-obligation/) assigns it to every synchronous RPC. Preservation is that discipline one axis over, on the lowering choice.
+The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work. This per-call-site choice is the same inferred-with-override discipline the framework uses elsewhere: the compiler infers a default, the developer reads it where it surfaces, and an annotation overrides it at the one site that needs steering. Escape classification assigns it to every mutable binding in [managed mutability](/docs/design/language/managed-mutability/), and the [wait classification for deadlock freedom](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) assigns it to every synchronous RPC. Preservation is that discipline one axis over, on the lowering choice.
 
 This is where we are taking the design. The continuation preservation paradox is the question that shapes the next stretch of work on Composer, and the per-call-site preservation choice is the part of the answer we will keep building toward as the rest of the toolchain comes into place.

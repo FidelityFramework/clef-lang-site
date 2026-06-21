@@ -3,6 +3,7 @@ title: "The DCont/Inet Duality"
 linkTitle: "DCont/Inet Duality"
 description: "How computation expressions split across three lowering lanes: delimited continuations for sequential effects, the tensor path for dense data parallelism, and interaction nets for irregular reduction"
 date: 2025-09-25T00:00:00-04:00
+weight: 40
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance", "Innovation"]
 params:
@@ -94,7 +95,7 @@ Once computation expressions are read as continuations, the question becomes wha
 
 Once we recognize computation expressions as continuation structures, we face a compilation decision. Some computations require sequential threading of continuations, where each step depends on the previous one. Others carry no such dependencies, so all operations could in principle execute at once.
 
-This distinction determines the compilation strategy for the whole expression. As we explored in our [coeffects and codata analysis](/docs/design/coeffects-and-codata/), different computational patterns call for different execution strategies. The independent side splits once more by the shape of the work, which gives three lowering lanes rather than two.
+This distinction determines the compilation strategy for the whole expression. As we explored in our [coeffects and codata analysis](/docs/internals/concepts/coeffects-and-codata/), different computational patterns call for different execution strategies. The independent side splits once more by the shape of the work, which gives three lowering lanes rather than two.
 
 ### Three Lowering Lanes
 
@@ -145,7 +146,7 @@ dcont.func @processOrder(%order: !order) -> !result {
 }
 ```
 
-Each `dcont.shift` captures the continuation at that point, "the rest of the computation," so the operation can suspend and later resume. In this design async operations run without allocating Tasks or using thread pools. Where these effectful regions cross actor boundaries through synchronous reply, their liveness is a separate obligation, the acyclicity check we develop in [deadlock freedom as an obligation](/docs/design/deadlock-freedom-as-an-obligation/).
+Each `dcont.shift` captures the continuation at that point, "the rest of the computation," so the operation can suspend and later resume. In this design async operations run without allocating Tasks or using thread pools. Where these effectful regions cross actor boundaries through synchronous reply, their liveness is a separate obligation, the acyclicity check we develop in [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/).
 
 ### Regular Data-Parallel: The Tensor Path
 

@@ -3,6 +3,7 @@ title: "Deadlock Freedom as an Obligation"
 linkTitle: "Deadlock Freedom"
 description: "Why actor-scoped RAII secures memory but not liveness, and how a static acyclicity check moves deadlock freedom into visible machinery"
 date: 2026-06-18T10:00:00-04:00
+weight: 50
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Concurrency"]
 params:

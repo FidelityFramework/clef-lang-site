@@ -3,6 +3,7 @@ title: "Delimited Continuations: Fidelity's Turning Point"
 linkTitle: "Delimited Continuations"
 description: "How Continuation Passing Style Unifies Clef Async, Actors, and Native Compilation"
 date: 2025-12-14T10:00:00-05:00
+weight: 30
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 params:

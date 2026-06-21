@@ -3,6 +3,7 @@ title: "Clef Async From .NET to Fidelity"
 linkTitle: "Dotnet to Fidelity Concurrency"
 description: "Familiar Concurrency Patterns with Direct Hardware Access"
 date: 2025-04-16T16:59:54+06:00
+weight: 10
 authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
@@ -270,7 +271,7 @@ let userRegion =
         (fun id -> extractShardId id)
 ```
 
-Prospero's primary role is scheduling and orchestration within the Olivier actor model. It manages message delivery, supervision hierarchies, and actor lifecycle events within the system, with cross-node transport carried over BAREWire. By extension of its role as actor supervisor, it also marshals the heap allocations for those actors through actor-scoped arenas, the discipline we develop in [RAII in Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/). The Akka.NET-shaped clustering configuration above is a migration affordance for teams arriving from that ecosystem, not the native transport.
+Prospero's primary role is scheduling and orchestration within the Olivier actor model. It manages message delivery, supervision hierarchies, and actor lifecycle events within the system, with cross-node transport carried over BAREWire. By extension of its role as actor supervisor, it also marshals the heap allocations for those actors through actor-scoped arenas, the discipline we develop in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/). The Akka.NET-shaped clustering configuration above is a migration affordance for teams arriving from that ecosystem, not the native transport.
 
 Here's a simplified example of how an async function might look in MLIR:
 
