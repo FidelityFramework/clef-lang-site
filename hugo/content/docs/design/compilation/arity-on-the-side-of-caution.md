@@ -239,4 +239,4 @@ Explicit arity tracking is what lets currying reach native code without an obsta
 
 ---
 
-*This post is part of a series on Fidelity's compiler architecture. See also [Absorbing Alloy](/docs/design/absorbing-alloy/) for how types became intrinsic to CCS, and [Why Clef Is A Natural Fit for MLIR](/docs/design/why-clef-fits-mlir/) for the SSA-functional correspondence.*
+*This post is part of a series on Fidelity's compiler architecture. See also [Absorbing Alloy](/docs/design/language/absorbing-alloy/) for how types became intrinsic to CCS, and [Why Clef Is A Natural Fit for MLIR](/docs/design/compilation/why-clef-fits-mlir/) for the SSA-functional correspondence.*

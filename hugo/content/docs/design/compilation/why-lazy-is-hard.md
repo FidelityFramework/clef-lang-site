@@ -36,7 +36,7 @@ Before examining implementation strategies, we should be precise about what lazy
 
 This description reveals three distinct concerns:
 
-**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly.
+**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly.
 
 **Deferred execution**: Unlike an ordinary closure that executes when called, a thunk execution is controlled by a forcing operation. The thunk must know whether it has been evaluated.
 
@@ -121,7 +121,7 @@ This works well in the .NET ecosystem. For native compilation, every aspect of t
 
 ## Fidelity's Approach: Extended Flat Closures
 
-Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A lazy value is a flat closure with additional fields for memoization state.
+Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A lazy value is a flat closure with additional fields for memoization state.
 
 | Lazy<T> | | | | |
 |:---:|:---:|:---:|:---:|:---:|
@@ -193,7 +193,7 @@ This analysis happens upstream in CCS (Clef Compiler Services), not downstream i
 
 ## The Coeffect Model
 
-Fidelity's compiler architecture separates analysis from generation. We explored this in [Gaining Closure](/docs/design/gaining-closure/) as the "photographer principle": coeffects are computed before code generation begins; witnesses observe these coeffects during MLIR emission.
+Fidelity's compiler architecture separates analysis from generation. We explored this in [Gaining Closure](/docs/design/memory/gaining-closure/) as the "photographer principle": coeffects are computed before code generation begins; witnesses observe these coeffects during MLIR emission.
 
 For lazy values, the coeffect is `LazyLayout`: a pre-computed structure describing everything about a specific lazy expression's representation.
 
@@ -320,8 +320,8 @@ Composing lazy evaluation with everything else our compiler does is the part we 
 
 For more on the Fidelity framework and native Clef compilation:
 
-- [Gaining Closure](/docs/design/gaining-closure/) - MLKit-style flat closures in Fidelity
-- [From IL to NTU](/docs/design/il-to-ntu/) - The Native Type Universe architecture
+- [Gaining Closure](/docs/design/memory/gaining-closure/) - MLKit-style flat closures in Fidelity
+- [From IL to NTU](/docs/design/types/il-to-ntu/) - The Native Type Universe architecture
 - [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes face architectural limits
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/) - SSA form and functional compilation
-- [Absorbing Alloy](/docs/design/absorbing-alloy/) - The native standard library comes home
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - SSA form and functional compilation
+- [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home

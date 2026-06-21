@@ -150,7 +150,7 @@ flowchart TD
 
 A tension emerges when bringing signal-based reactivity to [our Clef language](https://clef-lang.com): the .NET heritage Clef descends from carries conventions that assume explicit resource management. The `IDisposable` pattern, `use` bindings, and finalizer semantics pervade idiomatic .NET code. These patterns exist because the CLR's garbage collector cannot guarantee deterministic cleanup; developers must explicitly mark resource boundaries.
 
-Our Fidelity Framework takes deliberate leave from these conventions. As explored in our discussion of [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), our Composer compiler is designed to perform scope analysis during IR lowering and insert cleanup code automatically. Developers write signal operations; the compiler determines where cleanup belongs based on actor lifecycle boundaries and continuation points.
+Our Fidelity Framework takes deliberate leave from these conventions. As explored in our discussion of [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), our Composer compiler is designed to perform scope analysis during IR lowering and insert cleanup code automatically. Developers write signal operations; the compiler determines where cleanup belongs based on actor lifecycle boundaries and continuation points.
 
 This reflects a position we hold: resource management is a compiler concern, not a developer burden. The same [coeffect analysis](/blog/coeffects-and-codata-in-composer/) that tracks async boundaries and memory access patterns also tracks resource lifetimes. When the compiler knows that a signal exists within an actor's arena, it knows when that arena will be released. No `Dispose` call needed; no `IDisposable` interface required.
 
@@ -176,7 +176,7 @@ let processSensor (sensor: Signal<SensorReading>) =
 
 The Fable target for Fidelity.CloudEdge follows a similar philosophy, delegating to SolidJS's internal cleanup mechanisms. The .NET interop layer necessarily bridges back to `IDisposable` conventions when interfacing with existing .NET code, but pure Fidelity code intends to remain free of explicit disposal ceremony.
 
-This departure may initially feel unfamiliar to developers accustomed to .NET patterns. The `use` binding becomes less prevalent. The `IDisposable` interface appears only at system boundaries. Resource cleanup would be handled by the same compilation infrastructure that manages [arena allocation and actor termination](/blog/raii-in-olivier-and-prospero/). The code that developers write focuses on the reactive logic; the compiler handles the rest.
+This departure may initially feel unfamiliar to developers accustomed to .NET patterns. The `use` binding becomes less prevalent. The `IDisposable` interface appears only at system boundaries. Resource cleanup would be handled by the same compilation infrastructure that manages [arena allocation and actor termination](/docs/design/memory/raii-in-olivier-and-prospero/). The code that developers write focuses on the reactive logic; the compiler handles the rest.
 
 ## Designing Signals for Clef
 
@@ -365,11 +365,11 @@ This hybrid provides the ergonomics of implicit tracking (signal reads within a 
 
 The signal model integrates with BAREWire's zero-copy memory architecture. Traditional reactive systems copy values through the dependency graph. Each signal holds its own copy of the data; each propagation involves allocation and copying. For small values this overhead is negligible. For large buffers, frequently updated data streams, or resource-constrained environments, the overhead dominates.
 
-Our design for BAREWire takes a different, patent-pending approach: signals that reference data in shared buffers without copying. This rests on BAREWire's solution to the [byref problem](/blog/byref-resolved/) that has constrained .NET developers for decades. Where .NET's byref restrictions force defensive copying because references cannot outlive their stack frame, BAREWire separates buffer lifetime from access permissions through capability-based memory management.
+Our design for BAREWire takes a different, patent-pending approach: signals that reference data in shared buffers without copying. This rests on BAREWire's solution to the [byref problem](/docs/design/types/byref-resolved/) that has constrained .NET developers for decades. Where .NET's byref restrictions force defensive copying because references cannot outlive their stack frame, BAREWire separates buffer lifetime from access permissions through capability-based memory management.
 
 ### Capability-Based Memory Access
 
-The core insight from our [byref resolution work](/blog/byref-resolved/) applies directly to reactive signals. Traditional .NET code faces a fundamental constraint:
+The core insight from our [byref resolution work](/docs/design/types/byref-resolved/) applies directly to reactive signals. Traditional .NET code faces a fundamental constraint:
 
 ```fsharp
 // .NET limitation: byrefs cannot escape their stack frame
@@ -463,7 +463,7 @@ module BARERef =
         BAREBuffer.slice ref.Buffer ref.Offset size
 ```
 
-This design intends to separate the reactive relationship (tracking, dependency propagation) from the actual data access. The signal machinery operates on lightweight reference types. The heavy data stays in BAREWire buffers, accessed only when needed. As discussed in [Cache-Conscious Memory Management](/blog/cache-aware-compilation-cpu/), BAREWire's deterministic layouts make this integration possible by ensuring that memory positions are statically known and guaranteed.
+This design intends to separate the reactive relationship (tracking, dependency propagation) from the actual data access. The signal machinery operates on lightweight reference types. The heavy data stays in BAREWire buffers, accessed only when needed. As discussed in [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/), BAREWire's deterministic layouts make this integration possible by ensuring that memory positions are statically known and guaranteed.
 
 ### Hardware-Enforced Safety
 
@@ -488,7 +488,7 @@ This approach provides the memory safety developers depend on, but through hardw
 
 ### Buffer Lifecycle and Actor Boundaries
 
-BAREWire buffer design has an explicit lifetime tied to arena allocation. In the Fidelity Framework, arenas are associated with actors. This creates a natural integration point: buffer signals live within actor arenas, and buffer lifecycle follows actor lifecycle. As explained in [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), when an actor terminates, its entire memory arena is immediately reclaimed without any scanning or collection pauses.
+BAREWire buffer design has an explicit lifetime tied to arena allocation. In the Fidelity Framework, arenas are associated with actors. This creates a natural integration point: buffer signals live within actor arenas, and buffer lifecycle follows actor lifecycle. As explained in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), when an actor terminates, its entire memory arena is immediately reclaimed without any scanning or collection pauses.
 
 ```fsharp
 module Olivier.Reactive
@@ -1071,7 +1071,7 @@ This edge backplane is meant to carry the signal model from a single-runtime pat
 
 ## Connecting to Alloy.Rx
 
-The signal model presented here complements the [Alloy.Rx reactive framework](/blog/alloyrx-native-reactivity-in-fidelity/) by providing a different abstraction for different use cases. Where Alloy.Rx distinguishes between multicast (broadcast) and unicast (isolated) observables based on push semantics, the signal model focuses on pull semantics with automatic dependency tracking.
+The signal model presented here complements the [Alloy.Rx reactive framework](/blog/fidelityrx-native-reactivity/) by providing a different abstraction for different use cases. Where Alloy.Rx distinguishes between multicast (broadcast) and unicast (isolated) observables based on push semantics, the signal model focuses on pull semantics with automatic dependency tracking.
 
 The distinction matters. Our Alloy.Rx multicast observables suit event streams where producers push updates to multiple observers, achieving zero allocation for broadcast scenarios. This makes them a natural fit for sensor data, UI events, and system notifications. Unicast observables provide per-subscriber isolation with arena-based allocation, which becomes appropriate when each subscriber needs independent processing state.
 
@@ -1149,7 +1149,7 @@ The signal model's performance depends heavily on the target environment and usa
 
 **Memory overhead**: Each signal maintains a list of dependents. Using weak references prevents leaks but adds indirection. For native targets, custom allocators can pool dependency records.
 
-**Zero-copy benefit**: For buffer signals, the reactive machinery operates on lightweight references while heavy data remains stationary. This is particularly beneficial for large messages and streaming data. As detailed in our [byref resolution](/blog/byref-resolved/), eliminating the "copy tax" transforms what would be performance bottlenecks into competitive advantages.
+**Zero-copy benefit**: For buffer signals, the reactive machinery operates on lightweight references while heavy data remains stationary. This is particularly beneficial for large messages and streaming data. As detailed in our [byref resolution](/docs/design/types/byref-resolved/), eliminating the "copy tax" transforms what would be performance bottlenecks into competitive advantages.
 
 | Aspect | Signal Model | Rx/IObservable |
 |--------|--------------|----------------|
@@ -1163,7 +1163,7 @@ The signal model's performance depends heavily on the target environment and usa
 
 ## Reactive Architecture Without Ceremony
 
-The signal model outlined here departs from subscription-based reactive programming. By making dependency tracking implicit in signal reads, we remove a category of resource management concerns. By integrating signals with BAREWire's [capability-based memory architecture](/blog/byref-resolved/), we aim to handle large data volumes without allocation overhead. By aligning signal lifecycle with actor boundaries through [RAII principles](/blog/raii-in-olivier-and-prospero/), we provide deterministic cleanup without garbage collection.
+The signal model outlined here departs from subscription-based reactive programming. By making dependency tracking implicit in signal reads, we remove a category of resource management concerns. By integrating signals with BAREWire's [capability-based memory architecture](/docs/design/types/byref-resolved/), we aim to handle large data volumes without allocation overhead. By aligning signal lifecycle with actor boundaries through [RAII principles](/docs/design/memory/raii-in-olivier-and-prospero/), we provide deterministic cleanup without garbage collection.
 
 By having our Composer compiler manage cleanup through [scope analysis and coeffect tracking](/blog/coeffects-and-codata-in-composer/), we free developers from the `IDisposable` ceremony that pervades .NET code. This reflects a principle of our framework: infrastructure concerns belong in the compiler, not in application code.
 
@@ -1179,13 +1179,13 @@ Signals and actors reinforce each other. Actor boundaries provide cleanup semant
 
 Our framework's approach to reactivity follows a position we hold across the design: provide capabilities through composable primitives. Developers should not need to become experts in subscription lifecycle management to build reactive applications. They should be able to read values, derive computations, and rely on the system to handle the plumbing.
 
-BAREWire provides the memory substrate where signals and buffers coexist. The BARE protocol's binary encoding maps directly to memory layout, which aligns with our zero-copy goals. Our [solution to the byref problem](/blog/byref-resolved/) removes the defensive copying that would otherwise negate the benefits of reactive optimization. The [SPEC stack](/blog/spec-stack/) carries these patterns to the browser through SolidJS's signal implementation, while our Fidelity.CloudEdge library extends the reach to the edge, where Durable Objects and persistent WebSockets carry local reactive patterns into distributed coordination.
+BAREWire provides the memory substrate where signals and buffers coexist. The BARE protocol's binary encoding maps directly to memory layout, which aligns with our zero-copy goals. Our [solution to the byref problem](/docs/design/types/byref-resolved/) removes the defensive copying that would otherwise negate the benefits of reactive optimization. The [SPEC stack](/blog/spec-stack/) carries these patterns to the browser through SolidJS's signal implementation, while our Fidelity.CloudEdge library extends the reach to the edge, where Durable Objects and persistent WebSockets carry local reactive patterns into distributed coordination.
 
 This is the direction we will keep building toward: a reactive system where data flows through dependency graphs without copying, where cleanup is deterministic, and where signals propagate from native code through edge infrastructure to browser UIs. There is implementation work ahead on every target named here, and we will report on it as the design takes shape.
 
 ---
 
-*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), [ByRef Resolved](/blog/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/alloyrx-native-reactivity-in-fidelity/).*
+*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), [ByRef Resolved](/docs/design/types/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/fidelityrx-native-reactivity/).*
 
 [^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef. See [The SPEC Stack: A Proposal](/blog/spec-stack/) for the full architectural overview.
 

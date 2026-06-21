@@ -634,14 +634,14 @@ Unlike ASTs, hypergraphs make relationships explicit:
 
 This explicitness enables meta-level reasoning about what needs testing versus what's already proven.
 
-The integration of MLIR's SMT dialect with proof hyperedges creates a foundation for intelligent **test avoidance** as much as test generation. As discussed in [Proof-Aware Compilation](/docs/design/proof-aware-compilation/), the hypergraph carries proof obligations as first-class hyperedges alongside code structure. These proof hyperedges contain rich semantic information:
+The integration of MLIR's SMT dialect with proof hyperedges creates a foundation for intelligent **test avoidance** as much as test generation. As discussed in [Proof-Aware Compilation](/docs/internals/pipeline/proof-aware-compilation/), the hypergraph carries proof obligations as first-class hyperedges alongside code structure. These proof hyperedges contain rich semantic information:
 
 - **Preconditions and postconditions** from F* verification
 - **Memory safety bounds** from layout definitions
 - **Effect tracking** from coeffect analysis
 - **Type refinements** that constrain valid inputs
 
-When combined with the bidirectional zipper navigation described in [Hyping Hypergraphs](/docs/design/hyping-hypergraphs/), these proof hyperedges guide intelligent test placement:
+When combined with the bidirectional zipper navigation described in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/), these proof hyperedges guide intelligent test placement:
 
 1. **Identifying unproven code paths**: The zipper traverses the hypergraph, finding nodes **without** proof hyperedges
 2. **Detecting proof boundaries**: Where proven code interfaces with unproven external systems

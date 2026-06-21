@@ -265,7 +265,7 @@ let traditional() = async {
 // Total: ~350+ bytes of heap allocation
 ```
 
-Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
+Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/memory/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
 
 ```fsharp
 // Fidelity: Stack-based continuations

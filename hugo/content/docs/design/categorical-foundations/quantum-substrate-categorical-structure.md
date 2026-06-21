@@ -23,7 +23,7 @@ In concrete terms:
 - **The dagger** (\(\dagger\)) assigns to each morphism its adjoint: if \(U\) is a unitary gate, then \(U^\dagger\) is its conjugate transpose, satisfying \(UU^\dagger = U^\dagger U = I\)
 - **The monoidal structure** (\(\otimes\)) captures tensor products: the state space of a composite quantum system is the tensor product of its components
 
-This is the same adjoint structure that appears in [the CDL paper's treatment of neural networks](/blog/categorical-deep-learning-adjoint-correspondence/) and in the HPC adjoint method. The forward/backward duality that unifies backpropagation with sensitivity analysis has a third instance in quantum mechanics: unitary evolution paired with its conjugate.
+This is the same adjoint structure that appears in [the CDL paper's treatment of neural networks](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) and in the HPC adjoint method. The forward/backward duality that unifies backpropagation with sensitivity analysis has a third instance in quantum mechanics: unitary evolution paired with its conjugate.
 
 The mathematics is not an analogy. The composition laws, naturality conditions, and coherence constraints are identical across all three domains. The substrate differs; the algebraic structure does not.
 

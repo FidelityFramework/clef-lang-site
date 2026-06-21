@@ -33,7 +33,7 @@ For native compilation, every one of those capabilities becomes a question. Wher
 
 > The surface simplicity of `seq { }` conceals an iceberg of implementation concerns.
 
-This is the story of how Fidelity implements sequence expressions for native targets. The approach extends patterns established in [Gaining Closure](/docs/design/gaining-closure/) and [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. What emerges is a design where the API remains idiomatic Clef while the implementation is native state machinery.
+This is the story of how Fidelity implements sequence expressions for native targets. The approach extends patterns established in [Gaining Closure](/docs/design/memory/gaining-closure/) and [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. What emerges is a design where the API remains idiomatic Clef while the implementation is native state machinery.
 
 ## What Makes Sequences Challenging
 
@@ -81,7 +81,7 @@ flowchart TD
 
 Fidelity's approach to sequences did not emerge from first principles. It composed from patterns established in earlier work, what we call "standing art" in the compiler architecture. Each prior feature contributed a piece of the puzzle.
 
-[Closures](/docs/design/gaining-closure/) established flat closure representation: captured variables stored directly in the struct, no environment pointers, no null fields.[^2][^3] This created a foundation where closures are self-contained values with deterministic layout.
+[Closures](/docs/design/memory/gaining-closure/) established flat closure representation: captured variables stored directly in the struct, no environment pointers, no null fields.[^2][^3] This created a foundation where closures are self-contained values with deterministic layout.
 
 [Lazy values](https://speakez.tech/blog/why-lazy-is-hard/) extended that foundation with memoization state: a flat closure plus a `computed` flag and a `value` slot.[^6] The thunk calling convention, where the thunk receives a pointer to its containing struct and extracts its own captures, proved essential.
 
@@ -269,7 +269,7 @@ The implementation collects all conditions leading to the yield and ANDs them to
 
 ## The Coeffect Architecture
 
-Fidelity's compiler uses [coeffects](/docs/design/coeffects-and-codata/) to pre-compute information needed during code generation.[^5] Where effects track what a computation *does* to its environment, coeffects track what a computation *needs* from its context. For sequences, the `YieldStateIndices` coeffect analyzes the sequence body before any MLIR is emitted:
+Fidelity's compiler uses [coeffects](/docs/internals/concepts/coeffects-and-codata/) to pre-compute information needed during code generation.[^5] Where effects track what a computation *does* to its environment, coeffects track what a computation *needs* from its context. For sequences, the `YieldStateIndices` coeffect analyzes the sequence body before any MLIR is emitted:
 
 1. **Yield enumeration**: Identifies all yield points in document order
 2. **Body structure**: Classifies as Sequential (multiple independent yields) or WhileBased (yields inside a loop)
@@ -395,12 +395,12 @@ The journey continues. Each step reveals the next.
 
 ## Related Reading
 
-- [Gaining Closure](/docs/design/gaining-closure/): The flat closure foundation that sequences extend
+- [Gaining Closure](/docs/design/memory/gaining-closure/): The flat closure foundation that sequences extend
 - [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): Lazy thunks as extended closures, the immediate precursor to sequences
-- [Absorbing Alloy](/docs/design/absorbing-alloy/): Types belong in the compiler, not a library
-- [Hello World Goes Native](/docs/design/hello-world-goes-native/): The nanopass pipeline that processes sequence expressions
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/): SSA and functional programming share the same foundations
-- [Baker Saturation Engine](/docs/design/baker-saturation-engine/): The typed tree zipper used for semantic analysis
+- [Absorbing Alloy](/docs/design/language/absorbing-alloy/): Types belong in the compiler, not a library
+- [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/): The nanopass pipeline that processes sequence expressions
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/): SSA and functional programming share the same foundations
+- [Baker Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/): The typed tree zipper used for semantic analysis
 - [WREN Stack](https://speakez.tech/blog/wren-stack/): The broader desktop development vision that sequences support
 
 ## References

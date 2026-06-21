@@ -172,9 +172,9 @@ An edge-to-native path also runs between our Fidelity framework and CloudEdge de
 
 ## The F* Connection: Proofs Through Shared Heritage
 
-The story of F#'s OCaml influence in our Fidelity framework extends to formal verification. Here, the shared OCaml heritage between F# and F* matters. F* (pronounced F-star) is a proof-oriented language with an extensive pedigree in critical systems verification. Its syntax and semantics are close enough to F# that [verification can be integrated](/docs/design/verifying-clef/) into the development process, and the artifacts it produces can support verification with global certification labs.
+The story of F#'s OCaml influence in our Fidelity framework extends to formal verification. Here, the shared OCaml heritage between F# and F* matters. F* (pronounced F-star) is a proof-oriented language with an extensive pedigree in critical systems verification. Its syntax and semantics are close enough to F# that [verification can be integrated](/docs/internals/verification/) into the development process, and the artifacts it produces can support verification with global certification labs.
 
-Because F# and F* share their OCaml lineage, this verification capability integrates through our [proof-aware compilation](/docs/design/proof-aware-compilation/) pipeline.
+Because F# and F* share their OCaml lineage, this verification capability integrates through our [proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) pipeline.
 
 > Verification properties guide optimization, not only correctness checks.
 

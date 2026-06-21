@@ -710,7 +710,7 @@ The Fidelity framework, built on these foundations, aims to bridge the gap betwe
 For more on the Fidelity framework and native Clef compilation:
 
 - [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/) - BAREWire and the three-level approach to memory control
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/) - SSA form and functional compilation
-- [Baker: Saturation Engine](/docs/design/baker-saturation-engine/) - Type correlation with dual-tree zippers
-- [Absorbing Alloy](/docs/design/absorbing-alloy/) - The native standard library comes home
-- [Hello World Goes Native](/docs/design/hello-world-goes-native/) - A practical walkthrough of native Clef compilation
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - SSA form and functional compilation
+- [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Type correlation with dual-tree zippers
+- [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home
+- [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/) - A practical walkthrough of native Clef compilation

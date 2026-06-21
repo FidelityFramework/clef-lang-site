@@ -17,7 +17,7 @@ The driver for our Fidelity.Rx is that reactive programming patterns represent a
 
 ### Architectural Update: The Signal-Actor Isomorphism
 
-Since this entry was originally published, work on [Fidelity.UI](/blog/fidelity-ui/) revealed a deeper structural truth: **signals and actors are the same abstraction**. A signal that notifies its subscribers when it changes is an actor that sends messages to its dependents. The dependency graph is the message routing topology. Batching is mailbox coalescing.
+Since this entry was originally published, work on [Fidelity.UI](/blog/fidelity-ui-model/) revealed a deeper structural truth: **signals and actors are the same abstraction**. A signal that notifies its subscribers when it changes is an actor that sends messages to its dependents. The dependency graph is the message routing topology. Batching is mailbox coalescing.
 
 This isomorphism resolved the question of whether Fidelity.Rx should exist as a separate library. The answer, informed by the [Alloy precedent](/blog/alloy-absorbed/), is that the concepts described here are real, but they decompose naturally into layers that already exist:
 
@@ -795,7 +795,7 @@ module SensorNetwork =
 
 The original design explored adapting Fabulous to the Fidelity framework. Subsequent work revealed that the signal-actor isomorphism offers a more direct path: rather than bridging reactive observables into an MVU/virtual-DOM framework, the reactive primitives *become* the UI primitives directly.
 
-In [Fidelity.UI](/blog/fidelity-ui/), the multicast/unicast distinction maps to signal primitives that developers already understand from SolidJS and Partas.Solid:
+In [Fidelity.UI](/blog/fidelity-ui-model/), the multicast/unicast distinction maps to signal primitives that developers already understand from SolidJS and Partas.Solid:
 
 ```fsharp
 // What Fidelity.Rx described as Observable<'T, Multicast>

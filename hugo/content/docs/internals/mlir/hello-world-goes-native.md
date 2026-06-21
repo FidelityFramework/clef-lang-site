@@ -55,7 +55,7 @@ Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → N
 
 **Alex** handles the transformation from PSG to MLIR. As the "Library of Alexandria" for hardware targeting, Alex implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
 
-The critical architectural principle underlying this pipeline is that each phase should be self-contained and composable. Once FCS completes its work, all subsequent phases read exclusively from the enriched PSG - a principle that enables the bidirectional zipper implementation now central to our [coeffect and codata analysis](/docs/design/coeffects-and-codata/).
+The critical architectural principle underlying this pipeline is that each phase should be self-contained and composable. Once FCS completes its work, all subsequent phases read exclusively from the enriched PSG - a principle that enables the bidirectional zipper implementation now central to our [coeffect and codata analysis](/docs/internals/concepts/coeffects-and-codata/).
 
 ## PSG as Single Source of Truth
 

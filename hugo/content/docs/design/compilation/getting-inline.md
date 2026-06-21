@@ -256,7 +256,7 @@ let mutable x = 0
 
 The compiler infers whether it needs stack or arena allocation based on escape analysis. The `inline` keyword remains for SRTP only - its original semantic purpose.
 
-For progress on this vision, see [Managed Mutability](/blog/managed-mutability/).
+For progress on this vision, see [Managed Mutability](/docs/design/language/managed-mutability/).
 
 ## Discouraged Inline: Performance Optimization
 
@@ -479,8 +479,8 @@ Our Fidelity path forward treats `inline` as a semantic tool for type system req
 
 ### Clef Design Series
 
-- [Arity On The Side of Caution](/docs/design/arity-on-the-side-of-caution/) - How Fidelity tracks function arity for native compilation
-- [Baker: Saturation Engine](/docs/design/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
+- [Arity On The Side of Caution](/docs/design/compilation/arity-on-the-side-of-caution/) - How Fidelity tracks function arity for native compilation
+- [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
 
 ### External References
 

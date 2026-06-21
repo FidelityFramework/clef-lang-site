@@ -10,11 +10,11 @@ params:
   originally_published: 2026-06-18
 ---
 
-Our actor model gives every actor an arena that lives exactly as long as the actor, and Prospero reclaims it deterministically when the actor dies. That discipline, Resource Acquisition Is Initialization (RAII) drawn to the actor boundary, forecloses the memory failures of an actor system: use-after-free, dangling byref, a byref escaping its frame, a reference into a dead actor. **However, it does not foreclose deadlock.** Two actors can each park a continuation on a reply that only the other could send, every arena intact, every sentinel reading `Valid`, every lifetime correct, and the system makes no progress while reporting green. This is the gap this document closes, in the same general shape as [managed mutability](/docs/design/managed-mutability/).
+Our actor model gives every actor an arena that lives exactly as long as the actor, and Prospero reclaims it deterministically when the actor dies. That discipline, Resource Acquisition Is Initialization (RAII) drawn to the actor boundary, forecloses the memory failures of an actor system: use-after-free, dangling byref, a byref escaping its frame, a reference into a dead actor. **However, it does not foreclose deadlock.** Two actors can each park a continuation on a reply that only the other could send, every arena intact, every sentinel reading `Valid`, every lifetime correct, and the system makes no progress while reporting green. This is the gap this document closes, in the same general shape as [managed mutability](/docs/design/language/managed-mutability/).
 
 ## Two properties use the word "safe"
 
-Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes RAII was built to kill, and in [Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/) it kills them.
+Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes RAII was built to kill, and in [Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) it kills them.
 
 Deadlock is a liveness property: something good eventually happens. A set of actors each blocked waiting for a message that only another blocked actor in the set could send will sit there indefinitely. Prospero never retires any of them, because none has crashed or completed. They are all alive and quiescent. The entire memory apparatus stays consistent while the program stops doing anything.
 
@@ -127,10 +127,10 @@ This is not HCP's whole-calculus theorem, and doesn't intend to be a full theore
 
 ### Clef Design Documents
 
-- [Managed Mutability](/docs/design/managed-mutability/) - Escape classification and the inferred-with-override pattern this design mirrors
-- [RAII in Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/) - Actor-scoped arenas, sentinels, and deterministic lifetimes
-- [The DCont/Inet Duality](/docs/design/dcont-inet-duality/) - The sequential and parallel compilation patterns
-- [Delimited Continuations](/docs/design/delimited-continuations/) - The continuation structure under async, actors, and RPC
+- [Managed Mutability](/docs/design/language/managed-mutability/) - Escape classification and the inferred-with-override pattern this design mirrors
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) - Actor-scoped arenas, sentinels, and deterministic lifetimes
+- [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) - The sequential and parallel compilation patterns
+- [Delimited Continuations](/docs/design/concurrency/delimited-continuations/) - The continuation structure under async, actors, and RPC
 
 ### External References
 

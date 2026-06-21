@@ -192,7 +192,7 @@ graph TD
 
 This **structural sharing** means immutability doesn't require full copies. You pay only for the path that changes. And crucially, because the original is never modified, `m1` remains pure. This enables all the parallel and vectorized optimizations we discussed.
 
-This is the "only pay for what you use" philosophy applied to functional data structures. The same principle that drives [Baker's approach to memory management](/docs/design/baker-saturation-engine/) applies here: don't pay for what you don't need.
+This is the "only pay for what you use" philosophy applied to functional data structures. The same principle that drives [Baker's approach to memory management](/docs/internals/pipeline/baker-saturation-engine/) applies here: don't pay for what you don't need.
 
 ## The C++ Contrast: Complexity vs. Clarity
 
@@ -264,7 +264,7 @@ This is the design goal we are working toward for collection operations in our F
 
 ## PSGSaturation: Only Pay for What You Use
 
-The compilation strategy connects directly to how [Baker's incremental approach](/docs/design/baker-saturation-engine/) informs our Composer design. Just as Baker avoids copying an entire heap when a single object changes, PSGSaturation is designed to instantiate only the collection operations you use rather than a complete implementation.
+The compilation strategy connects directly to how [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) informs our Composer design. Just as Baker avoids copying an entire heap when a single object changes, PSGSaturation is designed to instantiate only the collection operations you use rather than a complete implementation.
 
 When you write:
 
@@ -348,7 +348,7 @@ The pedestrian collection code written for WREN stack apps will some day automat
 
 When you write a `map`, `filter`, or `fold`, you are expressing pure lambda calculus in everyday clothing. Each operation is a building block the compiler can analyze, parallelize, and vectorize, given a framework and hardware that carry that structure through.
 
-Three threads converge here. [Graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/design/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
+Three threads converge here. [Graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
 
 These foundations become engineering decisions. The design that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code, and the structural sharing that makes immutable collections practical is the same sharing that preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
 

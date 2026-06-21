@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Every software engineering team knows the testing treadmill. Write code, write tests, run tests, fix failures, write more tests to catch what you missed, maintain those tests forever. We've accepted this as the calendar and staffing cost multiplication demanded by standard approaches to quality software. But what if this entire cycle represents an inefficiency, a workaround in the absence of something better? Our Fidelity framework's [proof-aware compilation](/docs/design/proof-aware-compilation/) is designed for a different path: mathematical certainty at compile time, eliminating entire categories of tests while actually ***increasing* safety**.
+Every software engineering team knows the testing treadmill. Write code, write tests, run tests, fix failures, write more tests to catch what you missed, maintain those tests forever. We've accepted this as the calendar and staffing cost multiplication demanded by standard approaches to quality software. But what if this entire cycle represents an inefficiency, a workaround in the absence of something better? Our Fidelity framework's [proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) is designed for a different path: mathematical certainty at compile time, eliminating entire categories of tests while actually ***increasing* safety**.
 
 ## The Testing Paradox
 

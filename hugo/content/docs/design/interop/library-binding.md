@@ -624,7 +624,7 @@ This preserves the semantic behavior of the original closure while removing the 
 
 3. **Lifetime Management**: The region's lifetime is tied to the closure itself, ensuring that captured variables remain valid as long as the closure exists.
 
-This carries the expressiveness of Clef closures into statically linked code, without the overhead of a garbage collector. It brings functional programming patterns to systems applications where traditional runtime approaches are not feasible. For a deeper look at closure representation in our framework, see [Gaining Closure](/docs/design/gaining-closure/).
+This carries the expressiveness of Clef closures into statically linked code, without the overhead of a garbage collector. It brings functional programming patterns to systems applications where traditional runtime approaches are not feasible. For a deeper look at closure representation in our framework, see [Gaining Closure](/docs/design/memory/gaining-closure/).
 
 ### BAREWire Integration
 
@@ -898,10 +898,10 @@ The binding architecture stays a cornerstone of where we are taking our Fidelity
 
 ## Related Design Documents
 
-- [Gaining Closure](/docs/design/gaining-closure/): How MLKit-style flat closures bring Clef memory safety to native compilation
-- [Baker: The Saturation Engine](/docs/design/baker-saturation-engine/): Type resolution and the zipper-based correlation pipeline
-- [Context-Aware Compilation](/docs/design/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
-- [Nanopass Navigation](/docs/design/nanopass-navigation/): The nanopass architecture underlying the compilation pipeline
-- [Getting Inline](/docs/design/getting-inline/): How Fidelity handles inlining for native compilation
-- [Fidelity on STM32](/docs/design/fidelity-on-stm32/): Embedded deployment targeting constrained microcontrollers
-- [Native Memory Management](/docs/design/native-memory-management/): Memory management across the computing spectrum
+- [Gaining Closure](/docs/design/memory/gaining-closure/): How MLKit-style flat closures bring Clef memory safety to native compilation
+- [Baker: The Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/): Type resolution and the zipper-based correlation pipeline
+- [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
+- [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/): The nanopass architecture underlying the compilation pipeline
+- [Getting Inline](/docs/design/compilation/getting-inline/): How Fidelity handles inlining for native compilation
+- [Fidelity on STM32](/docs/internals/hardware/fidelity-on-stm32/): Embedded deployment targeting constrained microcontrollers
+- [Native Memory Management](/docs/design/memory/native-memory-management/): Memory management across the computing spectrum

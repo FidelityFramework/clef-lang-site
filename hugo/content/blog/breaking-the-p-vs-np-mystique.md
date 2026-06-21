@@ -24,7 +24,7 @@ To understand why so many problems seem harder than they should be, consider how
 
 This sequential pipeline forces every computation, no matter how naturally parallel, through a narrow channel of step-by-step execution. When we encounter an NP-complete problem like the traveling salesman, we dutifully encode it as nested loops and recursive functions, then wonder why it takes exponential time. **The bottleneck is compilation strategy, not computational complexity**.
 
-As we explored in our [hypergraph architecture](/blog/hyping-hypergraphs/), there's a duality in how we can represent computation. Control flow treats programs as sequences of instructions, while data flow treats them as networks of dependencies. Many problems that appear intractable under control flow become manageable under data flow, not because the complexity changed, but because we stopped forcing parallel operations through a sequential bottleneck.
+As we explored in our [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/), there's a duality in how we can represent computation. Control flow treats programs as sequences of instructions, while data flow treats them as networks of dependencies. Many problems that appear intractable under control flow become manageable under data flow, not because the complexity changed, but because we stopped forcing parallel operations through a sequential bottleneck.
 
 ## The Satisfiability Example
 
@@ -34,7 +34,7 @@ Consider Boolean satisfiability (SAT), the canonical NP-complete problem. Given 
 \text{Time} = O(2^n) \text{ where } n = \text{number of variables}
 \]
 
-This exponential growth seems inevitable when you're checking possibilities sequentially. But what if we could check multiple possibilities simultaneously? This is where our [interaction nets approach](/blog/dcont-inet-duality/) changes the picture. Instead of sequential evaluation, we would compile SAT problems to parallel graph reductions where thousands of possibilities evaluate concurrently.
+This exponential growth seems inevitable when you're checking possibilities sequentially. But what if we could check multiple possibilities simultaneously? This is where our [interaction nets approach](/docs/design/concurrency/dcont-inet-duality/) changes the picture. Instead of sequential evaluation, we would compile SAT problems to parallel graph reductions where thousands of possibilities evaluate concurrently.
 
 The mathematical complexity hasn't changed, since SAT is still NP-complete. But the wall-clock time drops because we're no longer limited by sequential execution. On an FPGA with spatial computation, what took hours on a CPU might complete in seconds. **The problem didn't become easier; we just stopped making it artificially harder**.
 
@@ -42,13 +42,13 @@ The mathematical complexity hasn't changed, since SAT is still NP-complete. But 
 
 When companies claim breakthrough performance on NP-complete problems, they're typically doing one of three things:
 
-**1. Hardware Specialization**: Building circuits that naturally express the problem structure. This is what we do with our design for [ternary models on FPGAs](/blog/a-unified-vision-for-ternary-models/), where the hardware literally reshapes itself to match the computation.
+**1. Hardware Specialization**: Building circuits that naturally express the problem structure. This is what we do with our design for [ternary models on FPGAs](/docs/internals/hardware/unified-vision-ternary-models/), where the hardware literally reshapes itself to match the computation.
 
 **2. Approximate Solutions**: Finding "good enough" answers in polynomial time. Many real-world applications don't need optimal solutions, just acceptable ones. This doesn't solve the NP-complete problem; it recognizes that the practical problem is often easier than its theoretical formulation. When considering how LLMs take exactly this approach to generative language constructs, it makes apparent in real terms what approximation can do, within limits.
 
 **3. Exploiting Problem Structure**: Real-world instances of NP-complete problems often have special properties that make them easier. A delivery routing problem might be NP-complete in theory, but actual road networks have structure that enables efficient solutions.
 
-Our Fidelity framework takes up all three approaches transparently. Through our [coeffect analysis](/blog/context-aware-compilation/), we would identify which strategy applies to each part of your program and compile accordingly.
+Our Fidelity framework takes up all three approaches transparently. Through our [coeffect analysis](/docs/internals/mlir/context-aware-compilation/), we would identify which strategy applies to each part of your program and compile accordingly.
 
 ## The Constraint Satisfaction Pattern
 
@@ -66,7 +66,7 @@ Let's be concrete about what this means for actual applications:
 
 **Scheduling Systems**: A hospital scheduling system with 100 nurses and complex constraints might take hours to find valid schedules using traditional approaches. Compiled to interaction nets on an FPGA, the same problem solves in seconds. The constraints haven't changed, but they're evaluated in parallel rather than sequentially.
 
-**Financial Optimization**: Portfolio optimization with thousands of assets and risk constraints appears computationally prohibitive. But as we detailed in our [unified vision for heterogeneous computing](/blog/a-unified-vision-for-ternary-models/), compiling to specialized accelerators makes real-time optimization practical.
+**Financial Optimization**: Portfolio optimization with thousands of assets and risk constraints appears computationally prohibitive. But as we detailed in our [unified vision for heterogeneous computing](/docs/internals/hardware/unified-vision-ternary-models/), compiling to specialized accelerators makes real-time optimization practical.
 
 **Route Planning**: Delivery routing for hundreds of packages seems to require checking exponentially many possibilities. Yet when compiled to spatial computation architectures, the problem decomposes into parallel subproblems that solve efficiently.
 
@@ -81,7 +81,7 @@ Unlike companies that hide behind mystical claims, our Fidelity framework stays 
 3. We preserve **mathematical properties** that enable optimization that align with the hardware targets where the workloads are deployed at scale
 4. We recognize **problem-specific structure** that exists in real-world scenarios that preserve alignment to the material factors of the solution space
 
-This doesn't transcend computational complexity; it engineers ***through*** it. As we explored in [categorical deep learning](/blog/categorical-deep-learning-and-universal-numbers/), the same mathematical structures that make problems hard in one representation might make them tractable in another.
+This doesn't transcend computational complexity; it engineers ***through*** it. As we explored in [categorical deep learning](/blog/categorical-deep-learning/), the same mathematical structures that make problems hard in one representation might make them tractable in another.
 
 ## Democratizing Performance
 

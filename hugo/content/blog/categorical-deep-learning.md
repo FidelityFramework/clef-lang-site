@@ -36,9 +36,9 @@ And work on [ternary models and heterogeneous computing](https://speakez.tech/bl
 
 The investigation into [discriminated unions for post-transformer AI](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/) revealed how type-safe heterogeneous representations could better capture the diverse computational patterns emerging in modern architectures, reducing the "representation overhead" that forces complex patterns through inappropriate abstractions.
 
-Insights into [hypergraph architecture](/docs/design/hyping-hypergraphs/) showed how preserving multi-way relationships enables data-flow computation that can be orders of magnitude more efficient than control-flow paradigms.
+Insights into [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/) showed how preserving multi-way relationships enables data-flow computation that can be orders of magnitude more efficient than control-flow paradigms.
 
-Our patent-pending [proof-aware compilation design](/docs/design/proof-aware-compilation/) demonstrated that verification doesn't add overhead; it removes it by enabling aggressive optimizations impossible without formal guarantees.
+Our patent-pending [proof-aware compilation design](/docs/internals/pipeline/proof-aware-compilation/) demonstrated that verification doesn't add overhead; it removes it by enabling aggressive optimizations impossible without formal guarantees.
 
 And the early vision of [Fidelity as an AI Refinery](https://speakez.tech/blog/fidelity-as-ai-refinery/) established the framework's role in transforming raw computational capabilities into efficient intelligent systems.
 
@@ -203,7 +203,7 @@ What sets Clef apart is its pragmatic bridge to software engineering reality. We
 
 1. **Shared Edges with .NET**: We have gone to great lengths to preserve F# idioms in our framework. By extension this will offer many "shared edges" with .NET based solutions, allowing teams currently using F# for machine learning and HPC workloads a gradual transition path with manageable source modifications, including pathways for implementing classical compute with higher integrity and efficiency.
 
-2. **Mutable Optimization**: When needed, Clef allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive framework design](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) (now [absorbed into CCS](/docs/design/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
+2. **Mutable Optimization**: When needed, Clef allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive framework design](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) (now [absorbed into CCS](/docs/design/language/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
 
 3. **True Concurrency & Parallelism**: Clef's async expressions naturally model the parallel structure of categorical compositions, but as we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, Frosty transforms async computations into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
 
@@ -400,13 +400,13 @@ type ProofHyperedge =
 ```
 #### Beyond Moore's Law: The Data-Flow Advantage
 
-Traditional Von Neumann and Modified Harvard architectures force a control-flow paradigm where computation and memory are separated, creating endless cycles of fetch-decode-execute with associated wait states and heat dissipation. As we explored in our [hypergraph architecture](/docs/design/hyping-hypergraphs/), data-flow representations can be significantly more efficient because computation happens where the data lives.
+Traditional Von Neumann and Modified Harvard architectures force a control-flow paradigm where computation and memory are separated, creating endless cycles of fetch-decode-execute with associated wait states and heat dissipation. As we explored in our [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/), data-flow representations can be significantly more efficient because computation happens where the data lives.
 
 This isn't theoretical. I've witnessed the inverse cost of this firsthand in digital audio engineering, where 16-bit representation for Compact Disc authoring required heroic efforts to "dither" floating point truncation. The computational gymnastics needed to mask quantization noise consumed more engineering time than the actual audio post-production flow. We'd spend 90% of our cycles compensating for representation limitations. The parallel with current AI/HPC is stark: we waste enormous computational resources managing the impedance mismatch between our mathematical intentions and our computational substrates.
 
 #### Proofs as Optimization Catalysts
 
-As detailed in our [proof-aware compilation](/docs/design/proof-aware-compilation/) work, mathematical proofs don't just verify correctness; they reveal optimization opportunities invisible to traditional compilers:
+As detailed in our [proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) work, mathematical proofs don't just verify correctness; they reveal optimization opportunities invisible to traditional compilers:
 
 ```fsharp
 // Traditional approach: defensive programming with runtime checks

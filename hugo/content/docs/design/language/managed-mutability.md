@@ -88,7 +88,7 @@ In a nanopass compiler, bugs have addresses. When you trace execution through di
 - String interpolation
 - Substring extraction
 
-Each component has an explicit contract about what it receives and what it promises to return. The debugging process was revealing. The PSG (semantic graph) was correct. [Baker](/docs/design/baker-saturation-engine/) (our "front end" saturation component for the semantic graph) decomposed the interpolation properly. The bug lived in Alex (our "middle end" Library of Alexandria): the code responsible for translating high-level string operations into low-level memory operations.
+Each component has an explicit contract about what it receives and what it promises to return. The debugging process was revealing. The PSG (semantic graph) was correct. [Baker](/docs/internals/pipeline/baker-saturation-engine/) (our "front end" saturation component for the semantic graph) decomposed the interpolation properly. The bug lived in Alex (our "middle end" Library of Alexandria): the code responsible for translating high-level string operations into low-level memory operations.
 
 Here's what we found. The witness for `NativeStr.fromPointer` took two arguments - a buffer and a length - and was supposed to extract a substring of the specified length. But the implementation was returning the full 256-byte buffer. **The length parameter was discarded.** The CCS (Clef Compiler Service) contract explicitly states:
 
@@ -308,7 +308,7 @@ let modifyExternal (ref: byref<int>) =
     ref <- ref + 1  // Reference escapes function boundary
 ```
 
-Escape analysis answers a single question: does this mutable outlive its lexical scope? For byref parameters specifically, the challenge involves tracking whether references to local mutables escape through function boundaries. Our [ByRef Resolved](/docs/design/byref-resolved/) work established the foundation for handling these scenarios in native compilation. If yes, arena allocation (heap-like, but with region-based lifetime). If no, stack allocation (memref.alloca, fast and deterministic).
+Escape analysis answers a single question: does this mutable outlive its lexical scope? For byref parameters specifically, the challenge involves tracking whether references to local mutables escape through function boundaries. Our [ByRef Resolved](/docs/design/types/byref-resolved/) work established the foundation for handling these scenarios in native compilation. If yes, arena allocation (heap-like, but with region-based lifetime). If no, stack allocation (memref.alloca, fast and deterministic).
 
 The complete system requires four components:
 
@@ -321,7 +321,7 @@ We have the detection machinery. We need the integration and inference. The fail
 
 ## The Trust-the-Optimizer Parallel
 
-In our [recent post about `inline`](/docs/design/getting-inline/), we argued that the `inline` keyword should be a semantic tool, not an optimization directive. Trust MLIR to optimize. It has full program context, target-specific knowledge, and sophisticated heuristics.
+In our [recent post about `inline`](/docs/design/compilation/getting-inline/), we argued that the `inline` keyword should be a semantic tool, not an optimization directive. Trust MLIR to optimize. It has full program context, target-specific knowledge, and sophisticated heuristics.
 
 Managed mutability follows the same principle: developers write idiomatic Clef (`let mutable x = 0`). The compiler infers where allocation belongs.
 
@@ -461,11 +461,11 @@ Escape analysis is the next waypoint. We have mutable variable support (TMemRef 
 
 ### Clef Design Documents
 
-- [Getting Inline](/docs/design/getting-inline/) - Why `inline` is semantic, not optimization, and trusting the optimizer
-- [ByRef Resolved](/docs/design/byref-resolved/) - How Fidelity addresses memory management with byref handling
-- [Arity On The Side of Caution](/docs/design/arity-on-the-side-of-caution/) - How Composer tracks function arity for native compilation
-- [Baker: Saturation Engine](/docs/design/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
-- [Coeffects and Codata](/docs/design/coeffects-and-codata/) - Pre-computed analysis architecture
+- [Getting Inline](/docs/design/compilation/getting-inline/) - Why `inline` is semantic, not optimization, and trusting the optimizer
+- [ByRef Resolved](/docs/design/types/byref-resolved/) - How Fidelity addresses memory management with byref handling
+- [Arity On The Side of Caution](/docs/design/compilation/arity-on-the-side-of-caution/) - How Composer tracks function arity for native compilation
+- [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
+- [Coeffects and Codata](/docs/internals/concepts/coeffects-and-codata/) - Pre-computed analysis architecture
 
 ### SpeakEZ Blog Series
 

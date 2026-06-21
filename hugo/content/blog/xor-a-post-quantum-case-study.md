@@ -254,7 +254,7 @@ MLIR's lowering passes act on this specification. They transform the high-level 
 
 ### Standard Dialects as Stepping Stone
 
-The Fidelity framework's broader vision involves custom MLIR transforms through the Alex compiler component, expressing computation through the [INet/DCont duality](/blog/dcont-inet-duality/) that emerges from [referential transparency](/blog/seeking-referential-transparency/). These custom transforms will enable direct expression of parallel and sequential computation patterns, with the compiler automatically selecting optimal strategies based on semantic properties.
+The Fidelity framework's broader vision involves custom MLIR transforms through the Alex compiler component, expressing computation through the [INet/DCont duality](/docs/design/concurrency/dcont-inet-duality/) that emerges from [referential transparency](/docs/internals/concepts/seeking-referential-transparency/). These custom transforms will enable direct expression of parallel and sequential computation patterns, with the compiler automatically selecting optimal strategies based on semantic properties.
 
 For this initial entropy generation application, standard MLIR dialects like `scf.parallel` and `arith` provide sufficient runway. They express the essential parallelism and reduction semantics without requiring custom infrastructure. This pragmatic approach proves the hardware/software co-design methodology while establishing patterns that will transition naturally to custom transforms as the compiler matures. The XOR reduction expressed here in `scf.reduce` will eventually map to INet's native parallel combination semantics; the sequential channel reads will map to DCont's continuation-based sequencing. Standard dialects today; purpose-built custom transforms tomorrow.
 
@@ -429,10 +429,10 @@ The XOR entropy combiner demonstrates these principles in a compact, verifiable 
 
 ## Further Reading
 
-- [Fidelity Framework: A Primer](/blog/fidelity-framework-a-primer/): Overview of the native Clef compilation approach
-- [Cache-Conscious Memory Management](/blog/cache-aware-compilation-cpu/): Hardware-aware optimization strategies
-- [Delimited Continuations: Fidelity's Turning Point](/blog/delimited-continuations-fidelitys-turning-point/): How mathematical abstractions guide compiler architecture
-- [The DCont/Inet Duality](/blog/dcont-inet-duality/): Parallel vs sequential computation patterns
+- [Fidelity Framework: A Primer](/blog/fidelity-framework-primer/): Overview of the native Clef compilation approach
+- [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): Hardware-aware optimization strategies
+- [Delimited Continuations: Fidelity's Turning Point](/docs/design/concurrency/delimited-continuations/): How mathematical abstractions guide compiler architecture
+- [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/): Parallel vs sequential computation patterns
 - [Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/): Zero-copy data handling for hardware interfaces
 
 ### Technical References

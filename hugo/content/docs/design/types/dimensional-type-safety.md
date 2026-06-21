@@ -49,7 +49,7 @@ Consider three execution models:
 
 3. **Dataflow (FPGA/CGRA)**: Computation is spatially organized. Data flows through configured logic blocks or reconfigurable processing elements. There is no "instruction pointer" - operations fire when their inputs are available.
 
-Traditional type systems work well for sequential execution. Rust's ownership model, for instance, provides memory safety by tracking when values can be read or written. But ownership assumes a Von Neumann model with linear memory access patterns. As we noted in [The Abstract Machine Model Paradox](/docs/design/abstract-machine-model-paradox/):
+Traditional type systems work well for sequential execution. Rust's ownership model, for instance, provides memory safety by tracking when values can be read or written. But ownership assumes a Von Neumann model with linear memory access patterns. As we noted in [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/):
 
 > "Rust's ownership model fundamentally assumes von Neumann architecture with linear memory. There's no 'owner' of a signal propagating through configured logic blocks."
 
@@ -422,11 +422,11 @@ This is the reason we built Clef as its own compilation path: to carry Clef's se
 ### Related Articles
 
 - [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/) - The theoretical foundation connecting concurrent programming to modern compilation
-- [The Abstract Machine Model Paradox](/docs/design/abstract-machine-model-paradox/) - Why ownership semantics assume Von Neumann architectures
-- [Beyond Zero-Allocation](/docs/design/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model
-- [Context-Aware Compilation](/docs/design/context-aware-compilation/) - Coeffects and their role in optimization decisions
-- [Standing Art: Clef Metaprogramming in Composer](/docs/design/standing-art-clef-metaprogramming/) - Computation expressions, active patterns, quotations, and units of measure
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - The theoretical foundation connecting concurrent programming to modern compilation
+- [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/) - Why ownership semantics assume Von Neumann architectures
+- [Beyond Zero-Allocation](/docs/design/memory/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model
+- [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/) - Coeffects and their role in optimization decisions
+- [Standing Art: Clef Metaprogramming in Composer](/docs/design/language/standing-art-clef-metaprogramming/) - Computation expressions, active patterns, quotations, and units of measure
 
 ---
 

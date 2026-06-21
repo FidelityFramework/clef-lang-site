@@ -246,7 +246,7 @@ That reconciliation is what we call "the walk." What looks like simplicity on th
 ## Related Reading
 
 - [Composer Hello World Samples](https://github.com/FidelityFramework/Composer/tree/main/samples) - The complete list of samples toward an initial WREN Stack alpha
-- [Gaining Closure](/docs/design/gaining-closure/) - Flat closure representation in Fidelity
+- [Gaining Closure](/docs/design/memory/gaining-closure/) - Flat closure representation in Fidelity
 - [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/) - Deferred computation without garbage collection
 - [Seq'ing Simplicity](https://speakez.tech/blog/seqing-simplicity/) - Sequence expressions as state machines
-- [Coeffects and Codata](/docs/design/coeffects-and-codata/) - The coeffect model in depth
+- [Coeffects and Codata](/docs/internals/concepts/coeffects-and-codata/) - The coeffect model in depth

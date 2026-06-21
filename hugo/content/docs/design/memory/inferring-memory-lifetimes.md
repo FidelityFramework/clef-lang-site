@@ -15,7 +15,7 @@ Most Clef developers take type inference for granted. You write `let x = 5` and 
 
 From early days we held a vision of bringing this notion to Fidelity framework's memory management story. Early explicit arena-passing code we'd written was correct, but it felt like a poor fit compared to what we knew of the idiomatic Clef design-time experience. Our early experiments had too much overhead that existed only to satisfy the compiler.
 
-Our previous discussions, from the foundational ["Memory Management by Choice"](/docs/design/native-memory-management/) to the technical depth of ["ByRef Resolved"](/docs/design/byref-resolved/), established a clear architectural vision. Developers should be able to engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit. What we haven't fully articulated until now is the **unifying principle** that makes this vision coherent.
+Our previous discussions, from the foundational ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) to the technical depth of ["ByRef Resolved"](/docs/design/types/byref-resolved/), established a clear architectural vision. Developers should be able to engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit. What we haven't fully articulated until now is the **unifying principle** that makes this vision coherent.
 
 That principle emerged while implementing Arena allocation for the Fidelity framework: **lifetime management should work like type inference**.
 
@@ -406,7 +406,7 @@ With Level 1 inference, the compiler recognizes:
 
 The actor boundary becomes the implicit lifetime scope for allocations that outlive individual function calls but don't outlive the actor. This is the same insight as our RAII architecture, that actors provide natural resource boundaries, but applied to inference rather than explicit management.
 
-This also connects to delimited continuations in Prospero (see [Delimited Continuations: Fidelity's Turning Point](/docs/design/delimited-continuations/)). When an actor's execution is suspended (awaiting a message, yielding to scheduler), the continuation boundary aligns with potential arena compaction points. Memory can be reorganized at message boundaries precisely because no byrefs can span those boundaries, a guarantee the lifetime system enforces.
+This also connects to delimited continuations in Prospero (see [Delimited Continuations: Fidelity's Turning Point](/docs/design/concurrency/delimited-continuations/)). When an actor's execution is suspended (awaiting a message, yielding to scheduler), the continuation boundary aligns with potential arena compaction points. Memory can be reorganized at message boundaries precisely because no byrefs can span those boundaries, a guarantee the lifetime system enforces.
 
 ## Standing Art, Applied
 
@@ -429,4 +429,4 @@ The explicit form isn't going away; it's the foundation everything else builds o
 That's what "Memory Management by Choice" means in its fullest form: choosing not just when to optimize, but when to even think about memory at all.
 
 ---
-*This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/delimited-continuations/) for the connection between continuation boundaries and memory management.*
+*This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/types/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/concurrency/delimited-continuations/) for the connection between continuation boundaries and memory management.*

@@ -24,7 +24,7 @@ This entry describes the four target profiles currently in the framework's desig
 
 The general-purpose CPU is the default target. Its profile:
 
-**Numeric representation:** IEEE 754 `float64` (or `float32` where precision requirements permit). The representation selection function from [the posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) evaluates IEEE 754 against other candidates; on CPU targets, IEEE 754 typically wins because the hardware provides native support.
+**Numeric representation:** IEEE 754 `float64` (or `float32` where precision requirements permit). The representation selection function from [the posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) evaluates IEEE 754 against other candidates; on CPU targets, IEEE 754 typically wins because the hardware provides native support.
 
 **Quire support:** Software emulation. For posit32, the 512-bit quire occupies 64 bytes on the stack, exactly one cache line. Performance cost is approximately 50 cycles per fused multiply-add operation, dominated by the multi-precision integer arithmetic required to maintain exact accumulation without hardware support.
 
@@ -138,7 +138,7 @@ Each boundary has a distinct transfer cost, bandwidth constraint, and precision 
 | CPU ↔ FPGA | PCIe | Medium | Medium | float64 ↔ posit32 (lossless FPGA→CPU; lossy CPU→FPGA) |
 | CPU ↔ Neuromorphic | USB | Low | High | float64 ↔ fixed24 (lossy, range-dependent) |
 
-The compiler would resolve these boundaries during MLIR lowering, using the dimensional range analysis to determine whether a specific precision conversion is acceptable for the computation's requirements. The [DTS/DMM paper](/publications/dts-dmm/) formalizes this as cross-target transfer fidelity analysis (Section 4.4), and the [posit arithmetic entry](/blog/posit-arithmetic-dimensional-type-systems/) provides the detailed example for the CPU ↔ FPGA case.
+The compiler would resolve these boundaries during MLIR lowering, using the dimensional range analysis to determine whether a specific precision conversion is acceptable for the computation's requirements. The [DTS/DMM paper](/publications/dts-dmm/) formalizes this as cross-target transfer fidelity analysis (Section 4.4), and the [posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) provides the detailed example for the CPU ↔ FPGA case.
 
 In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and the inverse structure map exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel: information about the source stalk that does not survive into the target stalk, quantified by the dimensional range analysis. The fidelity score is a measure of how much of the source stalk the structure map preserves. This framing makes precise what the score is computing: the kernel size of a specific stalk-to-stalk homomorphism.
 

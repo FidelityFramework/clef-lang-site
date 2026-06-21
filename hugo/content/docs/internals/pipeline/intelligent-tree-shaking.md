@@ -127,7 +127,7 @@ Composer's approach eliminates this entire category of problems. Since tree shak
 
 ## Soft-Delete Reachability: The Nanopass Approach
 
-An architectural element that differentiates Composer from traditional compilation approaches is *soft-delete* reachability rather than hard deletion. When we determine a node is unreachable, we don't remove it from the Program Semantic Graph - we mark it with `IsReachable = false`. This preserves structural integrity for [Baker's two-tree zipper](/docs/design/baker-saturation-engine/) traversal, where unreachable nodes still provide traversal context that keeps analysis aligned during PSG construction. Without this context, the zipper's simultaneous traversal of the AST and typed tree could lose synchronization when encountering nodes that exist in one tree but not the other.
+An architectural element that differentiates Composer from traditional compilation approaches is *soft-delete* reachability rather than hard deletion. When we determine a node is unreachable, we don't remove it from the Program Semantic Graph - we mark it with `IsReachable = false`. This preserves structural integrity for [Baker's two-tree zipper](/docs/internals/pipeline/baker-saturation-engine/) traversal, where unreachable nodes still provide traversal context that keeps analysis aligned during PSG construction. Without this context, the zipper's simultaneous traversal of the AST and typed tree could lose synchronization when encountering nodes that exist in one tree but not the other.
 
 ```mermaid
 graph TB
@@ -441,8 +441,8 @@ The future we're building is one where choosing Clef means choosing both eleganc
 
 **Cross-References:**
 
-- [Baker: Saturation Engine](/docs/design/baker-saturation-engine/) - Type resolution and the zipper-based correlation pipeline
-- [Absorbing Alloy](/docs/design/absorbing-alloy/) - The native standard library absorbed into CCS
-- [Hello World Goes Native](/docs/design/hello-world-goes-native/) - Sample programs demonstrating native compilation
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
-- [Nanopass Navigation](/docs/design/nanopass-navigation/) - The compilation phase architecture
+- [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Type resolution and the zipper-based correlation pipeline
+- [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library absorbed into CCS
+- [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/) - Sample programs demonstrating native compilation
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
+- [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/) - The compilation phase architecture

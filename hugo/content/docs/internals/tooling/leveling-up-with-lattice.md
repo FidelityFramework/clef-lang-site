@@ -37,7 +37,7 @@ Clef isn't just another compile target. It's a fundamental reconception of F#'s 
 - Platform words (`nativeint`) are first-class citizens
 - No .NET runtime, no garbage collector, no BCL
 
-> For a detailed exploration of these type system differences, see [FSharp.Native: From IL to NTU](/blog/fsharp-native-from-il-to-ntu/) and [Doubling Down](/blog/doubling-down/) for more information on our dimentional type system.
+> For a detailed exploration of these type system differences, see [FSharp.Native: From IL to NTU](/docs/design/types/il-to-ntu/) and [Doubling Down](/blog/doubling-down-dmm-dts/) for more information on our dimentional type system.
 
 These aren't superficial differences. They're architectural. An IDE that understands `.fsproj` project files, NuGet packages, and BCL types fundamentally cannot understand `.fidproj` manifests (TOML), native linking, and bare-metal semantics without becoming two tools forced into one codebase.
 
@@ -144,7 +144,7 @@ We preserve the original MIT License with Ionide copyright holders. We maintain 
 | **Projects** | `.fsproj` (MSBuild XML) | `.fidproj` (TOML) |
 | **Type Semantics** | BCL (UTF-16 strings, `System.Object`) | Native (UTF-8 strings, value types) |
 | **Execution** | CoreCLR, .NET runtime | LLVM (for now), bare metal |
-| **Package Manager** | NuGet, Paket | [ClefPak](/blog/native-fsharp-source-based-package-mgmt/) (clefpak.dev) |
+| **Package Manager** | NuGet, Paket | [ClefPak](/docs/reference/clefpak-source-based-package-management/) (clefpak.dev) |
 | **Compiler Service** | FCS (F# Compiler Services) | CCS (Clef Compiler Services) |
 
 If you're building web apps with Giraffe, microservices with Saturn, or data pipelines with .NET, **use Ionide**. That role will not change.

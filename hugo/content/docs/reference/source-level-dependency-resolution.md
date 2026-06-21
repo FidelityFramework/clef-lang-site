@@ -283,8 +283,8 @@ This ecosystem approach enables the Fidelity Framework to grow organically while
 ## Related Reading
 
 - [The Farscape Bridge](https://speakez.tech/blog/farscape-bridge/) — How Farscape generates `[<FidelityExtern>]` binding declarations with the Layer 1/2/Overlay architecture
-- [ClefPak: Source-Based Package Management](/docs/design/clefpak-source-based-package-management/) — The ClefPak package management system in detail
-- [Seeing Beyond Assemblies](/docs/design/seeing-beyond-assemblies/) — Why source-based distribution replaces assembly-based packaging
-- [Static and Dynamic Library Binding](/docs/design/library-binding/) — How FidelityExtern flows through the compilation pipeline
-- [Intelligent Tree Shaking](/docs/design/intelligent-tree-shaking/) — Type-aware dead code elimination for minimal native executables
-- [Baker Saturation Engine](/docs/design/baker-saturation-engine/) — The saturation engine and nanopass architecture
+- [ClefPak: Source-Based Package Management](/docs/reference/clefpak-source-based-package-management/) — The ClefPak package management system in detail
+- [Seeing Beyond Assemblies](/docs/reference/seeing-beyond-assemblies/) — Why source-based distribution replaces assembly-based packaging
+- [Static and Dynamic Library Binding](/docs/design/interop/library-binding/) — How FidelityExtern flows through the compilation pipeline
+- [Intelligent Tree Shaking](/docs/internals/pipeline/intelligent-tree-shaking/) — Type-aware dead code elimination for minimal native executables
+- [Baker Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) — The saturation engine and nanopass architecture

@@ -83,7 +83,7 @@ Concretely, the DTS/DMM paper ([arXiv, forthcoming](/publications/dts-dmm/)) est
 The categorical framework does not, by itself, produce faster code or more efficient training. It provides a formal language for describing computation that is already happening, and it constrains the design space in ways that prevent certain classes of errors. Specifically:
 
 - It does not eliminate the engineering effort of implementing compilation backends for specific hardware targets
-- It does not make quantum computation practical on current hardware (see [The Quantum Substrate](/blog/quantum-substrate-categorical-structure/) for honest scoping)
+- It does not make quantum computation practical on current hardware (see [The Quantum Substrate](/docs/design/categorical-foundations/quantum-substrate-categorical-structure/) for honest scoping)
 - It does not replace benchmarking, profiling, or the tedious work of performance optimization on real workloads
 
 What it does provide is a principled design framework that ensures the components of a heterogeneous compilation system compose correctly. When the PSG tracks dimensional annotations through MLIR lowering, the categorical framework guarantees that the composition is sound. When escape analysis interacts with representation selection across multiple hardware targets, the adjoint correspondence ensures that the forward and backward information flows are consistent.

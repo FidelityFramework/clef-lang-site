@@ -374,4 +374,4 @@ The arrangement we are building toward keeps the compilation path short, with th
 - [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/) - The previous understanding
 - [Clef: From IL to NTU](https://speakez.tech/blog/fsharp-native-from-il-to-ntu/) - The type architecture
 - [Baker: A Key Ingredient](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) - Type resolution in the pipeline
-- [Hello World Goes Native](/docs/design/hello-world-goes-native/) - Sample programs updated for CCS
+- [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/) - Sample programs updated for CCS

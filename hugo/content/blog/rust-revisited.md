@@ -22,7 +22,7 @@ Rust deserves recognition for proving that memory safety doesn't require sacrifi
 
 Both Rust and F# trace their lineage to OCaml. Rust's first compiler was written in OCaml, leaving traces in its pattern matching and type system design. F# began as an explicit adaptation of OCaml for .NET, later spawning the Fable compiler for JavaScript transpilation. This shared heritage manifests in similar constructs such as algebraic data types, pattern matching, and functional influences, though the languages pursued divergent paths. Where F# embraced functional programming with immutability by default, Rust chose an imperative foundation with ownership-based safety.
 
-Our Fidelity Framework acknowledges these contributions while charting its own course, drawing on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/traits-versus-srtp/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor. Clef inherits these approaches and carries them into native compilation.
+Our Fidelity Framework acknowledges these contributions while charting its own course, drawing on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/types/traits-versus-srtp/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor. Clef inherits these approaches and carries them into native compilation.
 
 ## The Async Runtime Divergence
 
@@ -63,7 +63,7 @@ let fetchAndProcess url = async {
 }
 ```
 
-This unity provides predictable execution, clear debugging, and universal compatibility, benefits explored in depth in our [AMM analysis](/docs/design/abstract-machine-model-paradox/).
+This unity provides predictable execution, clear debugging, and universal compatibility, benefits explored in depth in our [AMM analysis](/blog/abstract-machine-model-paradox/).
 
 ### Fidelity's Compile-Time Innovation
 
@@ -110,7 +110,7 @@ Both maintain type safety and composability, though Clef's computation expressio
 
 ## Type System Philosophies
 
-While traits vs SRTP deserves [its own detailed analysis](/docs/design/traits-versus-srtp/), the fundamental difference impacts daily development:
+While traits vs SRTP deserves [its own detailed analysis](/docs/design/types/traits-versus-srtp/), the fundamental difference impacts daily development:
 
 ### Rust's Explicit Implementations
 
@@ -156,7 +156,7 @@ let process (data: Data list) : Result<Stats, Error> =
     // Not mandatory in every function
 ```
 
-As detailed in [Memory Management by Choice](/docs/design/memory-management-by-choice/), our BAREWire design is meant to enable optimization where beneficial without polluting all code with memory concerns.
+As detailed in [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/), our BAREWire design is meant to enable optimization where beneficial without polluting all code with memory concerns.
 
 ## Compilation Architecture Divergence
 
@@ -176,7 +176,7 @@ Direct LLVM compilation provides strong optimization but locks into a single low
 Clef → PHG → MLIR Dialects → Progressive Lowering → Multiple Targets
 ```
 
-Our Program Hypergraph (detailed in our [AMM analysis](/docs/design/abstract-machine-model-paradox/)) is designed to maintain semantic information through compilation. The MLIR dialects we define, including DCont for continuations and Inet for interaction nets, are meant to target heterogeneous processors that Rust cannot efficiently reach.
+Our Program Hypergraph (detailed in our [AMM analysis](/blog/abstract-machine-model-paradox/)) is designed to maintain semantic information through compilation. The MLIR dialects we define, including DCont for continuations and Inet for interaction nets, are meant to target heterogeneous processors that Rust cannot efficiently reach.
 
 This architectural difference is designed to enable:
 - Cross-domain optimizations across async, memory, and parallel operations
@@ -258,7 +258,7 @@ The fundamental split reflects different philosophies about systems programming:
 **Fidelity's Approach**:
 - Clean abstractions with optional depth
 - Safety through immutability and capabilities
-- Multiple AMMs selected by context (as explored in our [AMM analysis](/docs/design/abstract-machine-model-paradox/))
+- Multiple AMMs selected by context (as explored in our [AMM analysis](/blog/abstract-machine-model-paradox/))
 - Multi-level compilation preserving semantics
 
 ## Looking Forward
@@ -274,6 +274,6 @@ Rather than viewing these as competing approaches, they represent complementary 
 As computing becomes more heterogeneous, spanning FPGAs, neuromorphic processors, and prospectively quantum devices, the ability to maintain multiple mental models and compilation strategies grows more valuable. That is the direction we keep building toward with Clef and our Fidelity Framework as the work continues, and we expect to keep learning from Rust's path as we go.
 
 For deeper exploration of specific topics:
-- [Abstract Machine Models and heterogeneous computing](/docs/design/abstract-machine-model-paradox/)
-- [Traits vs SRTP: polymorphism approaches](/docs/design/traits-versus-srtp/)
-- [Memory Management by Choice](/docs/design/memory-management-by-choice/)
+- [Abstract Machine Models and heterogeneous computing](/blog/abstract-machine-model-paradox/)
+- [Traits vs SRTP: polymorphism approaches](/docs/design/types/traits-versus-srtp/)
+- [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/)

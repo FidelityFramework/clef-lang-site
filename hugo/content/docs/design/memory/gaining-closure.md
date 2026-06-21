@@ -95,7 +95,7 @@ The MLKit approach influenced our design significantly. While our current implem
 
 ## Capture Semantics: ByValue and ByRef
 
-A detail that distinguishes our closure implementation: the handling of mutable captures. This section summarizes key points; for a deeper treatment of reference semantics in native compilation, see [ByRef Resolved](/docs/design/byref-resolved/).
+A detail that distinguishes our closure implementation: the handling of mutable captures. This section summarizes key points; for a deeper treatment of reference semantics in native compilation, see [ByRef Resolved](/docs/design/types/byref-resolved/).
 
 When a closure captures an immutable binding, the value is copied into the closure structure. This is straightforward; the closure receives its own copy, and modifications to the original binding (were they possible) would not affect the closure's copy.
 
@@ -203,8 +203,8 @@ Getting the foundation right here is what lets the higher-order machinery sit on
 
 For more on the Fidelity framework and native Clef compilation:
 
-- [ByRef Resolved](/docs/design/byref-resolved/) - Reference semantics in native Clef compilation
-- [Clef: From IL to NTU](/docs/design/il-to-ntu/) - The Native Type Universe architecture
+- [ByRef Resolved](/docs/design/types/byref-resolved/) - Reference semantics in native Clef compilation
+- [Clef: From IL to NTU](/docs/design/types/il-to-ntu/) - The Native Type Universe architecture
 - [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes are becoming vestigial
-- [Absorbing Alloy](/docs/design/absorbing-alloy/) - The native standard library comes home
-- [Memory Management By Choice](/docs/design/native-memory-management/) - BAREWire and region-based memory
+- [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home
+- [Memory Management By Choice](/docs/design/memory/native-memory-management/) - BAREWire and region-based memory

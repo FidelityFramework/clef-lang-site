@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Most compilers follow a familiar structure, as we touched on in our blog entry [Frontend Unfuzzled](/docs/design/frontend-unfuzzled/). The "front end" parses developer source into an abstract syntax tree, often with type-related and other syntatic checks. The compiler's "middle end" performs transforms on intermediate representations, and "back end" generates machine code. Managed runtime compilation, as practiced by .NET and Java, represents a different category altogether. Those systems target virtual machines with garbage collection and JIT compilation, abstracting to 'assemblies' handed over to a runtime to manage the workload.
+Most compilers follow a familiar structure, as we touched on in our blog entry [Frontend Unfuzzled](/docs/internals/mlir/frontend-unfuzzled/). The "front end" parses developer source into an abstract syntax tree, often with type-related and other syntatic checks. The compiler's "middle end" performs transforms on intermediate representations, and "back end" generates machine code. Managed runtime compilation, as practiced by .NET and Java, represents a different category altogether. Those systems target virtual machines with garbage collection and JIT compilation, abstracting to 'assemblies' handed over to a runtime to manage the workload.
 
 Traditional ahead-of-time native compilation employs varied implementation strategies, though most established compilers share a common architecture: monolithic passes that recursively process entire program structures through intertwined transformations. This approach emerged from practical necessities. When memory was measured in kilobytes and disk space was precious, minimizing intermediate representations and performing multiple transformations in single traversals made economic sense. It evolved as standard practice for languages with stable semantics targeting mature platforms; a pattern that newer systems languages have largely adopted even as those original resource constraints faded into history. While this architecture represents decades of hard-won engineering stability, it quickly reveals its limits when compiler infrastructure must adapt to emerging hardware architectures and novel execution models.
 
@@ -199,8 +199,8 @@ What was described in [The Return of the Compiler](https://speakez.tech/blog/the
 ## Related Reading
 
 **Compiler Architecture & Implementation**
-- [Coeffects and Codata in Composer](/docs/design/coeffects-and-codata/) - The witness/codata approach that enables observation-based MLIR generation
-- [Standing Art: Clef Metaprogramming in Composer](/docs/design/standing-art-clef-metaprogramming/) - How quotations, active patterns, and computation expressions enable nanopass compilation
+- [Coeffects and Codata in Composer](/docs/internals/concepts/coeffects-and-codata/) - The witness/codata approach that enables observation-based MLIR generation
+- [Standing Art: Clef Metaprogramming in Composer](/docs/design/language/standing-art-clef-metaprogramming/) - How quotations, active patterns, and computation expressions enable nanopass compilation
 - [Delimited Continuations: Fidelity's Turning Point](https://speakez.tech/blog/delimited-continuations-fidelitys-turning-point/) - Continuation-passing style as a unifying compilation strategy
 
 **Type Systems & Migration**

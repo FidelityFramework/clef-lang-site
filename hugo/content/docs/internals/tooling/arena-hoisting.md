@@ -29,7 +29,7 @@ Here `frame` escapes to `parent`. The default keeps `frame` in the worker's own 
 
 The default is to guard, not to hoist. The escaped reference stays in the worker's arena and the sentinel validates it at the access boundary, returning `Valid` or `ActorTerminated`. A developer who never opens the suggestion ships a correct program. Nothing about the default is unsafe, and nothing about it is hidden: the guard is a property of the graph, and Lattice surfaces it the same way it surfaces an escape promotion, as a navigable annotation with a plain-language reason.
 
-This is the pit-of-success posture. The compiler does the safe thing on its own and tells the developer it did, which is the same discipline the [deadlock-freedom design](/docs/design/deadlock-freedom/) applies to liveness: the unprovable case gets a guard by default, and the developer is offered a way to convert the guard into a proof rather than being forced to.
+This is the pit-of-success posture. The compiler does the safe thing on its own and tells the developer it did, which is the same discipline the [deadlock-freedom design](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) applies to liveness: the unprovable case gets a guard by default, and the developer is offered a way to convert the guard into a proof rather than being forced to.
 
 ## The suggestion trades a guard for a placement
 
@@ -60,7 +60,7 @@ On a unikernel or bare-metal target the picture sharpens, and this is the direct
 ## Related Reading
 
 - [Memory Safety as Coeffect Algebra](/docs/internals/verification/memory-coeffect-algebra/) - The escape classification and the hoisting mechanic this analyzer surfaces
-- [Managed Mutability](/docs/design/managed-mutability/) - Escape classification and the inferred-with-override pattern
-- [RAII in Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/) - Actor-scoped arenas, sentinels, and deterministic lifetimes
-- [Deadlock Freedom as an Obligation](/docs/design/deadlock-freedom/) - The sibling liveness property, proven where visible and guarded where not
+- [Managed Mutability](/docs/design/language/managed-mutability/) - Escape classification and the inferred-with-override pattern
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) - Actor-scoped arenas, sentinels, and deterministic lifetimes
+- [Deadlock Freedom as an Obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) - The sibling liveness property, proven where visible and guarded where not
 - [Leveling Up With Lattice](/docs/internals/tooling/leveling-up-with-lattice/) - The language server that presents these suggestions

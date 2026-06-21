@@ -148,23 +148,23 @@ That constraint was a starting point, not an endpoint. The Fidelity architecture
 
 The [Olivier actor model](https://speakez.tech/blog/raii-in-olivier-and-prospero/) provides natural boundaries for resource ownership. Each actor owns an arena that lives exactly as long as the actor does. When an actor terminates, its entire memory arena is reclaimed immediately. No scanning, no heuristics, no unpredictable pauses. This is RAII (Resource Acquisition Is Initialization) applied to concurrent actor systems, and it scales from microcontrollers to distributed systems.
 
-The [Prospero orchestration layer](/docs/design/cache-aware-compilation-cpu/) extends this by configuring arenas based on actor behavior. A high-frequency message processor receives a different arena configuration than a batch data handler. These decisions are made at compile time based on static analysis of access patterns. The result is memory management that adapts to workload characteristics without runtime overhead.
+The [Prospero orchestration layer](/docs/internals/hardware/cache-aware-compilation-cpu/) extends this by configuring arenas based on actor behavior. A high-frequency message processor receives a different arena configuration than a batch data handler. These decisions are made at compile time based on static analysis of access patterns. The result is memory management that adapts to workload characteristics without runtime overhead.
 
 ### Context-Aware Compilation
 
-The Composer compiler performs [coeffect analysis](/docs/design/context-aware-compilation/) to understand what code needs from its environment. Pure computations with no external dependencies compile differently than code that accesses resources or maintains temporal state. This analysis guides optimization strategies across the entire pipeline, from type resolution through MLIR generation.
+The Composer compiler performs [coeffect analysis](/docs/internals/mlir/context-aware-compilation/) to understand what code needs from its environment. Pure computations with no external dependencies compile differently than code that accesses resources or maintains temporal state. This analysis guides optimization strategies across the entire pipeline, from type resolution through MLIR generation.
 
 For memory-mapped hardware access, coeffects capture access patterns that inform volatile semantics and cache behavior. The same analysis that determines parallelization strategy also determines whether a peripheral register read requires memory barriers or can be reordered for efficiency.
 
 ### Cache-Conscious Memory Management
 
-Modern processors present a fundamental challenge: the performance gap between L1 cache hits and main memory access can be fifty-fold or more. [Cache-aware compilation](/docs/design/cache-aware-compilation-cpu/) addresses this by making cache behavior a first-class concern throughout the compilation pipeline.
+Modern processors present a fundamental challenge: the performance gap between L1 cache hits and main memory access can be fifty-fold or more. [Cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-cpu/) addresses this by making cache behavior a first-class concern throughout the compilation pipeline.
 
 BAREWire's deterministic memory layouts enable precise cache analysis that would be impossible with dynamic allocation. When the compiler knows exactly where every field resides in memory, it can predict which cache lines each access will touch. This transforms cache optimization from speculation to calculation.
 
 ### Delimited Continuations as Connective Tissue
 
-The realization that [delimited continuations](/docs/design/delimited-continuations/) form the connective tissue between async expressions, actors, and native compilation transformed our entire approach. Async expressions are delimited continuations with I/O-triggered resumption. Actors are delimited continuations with message-triggered resumption. All of them compile through the same DCont dialect, share the same optimization passes, and benefit from the same continuation-based memory management.
+The realization that [delimited continuations](/docs/design/concurrency/delimited-continuations/) form the connective tissue between async expressions, actors, and native compilation transformed our entire approach. Async expressions are delimited continuations with I/O-triggered resumption. Actors are delimited continuations with message-triggered resumption. All of them compile through the same DCont dialect, share the same optimization passes, and benefit from the same continuation-based memory management.
 
 This unification means that improvements to continuation handling propagate across all features that use them. Stack-allocated continuations when scope is bounded. Deterministic cleanup at well-defined points. The async syntax that developers write compiles to native code with the same memory characteristics as hand-written state machines.
 
@@ -201,14 +201,14 @@ The vision from the original article remains: Clef on bare metal with zero runti
 
 - [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/): The spectrum from automatic to explicit memory control
 - [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes
-- [Cache-Conscious Memory Management](/docs/design/cache-aware-compilation-cpu/): From memory-aware to cache-aware compilation
+- [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): From memory-aware to cache-aware compilation
 - [Next-Generation Memory Coherence](https://speakez.tech/blog/next-generation-memory-coherence/): Leveraging CXL, NUMA, and PCIe for zero-copy computing
 
 ### Compiler Architecture
 
-- [Context-Aware Compilation](/docs/design/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
-- [Delimited Continuations: Fidelity's Turning Point](/docs/design/delimited-continuations/): The unifying abstraction for async, actors, and native compilation
-- [Baker: A Key Ingredient to Composer](/docs/design/baker-saturation-engine/): Type resolution and the zipper-based correlation pipeline
+- [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
+- [Delimited Continuations: Fidelity's Turning Point](/docs/design/concurrency/delimited-continuations/): The unifying abstraction for async, actors, and native compilation
+- [Baker: A Key Ingredient to Composer](/docs/internals/pipeline/baker-saturation-engine/): Type resolution and the zipper-based correlation pipeline
 
 ### Reactive Systems
 

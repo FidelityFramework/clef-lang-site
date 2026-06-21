@@ -107,7 +107,7 @@ The Composer compilation strategy depends on the computation pattern:
 
 An async computation expression is designed to compile to DCont dialect operations, where each `let!` becomes a `dcont.shift` that captures the continuation. A validated computation with `and!` combinators compiles to Inet dialect, where the independent branches can execute in parallel.
 
-We describe this construction in [DCont Inet Duality](/docs/design/dcont-inet-duality/). The application here is that referential transparency determines compilation strategy. Our coeffect system tracks what code *needs* from its environment, and this information guides the decomposition.
+We describe this construction in [DCont Inet Duality](/docs/design/concurrency/dcont-inet-duality/). The application here is that referential transparency determines compilation strategy. Our coeffect system tracks what code *needs* from its environment, and this information guides the decomposition.
 
 The MLIR builder is itself a computation expression:
 

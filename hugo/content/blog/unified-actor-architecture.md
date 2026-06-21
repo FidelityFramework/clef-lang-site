@@ -50,7 +50,7 @@ The abstraction is intrinsic to the compiler. CCS defines the actor types and in
 
 The core types form a vocabulary for describing actor behavior without committing to execution details. An `ActorRef` is an opaque handle for sending messages; how the message reaches its destination is the runtime's concern. An `ActorBehavior` specifies how an actor responds to messages; how that specification executes depends on the target. This separation enables the "write once, deploy anywhere" property.
 
-Readers familiar with Erlang/OTP, Akka, or Orleans will recognize these patterns. The discriminated union `ActorEffect` resembles the behavior return types in those systems. The `SupervisionStrategy` cases mirror OTP's supervision tree options, explored in depth in [Erlang Lessons in Fidelity](/blog/ode-to-erlang---lessons-from-fez/). The novelty lies not in the patterns themselves but in their application across compilation targets as different as native code and JavaScript on edge infrastructure.
+Readers familiar with Erlang/OTP, Akka, or Orleans will recognize these patterns. The discriminated union `ActorEffect` resembles the behavior return types in those systems. The `SupervisionStrategy` cases mirror OTP's supervision tree options, explored in depth in [Erlang Lessons in Fidelity](/blog/ode-to-erlang/). The novelty lies not in the patterns themselves but in their application across compilation targets as different as native code and JavaScript on edge infrastructure.
 
 ```fsharp
 // Olivier - actor types intrinsic to CCS, shared across targets
@@ -109,7 +109,7 @@ type ActorSpec = {
 
 The point of emphasis is that `ActorBehavior` can be considered a pure function from state and message to effects. No I/O, no platform dependencies. The `ActorEffect` type describes what should happen; the runtime interprets these effects according to target-specific semantics.
 
-This effect-based design enables testability. An actor behavior can be tested by supplying state and messages, then inspecting the returned effects. No network, no storage, no platform; pure data in, pure data out. The runtime that eventually executes these effects is tested separately against the effect contract. This purity also opens the door to [formal verification](/blog/verifying-fsharp/), where SMT proofs can validate actor behavior properties at compile time.
+This effect-based design enables testability. An actor behavior can be tested by supplying state and messages, then inspecting the returned effects. No network, no storage, no platform; pure data in, pure data out. The runtime that eventually executes these effects is tested separately against the effect contract. This purity also opens the door to [formal verification](/docs/internals/verification/), where SMT proofs can validate actor behavior properties at compile time.
 
 ## Computation Expression Layer
 
@@ -211,7 +211,7 @@ This behavior definition compiles to either target without modification. The bus
 
 In the Fidelity framework, actors execute as native code compiled through MLIR. The runtime builds on Clef's `MailboxProcessor`, a primitive that serializes message delivery to a single logical thread. This serialization eliminates data races within an actor without requiring explicit locks.
 
-The implementation pairs each actor with a memory arena, a pre-allocated region from which the actor draws its allocations. When the actor terminates or restarts, the entire arena releases as a unit. This approach aligns with Fidelity's RAII model, detailed in [RAII in Olivier and Prospero](/blog/raii-in-olivier-and-prospero/), where resource lifetimes bind to continuation boundaries.
+The implementation pairs each actor with a memory arena, a pre-allocated region from which the actor draws its allocations. When the actor terminates or restarts, the entire arena releases as a unit. This approach aligns with Fidelity's RAII model, detailed in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), where resource lifetimes bind to continuation boundaries.
 
 ```fsharp
 // Olivier.Runtime - Native compilation target

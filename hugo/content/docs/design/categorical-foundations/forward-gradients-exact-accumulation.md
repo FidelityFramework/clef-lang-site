@@ -129,7 +129,7 @@ Each property is established independently in the literature ([1] for forward gr
 
 ## Representation Selection for Training
 
-The representation selection framework from [the companion entry on posit arithmetic](/blog/posit-arithmetic-dimensional-type-systems/) applies directly to training workloads. Neural network activations and gradients have well-characterized value distributions, typically concentrated near zero with heavy tails. The dimensional range of activations in a specific layer is inferrable from training statistics or from dimensional constraints on the input domain.
+The representation selection framework from [the companion entry on posit arithmetic](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) applies directly to training workloads. Neural network activations and gradients have well-characterized value distributions, typically concentrated near zero with heavy tails. The dimensional range of activations in a specific layer is inferrable from training statistics or from dimensional constraints on the input domain.
 
 Given this range, the compiler's representation selection function can choose posit widths that concentrate precision where the values cluster. The quire provides exact gradient accumulation regardless of the chosen posit width, eliminating the rounding errors that compound across millions of parameters.
 

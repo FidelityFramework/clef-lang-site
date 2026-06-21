@@ -61,7 +61,7 @@ These aren't incidental features; they form a coherent toolkit for expressing th
 
 In standard F#, Units of Measure erase before IL generation because the .NET BCL and CLR cannot represent dimensional metadata. The `inline` keyword is opt-in because aggressive inlining conflicts with the CLR JIT's assumptions. Both features are held out as optional features by platform constraints, not design flaws.
 
-Clef has no such constraints. It targets MLIR, not IL. Dimensional types don't erase; they flow through the [Program Semantic Graph](/docs/design/program-semantic-graph/) to inform code generation. Memory lifetimes are tracked through [coeffect analysis](/docs/design/coeffects-and-codata/), as opposed to being relegated to a managed runtime. The result is native executables that preserve the semantic richness of the source language.
+Clef has no such constraints. It targets MLIR, not IL. Dimensional types don't erase; they flow through the [Program Semantic Graph](/spec/draft/program-semantic-graph/) to inform code generation. Memory lifetimes are tracked through [coeffect analysis](/docs/internals/concepts/coeffects-and-codata/), as opposed to being relegated to a managed runtime. The result is native executables that preserve the semantic richness of the source language.
 
 ## Deterministic Memory Management
 
@@ -139,7 +139,7 @@ The deliberate tradeoff: our DTS gives up MLTT's full propositions-as-types in e
 
 **Domain identifiers**: customerId, orderId, sessionId. Preventing the common bug of passing the wrong ID to an API.
 
-These dimensions don't erase after type checking. They flow through our [Program Semantic Graph](/docs/design/program-semantic-graph/) and inform code generation for any target. They are erased eventually, as a zero-cost abstraction, but not until after they have supplied the information needed for an efficient and safe compute graph.
+These dimensions don't erase after type checking. They flow through our [Program Semantic Graph](/spec/draft/program-semantic-graph/) and inform code generation for any target. They are erased eventually, as a zero-cost abstraction, but not until after they have supplied the information needed for an efficient and safe compute graph.
 
 ```fsharp
 // Physical computation with verified dimensions
@@ -189,7 +189,7 @@ let temperatureSensor : PeripheralRegister<celsius> = {
 
 The `ReadOnly` access mode is a dimension. The `4<bytes>` alignment is a dimension. The `celsius` unit is a dimension. They all constrain how the compiler generates code for this memory location. They all survive to inform register selection, barrier insertion, and instruction scheduling on the target hardware.
 
-This unification enables the [Program Semantic Graph](/docs/design/program-semantic-graph/) to represent both control-flow (for CPU/sequential targets) and data-flow (for FPGA/spatial targets) interpretations of the same source program. Dimensional constraints are invariant across both interpretations. The pivot between representations preserves semantic meaning because dimensions survive the transformation.
+This unification enables the [Program Semantic Graph](/spec/draft/program-semantic-graph/) to represent both control-flow (for CPU/sequential targets) and data-flow (for FPGA/spatial targets) interpretations of the same source program. Dimensional constraints are invariant across both interpretations. The pivot between representations preserves semantic meaning because dimensions survive the transformation.
 
 ```mermaid
 graph TB
@@ -294,7 +294,7 @@ The crux of our position: proofs constrain abstract requirements, not concrete i
 
 A function requiring `WriteCapability` and `Lifetime(L)` can be called with any allocation strategy that provides those capabilities. The proof verifies the abstract requirements. The compiler verifies that each call site's allocation strategy satisfies those requirements. Both verifications happen at compile time.
 
-This approach integrates with Z3 and cvc5 for SMT solving, as described in [Proof-Aware Compilation](/docs/design/proof-aware-compilation/). The [compilation ledger](/docs/design/coeffects-and-codata/) records each verification decision: which requirements a function has, which capabilities a call site provides, why the capabilities satisfy the requirements.
+This approach integrates with Z3 and cvc5 for SMT solving, as described in [Proof-Aware Compilation](/docs/internals/pipeline/proof-aware-compilation/). The [compilation ledger](/docs/internals/concepts/coeffects-and-codata/) records each verification decision: which requirements a function has, which capabilities a call site provides, why the capabilities satisfy the requirements.
 
 ```fsharp
 // SMT specification for verified memory operation
@@ -315,7 +315,7 @@ The answer lies in scope, not competition. Modular has built excellent infrastru
 
 What Modular cannot preserve is dimensional semantics, because those semantics were never in Python or PyTorch to begin with. When Chris Lattner says "we're not an AI compiler, we're throwing that concept away,"[^5] he's being precise about their scope: kernel infrastructure for experts who carry domain knowledge in their heads.
 
-Fidelity addresses a different problem. The [Program Semantic Graph](/docs/design/program-semantic-graph/) represents general Clef programs with control flow, recursion, closures, and pattern matching. Via the equivalence between SSA and functional programming established by Appel[^6], the same structure can be interpreted as control-flow graph (for CPU/sequential targets) or dataflow graph (for FPGA/spatial targets). Dimensional constraints are invariant across both interpretations.
+Fidelity addresses a different problem. The [Program Semantic Graph](/spec/draft/program-semantic-graph/) represents general Clef programs with control flow, recursion, closures, and pattern matching. Via the equivalence between SSA and functional programming established by Appel[^6], the same structure can be interpreted as control-flow graph (for CPU/sequential targets) or dataflow graph (for FPGA/spatial targets). Dimensional constraints are invariant across both interpretations.
 
 This isn't criticism. Different solution spaces require different architectures. But the asymmetry is worth noting: our PSG can represent tensor computations and lower them through MLIR to optimized kernels. That's just dataflow with arithmetic, which the graph handles natively. The reverse isn't true. Modular cannot reconstruct the semantic information it never had: dimensional constraints, physical invariants, or the control-flow/dataflow duality that enables targeting other advanced accelerators. The infrastructure Modular has built serves its scope well, and the PSG covers that same tensor-kernel ground while retaining the semantic information their pipeline discards.
 

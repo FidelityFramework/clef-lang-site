@@ -13,7 +13,7 @@ params:
 
 Between the server-scale memory coherence of CXL and the constrained world of edge accelerators lies a third tier of heterogeneous computing that is becoming more common: the unified memory SoC. This is not simply a GPU bolted onto a laptop. It represents a fundamentally different programming model where CPU, GPU, and NPU share a coherent virtual address space backed by the same physical memory pool. AMD's Strix Halo architecture, found in devices like the ASUS ROG Flow Z13, exemplifies this approach with its unified LPDDR5X and AMD's Heterogeneous System Architecture providing hardware coherence across all compute agents.
 
-Our companion pieces on [CXL memory coherence](/blog/next-generation-memory-coherence) and [RDMA network communication](/blog/rdma-accelerating-network-comms) explored how BAREWire's zero-copy architecture extends across system boundaries. This article turns inward, examining how Fidelity can leverage unified memory architectures for local inference pipelines where voice-to-text on the NPU feeds directly into LLM inference on the GPU without explicit buffer management or programmer-visible copies.
+Our companion pieces on [CXL memory coherence](/docs/internals/hardware/next-generation-memory-coherence) and [RDMA network communication](/docs/internals/hardware/rdma-accelerating-network-comms) explored how BAREWire's zero-copy architecture extends across system boundaries. This article turns inward, examining how Fidelity can leverage unified memory architectures for local inference pipelines where voice-to-text on the NPU feeds directly into LLM inference on the GPU without explicit buffer management or programmer-visible copies.
 
 ## The Three Tiers of Zero-Copy
 
@@ -68,7 +68,7 @@ AMD's Strix Halo architecture (the Ryzen AI Max+ 395 series) brings together thr
 
 **Memory**: Up to 96GB of LPDDR5X unified memory. AMD's marketing claims capability to run 70B parameter LLMs locally. While the BIOS still carves out dedicated regions for GPU-optimal access, all three compute domains share the same physical LPDDR5X and can address each other's regions through HSA's coherent virtual address space. This differs fundamentally from discrete GPUs where VRAM is physically separate and inaccessible without explicit transfers.
 
-This architecture aligns with the direction we outlined in our [GPU cache-aware compilation](/blog/cache-aware-compilation-gpu) discussion, where we noted that "technologies like NVIDIA's Unified Memory, AMD's heterogeneous system architecture (HSA), and emerging standards like CXL are breaking down the walls between CPU and GPU memory spaces."
+This architecture aligns with the direction we outlined in our [GPU cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-gpu) discussion, where we noted that "technologies like NVIDIA's Unified Memory, AMD's heterogeneous system architecture (HSA), and emerging standards like CXL are breaking down the walls between CPU and GPU memory spaces."
 
 ## The Inference Pipeline Pattern
 
@@ -106,7 +106,7 @@ The "pointer handoff" eliminates explicit copy operations from application code.
 
 ## BAREWire.HSA: The Abstraction Layer
 
-Building on the patterns established in our [CXL integration](/blog/next-generation-memory-coherence), we have designs for a BAREWire.HSA module provides [Clef](https://clef-lang.com) abstractions for unified memory allocation and cross-agent buffer sharing.
+Building on the patterns established in our [CXL integration](/docs/internals/hardware/next-generation-memory-coherence), we have designs for a BAREWire.HSA module provides [Clef](https://clef-lang.com) abstractions for unified memory allocation and cross-agent buffer sharing.
 
 ```fsharp
 module BAREWire.HSA
@@ -420,11 +420,11 @@ let refineLora
     createAdapter adapterBuffer
 ```
 
-This is refinement, not foundation model training. The unified memory architecture would mean fine-tuning larger models than typical desktop hardware allows, since there is no separate GPU VRAM limit to contend with. But training from scratch remains a server-scale workload where [CXL memory pools](/blog/next-generation-memory-coherence) and [RDMA cluster communication](/blog/rdma-accelerating-network-comms) become essential.
+This is refinement, not foundation model training. The unified memory architecture would mean fine-tuning larger models than typical desktop hardware allows, since there is no separate GPU VRAM limit to contend with. But training from scratch remains a server-scale workload where [CXL memory pools](/docs/internals/hardware/next-generation-memory-coherence) and [RDMA cluster communication](/docs/internals/hardware/rdma-accelerating-network-comms) become essential.
 
 ## The Ternary Inference Frontier
 
-Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/blog/a-unified-vision-for-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} replace multiplication with simple addition and subtraction. This transformation fundamentally changes which processors handle which workloads efficiently.
+Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/docs/internals/hardware/unified-vision-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} replace multiplication with simple addition and subtraction. This transformation fundamentally changes which processors handle which workloads efficiently.
 
 The research question we are pursuing in SpeakEZ's lab: can we partition a ternary model enhanced with Multi-head Latent Attention (MLA) across CPU, GPU, and NPU in a way that leverages each processor's strengths while BAREWire eliminates the traditional penalty for heterogeneous dispatch?
 
@@ -469,7 +469,7 @@ let applyTernaryFFN
     output
 ```
 
-The CPU handles trit unpacking using the [base-3 encoding scheme](/blog/a-unified-vision-for-ternary-models/) that packs 5 ternary values into 8 bits. AVX-512's bit manipulation instructions can unpack these efficiently, preparing weight vectors for GPU dispatch or handling smaller layers directly.
+The CPU handles trit unpacking using the [base-3 encoding scheme](/docs/internals/hardware/unified-vision-ternary-models/) that packs 5 ternary values into 8 bits. AVX-512's bit manipulation instructions can unpack these efficiently, preparing weight vectors for GPU dispatch or handling smaller layers directly.
 
 What makes this architecture distinctive is the absence of copies between stages.
 
@@ -537,7 +537,7 @@ Without unified memory abstractions, the staging and transfer overhead would eli
 
 The industry is at the beginning of a technology super-cycle for heterogeneous desktop compute. AMD's HSA vision has been articulated as early as 2012, but the full software stack, particularly for NPUs, is still arriving.
 
-The XDNA2 kernel driver landed in Linux 6.14, a significant recent milestone. However, the userspace runtime requires manual setup from AMD's xdna-driver repository. ROCm support for consumer RDNA GPUs has historically lagged datacenter parts, though the situation improves with each release. The Vulkan compute path, as we noted in [GPU cache-aware compilation](/blog/cache-aware-compilation-gpu), provides a more portable alternative that sidesteps many ROCm version compatibility issues. We're interested in targeting both from MLIR in the Composer compiler, and is part of our ongoing research efforts.
+The XDNA2 kernel driver landed in Linux 6.14, a significant recent milestone. However, the userspace runtime requires manual setup from AMD's xdna-driver repository. ROCm support for consumer RDNA GPUs has historically lagged datacenter parts, though the situation improves with each release. The Vulkan compute path, as we noted in [GPU cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-gpu), provides a more portable alternative that sidesteps many ROCm version compatibility issues. We're interested in targeting both from MLIR in the Composer compiler, and is part of our ongoing research efforts.
 
 These rough edges are expected. They are not blockers but rather the friction of new territory being explored. Every technology super-cycle has similar characteristics: the hardware capabilities arrive before the software stack fully matures, and early adopters navigate incomplete documentation and evolving APIs.
 

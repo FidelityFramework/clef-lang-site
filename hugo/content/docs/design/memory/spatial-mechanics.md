@@ -264,7 +264,7 @@ Each layer is independently useful, and higher layers are opt-in.
 | Constrain sizes | Coeffects + Dimensions + Size classes | Size annotations |
 | Prove correctness | All layers + SMT | SMT specifications |
 
-This matches the philosophy expressed in [Memory Management by Choice](/docs/design/memory-management-by-choice/): progressive disclosure of complexity. A developer who never writes a measure annotation still benefits from coeffect inference. A developer who adds measures gains dimensional verification. A developer who needs proofs can opt into SMT verification.
+This matches the philosophy expressed in [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/): progressive disclosure of complexity. A developer who never writes a measure annotation still benefits from coeffect inference. A developer who adds measures gains dimensional verification. A developer who needs proofs can opt into SMT verification.
 
 ## Implications for the Heterogeneous Future
 
@@ -348,12 +348,12 @@ The abstractions we are settling now preserve semantics, enable progressive disc
 
 ### Related Reading
 
-- [Dimensional Type Safety Across Execution Models](/docs/design/dimensional-type-safety/)
-- [Coeffects and Codata in Composer](/docs/design/coeffects-and-codata/)
-- [Memory Management by Choice](/docs/design/memory-management-by-choice/)
-- [Proof-Aware Compilation Through Hypergraphs](/docs/design/proof-aware-compilation/)
-- [Hyping Hypergraphs](/docs/design/hyping-hypergraphs/)
-- [Bringing Posit Arithmetic to Clef](/docs/design/posit-arithmetic/)
+- [Dimensional Type Safety Across Execution Models](/docs/design/types/dimensional-type-safety/)
+- [Coeffects and Codata in Composer](/docs/internals/concepts/coeffects-and-codata/)
+- [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/)
+- [Proof-Aware Compilation Through Hypergraphs](/docs/internals/pipeline/proof-aware-compilation/)
+- [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/)
+- [Bringing Posit Arithmetic to Clef](/docs/design/types/posit-arithmetic/)
 
 ### Academic References
 

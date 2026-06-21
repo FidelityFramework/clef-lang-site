@@ -28,7 +28,7 @@ The industry has built considerable infrastructure around this dichotomy: traini
 
 ## Hypergraphs as a Shared Substrate
 
-We've written before about [how hypergraphs naturally express complex relationships](/blog/hyping-hypergraphs/) in our compiler's Program Semantic Graph. The question we are working through is whether this same mathematical substrate can represent not just program structure, but knowledge, reasoning, and learning.
+We've written before about [how hypergraphs naturally express complex relationships](/docs/internals/pipeline/hyping-hypergraphs/) in our compiler's Program Semantic Graph. The question we are working through is whether this same mathematical substrate can represent not just program structure, but knowledge, reasoning, and learning.
 
 We theorize an AI system without frozen weights, a knowledge structure that grows with use, where compilation, knowledge representation, reasoning, and execution share one mathematical foundation. That is the direction hypergraph-based cognitive architectures point, extending our compiler work toward continuous intelligence.
 
@@ -255,7 +255,7 @@ let updateKnowledge current update =
 
 ### Proofs Guide Optimization
 
-Our [exploration of proof-aware compilation](/blog/proof-aware-compilation/) showed how verification properties carry information a compiler can act on. In cognitive architectures, we extend that principle: proofs establish correctness and also direct how reasoning unfolds.
+Our [exploration of proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) showed how verification properties carry information a compiler can act on. In cognitive architectures, we extend that principle: proofs establish correctness and also direct how reasoning unfolds.
 
 The verifier's output feeds the optimizer here, the same properties that establish correctness also open up safe transformations:
 
@@ -316,6 +316,6 @@ Pure hypergraph cognitive systems:
 
 We expect the advantage in the next era of AI to favor systems that update from use over systems that ship a fixed set of weights and freeze them. A hypergraph whose edges strengthen as queries traverse them is one way to build that.
 
-Throughout this series, from [proof-aware compilation](/blog/proof-aware-compilation/) to [neuromorphic hardware](/blog/advent-of-neuromorphic-ai/), from [dataflow architectures](/blog/hardware-lessons-from-lisp/) to [post-transformer models](/blog/beyond-transformers/), we've been building toward one convergence. We treat the hypergraph as the mathematical substrate that lets compilation, reasoning, and learning share a single representation, rather than as one more compiler intermediate representation or neural network architecture sitting alongside the others.
+Throughout this series, from [proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) to [neuromorphic hardware](/blog/advent-of-neuromorphic-ai/), from [dataflow architectures](/blog/hardware-lessons-from-lisp/) to [post-transformer models](/blog/beyond-transformers/), we've been building toward one convergence. We treat the hypergraph as the mathematical substrate that lets compilation, reasoning, and learning share a single representation, rather than as one more compiler intermediate representation or neural network architecture sitting alongside the others.
 
 The wall between training and inference is already under pressure from in-context methods and retrieval. Our interest lies in replacing the wall with shared structure: knowledge that grows, reasoning that adapts its depth, and hardware that reconfigures to the work. We will keep building toward that design as the rest of the framework comes into place.

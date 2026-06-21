@@ -131,7 +131,7 @@ Baker has transformed from a complex correlation mechanism into a streamlined en
 
 For more on the Composer compiler and Fidelity framework:
 
-- [Why Clef Fits MLIR](/docs/design/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
+- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
 - [Static and Dynamic Library Binding](https://speakez.tech/blog/library-binding-in-fidelity-framework/) - How FidelityExtern flows through the compilation pipeline
 - [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/) - Schema-driven binary serialization for native memory layouts
 - [Intelligent Tree Shaking](https://speakez.tech/blog/intelligent-tree-shaking/) - Type-aware dead code elimination for minimal native executables
