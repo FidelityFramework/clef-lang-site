@@ -270,7 +270,7 @@ let userRegion =
         (fun id -> extractShardId id)
 ```
 
-While Prospero offers Akka.NET compatibility for clustering, its primary role is scheduling and orchestration within the Olivier actor model. It manages message delivery, supervision hierarchies, and actor lifecycle events within the system. And by extension of its role as actor supervisor, it also marshals the heap allocations for those actors as well.
+Prospero's primary role is scheduling and orchestration within the Olivier actor model. It manages message delivery, supervision hierarchies, and actor lifecycle events within the system, with cross-node transport carried over BAREWire. By extension of its role as actor supervisor, it also marshals the heap allocations for those actors through actor-scoped arenas, the discipline we develop in [RAII in Olivier and Prospero](/docs/design/raii-in-olivier-and-prospero/). The Akka.NET-shaped clustering configuration above is a migration affordance for teams arriving from that ecosystem, not the native transport.
 
 Here's a simplified example of how an async function might look in MLIR:
 
@@ -278,12 +278,12 @@ Here's a simplified example of how an async function might look in MLIR:
 flowchart TB
     subgraph HighLevelMLIR["High-Level MLIR"]
         direction LR
-        AsyncExecute["async.execute<br>High-level Async"]
+        AsyncExecute["dcont.reset<br>Continuation Boundary"]
     end
 
     subgraph MidLevelMLIR["Mid-Level MLIR"]
         direction LR
-        CreateCoroutine["coroutine.create<br>Create State Machine"] --> SuspendPoint["coroutine.suspend<br>Suspension Point"] --> ResumeCoroutine["coroutine.resume<br>Resume Execution"]
+        CreateCoroutine["dcont.shift<br>Capture Continuation"] --> SuspendPoint["dcont.suspend<br>Suspension Point"] --> ResumeCoroutine["dcont.resume<br>Resume Execution"]
     end
 
     subgraph LowLevelMLIR["Low-Level MLIR"]
@@ -307,8 +307,8 @@ Our Alex handles the transformation of Clef code into MLIR operations within the
 let mlirTransform = mlir {
     // Clef async/task code gets transformed to MLIR operations
     // These are then lowered through MLIR dialects and ultimately to machine code
-    yield MLIRPrimitives.async_execute
-    yield MLIRPrimitives.coroutine_suspend
+    yield MLIRPrimitives.dcont_reset
+    yield MLIRPrimitives.dcont_shift
     yield MLIRPrimitives.control_flow
 }
 ```

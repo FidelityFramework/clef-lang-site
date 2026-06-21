@@ -87,7 +87,7 @@ The deeper insight, explored in [Actors Take Center Stage](https://speakez.tech/
 
 ## Computation Expressions: The Unifying Syntax
 
-Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) explores, computation expressions decompose into two fundamental patterns: sequential effects (DCont) and parallel pure computation (Inet). The CE builder determines which pattern applies.
+Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) explores, the classifier is the region's effect and data dependency, not the builder keyword. A region that sequences effects lowers through delimited continuations (DCont). A region of independent pure work lowers to a parallel target, and that target splits by shape: dense rectangular work goes to the tensor path, irregular higher-order reduction goes to interaction nets (Inet). The builder picks up the common case, and the dependency structure decides the rest.
 
 ```fsharp
 // Sequential: each step depends on previous (DCont pattern)
@@ -97,7 +97,7 @@ let sequential = async {
     return combine a b
 }
 
-// Parallel: no dependencies (Inet pattern)
+// Independent pure work: lowers to a parallel target
 let parallel = query {
     for item in items do
     where (isValid item)
@@ -115,7 +115,7 @@ async.Bind(fetchData(), fun a ->
 
 Each `Bind` call is a continuation capture. The second argument to `Bind` (namely `fun a -> ...`) is literally "what to do with the result." The builder orchestrates how these continuations compose, whether they sequence (like async) or fan out (like query).
 
-This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and route them through the appropriate MLIR dialects. Sequential patterns flow through DCont; parallel patterns flow through Inet. The computation expression syntax that developers write maps to optimized native execution patterns.
+This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and route them through the appropriate MLIR dialects. Sequential patterns flow through DCont; independent pure patterns flow to the tensor path when the work is dense and rectangular, and to Inet when the reduction is irregular. The computation expression syntax that developers write maps to optimized native execution patterns.
 
 ## Frosty: Platform-Aware Continuation Compilation
 
@@ -263,7 +263,7 @@ The centrality of delimited continuations to Fidelity's architecture has implica
 
 **Algebraic effects**: The CE-based effect system described in [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) is essentially typed delimited continuations. As we extend Fidelity's effect tracking, the continuation infrastructure is already in place.
 
-**Formal verification**: Continuation semantics are well-studied mathematically. As we pursue F* integration for proof-carrying code, the continuation-based compilation model provides a clean target for verification.
+**Formal verification**: Continuation semantics are well-studied mathematically. The continuation-based compilation model gives our [four-tier proof architecture](/docs/internals/verification/) a clean structure to verify against: obligations are built from the continuation structure already present in the graph, discharged by Z3 through Tier 3, with the Rocq kernel entering the trusted base only for the relational judgments at Tier 4.
 
 **Novel hardware**: Interaction nets and dataflow architectures benefit from explicit continuation representation. As Fidelity targets post-Von Neumann architectures, the continuation model adapts naturally.
 

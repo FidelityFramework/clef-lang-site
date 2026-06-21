@@ -78,7 +78,11 @@ flowchart TD
     subgraph "Alternative Backends"
         DECIDE --> SPIRV[SPIR-V Dialect<br/>Vulkan/OpenCL]
         SPIRV -.-> NVVM[NVVM Dialect<br/>NVIDIA GPUs]
-        NVVM -.-> LEAN[Lean4 Export<br/>Formal Proofs]
+    end
+
+    subgraph "Verification Seam"
+        ANALYSIS --> SMT[SMT Dialect<br/>Z3 through Tier 3]
+        SMT -.-> ROCQ[Rocq Library<br/>Tier 4 Relational]
     end
 
     subgraph "WAMI Path - Preservation"
@@ -279,7 +283,7 @@ flowchart LR
     end
 
     subgraph "Runtime Execution"
-        WAMI --> EXEC1[Preserved Async<br/>10-20x overhead]
+        WAMI --> EXEC1[Preserved Async<br/>est. 10-20x overhead]
         LLVM --> EXEC2[Native Speed<br/>No overhead]
         HYBRID --> EXEC3[Pure Protocol<br/>Native Driver]
     end
@@ -355,6 +359,6 @@ Designing Composer has shifted how we think about compilation. It is not only ab
 
 On the WAMI path they survive into the runtime largely unchanged. On the LLVM path they compile away and leave behind efficient implementations. Both belong in a functional systems programming toolkit.
 
-The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work.
+The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work. This per-call-site choice is the same inferred-with-override discipline the framework uses elsewhere: the compiler infers a default, the developer reads it where it surfaces, and an annotation overrides it at the one site that needs steering. Escape classification assigns it to every mutable binding in [managed mutability](/docs/design/managed-mutability/), and the [wait classification for deadlock freedom](/docs/design/deadlock-freedom-as-an-obligation/) assigns it to every synchronous RPC. Preservation is that discipline one axis over, on the lowering choice.
 
 This is where we are taking the design. The continuation preservation paradox is the question that shapes the next stretch of work on Composer, and the per-call-site preservation choice is the part of the answer we will keep building toward as the rest of the toolchain comes into place.
