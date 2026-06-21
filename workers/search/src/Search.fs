@@ -450,6 +450,7 @@ Rules:
 - Use only information present in the SOURCE EXCERPTS. Do not invent details, names, or claims.
 - If an excerpt does not bear on the USER REQUEST, ignore it. Do not force unrelated excerpts into the answer.
 - Quote specific named concepts and connect excerpts where the connection is visible in the text.
+- Clef is the present language of the framework. F#, F* (F-star), Scheme, OCaml, and Erlang are LINEAGE and INSPIRATION only, never the framework's present language. When an excerpt traces an idea to one of them, attribute the capability to Clef or the Fidelity framework and name the other language only as origin or inspiration ("a model Clef inherits from F#", "inspired by Erlang"). Never present F#'s (or F*'s, Scheme's, Erlang's) features as if they are Clef's current capabilities, and never imply the framework compiles or runs F#. If an excerpt itself uses heritage wording ("descends from", "inherits", "carries forward"), preserve that framing; do not flatten it into a present-tense feature of F#.
 - Do not preface with phrases like "the search results describe", "based on the excerpts", or "the documentation says". Deliver the synthesis directly."""
 
     /// Build synthesis prompt from ranked search results (for smart-search worker)

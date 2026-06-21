@@ -85,7 +85,7 @@ As functional programming continues to evolve, we're seeing a trend toward makin
 
 - Microsoft's addition of LAMBDA to Excel acknowledges and enhances its nature as a functional programming environment
 - The popularity of Elixir demonstrates demand for accessible functional programming in web development
-- F# aimed to bring functional-first programming to enterprise environments. Later it extended to the web via Fable. And now [our Clef language](https://clef-lang.com) reaches native applications and systems programming through our Fidelity framework.
+- F# brought functional-first programming to enterprise environments, and Fable later carried it to the web. [Our Clef language](https://clef-lang.com), which descends partly from F#, now reaches native applications and systems programming through our Fidelity framework.
 - And even educational initiatives increasingly recognize Excel as a pathway to teaching programming concepts
 
 ## The Paradigm Most Users Never Noticed
@@ -94,7 +94,7 @@ While computer science academia and professional developers debate programming p
 
 Excel brought functional programming to hundreds of millions of people who would never write a line of Haskell. Erlang connects phone calls and routes network traffic to its destination. Elixir runs websites in daily use. The paradigm has been in place across this infrastructure for decades, working underneath tools whose users never had to name it.
 
-We see that lineage running straight into our own work. F# carried functional-first programming into enterprise and then to the web, and our Clef language now carries it into native and systems programming through our Fidelity framework, where we will keep building as the work continues.
+We see that lineage running straight into our own work. The path ran from F# into enterprise and, through Fable, to the web; our Clef language carries it forward into native and systems programming through our Fidelity framework, where we will keep building as the work continues.
 
 ## References
 

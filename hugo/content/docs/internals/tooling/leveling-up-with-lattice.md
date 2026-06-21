@@ -44,17 +44,17 @@ These aren't superficial differences. They're architectural. An IDE that underst
 ### Extensive Tooling Coverage
 
 Ionide doesn't just provide syntax highlighting and autocomplete. It's an ecosystem:
-- **Language Server** (F# Compiler Services)
+- **Language Server** (Clef Compiler Services)
 - **Project Explorer** (MSBuild integration)
 - **Debugger** (CoreCLR protocol)
-- **REPL** (F# Interactive)
+- **REPL** (Clef Interactive)
 - **Analyzers** (FSharp.Analyzers.SDK)
 - **Package Management** (NuGet, Paket)
 
 Clef requires parallel infrastructure:
 - **CCS** (Clef Compiler Services) - pure compiler, no analyzers
 - **FSNAC** (FsNativeAutoComplete) - LSP server that consumes CCS output
-- **Composer** - AOT compiler (F# → MLIR → LLVM → native binary)
+- **Composer** - AOT compiler (Clef → MLIR → LLVM → native binary)
 - **`.fidproj`** - TOML-based project manifests
 - **Lattice Analyzers** - NuGet package with analyzers that plug into FSNAC
 - **Native Bindings** - MLIR dialect integration, not BCL
@@ -164,7 +164,7 @@ If you're building operating system kernels, embedded unikernels, high-performan
 
 ## A Unified Vision
 
-Lattice isn't just an IDE plugin or a collection of tools. It's a framework for creating a **cohesive editing experience** that seamlessly brings together Clef with MLIR's dialect system, LLVM's optimization infrastructure, and eventually F\* proof interactions. By integrating Clang and related LLVM tooling alongside native F# semantics, Lattice provides a unified environment for **systems application development** where type-safe functional programming meets bare-metal performance and formal verification. The lattice structure ensures each component, compiler services, language servers, analyzers, build tools, works in concert to deliver the developer experience that modern systems programming demands.
+Lattice isn't just an IDE plugin or a collection of tools. It's a framework for creating a **cohesive editing experience** that seamlessly brings together Clef with MLIR's dialect system, LLVM's optimization infrastructure, and eventually F\* proof interactions. By integrating Clang and related LLVM tooling alongside native Clef semantics, Lattice provides a unified environment for **systems application development** where type-safe functional programming meets bare-metal performance and formal verification. The lattice structure ensures each component, compiler services, language servers, analyzers, build tools, works in concert to deliver the developer experience that modern systems programming demands.
 
 ---
 
