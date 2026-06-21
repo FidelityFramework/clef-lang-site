@@ -40,7 +40,7 @@ The middle row is the one to develop. It slots into the existing machinery as ri
 
 The protocol layer does not belong at Tier 2 alongside liveness, and the reason is the structure-and-content division the architecture runs on. Session fidelity is a by-construction property. The interface type of an actor entails the theorem "every conversation this actor conducts respects protocol S," and the proof of that theorem is the typing derivation, established once over the type system. This is the same shape as the parametric argument that makes dimensional consistency free, the algebraic structure [the double-annotation discovery](/docs/internals/verification/double-annotation-discovery/) surfaced: the type carries the structure, the program satisfies the theorem, and the proof is a separate object the type system supplies rather than a solver obligation the compiler dispatches per program.
 
-So a session-typed actor interface carries protocol fidelity as a free property of its type, in the linear fragment, with no sum-valued semantics and no costructural rule in the operational calculus. The session type is structure. Protocol fidelity is the content it entails. The typing derivation is the proof. The lowering stays deterministic.
+So a session-typed actor interface carries protocol fidelity as a free property of its type, within ordinary classical linear logic and not its differential extension, with no sum-valued semantics and no costructural rule in the operational calculus. The session type is structure. Protocol fidelity is the content it entails. The typing derivation is the proof. The lowering stays deterministic.
 
 This placement is what keeps the protocol layer compatible with the compilation model. Cut elimination remains execution to a single artifact, because the session structure is carried at the type level and discharged by typing, rather than denoted as a superposition in the dynamics.
 
@@ -50,7 +50,7 @@ The multiplicative and additive connectives of classical linear logic type a bou
 
 Qian, Kavvos, and Birkedal introduce the coexponentials `¡A` and `¿A` for this case. The coexponential is defined by a fixpoint isomorphism that unfolds a server into a choice between termination and a further client interaction that carries the server's state forward and provides for additional clients. The exact form of the isomorphism, and the orientation convention that fixes whether the connective decorates the client behavior or the pool that holds the clients, are taken from the paper; the two coexponentials are De Morgan duals, `(¡A)⊥ = ¿(A⊥)`, so the negation one expects on the consumer interface appears on the dual connective and is carried implicitly through cut.
 
-This is the type theory of the stateful Olivier actor. An actor owns an arena, receives client requests serialized through its mailbox, and threads the arena state from one request to the next. That is a server holding a pool of clients and evolving state across their interactions, which is what the coexponential types. The correspondence matters for two reasons. It gives the stateful-actor pattern a proof-theoretic account inside the linear fragment, and it does so without any differential or sum-based machinery, which is the closer fit for the framework than any account that puts nondeterminism into the operational dynamics.
+This is the type theory of the stateful Olivier actor. An actor owns an arena, receives client requests serialized through its mailbox, and threads the arena state from one request to the next. That is a server holding a pool of clients and evolving state across their interactions, which is what the coexponential types. The correspondence matters for two reasons. It gives the stateful-actor pattern a proof-theoretic account inside ordinary CLL, not the differential extension, with no sum-valued or costructural machinery in the dynamics, which is the closer fit for the framework than any account that puts nondeterminism into the operational dynamics.
 
 ## A worked example: the registry server
 
@@ -93,7 +93,7 @@ let client = Olivier.spawn system "client-7" (fun () -> actor {
 })
 ```
 
-The state thread, `return! loop newTable`, is what the coexponential types: each request hands the table to the handling of the next. The reply is an ordinary message send back on the `IActorRef` the client passed as `Actor.self()`, which keeps the operational lowering deterministic. The wait-for relationship that the `Lookup` round trip induces is what Tier 2 ranks for acyclicity, and nothing in this code asserts a session type was reconstructed by the solver.
+The state thread, `return! loop newTable`, is the operational shadow of what the coexponential types: the session whose fixpoint hands each request's state to the next. The reply is an ordinary message send back on the `IActorRef` the client passed as `Actor.self()`, which keeps the operational lowering deterministic. The wait-for relationship that the `Lookup` round trip induces is what Tier 2 ranks for acyclicity, and nothing in this code asserts a session type was reconstructed by the solver.
 
 The diagram reads the three contracts off the same boxes and arrows. Every message arrow carries our BAREWire payload, and the data layer types that payload at each endpoint. The direction and ordering of the arrows is the protocol layer, the coexponential session structure the server and clients share, drawn as the design-time target it is rather than an extracted fact. The liveness layer lives on the one back-edge from a blocked client to the server it waits on, the place a cycle would deadlock and where the acyclic wait-for rank has to hold.
 
@@ -162,7 +162,7 @@ smt.check   // sat: acyclic. unsat: the core is the cycle, reported as CCS8031
  
 ```
 
-The data attribute carries no arithmetic to the solver, because the schema property is the elaboration byproduct. The session attribute carries the protocol shape as type-level structure that typing checks, not as a goal the solver reconstructs. Only the liveness layer becomes an SMT goal, the same acyclic-wait rank the deadlock-freedom obligation discharges, so the protocol layer adds two attributes to the seam and one of them never leaves the front end.
+The data attribute carries no arithmetic to the solver, because the schema property is the elaboration byproduct. The session attribute carries the protocol shape as type-level structure that typing checks, not as a goal the solver reconstructs. So the data and protocol layers contribute attributes that elaboration and typing settle at the front end, and only the liveness layer leaves it as an SMT goal, the same acyclic-wait rank the deadlock-freedom obligation discharges.
 
 ## Inference, not annotation
 
@@ -186,7 +186,7 @@ Nothing here moves the decidability of any tier. The protocol shape is free by t
 
 ## A proof-carrying account of shared state inside linear logic
 
-The protocol layer is where the framework's position on shared mutable state becomes constructive. The coexponential types a stateful server serving an unbounded client pool, which is the shared-state pattern that motivates richer logics, and it does so inside the linear fragment, with no sums, no costructural rule in the dynamics, and no departure from the discipline the rest of the architecture holds. Placed at the actor boundary and inferred rather than annotated, it gives the framework a proof-carrying account of shared state that integrates with the tiers, rides the joint-constraint axis, and keeps the operational layer deterministic. The sum, where it is wanted at all, stays in the verification tiers as a distribution over the abelian carrier, not in the operational calculus. This is the design we will keep building toward as the actor runtime matures and the inference question comes into focus.
+The protocol layer is where the framework's position on shared mutable state becomes constructive. The coexponential types a stateful server serving an unbounded client pool, which is the shared-state pattern that motivates richer logics, and it does so inside classical linear logic, not its differential extension, with no sums, no costructural rule in the dynamics, and no departure from the discipline the rest of the architecture holds. Placed at the actor boundary and inferred rather than annotated, it gives the framework a proof-carrying account of shared state that integrates with the tiers, rides the joint-constraint axis, and keeps the operational layer deterministic. The sum, where it is wanted at all, stays in the verification tiers as a distribution over the abelian carrier, not in the operational calculus. This is the design we will keep building toward as the actor runtime matures and the inference question comes into focus.
 
 ---
 
