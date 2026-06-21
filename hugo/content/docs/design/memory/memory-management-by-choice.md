@@ -138,9 +138,6 @@ graph LR
     A[Explicit<br/>Memory Mapping] --> B[Analysis-Driven<br/>Assistance]
     B --> C[Transparent<br/>Optimization]
 
-    style A fill:#e8f4f8,stroke:#2980b9
-    style B fill:#fef9e7,stroke:#f39c12
-    style C fill:#eafaf1,stroke:#27ae60
 ```
 
 ### Initial Phase: Explicit Memory Mapping
