@@ -18,6 +18,7 @@ module Types =
         pageUrl: string
         contentType: string
         snippet: string
+        publishedAt: string
         score: float
     }
 
@@ -52,6 +53,7 @@ module Types =
         abstract member content: string with get
         abstract member tags: string with get
         abstract member summary: string with get
+        abstract member publishedAt: string with get
         abstract member contentHash: string with get
 
     /// Batch index request from CLI

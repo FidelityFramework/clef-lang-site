@@ -208,6 +208,33 @@ code, pre, kbd {
   color: #9ca3af;
 }
 
+.clef-search-clear {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.clef-search-clear:hover {
+  color: #111827;
+  border-color: #9ca3af;
+  background: #f3f4f6;
+}
+:is(.dark) .clef-search-clear {
+  border-color: #4b5563;
+  color: #9ca3af;
+  background: #1f2937;
+}
+:is(.dark) .clef-search-clear:hover {
+  color: #f3f4f6;
+  border-color: #6b7280;
+  background: #374151;
+}
+
 .clef-search-kbd {
   flex-shrink: 0;
   padding: 0.125rem 0.375rem;
@@ -217,6 +244,7 @@ code, pre, kbd {
   border-radius: 0.25rem;
   color: #6b7280;
   background: #f9fafb;
+  cursor: pointer;
 }
 :is(.dark) .clef-search-kbd {
   border-color: #4b5563;

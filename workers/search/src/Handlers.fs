@@ -171,9 +171,9 @@ module Handlers =
             let! body = request.json<obj>()
             let rawQuery: string = body?query |> unbox
             // `limit` here is a salience ceiling, not a fixed count — the gate may
-            // return fewer. Cast the net wider than the legacy top-5 so genuine
-            // multi-section matches survive the gate.
-            let limit = validateLimit body?limit 8
+            // return fewer. Default 10: a sharp query still gets gated down to a few,
+            // a broad one can surface up to ten when that many clear the bar.
+            let limit = validateLimit body?limit 10
 
             match validateQuery rawQuery with
             | Error msg ->

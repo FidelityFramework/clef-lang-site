@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS content_sections (
     content TEXT NOT NULL,                      -- section body text (markdown stripped)
     tags TEXT DEFAULT '',                       -- comma-separated
     summary TEXT DEFAULT '',
+    published_at TEXT DEFAULT '',               -- YYYY-MM-DD authorship date, for recency ranking
     content_hash TEXT NOT NULL,                 -- for change detection
     indexed_at TEXT NOT NULL,                   -- ISO8601 timestamp
     vector_indexed INTEGER NOT NULL DEFAULT 0   -- 1 if embedding exists in Vectorize

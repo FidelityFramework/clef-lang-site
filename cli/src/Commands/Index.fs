@@ -23,6 +23,7 @@ module Index =
         Content: string
         Tags: string
         Summary: string
+        PublishedAt: string
         ContentHash: string
     }
 
@@ -140,6 +141,13 @@ module Index =
         let title = extractField yaml "title"
         let summary = extractField yaml "description"
         let tags = extractYamlList yaml "tags"
+        // Publish date for recency ranking. The migration tooling sets `date` to the
+        // original authorship date (it equals params.originally_published), so `date`
+        // is the right signal. Normalize to YYYY-MM-DD so it sorts lexically; empty
+        // string for spec/undated content, which the worker treats as oldest.
+        let publishedAt =
+            let raw = extractField yaml "date"
+            if raw.Length >= 10 then raw.Substring(0, 10) else raw
 
         match classifyContent baseDirs filePath with
         | None -> []
@@ -149,6 +157,15 @@ module Index =
             sections |> List.mapi (fun i (sectionTitle, sectionContent) ->
                 let stripped = stripMarkdown sectionContent
                 let id = $"{contentType}/{slug}#{i}"
+                // Hash every field the index actually stores, not just the body.
+                // The worker skips a section when this hash is unchanged, so a
+                // title/tag/summary/url edit must move the hash or it would never
+                // re-index (the body alone is identical). Newline-delimited so the
+                // field boundaries can't collide across concatenation.
+                let hashInput =
+                    String.concat "\n" [
+                        contentType; pageUrl; title; sectionTitle; tags; summary; publishedAt; stripped
+                    ]
                 {
                     Id = id
                     ContentType = contentType
@@ -160,7 +177,8 @@ module Index =
                     Content = stripped
                     Tags = tags
                     Summary = summary
-                    ContentHash = computeHash stripped
+                    PublishedAt = publishedAt
+                    ContentHash = computeHash hashInput
                 })
 
     /// Run a process and return (exitCode, stdout, stderr)

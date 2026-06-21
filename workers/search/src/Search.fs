@@ -59,7 +59,7 @@ module Search =
                     """
                     SELECT
                         cs.id, cs.page_title, cs.section_title, cs.page_url,
-                        cs.content_type, cs.summary,
+                        cs.content_type, cs.summary, cs.published_at,
                         substr(cs.content, 1, 300) as snippet,
                         bm25(content_fts, 10.0, 5.0, 1.0) as score
                     FROM content_fts
@@ -74,7 +74,7 @@ module Search =
                     """
                     SELECT
                         cs.id, cs.page_title, cs.section_title, cs.page_url,
-                        cs.content_type, cs.summary,
+                        cs.content_type, cs.summary, cs.published_at,
                         substr(cs.content, 1, 300) as snippet,
                         bm25(content_fts, 10.0, 5.0, 1.0) as score
                     FROM content_fts
@@ -102,6 +102,7 @@ module Search =
                     pageUrl = string row?page_url
                     contentType = string row?content_type
                     snippet = string row?snippet
+                    publishedAt = string row?published_at
                     score = -(float row?score) // Negate: FTS5 bm25() returns negative
                 })
         }
@@ -150,7 +151,7 @@ module Search =
             // Build parameterized IN clause
             let placeholders = missingIds |> Array.map (fun _ -> "?") |> String.concat ", "
             let sql =
-                $"""SELECT id, page_title, section_title, page_url, content_type, summary,
+                $"""SELECT id, page_title, section_title, page_url, content_type, summary, published_at,
                     substr(content, 1, 300) as snippet
                     FROM content_sections WHERE id IN ({placeholders})"""
 
@@ -171,6 +172,7 @@ module Search =
                     pageUrl = string row?page_url
                     contentType = string row?content_type
                     snippet = string row?snippet
+                    publishedAt = string row?published_at
                     score = 0.0
                 })
         }
@@ -185,6 +187,28 @@ module Search =
         bm25Hit: bool
         vectorScore: float option
     }
+
+    /// Recency boost added on top of a fused RRF score. RRF scores live around
+    /// 0.016-0.033 (1/(60+rank)), so this caps at ~0.012 — comparable to one or two
+    /// rank positions. It nudges newer content above similarly-relevant older content
+    /// without letting recency override a real relevance gap. A page from `refYear`
+    /// or later gets the full bonus; it decays linearly to zero over `spanYears`
+    /// before that; undated content (empty published_at) gets nothing.
+    let private maxRecencyBoost = 0.012
+    let private recencyRefYear = 2026.0
+    let private recencySpanYears = 5.0
+
+    /// Parse a YYYY-MM-DD published_at into a recency boost in [0, maxRecencyBoost].
+    let private recencyBoost (publishedAt: string) : float =
+        if isNullOrUndefined publishedAt || publishedAt.Length < 4 then 0.0
+        else
+            match Int32.TryParse(publishedAt.Substring(0, 4)) with
+            | true, year ->
+                let y = float year
+                let normalized = (y - (recencyRefYear - recencySpanYears)) / recencySpanYears
+                let clamped = max 0.0 (min 1.0 normalized)
+                clamped * maxRecencyBoost
+            | false, _ -> 0.0
 
     /// Reciprocal Rank Fusion to combine BM25 and vector results
     /// RRF(d) = sum( 1 / (k + rank_i(d)) ) for each ranking i
@@ -220,14 +244,16 @@ module Search =
             | false, _ -> rrfScores.[id] <- score
         )
 
-        // Sort by combined RRF score descending, only return results we have metadata for
+        // Add the recency boost, then sort. Only return results we have metadata for.
         rrfScores
         |> Seq.toArray
-        |> Array.sortByDescending (fun kv -> kv.Value)
         |> Array.choose (fun kv ->
             match resultMap.TryGetValue(kv.Key) with
-            | true, result -> Some { result with score = kv.Value }
+            | true, result ->
+                let boosted = kv.Value + recencyBoost result.publishedAt
+                Some { result with score = boosted }
             | false, _ -> None)
+        |> Array.sortByDescending (fun r -> r.score)
 
     /// Fuse with RRF but keep provenance (BM25 hit + raw vector cosine) per result.
     /// Mirrors reciprocalRankFusion's scoring; used only by the synthesis path,
@@ -256,14 +282,18 @@ module Search =
             | true, existing -> rrfScores.[id] <- existing + score
             | false, _ -> rrfScores.[id] <- score)
 
+        // `rrf` stays the pure relevance signal so the salience gate's drop-ratio
+        // isn't muddied by recency. The recency boost goes into the ordering score
+        // (and the sort), so newer content rises among similarly-relevant results
+        // without changing which results clear the gate.
         rrfScores
         |> Seq.toArray
-        |> Array.sortByDescending (fun kv -> kv.Value)
         |> Array.choose (fun kv ->
             match resultMap.TryGetValue(kv.Key) with
             | true, r ->
+                let boosted = kv.Value + recencyBoost r.publishedAt
                 Some {
-                    result = { r with score = kv.Value }
+                    result = { r with score = boosted }
                     rrf = kv.Value
                     bm25Hit = bm25Ids.Contains(kv.Key)
                     vectorScore =
@@ -272,34 +302,35 @@ module Search =
                         | false, _ -> None
                 }
             | false, _ -> None)
+        |> Array.sortByDescending (fun c -> c.result.score)
 
     /// Minimum cosine for a vector-only candidate (no lexical hit) to enter
     /// synthesis. bge-base-en-v1.5 cosines run ~0.5-0.9 for on-topic neighbors;
     /// loosely associated pages sit below this. Tuned conservatively.
     let private vectorOnlyMinCosine = 0.62
 
-    /// Keep results by salience rather than a fixed top-N. Always keep the top
-    /// hit; keep the rest while their RRF stays within `dropRatio` of the top
-    /// score. A candidate that matched only via vector (no BM25 hit) must also
-    /// clear `vectorOnlyMinCosine` — this is what drops the "loosely related"
+    /// Keep results by salience rather than a fixed top-N. Always keep the most
+    /// relevant hit; keep the rest while their pure RRF stays within `dropRatio` of
+    /// the highest RRF. A candidate that matched only via vector (no BM25 hit) must
+    /// also clear `vectorOnlyMinCosine` — this is what drops the "loosely related"
     /// neighbors (e.g. UI/layout pages surfacing on a memory-architecture query).
+    /// Gating is on pure `rrf` (relevance), not the recency-boosted score, so a
+    /// newer-but-irrelevant page can't sneak through; recency only affects ordering.
     let selectSalient (candidates: FusedCandidate array) (maxResults: int) : FusedCandidate array =
         if candidates.Length = 0 then [||]
         else
             let dropRatio = 0.5
-            let topScore = candidates.[0].rrf
-            let cutoff = topScore * dropRatio
+            let topRrf = candidates |> Array.map (fun c -> c.rrf) |> Array.max
+            let cutoff = topRrf * dropRatio
             candidates
-            |> Array.mapi (fun i c -> (i, c))
-            |> Array.filter (fun (i, c) ->
-                let passesSalience = i = 0 || c.rrf >= cutoff
+            |> Array.filter (fun c ->
+                let passesSalience = c.rrf >= cutoff
                 let passesVectorBar =
                     c.bm25Hit ||
                     (match c.vectorScore with
                      | Some s -> s >= vectorOnlyMinCosine
                      | None -> false)
                 passesSalience && passesVectorBar)
-            |> Array.map snd
             |> Array.truncate maxResults
 
     /// Fetch full section bodies for the selected results, ordered to match the

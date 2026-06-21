@@ -62,15 +62,15 @@ module Indexing =
                         INSERT INTO content_sections (
                             id, content_type, page_slug, page_title, page_url,
                             section_index, section_title, content, tags, summary,
-                            content_hash, indexed_at, vector_indexed
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                            published_at, content_hash, indexed_at, vector_indexed
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
                     """
                     let stmt = env.DB.prepare(insertSql)
                     let bound = stmt.bind(
                         section.id, section.contentType, section.pageSlug,
                         section.pageTitle, section.pageUrl, section.sectionIndex,
                         section.sectionTitle, section.content, section.tags,
-                        section.summary, section.contentHash,
+                        section.summary, section.publishedAt, section.contentHash,
                         DateTime.UtcNow.ToString("o")
                     )
                     let! _ = bound.run<obj>()
@@ -106,8 +106,26 @@ module Indexing =
     /// D1 writes and embedding generation run concurrently per section, then ALL
     /// vectors are upserted to Vectorize in one call. Single-vector upserts per
     /// section trip the Vectorize request rate limit (40041) on large corpora.
+    /// Ensure the published_at column exists on the live table. The original
+    /// schema predates recency ranking and uses CREATE TABLE IF NOT EXISTS, so an
+    /// already-provisioned D1 won't have the column. ADD COLUMN errors if it's
+    /// already there, so guard on PRAGMA table_info — idempotent and cheap (once
+    /// per batch). Removable after the column is universally present.
+    let private ensurePublishedAtColumn (env: WorkerEnv) : JS.Promise<unit> =
+        promise {
+            let! info = env.DB.prepare("PRAGMA table_info(content_sections)").all<obj>()
+            let hasColumn =
+                match info.results with
+                | Some rows -> rows |> Seq.exists (fun r -> string r?name = "published_at")
+                | None -> false
+            if not hasColumn then
+                let! _ = env.DB.prepare("ALTER TABLE content_sections ADD COLUMN published_at TEXT DEFAULT ''").run<obj>()
+                ()
+        }
+
     let indexBatch (env: WorkerEnv) (sections: IndexSectionRequest array) =
         promise {
+            do! ensurePublishedAtColumn env
             let! prepared =
                 sections
                 |> Array.map (prepareSection env)

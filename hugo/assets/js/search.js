@@ -32,6 +32,11 @@
   let currentResults = [];
   let abortController = null;
   let lastQuery = "";
+  // Preserved across close/reopen so the modal rehydrates instead of starting
+  // blank. Cleared only by the explicit Clear button.
+  let lastResultsHtml = "";
+  let lastStatsText = "";
+  let lastSynthesisHtml = "";
 
   // ── Helpers ────────────────────────────────────────────────
 
@@ -141,6 +146,10 @@
     const ms = data.searchTimeMs != null ? ` in ${data.searchTimeMs}ms` : "";
     stats.textContent = `${currentResults.length} result${currentResults.length !== 1 ? "s" : ""}${ms}`;
     synthesizeBtn.style.display = "";
+
+    // Snapshot for rehydration on reopen.
+    lastResultsHtml = results.innerHTML;
+    lastStatsText = stats.textContent;
   }
 
   function updateSelection() {
@@ -182,6 +191,8 @@
       } else {
         synthesisContent.textContent = "No synthesis available for this query.";
       }
+      // Snapshot the rendered summary so reopening restores it.
+      lastSynthesisHtml = synthesisContent.innerHTML;
     } catch (err) {
       if (err.name !== "AbortError") {
         synthesisContent.textContent = "Error generating summary.";
@@ -252,18 +263,40 @@
 
   // ── Open / Close ───────────────────────────────────────────
 
+  function isOpen() {
+    return modal && modal.style.display !== "none";
+  }
+
   function open() {
     ensureRefs();
     modal.style.display = "";
-    input.value = "";
-    results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
-    stats.textContent = "";
-    synthesizeBtn.style.display = "none";
-    synthesisArea.style.display = "none";
-    currentResults = [];
+
+    // Rehydrate the last session so reopening doesn't feel like starting over:
+    // restore the query, the results list, the stats, and the AI summary if any.
+    if (lastQuery) {
+      input.value = lastQuery;
+      if (lastResultsHtml) {
+        results.innerHTML = lastResultsHtml;
+        stats.textContent = lastStatsText;
+        synthesizeBtn.style.display = "";
+      }
+      if (lastSynthesisHtml) {
+        synthesisArea.style.display = "";
+        synthesisContent.innerHTML = lastSynthesisHtml;
+      }
+    } else {
+      results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
+      stats.textContent = "";
+      synthesizeBtn.style.display = "none";
+      synthesisArea.style.display = "none";
+    }
     selectedIndex = -1;
-    // Focus after paint so transition works
-    requestAnimationFrame(() => input.focus());
+    // Focus after paint so transition works; place caret at end of restored text.
+    requestAnimationFrame(() => {
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    });
   }
 
   function close() {
@@ -271,12 +304,36 @@
     modal.style.display = "none";
     if (abortController) abortController.abort();
     if (debounceTimer) clearTimeout(debounceTimer);
+    // Intentionally preserve query/results/synthesis state for the next open().
+  }
+
+  /** Deliberate reset of the input and all results — the Clear button. */
+  function clearSearch() {
+    ensureRefs();
+    if (abortController) abortController.abort();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    input.value = "";
+    lastQuery = "";
+    currentResults = [];
+    selectedIndex = -1;
+    lastResultsHtml = "";
+    lastStatsText = "";
+    lastSynthesisHtml = "";
+    results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
+    stats.textContent = "";
+    synthesizeBtn.style.display = "none";
+    synthesisArea.style.display = "none";
+    synthesisContent.textContent = "";
+    input.focus();
   }
 
   function closeSynthesis() {
     ensureRefs();
     synthesisArea.style.display = "none";
     synthesisContent.textContent = "";
+    // Drop the preserved summary too, so it doesn't reappear on reopen after the
+    // user explicitly dismissed it.
+    lastSynthesisHtml = "";
   }
 
   // ── Init ───────────────────────────────────────────────────
@@ -288,15 +345,18 @@
     input.addEventListener("input", onInput);
     input.addEventListener("keydown", onKeyDown);
 
-    // Global Ctrl+K / Cmd+K
+    // Global Ctrl+K / Cmd+K toggle, and Escape to close from anywhere in the modal.
     document.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        if (modal.style.display === "none") {
-          open();
-        } else {
+        if (isOpen()) {
           close();
+        } else {
+          open();
         }
+      } else if (e.key === "Escape" && isOpen()) {
+        e.preventDefault();
+        close();
       }
     });
 
@@ -315,6 +375,7 @@
   window.clefSearch = {
     open,
     close,
+    clear: clearSearch,
     closeSynthesis,
     synthesize: startSynthesis,
   };

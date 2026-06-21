@@ -46,6 +46,7 @@ module Provision =
             content TEXT NOT NULL,
             tags TEXT DEFAULT '',
             summary TEXT DEFAULT '',
+            published_at TEXT DEFAULT '',
             content_hash TEXT NOT NULL,
             indexed_at TEXT NOT NULL,
             vector_indexed INTEGER NOT NULL DEFAULT 0
