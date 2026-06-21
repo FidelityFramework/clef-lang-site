@@ -19,7 +19,7 @@ The driver for our Fidelity.Rx is that reactive programming patterns represent a
 
 Since this entry was originally published, work on [Fidelity.UI](/blog/fidelity-ui-model/) revealed a deeper structural truth: **signals and actors are the same abstraction**. A signal that notifies its subscribers when it changes is an actor that sends messages to its dependents. The dependency graph is the message routing topology. Batching is mailbox coalescing.
 
-This isomorphism resolved the question of whether Fidelity.Rx should exist as a separate library. The answer, informed by the [Alloy precedent](/blog/alloy-absorbed/), is that the concepts described here are real, but they decompose naturally into layers that already exist:
+This isomorphism resolved the question of whether Fidelity.Rx should exist as a separate library. The answer, informed by the Alloy precedent, is that the concepts described here are real, but they decompose naturally into layers that already exist:
 
 | Fidelity.Rx Concept | Architectural Home |
 |---------------------|-------------------|
@@ -826,7 +826,7 @@ let SearchView () =
 
 The multicast/unicast distinction is still present, but expressed through familiar signal vocabulary rather than explicit observable types. `createSignal` is multicast: a value broadcast to all subscribers with zero-allocation semantics. `createResource` is unicast: per-subscriber isolated state backed by Prospero's arena management. The coeffect analysis described earlier applies identically, and the Composer compiler recognizes these as codata patterns and optimizes accordingly.
 
-This resolution echoes the [Alloy absorption](/blog/alloy-absorbed/): the abstraction was real, but its natural expression was through existing architectural layers rather than a standalone library.
+This resolution echoes the Alloy absorption: the abstraction was real, but its natural expression was through existing architectural layers rather than a standalone library.
 
 ## The Architectural Synthesis
 

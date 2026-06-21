@@ -1498,7 +1498,7 @@ type VoiceAgentPipeline() =
 
 This architecture handles dense audio streams alongside sparse control messages, each on the appropriate transport, all encoding with BAREWire protocol. The audio path uses MoQ for its multiplexing and priority capabilities. The control path uses WebSocket because control messages are infrequent and latency-tolerant. Both paths remain compatible because the protocol layer is uniform; only transport selection differs.
 
-The pipeline also illustrates actor model benefits for AI workloads, a theme explored in [Actors Take Center Stage](/blog/actors-take-center-stage/). Each stage scales independently. If ASR becomes a bottleneck, spawn additional ASR actors and distribute incoming frames. If the LLM stage requires GPU acceleration, deploy that actor to hardware-equipped nodes while keeping other stages on standard compute. The actor boundaries create natural scaling points without requiring monolithic system redesign.
+The pipeline also illustrates actor model benefits for AI workloads, a theme we have explored elsewhere. Each stage scales independently. If ASR becomes a bottleneck, spawn additional ASR actors and distribute incoming frames. If the LLM stage requires GPU acceleration, deploy that actor to hardware-equipped nodes while keeping other stages on standard compute. The actor boundaries create natural scaling points without requiring monolithic system redesign.
 
 ## Conclusion
 

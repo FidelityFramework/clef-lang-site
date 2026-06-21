@@ -591,7 +591,7 @@ The native implementation can leverage MLIR's optimization passes. Simple signal
 
 ### Browser Target (Fable/Fidelity.CloudEdge)
 
-The browser target trades the native target's memory control for JavaScript's runtime semantics. Clef compiles through Fable to JavaScript, where we leverage the [SPEC stack](/blog/spec-stack/)[^1] (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) for deployment. SolidJS provides the reactive runtime, and its subscription-free signal model directly inspired our approach. Rather than reimplementing signal mechanics, we delegate to SolidJS's primitives through Partas.Solid's F# bindings:
+The browser target trades the native target's memory control for JavaScript's runtime semantics. Clef compiles through Fable to JavaScript, where we leverage the SPEC stack[^1] (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) for deployment. SolidJS provides the reactive runtime, and its subscription-free signal model directly inspired our approach. Rather than reimplementing signal mechanics, we delegate to SolidJS's primitives through Partas.Solid's F# bindings:
 
 ```fsharp
 // Fable implementation using SolidJS
@@ -1179,7 +1179,7 @@ Signals and actors reinforce each other. Actor boundaries provide cleanup semant
 
 Our framework's approach to reactivity follows a position we hold across the design: provide capabilities through composable primitives. Developers should not need to become experts in subscription lifecycle management to build reactive applications. They should be able to read values, derive computations, and rely on the system to handle the plumbing.
 
-BAREWire provides the memory substrate where signals and buffers coexist. The BARE protocol's binary encoding maps directly to memory layout, which aligns with our zero-copy goals. Our [solution to the byref problem](/docs/design/types/byref-resolved/) removes the defensive copying that would otherwise negate the benefits of reactive optimization. The [SPEC stack](/blog/spec-stack/) carries these patterns to the browser through SolidJS's signal implementation, while our Fidelity.CloudEdge library extends the reach to the edge, where Durable Objects and persistent WebSockets carry local reactive patterns into distributed coordination.
+BAREWire provides the memory substrate where signals and buffers coexist. The BARE protocol's binary encoding maps directly to memory layout, which aligns with our zero-copy goals. Our [solution to the byref problem](/docs/design/types/byref-resolved/) removes the defensive copying that would otherwise negate the benefits of reactive optimization. The SPEC stack carries these patterns to the browser through SolidJS's signal implementation, while our Fidelity.CloudEdge library extends the reach to the edge, where Durable Objects and persistent WebSockets carry local reactive patterns into distributed coordination.
 
 This is the direction we will keep building toward: a reactive system where data flows through dependency graphs without copying, where cleanup is deterministic, and where signals propagate from native code through edge infrastructure to browser UIs. There is implementation work ahead on every target named here, and we will report on it as the design takes shape.
 
@@ -1187,6 +1187,6 @@ This is the direction we will keep building toward: a reactive system where data
 
 *This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), [ByRef Resolved](/docs/design/types/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/fidelityrx-native-reactivity/).*
 
-[^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef. See [The SPEC Stack: A Proposal](/blog/spec-stack/) for the full architectural overview.
+[^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef.
 
-[^2]: Our Fidelity.CloudEdge library enables Clef deployment to Cloudflare's edge network through Fable compilation. For a deeper exploration of this integration, see [Leaner, Smarter AI Cloud Systems](/blog/leaner-smarter-ai-cloud-systems/).
+[^2]: Our Fidelity.CloudEdge library enables Clef deployment to Cloudflare's edge network through Fable compilation. For a deeper exploration of this integration, see the Fidelity.CloudEdge design.
