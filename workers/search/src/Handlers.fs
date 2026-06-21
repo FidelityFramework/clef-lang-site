@@ -169,28 +169,44 @@ module Handlers =
     let handleSynthesizeStream (request: Request) (env: WorkerEnv) (_ctx: ExecutionContext) : JS.Promise<Response> =
         promise {
             let! body = request.json<obj>()
-            let query: string = body?query |> unbox
-            let limit = validateLimit body?limit 5
+            let rawQuery: string = body?query |> unbox
+            // `limit` here is a salience ceiling, not a fixed count — the gate may
+            // return fewer. Cast the net wider than the legacy top-5 so genuine
+            // multi-section matches survive the gate.
+            let limit = validateLimit body?limit 8
 
-            match validateQuery query with
+            match validateQuery rawQuery with
             | Error msg ->
                 return jsonResponse {| error = msg |} 400
             | Ok query ->
 
-            // Hybrid search first
-            let! bm25Results = Search.bm25Search env.DB query (limit * 2) None
-            let! vectorResults = Search.vectorSearch env.AI env.VECTORIZE query (limit * 2)
+            // Hybrid search over a wide candidate pool, then fuse with provenance.
+            let candidatePool = max (limit * 3) 15
+            let! bm25Results = Search.bm25Search env.DB query candidatePool None
+            let! vectorResults = Search.vectorSearch env.AI env.VECTORIZE query candidatePool
             let bm25Ids = bm25Results |> Array.map (fun r -> r.id) |> Set.ofArray
             let! vectorHydrated = Search.hydrateVectorResults env.DB vectorResults bm25Ids
-            let fused = Search.reciprocalRankFusion bm25Results vectorResults vectorHydrated 60
-            let topResults = fused |> Array.truncate limit
+            let fusedCandidates = Search.fuseWithProvenance bm25Results vectorResults vectorHydrated 60
+
+            // Salience gate replaces the blind top-N truncate: drop loosely-related
+            // vector neighbors and results far below the top RRF score.
+            let selected = Search.selectSalient fusedCandidates limit
+            let topResults = selected |> Array.map (fun c -> c.result)
 
             if topResults.Length = 0 then
                 return jsonResponse {| error = "No results found for synthesis" |} 404
             else
 
-            // Build prompt and call Workers AI (non-streaming for short synthesis)
-            let prompt = Search.buildSynthesisPrompt query topResults
+            // Pull full section bodies (within a char budget) instead of 300-char
+            // snippets, so the model synthesizes from real content, not fragments.
+            let! full = Search.fetchFullContent env.DB topResults
+            let sections = full.sections
+
+            // Frame the prompt around the user's actual request: a question gets
+            // answered, a bare term gets described. Use the RAW query (not the
+            // FTS5-sanitized form) so "Tell me about X?" reaches the model intact.
+            let answerMode = Search.isQuestionOrRequest rawQuery
+            let prompt = Search.buildSynthesisPromptFull rawQuery answerMode sections
 
             let aiRequest = createObj [
                 "messages" ==> [|

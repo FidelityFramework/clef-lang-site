@@ -175,6 +175,17 @@ module Search =
                 })
         }
 
+    /// One fused candidate, carrying enough provenance for salience gating:
+    /// whether BM25 matched it lexically and the raw vector cosine if it was a
+    /// vector hit. The RRF score alone only encodes rank, not absolute relevance,
+    /// so the synthesis gate needs these signals to drop loosely-related neighbors.
+    type FusedCandidate = {
+        result: SearchResult
+        rrf: float
+        bm25Hit: bool
+        vectorScore: float option
+    }
+
     /// Reciprocal Rank Fusion to combine BM25 and vector results
     /// RRF(d) = sum( 1 / (k + rank_i(d)) ) for each ranking i
     let reciprocalRankFusion
@@ -217,6 +228,198 @@ module Search =
             match resultMap.TryGetValue(kv.Key) with
             | true, result -> Some { result with score = kv.Value }
             | false, _ -> None)
+
+    /// Fuse with RRF but keep provenance (BM25 hit + raw vector cosine) per result.
+    /// Mirrors reciprocalRankFusion's scoring; used only by the synthesis path,
+    /// which needs salience signals the plain fusion discards.
+    let fuseWithProvenance
+        (bm25Results: SearchResult array)
+        (vectorResults: (string * float) array)
+        (vectorHydrated: SearchResult array)
+        (k: int)
+        : FusedCandidate array =
+
+        let resultMap = System.Collections.Generic.Dictionary<string, SearchResult>()
+        for r in bm25Results do resultMap.[r.id] <- r
+        for r in vectorHydrated do
+            if not (resultMap.ContainsKey(r.id)) then resultMap.[r.id] <- r
+
+        let bm25Ids = bm25Results |> Array.map (fun r -> r.id) |> Set.ofArray
+        let vectorScoreMap = dict vectorResults
+
+        let rrfScores = System.Collections.Generic.Dictionary<string, float>()
+        bm25Results |> Array.iteri (fun rank r ->
+            rrfScores.[r.id] <- 1.0 / (float k + float (rank + 1)))
+        vectorResults |> Array.iteri (fun rank (id, _) ->
+            let score = 1.0 / (float k + float (rank + 1))
+            match rrfScores.TryGetValue(id) with
+            | true, existing -> rrfScores.[id] <- existing + score
+            | false, _ -> rrfScores.[id] <- score)
+
+        rrfScores
+        |> Seq.toArray
+        |> Array.sortByDescending (fun kv -> kv.Value)
+        |> Array.choose (fun kv ->
+            match resultMap.TryGetValue(kv.Key) with
+            | true, r ->
+                Some {
+                    result = { r with score = kv.Value }
+                    rrf = kv.Value
+                    bm25Hit = bm25Ids.Contains(kv.Key)
+                    vectorScore =
+                        match vectorScoreMap.TryGetValue(kv.Key) with
+                        | true, s -> Some s
+                        | false, _ -> None
+                }
+            | false, _ -> None)
+
+    /// Minimum cosine for a vector-only candidate (no lexical hit) to enter
+    /// synthesis. bge-base-en-v1.5 cosines run ~0.5-0.9 for on-topic neighbors;
+    /// loosely associated pages sit below this. Tuned conservatively.
+    let private vectorOnlyMinCosine = 0.62
+
+    /// Keep results by salience rather than a fixed top-N. Always keep the top
+    /// hit; keep the rest while their RRF stays within `dropRatio` of the top
+    /// score. A candidate that matched only via vector (no BM25 hit) must also
+    /// clear `vectorOnlyMinCosine` — this is what drops the "loosely related"
+    /// neighbors (e.g. UI/layout pages surfacing on a memory-architecture query).
+    let selectSalient (candidates: FusedCandidate array) (maxResults: int) : FusedCandidate array =
+        if candidates.Length = 0 then [||]
+        else
+            let dropRatio = 0.5
+            let topScore = candidates.[0].rrf
+            let cutoff = topScore * dropRatio
+            candidates
+            |> Array.mapi (fun i c -> (i, c))
+            |> Array.filter (fun (i, c) ->
+                let passesSalience = i = 0 || c.rrf >= cutoff
+                let passesVectorBar =
+                    c.bm25Hit ||
+                    (match c.vectorScore with
+                     | Some s -> s >= vectorOnlyMinCosine
+                     | None -> false)
+                passesSalience && passesVectorBar)
+            |> Array.map snd
+            |> Array.truncate maxResults
+
+    /// Fetch full section bodies for the selected results, ordered to match the
+    /// salience ranking, and assembled within a total character budget. glm-4.7-flash
+    /// has a 131k-token window, so the cap (~40k chars, ~10k tokens) is about latency
+    /// and cost, not context limits — full sections beat 300-char fragments while a
+    /// handful of large pages still can't blow up the prompt. Sections past the
+    /// budget are dropped (count returned for logging).
+    let fetchFullContent
+        (db: D1Database)
+        (selected: SearchResult array)
+        : JS.Promise<{| sections: (SearchResult * string) array; truncated: int |}> =
+        promise {
+            if selected.Length = 0 then
+                return {| sections = [||]; truncated = 0 |}
+            else
+
+            let ids = selected |> Array.map (fun r -> r.id)
+            let placeholders = ids |> Array.map (fun _ -> "?") |> String.concat ", "
+            let sql =
+                $"SELECT id, content FROM content_sections WHERE id IN ({placeholders})"
+            let stmt = db.prepare(sql)
+            let bound = stmt.bind(ids |> Array.map box)
+            let! result = bound.all<obj>()
+
+            let contentById = System.Collections.Generic.Dictionary<string, string>()
+            match result.results with
+            | Some rows ->
+                for row in rows do
+                    contentById.[string row?id] <- string row?content
+            | None -> ()
+
+            // Reassemble in the salience order of `selected`, applying the budget.
+            let charBudget = 40000
+            let kept = ResizeArray<SearchResult * string>()
+            let mutable used = 0
+            let mutable truncated = 0
+            for r in selected do
+                match contentById.TryGetValue(r.id) with
+                | true, body ->
+                    let bodyLen = body.Length
+                    if used + bodyLen <= charBudget then
+                        kept.Add((r, body))
+                        used <- used + bodyLen
+                    else
+                        // Take a partial slice if meaningful room remains, else drop.
+                        let room = charBudget - used
+                        if room >= 800 then
+                            kept.Add((r, body.Substring(0, room)))
+                            used <- charBudget
+                        truncated <- truncated + 1
+                | false, _ ->
+                    // No full body found; fall back to the snippet we already have.
+                    if used + r.snippet.Length <= charBudget then
+                        kept.Add((r, r.snippet))
+                        used <- used + r.snippet.Length
+            return {| sections = kept.ToArray(); truncated = truncated |}
+        }
+
+    /// Classify the user's input so the synthesis prompt frames its task correctly:
+    /// a bare term ("CXL") asks the model to describe what the corpus covers, while
+    /// a question or request ("Tell me about CXL") asks it to answer directly.
+    /// Heuristic only — no model call.
+    let isQuestionOrRequest (rawQuery: string) : bool =
+        let q = rawQuery.Trim().ToLowerInvariant()
+        if q = "" then false
+        elif q.Contains("?") then true
+        else
+            let starters =
+                [| "what"; "why"; "how"; "when"; "where"; "who"; "which"
+                   "is "; "are "; "can "; "does "; "do "; "should "; "could "
+                   "tell me"; "explain"; "describe"; "compare"; "summarize"
+                   "give me"; "show me"; "list "; "find " |]
+            let startsWithRequest = starters |> Array.exists (fun s -> q.StartsWith(s))
+            // Multi-word natural-language input also reads as a request, not a term.
+            let wordCount = q.Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries).Length
+            startsWithRequest || wordCount >= 6
+
+    /// Build synthesis prompt from full-content sections grouped under their pages.
+    /// `request` is the raw user input; `answerMode` switches the task verb between
+    /// answering a question and describing what the corpus covers.
+    let buildSynthesisPromptFull
+        (request: string)
+        (answerMode: bool)
+        (sections: (SearchResult * string) array)
+        : string =
+        let evidence =
+            sections
+            |> Array.mapi (fun i (r, body) ->
+                let heading =
+                    if String.IsNullOrWhiteSpace(r.sectionTitle) then r.pageTitle
+                    else $"{r.pageTitle} — {r.sectionTitle}"
+                $"--- EXCERPT {i + 1}: {heading} ---\n{body}")
+            |> String.concat "\n\n"
+
+        let task =
+            if answerMode then
+                "Answer the USER REQUEST directly, using only the SOURCE EXCERPTS as evidence. Lead with the answer. Let the length follow the evidence: a sharp question backed by one strong excerpt deserves two or three sentences, a broad request backed by several may warrant a short paragraph. Do not pad."
+            else
+                "The USER REQUEST is a topic, not a question. In two to four sentences, describe what the SOURCE EXCERPTS say about it and how the relevant pieces connect. Do not pad beyond what the excerpts support."
+
+        $"""You are a documentation assistant for the Clef programming language and the Fidelity framework (clef-lang.com).
+
+Clef is a hard-forked F# compiler that targets native code through MLIR for CPUs, GPUs, NPUs, FPGAs, and spatial accelerators. The Fidelity framework around it spans dimensional type systems, deterministic memory management, coeffect-based escape analysis, design-time verification through Z3, categorical foundations (sheaf theory, cellular sheaves on the compilation pipeline), Hoare logic at multiple tiers, probabilistic relational reasoning for cryptography, posit arithmetic, forward-mode automatic differentiation, neuromorphic targets, and physics-informed compilation. Subject matter that sounds purely mathematical (sheaves, functors, parametricity, free theorems, group actions, Hoare triples, lattice cryptography, geometric algebra) is first-class here, not off-topic background.
+
+USER REQUEST:
+"{request}"
+
+SOURCE EXCERPTS:
+
+{evidence}
+
+TASK:
+{task}
+
+Rules:
+- Use only information present in the SOURCE EXCERPTS. Do not invent details, names, or claims.
+- If an excerpt does not bear on the USER REQUEST, ignore it. Do not force unrelated excerpts into the answer.
+- Quote specific named concepts and connect excerpts where the connection is visible in the text.
+- Do not preface with phrases like "the search results describe", "based on the excerpts", or "the documentation says". Deliver the synthesis directly."""
 
     /// Build synthesis prompt from ranked search results (for smart-search worker)
     let buildSynthesisPrompt (query: string) (results: SearchResult array) : string =
