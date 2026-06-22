@@ -202,8 +202,20 @@
 
   // ── Event handlers ─────────────────────────────────────────
 
+  /** Hide and forget the AI summary — it belongs to the previous query. */
+  function dropSynthesis() {
+    synthesisArea.style.display = "none";
+    synthesisContent.textContent = "";
+    lastSynthesisHtml = "";
+  }
+
   function onInput() {
     const query = input.value.trim();
+
+    // A new search phrase invalidates any summary from the prior query.
+    if (query !== lastQuery && lastSynthesisHtml) {
+      dropSynthesis();
+    }
     lastQuery = query;
 
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -318,22 +330,17 @@
     selectedIndex = -1;
     lastResultsHtml = "";
     lastStatsText = "";
-    lastSynthesisHtml = "";
     results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
     stats.textContent = "";
     synthesizeBtn.style.display = "none";
-    synthesisArea.style.display = "none";
-    synthesisContent.textContent = "";
+    dropSynthesis();
     input.focus();
   }
 
+  // User dismissed the summary with the × — drop it so it doesn't return on reopen.
   function closeSynthesis() {
     ensureRefs();
-    synthesisArea.style.display = "none";
-    synthesisContent.textContent = "";
-    // Drop the preserved summary too, so it doesn't reappear on reopen after the
-    // user explicitly dismissed it.
-    lastSynthesisHtml = "";
+    dropSynthesis();
   }
 
   // ── Init ───────────────────────────────────────────────────
