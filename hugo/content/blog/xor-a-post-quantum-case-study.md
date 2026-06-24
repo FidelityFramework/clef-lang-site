@@ -357,7 +357,6 @@ This case study illustrates a methodology that extends beyond random number gene
 4. **Compile down to the hardware**: Managed runtimes abstract hardware away. Native compilation embraces the realities in the substrate. The difference compounds across millions of operations.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph RT["What Executes at Runtime"]
         subgraph MANAGED["Managed Runtime"]
