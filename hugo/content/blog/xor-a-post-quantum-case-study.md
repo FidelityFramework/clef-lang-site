@@ -129,7 +129,6 @@ This mathematical relationship guides the hardware design: instead of one entrop
 Extending from two channels to four provides exponential bias reduction through a parallel tree structure:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph "Hardware Entropy Layer"
         Z1[Avalanche Diode 1] --> S1[Sample CH0]
@@ -190,7 +189,6 @@ The XOR tree maps naturally to parallel computation. The two Level 1 XOR operati
 This parallelism extends to the sampling itself. Reading four ADC channels is logically parallel: four independent physical processes producing four independent values. Even if hardware constraints serialize the actual reads, expressing the logical parallelism enables compilers to optimize scheduling and prepares for hardware that supports true parallel sampling.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant CH0 as Channel 0
     participant CH1 as Channel 1
