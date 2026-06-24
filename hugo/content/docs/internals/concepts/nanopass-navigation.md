@@ -47,7 +47,6 @@ Each pass operates on a well-defined intermediate representation and produces ou
 Composer applies this decomposition at every compilation tier:
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
 graph TD
     A[Clef Source] --> B[CCS Phase 0: Parse]
     B --> C[CCS Phase 1: Structural Construction]
@@ -88,7 +87,6 @@ The migration from LLVM types to portable MLIR required rethinking type represen
 ### Before: LLVM Dialect Hard-Coded
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
 graph LR
     A[Alex Witnesses] --> B["LLVM Types: !llvm.struct, !llvm.ptr"]
     B --> C[mlir-opt: BLOCKED for non-x86 targets]
@@ -108,7 +106,6 @@ String types mapped to `!llvm.struct<(ptr, i64)>`. Memory operations used `llvm.
 ### After: Portable MLIR Dialects
 
 ```mermaid
-%%{init: {'theme':'neutral'}}%%
 graph LR
     A[Alex Witnesses] --> B[Portable MLIR: memref, arith, func, index, scf]
     B --> C[mlir-opt: Target-Specific Lowering]

@@ -42,7 +42,6 @@ The academic literature presents two approaches to closure representation. Under
 The traditional approach, dating to early Lisp implementations and formalized in Cardelli's 1983 work, uses linked environment chains. Each closure contains a pointer to its immediately enclosing environment, which may itself contain pointers to outer environments.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph Closure["Closure"]
         CP1[code_ptr]
@@ -68,7 +67,6 @@ The problem emerges in the presence of garbage collection, or more precisely, in
 The alternative, developed by Appel and Shao in their 1992 work on Standard ML of New Jersey and refined in the MLKit compiler project, is the flat closure. All captured variables are copied directly into the closure structure itself.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph FlatClosure["Flat Closure"]
         direction LR

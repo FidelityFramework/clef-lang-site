@@ -327,7 +327,6 @@ Posit arithmetic compiles through the same pipeline as every other Fidelity type
 At the simplest level, Clef would see Posit32 as a struct containing a uint32, and posit operations as functions that manipulate integers. The Clef expression `Posit32.add a b` would become a PSG application node, which after inline expansion might decompose into bit manipulation operations:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph SRC["Clef Source"]
         FS["Posit32.add a b"]
@@ -533,7 +532,6 @@ On AVX-512 targets, this maps to `vplzcntd`. The posit regime extraction that se
 If Clef were to support `Vector512<'T>` as a primitive type, the compilation path might look like:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph SRC["Clef Source"]
         FS["Posit32x16.add a b"]
@@ -570,7 +568,6 @@ The CPU and SIMD paths above share a common limitation: they execute posit arith
 The compilation path from Clef to FPGA hardware runs through CIRCT, the Circuit IR Compilers and Tools project built on MLIR. What makes this feasible is that Composer's existing MLIR output (`func`, `arith`, `memref`, `scf`) is almost exactly what CIRCT's dataflow transformation passes expect as input. The fork between CPU and FPGA targets happens *after* Alex emits MLIR, not before:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph SRC["Clef Source"]
         FS["Posit32.fma q a b"]

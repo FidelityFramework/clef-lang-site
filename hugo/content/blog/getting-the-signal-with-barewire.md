@@ -126,7 +126,6 @@ The `currentObserver` global variable serves as the tracking context. Signal rea
 Cleanup happens automatically through re-execution. When an effect runs again, it first clears its previous dependencies, then re-establishes them based on which signals it actually reads during the new execution. If a conditional branch changes which signals matter, the dependency graph updates accordingly. No explicit unsubscription required.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Execution["Effect Execution"]
         A[Effect starts] --> B[Clear previous dependencies]
@@ -527,7 +526,6 @@ type ReactiveActor<'State, 'Message>(initialState: 'State) =
 Dependent computations in other actors receive invalidation notifications and must handle the terminated state appropriately. From a design perspective, this would seem to align with Erlang's "let it crash" philosophy: explicit lifecycle boundaries as opposed to distributed garbage collection for cross-actor references. We expect to give this area considerable attention as the implementation work proceeds.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Actor1["Actor A (Arena A)"]
         S1[State Signal]
@@ -831,7 +829,6 @@ let createReactiveChannel<'TOut, 'TIn>
 The `driver` and `transport` are injected, allowing the same application code to run against different targets. For Fidelity.CloudEdge browser deployment, the driver wraps SolidJS signals and `Uint8Array` buffers; the transport wraps WebSocket. For Fidelity.CloudEdge edge deployment, the transport extends to leverage Durable Objects for persistent connections and coordinated state. For Fidelity native, the driver uses native signals and arena-allocated buffers; the transport might use Unix sockets or shared memory.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Application["Application Code"]
         A[Reactive Channel]
@@ -1033,7 +1030,6 @@ Looking ahead, Cloudflare's Media-over-QUIC relay infrastructure opens possibili
 While this integration remains forward-looking, the architecture anticipates it. The `BareTransport` abstraction can accommodate QUIC-based implementations alongside WebSocket transports. The signal model's separation of reactive semantics from transport mechanics means applications written today can adopt QUIC transport tomorrow without architectural changes.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Clients["Connected Clients"]
         C1[Browser A]

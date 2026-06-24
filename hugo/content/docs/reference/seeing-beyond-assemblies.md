@@ -26,7 +26,6 @@ This assembly model offered several advantages that have sustained the .NET ecos
 However, this binary-centric approach also introduced limitations that have become increasingly apparent as computing environments diversify:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph DotNetAssembly["Binary Assembly Model"]
         direction TB
@@ -55,7 +54,6 @@ When Rust emerged in the 2010s, rather than following the prevalent binary distr
 Rust's Cargo package manager re-embraced source-based distribution as a foundational principle. This wasn't a regression but rather a thoughtful reconsideration of how modern languages should approach packaging:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph RustCargo["Source-Based Package Model"]
         direction TB
@@ -89,7 +87,6 @@ The Fidelity Framework represents our vision for bringing Clef beyond its .NET o
 ClefPak, our package management system, draws inspiration from Rust's Cargo while extending it with concepts from Clef's functional and concurrent paradigm and adapting it to Fidelity's unique compilation model:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph FidelityFramework["Fidelity Compilation Pipeline"]
         direction TB
@@ -126,7 +123,6 @@ This approach creates a clean separation between code and its platform-specific 
 Fidelity and ClefPak are designed from the ground up to target a diverse range of computing environments, from microcontrollers with kilobytes of memory to server clusters with vast resources. This requires more sophisticated platform adaptation than simply targeting different operating systems with relatively similar compute and memory profiles:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph ComputingSpectrum["Fidelity Target Spectrum"]
         direction TB
@@ -154,7 +150,6 @@ flowchart LR
 Unlike Rust which compiles directly to LLVM IR, Fidelity's compilation pipeline leverages MLIR's multi-level representation to progressively transform Clef code through specialized dialects to machine code. This additional layer of abstraction provides much greater flexibility for targeting diverse hardware environments than direct LLVM compilation would allow:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph MLIRDialectLowering["MLIR Dialect Lowering"]
         direction TB

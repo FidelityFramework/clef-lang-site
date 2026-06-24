@@ -162,7 +162,6 @@ subgraph "Memory Integration"
     MIXED -.->|Unified Memory| BARE
 end
 
-style PHG fill:#f2aa72,stroke:#4f2607,stroke-width:3px
 ```
 
 ## Real-World Scenario: Financial Risk with Verified Computation

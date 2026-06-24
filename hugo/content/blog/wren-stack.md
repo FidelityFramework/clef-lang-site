@@ -35,7 +35,6 @@ The realization that unlocks the WREN Stack is simple: use the system's WebView 
 The distinction matters. In Electron, your application bundles an entire Chromium browser: hundreds of megabytes of code that duplicates what the operating system already provides. A WREN Stack application uses the *system's* WebView, already installed, already maintained, already sharing memory with other applications that use it. The binary footprint drops from hundreds of megabytes to single digits. And while the WebView does run in a separate process (all modern WebViews use multi-process architectures for security and stability[^webview-processes]), the communication between your native logic and the UI uses BAREWire over localhost WebSockets, the same efficient binary protocol pattern that works across any IPC boundary.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
 
     subgraph WREN["WREN Stack Application"]
@@ -98,7 +97,6 @@ Composer's build process for WREN Stack projects coordinates two parallel tracks
 The tracks merge in what we call the "weld." Composer reads the bundled `index.html` produced by Vite and embeds it as a string literal in the native code. This isn't a file read at runtime; it's a compile-time inclusion, like `#include` in C but for complete web assets. Composer places the string in the `.rodata` section alongside other static data. The linker produces a single executable containing both the native logic and the embedded UI.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Build["The Weld: Dual-Track Build"]
         direction LR
@@ -148,7 +146,6 @@ Your Partas.Solid components run in the WebView's JavaScript context, updating t
 The result is the same 60fps responsiveness, but achieved through clean async IPC rather than shared-memory threading. Progress bars update smoothly. Cancel buttons respond instantly. The user never sees the spinning beachball of death because the WebSocket's async nature prevents either side from waiting on the other.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 sequenceDiagram
     participant UI as WebView Process
     participant WS as localhost WebSocket

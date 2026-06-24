@@ -22,7 +22,6 @@ When we designed Alloy, we followed a well-established pattern. Just as .NET has
 The architecture seemed clean:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     A[Application Code] --> B[Alloy Library]
     B --> C[CCS Type Checking]
@@ -106,7 +105,6 @@ We were maintaining two layers where one would suffice.
 The absorption of Alloy into CCS follows from this realization. Rather than having:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     A["Application<br>Console.WriteLine('Hello')"] --> B["Alloy.Console.WriteLine →<br>Alloy.Primitives.writeStr → Sys.write"]
     B --> C[CCS type-checks the chain]
@@ -116,7 +114,6 @@ flowchart TD
 our design collapses the chain to:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     A["Application<br>Console.writeln 'Hello'"] --> B[CCS recognizes Console.writeln as intrinsic]
     B --> C[Alex generates MLIR directly]
@@ -291,7 +288,6 @@ We did not invent these features. They come from F#, the lineage Clef descends f
 The post-absorption architecture we are building toward removes the middle layer:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph App["Application Code"]
         A1["let result = Console.writeln 'Hello'"]

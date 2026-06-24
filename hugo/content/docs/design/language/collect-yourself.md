@@ -38,7 +38,6 @@ This is lambda calculus in disguise, and it follows from how the operations are 
 In a [previous exploration of graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/), we discussed how our Composer compiler analyzes code to discover hidden parallelism. Operations that do not interfere with each other can be assigned the same "color" and executed simultaneously.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph "Collection Pipeline"
         A[filter] --> B[map]
@@ -79,7 +78,6 @@ var doubled = list.Select(x => x * 2).ToList();
 ```
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph ".NET Collection"
         A[User Code] --> B[CLR Runtime]
@@ -104,7 +102,6 @@ let doubled: Vec<_> = vec.iter().map(|x| x * 2).collect();
 ```
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph "Rust Collection"
         A[User Code] --> B[Borrow Checker]
@@ -131,7 +128,6 @@ for i, v := range slice {
 ```
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph "Go Collection"
         A[User Code] --> B[Go Runtime]
@@ -154,7 +150,6 @@ let doubled = data |> List.map (fun x -> x * 2)
 ```
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph "Fidelity Collection"
         A[User Code] --> B[PSG Purity Analysis]
@@ -182,7 +177,6 @@ let m3 = Map.add "c" 3 m1
 How many tree nodes were allocated? Not three complete trees. The maps share structure:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph "Structural Sharing"
         M2["m2: [b:2]"] --> M1["m1: [a:1]"]
@@ -248,7 +242,6 @@ vector.store %result_vec, %result[%i] : vector<8xi32>
 Eight elements processed per instruction, from pure operations the compiler vectorizes on its own, with the source free of template metaprogramming or explicit SIMD intrinsics.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph "Scalar Execution"
         S1[Process 1] --> S2[Process 2] --> S3[Process 3] --> S4[Process 4]
@@ -275,7 +268,6 @@ let doubled = List.map (fun x -> x * 2) data
 PSGSaturation doesn't pull in the entire `List` module. It decomposes the `map` operation into its algorithmic essence:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph "PSGSaturation Decomposition"
         A[List.map call] --> B[Iteration structure]
@@ -329,7 +321,6 @@ let process = async {
 When the Interaction Net (INet) dialect is in the picture, pure regions will compile to parallel reduction networks. This is the mathematical dual of the lambda calculus itself, executing in parallel wherever data dependencies permit.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph "Effect Boundaries"
         E1[fetch - DCont] --> P1[pure computation]

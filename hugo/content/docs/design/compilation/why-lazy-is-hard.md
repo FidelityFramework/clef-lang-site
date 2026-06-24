@@ -43,7 +43,6 @@ This description reveals three distinct concerns:
 **Memoization state**: For thunks that memoize, the structure must hold both the computation and its eventual result. The representation changes from "unevaluated code with captures" to "evaluated value."
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Before["Before Force"]
         direction TB
@@ -139,7 +138,6 @@ An alternative would pass captured values as function parameters. The thunk woul
 Instead, Fidelity's thunks have uniform signature `(ptr<Lazy>) -> T`. The thunk receives a pointer to its containing structure and extracts its own captures at known offsets. The forcing code is simple: extract the code pointer, call it with the struct pointer, store the result.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Force["Lazy.force Implementation"]
         CHECK[Check computed flag]

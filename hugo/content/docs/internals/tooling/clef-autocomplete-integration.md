@@ -30,7 +30,6 @@ This balance between familiarity and innovation guides every tooling decision in
 Before diving into our integration approach, it's worth understanding how F# language services actually work. The architecture involves several layers, each with distinct responsibilities:
 
 ```mermaid
-%%{init: {'theme': 'neutral'} }%%
 graph TD
     subgraph "Editor Layer"
         VSCODE[VS Code]
@@ -217,7 +216,6 @@ Creating Fidelity project...
 For compiler development work, nvim offers a particularly powerful set of options: multiple synchronized windows showing different stages of the compilation pipeline. A typical Fidelity development session might display Clef source, MLIR intermediate representation, and LLVM IR side by side, each with appropriate language intelligence:
 
 ```mermaid
-%%{init: {'theme': 'neutral'} }%%
 graph LR
     subgraph "nvim Development Environment"
         FS["Clef Source<br/>(.clef)<br/><br/>FSAC-Fidelity"]

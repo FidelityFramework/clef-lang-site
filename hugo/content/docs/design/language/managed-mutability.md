@@ -33,7 +33,6 @@ let hello() =
 Developers see a simple function call. The compiler sees something very different. The PSG (Program Semantic Graph) for `Console.readln()` reveals 47 SSA nodes with 3 levels of nested control flow:
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': { 'fontSize': '14px'}}}%%
     graph TD
         %% Main Outer Loop Scope
         subgraph LoopScope [ ]

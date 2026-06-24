@@ -157,7 +157,6 @@ The MLIR inliner can now:
 At each stage of compilation, we have **more** information:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     A[CCS PSG] -->|Types + Semantics| B[MLIR High-Level]
     B -->|Program Structure| C[MLIR Optimized]
@@ -172,7 +171,6 @@ flowchart LR
         E
     end
 
-    style C fill:#f9f9f9,stroke:#333,stroke-width:2px
 ```
 
 **Early inline = optimization with minimal context.**
@@ -351,7 +349,6 @@ The `inline` keyword forces the compiler to make optimization decisions prematur
 MLIR's architecture deliberately separates these concerns:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph "Separation of Concerns"
         A[CCS: Type Safety + Semantics] --> B[PSG with Real Functions]
@@ -364,8 +361,6 @@ flowchart TD
     G[Inline Keyword] -.->|"Conflates"| A
     G -.->|"With"| D
 
-    style D fill:#f9f9f9,stroke:#333,stroke-width:2px
-    style G fill:#ffe6e6,stroke:#cc0000,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 At each stage of this pipeline, the intermediate representation accumulates information that makes optimization decisions progressively better. When CCS constructs the Program Semantic Graph, it's focused on preserving Clef's semantics - currying, pattern matching, type inference. It has no idea whether you're targeting an x86_64 server, an ARM mobile device, or a GPU compute kernel. Making inlining decisions at this stage means committing to a strategy before knowing the battlefield.

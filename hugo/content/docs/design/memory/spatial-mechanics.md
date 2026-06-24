@@ -150,7 +150,6 @@ Most code operates at the coeffect and dimensional layers, with refinement reser
 Andrew Appel's 1998 observation that **SSA is functional programming**[^1] enables a crucial capability: the same source code can lower to either control-flow (CPU) or dataflow (FPGA/CGRA) representations.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     Source["Clef Source<br/>(functional, declarative)"]
     PSG["Program Semantic Graph<br/>(SSA-equivalent)"]
@@ -223,7 +222,6 @@ The quire's 512 bits eliminate rounding error during accumulation. The final con
 The multi-level intermediate representation (MLIR) provides the compilation substrate for heterogeneous targeting:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     Source["Clef Source + Dimensions"]
     PSG["Program Semantic Graph (PSG)<br/>Coeffects + Dimensional Types attached"]

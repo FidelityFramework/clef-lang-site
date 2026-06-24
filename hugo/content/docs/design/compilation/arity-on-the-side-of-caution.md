@@ -49,7 +49,6 @@ The expression `greet prefix` is a partial application. In .NET, this silently a
 .NET's approach is to defer arity decisions to the runtime:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     A[F# Source] --> B[IL Generation]
     B --> C[CLR JIT]
@@ -195,7 +194,6 @@ In .NET, closure allocation is implicit and its cost is hard to predict. Our Fid
 MLIR's SSA form is already functional in shape: values are immutable and scope follows dominance. Clef's computational model maps directly to SSA without reconstruction. Explicit arity tracking preserves this alignment:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph "Clef Semantics"
         A[Curried Functions]

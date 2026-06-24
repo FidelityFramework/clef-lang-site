@@ -141,9 +141,6 @@ graph TB
     ALEX --> MLIR[MLIR → LLVM IR]
     MLIR --> BIN[Native Binary]
 
-    style P3 fill:#9ff,stroke:#333,stroke-width:4px
-    style P4 fill:#fff0e6,stroke:#333,stroke-width:2px
-    style ALEX fill:#e6ffe6,stroke:#333,stroke-width:2px
 ```
 
 The critical boundary is Phase 3 - reachability analysis. Everything before Phase 3 operates on the full library graph (including all CCS intrinsics, FSharp.Core, and user code). Everything from Phase 3 onward operates on the *narrowed* graph - only the code actually reachable from entry points. This scope narrowing is what makes expensive operations like SRTP resolution and type overlay practical.

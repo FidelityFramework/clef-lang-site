@@ -57,7 +57,6 @@ This is fundamentally different from a list. A list `[0..9]` evaluates immediate
 The C# community calls this pattern "iterators" and compiles them to state machines with extensive runtime support. James and Sabry formalized the connection to delimited continuations, showing that `yield` is fundamentally a control operator.[^1] The computation captures its continuation, returns a value, and later resumes from where it left off.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Source["Clef Source"]
         SEQ["seq { while cond do yield x }"]
@@ -122,7 +121,6 @@ let multiplesOf (factor: int) (count: int) = seq {
 The distinction affects struct layout. Captures fill indices 3 through 3+n; internal state fills indices 3+n onward. Both live in the same flat structure, but they serve different purposes and have different initialization timing.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph SeqStruct["Seq Struct for multiplesOf 3 5"]
         STATE["state: i32<br/>[0]"]
@@ -143,7 +141,6 @@ The heart of sequence implementation is the `MoveNext` function. Each call advan
 For a while-based sequence, MoveNext implements a two-state model:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     S0["State 0: Initial"]
     INIT["Initialize mutable variables"]
@@ -232,7 +229,6 @@ let evenNumbersUpTo max = seq {
 Here the yield is guarded by a condition. The state machine must evaluate the condition and either yield or continue to the next iteration without yielding. The control flow becomes:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     S0["^s0: Initialize n=0"]
     S1["^s1: n <- n + 1"]

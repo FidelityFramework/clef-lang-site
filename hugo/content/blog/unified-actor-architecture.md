@@ -582,7 +582,6 @@ This uniformity has practical benefits for debugging and cross-system communicat
 Actor systems naturally form graph structures as actors spawn children and establish peer relationships. The tell-first architecture, combined with persistent WebSocket connections in Conclave, produces topologies where connections remain open for the lifetime of the relationship.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph "Conclave Actor System"
         SUP[Supervisor<br/>Prospero]
@@ -1228,7 +1227,6 @@ For actor systems with dense message flows, these differences compound. A superv
 MoQ relay becomes the backbone for connecting actor systems across deployment boundaries:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 graph TB
     subgraph "Fidelity System"
         F_SUP[Prospero<br/>Supervisor]

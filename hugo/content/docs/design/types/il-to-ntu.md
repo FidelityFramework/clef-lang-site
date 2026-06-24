@@ -50,7 +50,6 @@ The affected code included the core type inference machinery:
 The IL import assumption was not a surface-level configuration. It was a load-bearing wall.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph FCS["F# Compiler Services"]
         IL[IL Import Infrastructure] --> TC[Type Checker]
@@ -208,7 +207,6 @@ let platform: Expr<PlatformDescriptor> = <@
 The Clef quotation syntax (`<@ ... @>`) creates a structured representation of the expression that can be inspected and transformed. CCS receives these quotations as parameters and attaches them to the semantic graph. Alex, the code generation component, witnesses these quotations when producing MLIR, resolving `NTUint` to `i64` on 64-bit platforms and `i32` on 32-bit platforms.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph Source["Clef Source"]
         INT[int]
@@ -375,7 +373,6 @@ This created three levels of developer experience:
 Most application code operates at Level 1. Library code providing platform bindings typically operates at Level 2. Hardware interface code operates at Level 3.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     subgraph Level1["Level 1: Default"]
         L1_INT[int] --> L1_CCS[CCS: NTUint]
@@ -572,7 +569,6 @@ Alex uses this metadata to emit direct calls to the resolved implementation. No 
 The complete compilation pipeline demonstrates how NTU integrates with other Fidelity components:
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart TD
     subgraph Input["Input"]
         FS[Clef Source Files]

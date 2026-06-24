@@ -151,7 +151,6 @@ The traversal itself follows post-order: visit children before witnessing the pa
 When the traversal encounters a `VarRef` node, a reference to a variable, it doesn't just note the reference. It follows the edge to the definition and ensures that definition has been witnessed first. This is semantic edge following, a technique with roots in the MLKit compiler's work on Standard ML.
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph main["main"]
         M1["1. Enter"]

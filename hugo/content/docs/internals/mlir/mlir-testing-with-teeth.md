@@ -206,11 +206,6 @@ graph TB
     C --> D
     D --> E
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:3px
-    style B fill:#fff3e0,stroke:#e65100,stroke-width:3px
-    style C fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
-    style D fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
-    style E fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
 ```
 
 ### Phase 1: Independent Parsing
