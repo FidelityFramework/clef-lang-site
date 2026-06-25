@@ -220,7 +220,18 @@ module Handlers =
                 "temperature" ==> 0.3
             ]
 
-            let! aiResult = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
+            // Workers AI inference intermittently stalls and never resolves. Without a
+            // bound here the whole request hangs until the client aborts. Race the call
+            // against a timeout so a stalled inference fails fast with a clean error
+            // instead of holding the connection open.
+            let aiCall = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
+            let timeout : JS.Promise<obj> =
+                emitJsExpr () "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('AI_TIMEOUT')); }, 20000); })"
+            let! aiResult =
+                Promise.race [ aiCall; timeout ]
+                |> Promise.catch (fun (e: exn) ->
+                    if e.Message.Contains("AI_TIMEOUT") then null
+                    else raise e)
 
             // GLM-4.7-Flash returns OpenAI chat completion format:
             //   { choices: [{ message: { content, reasoning_content? } }] }
