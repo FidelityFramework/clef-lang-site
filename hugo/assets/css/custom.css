@@ -176,6 +176,25 @@ code, pre, kbd {
   border-color: #374151;
 }
 
+/* ── Navbar search trigger: orange border + orange "Smart Search..." placeholder ── */
+.hextra-search-input {
+  border: 1px solid #fb923c;
+}
+.hextra-search-input:focus {
+  border-color: #ea580c;
+}
+/* Override Tailwind's gray placeholder utility (high-specificity, needs !important) */
+.hextra-search-input::placeholder {
+  color: #ea580c !important;
+  opacity: 1;
+}
+:is(.dark) .hextra-search-input {
+  border-color: #ea580c;
+}
+:is(.dark) .hextra-search-input::placeholder {
+  color: #fb923c !important;
+}
+
 /* ── Header with search input ── */
 .clef-search-header {
   display: flex;
@@ -221,6 +240,52 @@ code, pre, kbd {
   border-radius: 0.25rem;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+/* Disabled header buttons (Share/Clear with no query): grayed and inert. */
+.clef-search-btn:disabled,
+.clef-search-btn:disabled:hover {
+  color: #9ca3af;
+  border-color: #d1d5db;
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+:is(.dark) .clef-search-btn:disabled,
+:is(.dark) .clef-search-btn:disabled:hover {
+  color: #6b7280;
+  border-color: #374151;
+}
+
+/* Share — primary positive action, blue outline */
+.clef-search-btn-share {
+  color: #1d4ed8;
+  border-color: #60a5fa;
+  background: transparent;
+}
+.clef-search-btn-share:hover {
+  color: #1e3a8a;
+  border-color: #2563eb;
+  background: rgba(96, 165, 250, 0.1);
+}
+.clef-search-btn-share.clef-share-copied {
+  color: #047857;
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+}
+:is(.dark) .clef-search-btn-share {
+  color: #93c5fd;
+  border-color: #2563eb;
+}
+:is(.dark) .clef-search-btn-share:hover {
+  color: #bfdbfe;
+  border-color: #60a5fa;
+  background: rgba(37, 99, 235, 0.2);
+}
+:is(.dark) .clef-search-btn-share.clef-share-copied {
+  color: #6ee7b7;
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
 }
 
 /* Clear — destructive of the modal context, orange outline */
@@ -456,9 +521,21 @@ code, pre, kbd {
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
-.clef-synthesize-btn:hover {
+.clef-synthesize-btn:hover:not(:disabled) {
   background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
   color: #fff;
+}
+/* Grayed and inert until there are results to summarize. */
+.clef-synthesize-btn:disabled {
+  color: #9ca3af;
+  border-color: #d1d5db;
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+:is(.dark) .clef-synthesize-btn:disabled {
+  color: #6b7280;
+  border-color: #374151;
 }
 
 

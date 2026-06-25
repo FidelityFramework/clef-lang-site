@@ -10,7 +10,7 @@
   const MAX_RESULTS = 20;
 
   // DOM refs (resolved lazily)
-  let modal, input, results, stats, synthesizeBtn, synthesisArea, synthesisContent;
+  let modal, input, results, stats, synthesizeBtn, synthesisArea, synthesisContent, shareBtn, clearBtn;
 
   function $(id) { return document.getElementById(id); }
 
@@ -23,6 +23,20 @@
     synthesizeBtn = $("clef-search-synthesize-btn");
     synthesisArea = $("clef-search-synthesis");
     synthesisContent = $("clef-synthesis-content");
+    shareBtn = $("clef-search-share-btn");
+    clearBtn = $("clef-search-clear-btn");
+  }
+
+  /** Keep the stateful action buttons in sync with the modal's state:
+   *  - Share / Clear: active only when the search box has text.
+   *  - Summarize with AI: active only when there are search results to summarize.
+   *  Exit is always active. */
+  function updateActionButtons() {
+    const hasText = !!(input && input.value.trim());
+    const hasResults = currentResults.length > 0;
+    if (shareBtn) shareBtn.disabled = !hasText;
+    if (clearBtn) clearBtn.disabled = !hasText;
+    if (synthesizeBtn) synthesizeBtn.disabled = !hasResults;
   }
 
   // ── State ──────────────────────────────────────────────────
@@ -127,7 +141,7 @@
     if (currentResults.length === 0) {
       results.innerHTML = `<div class="clef-search-empty">No results found</div>`;
       stats.textContent = "";
-      synthesizeBtn.style.display = "none";
+      updateActionButtons();
       return;
     }
 
@@ -145,7 +159,7 @@
     results.innerHTML = items;
     const ms = data.searchTimeMs != null ? ` in ${data.searchTimeMs}ms` : "";
     stats.textContent = `${currentResults.length} result${currentResults.length !== 1 ? "s" : ""}${ms}`;
-    synthesizeBtn.style.display = "";
+    updateActionButtons();
 
     // Snapshot for rehydration on reopen.
     lastResultsHtml = results.innerHTML;
@@ -166,16 +180,23 @@
 
   async function startSynthesis() {
     const query = input.value.trim();
-    if (!query) return;
+    // No-op without a query or results — the button is disabled in this state,
+    // but the summarize=yes link path calls this directly, so guard here too.
+    if (!query || currentResults.length === 0) return;
 
     synthesisArea.style.display = "";
     synthesisContent.innerHTML = '<span class="clef-synthesis-spinner"></span> Generating summary...';
+
+    // Cap the wait so a slow worker doesn't spin the spinner forever.
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
 
     try {
       const resp = await fetch(`${SEARCH_URL}/synthesize-stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, limit: 5 }),
+        signal: controller.signal,
       });
 
       if (!resp.ok) {
@@ -194,9 +215,13 @@
       // Snapshot the rendered summary so reopening restores it.
       lastSynthesisHtml = synthesisContent.innerHTML;
     } catch (err) {
-      if (err.name !== "AbortError") {
+      if (err.name === "AbortError") {
+        synthesisContent.textContent = "Summary timed out. Try again.";
+      } else {
         synthesisContent.textContent = "Error generating summary.";
       }
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }
 
@@ -207,6 +232,23 @@
     synthesisArea.style.display = "none";
     synthesisContent.textContent = "";
     lastSynthesisHtml = "";
+  }
+
+  /** Run a search immediately (no debounce) and render. Shared by the input
+   *  handler's debounced path and the shared-link hydration path. */
+  async function runSearch(query) {
+    try {
+      results.innerHTML = `<div class="clef-search-loading">Searching…</div>`;
+      const data = await fetchSearch(query);
+      // Only render if the box still holds this query (guards against races).
+      if (input.value.trim() === query) {
+        renderResults(data);
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        results.innerHTML = `<div class="clef-search-empty">Search error - try again</div>`;
+      }
+    }
   }
 
   function onInput() {
@@ -223,26 +265,15 @@
     if (!query) {
       results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
       stats.textContent = "";
-      synthesizeBtn.style.display = "none";
       currentResults = [];
       selectedIndex = -1;
+      updateActionButtons();
       return;
     }
 
-    debounceTimer = setTimeout(async () => {
-      try {
-        results.innerHTML = `<div class="clef-search-loading">Searching\u2026</div>`;
-        const data = await fetchSearch(query);
-        // Only render if query hasn't changed during fetch
-        if (input.value.trim() === query) {
-          renderResults(data);
-        }
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          results.innerHTML = `<div class="clef-search-empty">Search error - try again</div>`;
-        }
-      }
-    }, DEBOUNCE_MS);
+    // Share/Clear become active as soon as there's text; Summarize waits for results.
+    updateActionButtons();
+    debounceTimer = setTimeout(() => runSearch(query), DEBOUNCE_MS);
   }
 
   function onKeyDown(e) {
@@ -290,7 +321,6 @@
       if (lastResultsHtml) {
         results.innerHTML = lastResultsHtml;
         stats.textContent = lastStatsText;
-        synthesizeBtn.style.display = "";
       }
       if (lastSynthesisHtml) {
         synthesisArea.style.display = "";
@@ -299,9 +329,9 @@
     } else {
       results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
       stats.textContent = "";
-      synthesizeBtn.style.display = "none";
       synthesisArea.style.display = "none";
     }
+    updateActionButtons();
     selectedIndex = -1;
     // Focus after paint so transition works; place caret at end of restored text.
     requestAnimationFrame(() => {
@@ -332,8 +362,8 @@
     lastStatsText = "";
     results.innerHTML = `<div class="clef-search-empty">Type to search across documentation, design docs, and blog posts</div>`;
     stats.textContent = "";
-    synthesizeBtn.style.display = "none";
     dropSynthesis();
+    updateActionButtons();
     input.focus();
   }
 
@@ -341,6 +371,107 @@
   function closeSynthesis() {
     ensureRefs();
     dropSynthesis();
+  }
+
+  // ── Share ──────────────────────────────────────────────────
+
+  const SHARE_PARAM = "q";
+  const SUMMARIZE_PARAM = "summarize";
+
+  /** Build a shareable absolute URL carrying the query as ?q=, and ?summarize=yes
+   *  when the recipient should also get the AI summary on arrival. */
+  function buildShareUrl(query, withSummary) {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set(SHARE_PARAM, query);
+    if (withSummary) url.searchParams.set(SUMMARIZE_PARAM, "yes");
+    return url.toString();
+  }
+
+  /** Is the AI summary currently displayed? Drives whether a shared link carries
+   *  summarize=yes — the share intent follows the user's current modal state. */
+  function isSynthesisShown() {
+    return synthesisArea && synthesisArea.style.display !== "none" && !!lastSynthesisHtml;
+  }
+
+  /** Copy a shareable link to the current query, with brief button feedback. */
+  async function shareSearch() {
+    ensureRefs();
+    const query = input.value.trim();
+    if (!query) return;
+
+    const withSummary = isSynthesisShown();
+
+    const btn = $("clef-search-share-btn");
+    const shareUrl = buildShareUrl(query, withSummary);
+
+    const confirm = (label) => {
+      if (!btn) return;
+      const original = btn.dataset.label || btn.textContent;
+      btn.dataset.label = original;
+      btn.textContent = label;
+      btn.classList.add("clef-share-copied");
+      window.setTimeout(() => {
+        btn.textContent = btn.dataset.label;
+        btn.classList.remove("clef-share-copied");
+      }, 1500);
+    };
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      confirm("Copied!");
+    } catch (err) {
+      // Clipboard API unavailable (insecure context / older browser): fall back
+      // to a hidden textarea + execCommand so the feature still works.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = shareUrl;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        confirm("Copied!");
+      } catch (_) {
+        confirm("Copy failed");
+      }
+    }
+  }
+
+  /** On load, if the URL carries ?q=, open the modal, run that search, then strip
+   *  the param so the address bar stays clean (the link itself still works). */
+  async function hydrateFromUrl() {
+    let query = null;
+    let wantSummary = false;
+    try {
+      const params = new URL(window.location.href).searchParams;
+      query = params.get(SHARE_PARAM);
+      wantSummary = params.get(SUMMARIZE_PARAM) === "yes";
+    } catch (_) {
+      return;
+    }
+    if (!query) return;
+    query = query.trim();
+    if (!query) return;
+
+    // Remove ?q= (and ?summarize=) from the address bar without a navigation or
+    // history entry; the link itself still works.
+    try {
+      const cleaned = new URL(window.location.href);
+      cleaned.searchParams.delete(SHARE_PARAM);
+      cleaned.searchParams.delete(SUMMARIZE_PARAM);
+      window.history.replaceState({}, "", cleaned.pathname + cleaned.hash);
+    } catch (_) { /* non-fatal: leave the param if replaceState is unavailable */ }
+
+    open();
+    input.value = query;
+    lastQuery = query;
+    updateActionButtons();
+    await runSearch(query);
+    // A summarize=yes link runs the AI summary once results are in.
+    if (wantSummary) startSynthesis();
   }
 
   // ── Init ───────────────────────────────────────────────────
@@ -375,6 +506,9 @@
         // Default anchor navigation will handle it
       }
     });
+
+    // A shared ?q= link opens and runs the search on arrival.
+    hydrateFromUrl();
   }
 
   // ── Public API ─────────────────────────────────────────────
@@ -383,6 +517,7 @@
     open,
     close,
     clear: clearSearch,
+    share: shareSearch,
     closeSynthesis,
     synthesize: startSynthesis,
   };

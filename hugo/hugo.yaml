@@ -72,12 +72,11 @@ menu:
       weight: 4
       params:
         type: search
-    - identifier: github
-      name: Fidelity Framework GitHub Repository
-      url: https://github.com/FidelityFramework
+    - identifier: theme-toggle
+      name: Theme Toggle
       weight: 5
       params:
-        icon: github
+        type: theme-toggle
 
 params:
   description: "Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems."
@@ -93,7 +92,7 @@ params:
 
   theme:
     default: system
-    displayToggle: true
+    displayToggle: false
 
   editURL:
     enable: false

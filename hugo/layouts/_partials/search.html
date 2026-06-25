@@ -1,7 +1,7 @@
 {{- $placeholder := (T "searchPlaceholder") | default "Search..." -}}
 
 {{/* Search trigger in navbar — opens the modal */}}
-<div class="hextra-search-wrapper hx:relative hx:md:w-64">
+<div class="hextra-search-wrapper hx:relative hx:md:w-80">
   <div class="hx:relative hx:flex hx:items-center hx:text-gray-900 hx:contrast-more:text-gray-800 hx:dark:text-gray-300 hx:contrast-more:dark:text-gray-300">
     <input
       placeholder="{{ $placeholder }}"
@@ -36,7 +36,8 @@
         placeholder="Search documentation..."
         autocomplete="off"
       />
-      <button type="button" class="clef-search-btn clef-search-btn-clear" onclick="clefSearch.clear()" title="Clear search" aria-label="Clear search">Clear</button>
+      <button type="button" id="clef-search-share-btn" class="clef-search-btn clef-search-btn-share" onclick="clefSearch.share()" title="Copy a shareable link to this search" aria-label="Share search">Share</button>
+      <button type="button" id="clef-search-clear-btn" class="clef-search-btn clef-search-btn-clear" onclick="clefSearch.clear()" title="Clear search" aria-label="Clear search">Clear</button>
       <button type="button" class="clef-search-btn clef-search-btn-exit" onclick="clefSearch.close()" title="Close (Esc)" aria-label="Close search">Exit</button>
     </div>
 
@@ -55,8 +56,8 @@
     </div>
 
     <div class="clef-search-footer">
-      <button id="clef-search-synthesize-btn" class="clef-synthesize-btn" style="display: none;"
-        onclick="clefSearch.synthesize()">
+      <button id="clef-search-synthesize-btn" class="clef-synthesize-btn"
+        onclick="clefSearch.synthesize()" disabled>
         Summarize with AI
       </button>
       <span class="clef-search-stats" id="clef-search-stats"></span>

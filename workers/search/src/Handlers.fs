@@ -216,7 +216,7 @@ module Handlers =
                     ]
                     createObj [ "role" ==> "user"; "content" ==> prompt ]
                 |]
-                "max_tokens" ==> 2048
+                "max_tokens" ==> 768
                 "temperature" ==> 0.3
             ]
 
