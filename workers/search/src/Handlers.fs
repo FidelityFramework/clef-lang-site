@@ -218,6 +218,12 @@ module Handlers =
                 |]
                 "max_tokens" ==> 2048
                 "temperature" ==> 0.3
+                // glm-4.7-flash is a reasoning model and emits chain-of-thought by
+                // default, which adds latency and risks leaking the <think> scratchpad
+                // when generation is cut off mid-thought. A search-result summary needs
+                // no deliberation, so disable thinking at the source. Verified against
+                // the Cloudflare model input schema (chat_template_kwargs.enable_thinking).
+                "chat_template_kwargs" ==> createObj [ "enable_thinking" ==> false ]
             ]
 
             // Workers AI inference intermittently stalls and never resolves. Without a
