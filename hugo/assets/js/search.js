@@ -51,6 +51,9 @@
   let lastResultsHtml = "";
   let lastStatsText = "";
   let lastSynthesisHtml = "";
+  // True only when the panel holds a genuine, successful summary (not an error or
+  // timeout message). Gates whether a shared link carries summarize=yes.
+  let lastSynthesisOk = false;
 
   // ── Helpers ────────────────────────────────────────────────
 
@@ -186,10 +189,15 @@
 
     synthesisArea.style.display = "";
     synthesisContent.innerHTML = '<span class="clef-synthesis-spinner"></span> Generating summary...';
+    // Any prior success is invalidated until this attempt resolves successfully.
+    lastSynthesisOk = false;
+    lastSynthesisHtml = "";
 
-    // Cap the wait so a slow worker doesn't spin the spinner forever.
+    // Outer cap so the spinner can't spin forever. Set above the worker's own
+    // ~28s AI-timeout so the worker's clean "unavailable" error wins the race and
+    // the user sees a real message rather than a raw fetch abort.
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 35000);
 
     try {
       const resp = await fetch(`${SEARCH_URL}/synthesize-stream`, {
@@ -207,13 +215,14 @@
       const data = await resp.json();
       if (data.synthesis) {
         synthesisContent.innerHTML = renderMarkdown(data.synthesis);
+        // Only a real summary is snapshotted and marked shareable.
+        lastSynthesisHtml = synthesisContent.innerHTML;
+        lastSynthesisOk = true;
       } else if (data.error) {
         synthesisContent.textContent = data.error;
       } else {
         synthesisContent.textContent = "No synthesis available for this query.";
       }
-      // Snapshot the rendered summary so reopening restores it.
-      lastSynthesisHtml = synthesisContent.innerHTML;
     } catch (err) {
       if (err.name === "AbortError") {
         synthesisContent.textContent = "Summary timed out. Try again.";
@@ -232,6 +241,7 @@
     synthesisArea.style.display = "none";
     synthesisContent.textContent = "";
     lastSynthesisHtml = "";
+    lastSynthesisOk = false;
   }
 
   /** Run a search immediately (no debounce) and render. Shared by the input
@@ -389,10 +399,14 @@
     return url.toString();
   }
 
-  /** Is the AI summary currently displayed? Drives whether a shared link carries
-   *  summarize=yes — the share intent follows the user's current modal state. */
+  /** Is a SUCCESSFUL AI summary currently displayed? Drives whether a shared link
+   *  carries summarize=yes. Only a genuine summary that is still on screen qualifies;
+   *  an error/timeout message or a dismissed panel does not, so a shared link never
+   *  propagates a failed-summary intent. */
   function isSynthesisShown() {
-    return synthesisArea && synthesisArea.style.display !== "none" && !!lastSynthesisHtml;
+    return lastSynthesisOk
+      && synthesisArea && synthesisArea.style.display !== "none"
+      && !!lastSynthesisHtml;
   }
 
   /** Copy a shareable link to the current query, with brief button feedback. */

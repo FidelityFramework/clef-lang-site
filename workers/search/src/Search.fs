@@ -335,11 +335,10 @@ module Search =
 
     /// Fetch full section bodies for the selected results, ordered to match the
     /// salience ranking, and assembled within a total character budget. glm-4.7-flash
-    /// has a 131k-token window, so the cap is about latency, not context limits:
-    /// generation time scales with prompt size, and ~16k chars (~4k tokens) is ample
-    /// context for a short synthesis while keeping the round-trip responsive. Full
-    /// sections still beat the old 300-char fragments. Sections past the budget are
-    /// dropped (count returned for logging).
+    /// has a 131k-token window, so ~40k chars (~10k tokens) is well within context;
+    /// the budget just bounds prompt size so a handful of large pages can't balloon
+    /// the request. Full sections beat the old 300-char fragments. Sections past the
+    /// budget are dropped (count returned for logging).
     let fetchFullContent
         (db: D1Database)
         (selected: SearchResult array)
@@ -365,7 +364,7 @@ module Search =
             | None -> ()
 
             // Reassemble in the salience order of `selected`, applying the budget.
-            let charBudget = 16000
+            let charBudget = 40000
             let kept = ResizeArray<SearchResult * string>()
             let mutable used = 0
             let mutable truncated = 0

@@ -216,17 +216,19 @@ module Handlers =
                     ]
                     createObj [ "role" ==> "user"; "content" ==> prompt ]
                 |]
-                "max_tokens" ==> 768
+                "max_tokens" ==> 2048
                 "temperature" ==> 0.3
             ]
 
             // Workers AI inference intermittently stalls and never resolves. Without a
             // bound here the whole request hangs until the client aborts. Race the call
             // against a timeout so a stalled inference fails fast with a clean error
-            // instead of holding the connection open.
+            // instead of holding the connection open. The threshold sits above a slow
+            // but genuine response (observed up to ~26s) so it only trips on real
+            // stalls, and below the client's 30s cap so the client gets a clean body.
             let aiCall = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
             let timeout : JS.Promise<obj> =
-                emitJsExpr () "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('AI_TIMEOUT')); }, 20000); })"
+                emitJsExpr () "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('AI_TIMEOUT')); }, 28000); })"
             let! aiResult =
                 Promise.race [ aiCall; timeout ]
                 |> Promise.catch (fun (e: exn) ->
