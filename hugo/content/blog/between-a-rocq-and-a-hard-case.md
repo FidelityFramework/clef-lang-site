@@ -1,6 +1,6 @@
 ---
-title: "Between Rocq & a Hard Case"
-linkTitle: "Between Rocq & a Hard Case"
+title: "Between Rocq & A Hard Case"
+linkTitle: "Between Rocq & A Hard Case"
 description: "How automated proofs keep the framework's highest tier available while also keeping off the everyday path"
 date: 2026-06-26T09:00:00-04:00
 authors: ["Houston Haynes"]
