@@ -2,7 +2,6 @@
 title: "ClefPak: Source-Based Package Management"
 linkTitle: "ClefPak"
 description: "Adapting Rust's Cargo Distribution Model for Multi-Platform Clef Compilation"
-weight: 20
 date: 2025-03-06
 authors: ["Houston Haynes"]
 tags: ["Design", "Innovation", "Architecture"]

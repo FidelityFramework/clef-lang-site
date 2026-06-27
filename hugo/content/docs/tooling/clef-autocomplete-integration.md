@@ -168,7 +168,7 @@ This architecture keeps FSAC simple while leveraging the full power of the ClefP
 
 ## Editor Integration
 
-With FSAC extended to understand `.fidproj` files, editor integration becomes a matter of configuration rather than code. At least in the initial stages for those using VS Code with Ionide, developers would point to our custom FSAC that they would have built locally and placed in a convenient path:
+With the project loader extended to understand `.fidproj` files, editor integration becomes a matter of configuration rather than code. At least in the initial stages for those using VS Code with Ionide, developers would point to the CAC build they would have produced locally and placed in a convenient path:
 
 ```json
 {
@@ -219,7 +219,7 @@ For compiler development work, nvim offers a particularly powerful set of option
 ```mermaid
 graph LR
     subgraph "nvim Development Environment"
-        FS["Clef Source<br/>(.clef)<br/><br/>FSAC-Fidelity"]
+        FS["Clef Source<br/>(.clef)<br/><br/>CAC"]
         MLIR["MLIR<br/>(.mlir)<br/><br/>mlir-lsp-server"]
         LLVM["LLVM IR<br/>(.ll)<br/><br/>clangd"]
     end
@@ -229,7 +229,7 @@ graph LR
 ```
 
 Each pane runs its own LSP:
-- **Clef source**: FSAC-Fidelity provides IntelliSense and type information
+- **Clef source**: CAC (Clef AutoComplete) provides IntelliSense and type information
 - **MLIR**: The `mlir-lsp-server` from LLVM provides dialect-aware completions
 - **LLVM IR**: clangd offers syntax awareness and navigation
 
@@ -282,5 +282,7 @@ The approach we've outlined here reflects a deliberate balance. We're not trying
 The `.fidproj` format signals to developers that they're working with something different from traditional .NET. The TOML syntax is cleaner and more focused to Fidelity's purposes than MSBuild's XML might be. While MSBuild understands platform targeting for .NET's supported runtimes, it pales in comparison to the breadth of targets available through LLVM and other MLIR back ends. The goal is to ensure when developers open these files in their editor, IntelliSense works, errors appear inline, and go-to-definition navigates correctly.
 
 This is the innovation budget well spent: change what must change, preserve what should remain familiar. The result is a development experience that respects both the novelty of native Clef compilation and the productivity developers have come to expect from the robust family of modern language tools F# has enjoyed for years.
+
+Meeting developers in the editors they already use is one half of the approach. The other is [Atelier](/docs/tooling/atelier-the-fidelity-workshop/), the environment we are building for developers who want the framework's full design-time surface gathered into one place. The two share a philosophy: extend what is familiar, and own what direct control makes worth owning.
 
 As the Fidelity Framework matures from experimental compiler to practical platform, this tooling foundation becomes increasingly critical. By investing in seamless editor integration and native "project cracking" with the fiproj format, we're ensuring that the power of native compilation comes with the comfort of familiar tools.

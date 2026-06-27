@@ -54,10 +54,10 @@ Ionide doesn't just provide syntax highlighting and autocomplete. It's an ecosys
 
 Clef requires parallel infrastructure:
 - **CCS** (Clef Compiler Services) - pure compiler, no analyzers
-- **FSNAC** (FsNativeAutoComplete) - LSP server that consumes CCS output
+- **CAC** (Clef AutoComplete) - LSP server that consumes CCS output
 - **Composer** - AOT compiler (Clef → MLIR → LLVM → native binary)
 - **`.fidproj`** - TOML-based project manifests
-- **Lattice Analyzers** - NuGet package with analyzers that plug into FSNAC
+- **Lattice Analyzers** - NuGet package with analyzers that plug into CAC
 - **Native Bindings** - MLIR dialect integration, not BCL
 
 Attempting to merge these concerns into Ionide would create a maintenance nightmare: feature flags everywhere, dual type systems, bifurcated build paths. 
@@ -80,7 +80,7 @@ To avoid potential confusion, we re-labeled the extant Clef tooling ecosystem fr
 - **Activates On**: `.fidproj`, `.fsnx`, `.fsproj`, `.fsni`, `.fidsln`
 - **Config Namespace**: `lattice.fsharp.*`
 
-Built with Fable (F# → JavaScript), just like Ionide. Understands both .NET F# (via FsAutoComplete) and Clef (via FSNAC). You can use Ionide and Lattice side-by-side, they have different extension IDs and don't conflict.
+Built with Fable (F# → JavaScript), just like Ionide. Understands both .NET F# (via FsAutoComplete) and Clef (via CAC). You can use Ionide and Lattice side-by-side, they have different extension IDs and don't conflict.
 
 ### 2. [lattice-analyzers](https://github.com/FidelityFramework/lattice-analyzers)
 **Custom Analyzers for Clef**
@@ -97,7 +97,7 @@ Analyzers that understand native type semantics. For example, warning when you t
 - **Lua Module**: `require('lattice')`
 - **Install Path**: `FidelityFramework/lattice-vim` (via vim-plug, packer, lazy.nvim)
 
-For developers who prefer modal editing. Connects to FSNAC via LSP protocol, provides syntax highlighting for `.fidproj` and `.fsnx` files.
+For developers who prefer modal editing. Connects to CAC via LSP protocol, provides syntax highlighting for `.fidproj` and `.fsnx` files.
 
 ### 4. [lattice-vscode-helpers](https://github.com/FidelityFramework/lattice-vscode-helpers)
 **Fable Bindings for VSCode API**
