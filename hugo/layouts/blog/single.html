@@ -41,8 +41,18 @@
             {{- end -}}
           {{- end -}}
 
-          {{- /* Read time, from Hugo's built-in word count. */ -}}
-          {{- with .ReadingTime }}<span class="hx:mx-1">·</span><span class="hx:mr-1">{{ . }} min read</span>{{ end -}}
+          {{- /* Read time over prose only: strip fenced code/diagram/readout blocks
+                  and inline code before counting, so diagram-heavy posts are not
+                  billed for tokens a reader scans rather than reads. */ -}}
+          {{- $prose := .RawContent -}}
+          {{- $prose = replaceRE "(?s)```.*?```" " " $prose -}}
+          {{- $prose = replaceRE "(?s)~~~.*?~~~" " " $prose -}}
+          {{- $prose = replaceRE "`[^`]*`" " " $prose -}}
+          {{- $prose = replaceRE "(?s)\\$\\$.*?\\$\\$" " " $prose -}}
+          {{- $words := len (split (trim $prose " \n\t") " ") -}}
+          {{- $mins := math.Ceil (div (float $words) 212.0) -}}
+          {{- if lt $mins 1.0 }}{{ $mins = 1.0 }}{{ end -}}
+          {{- with $mins }}<span class="hx:mx-1">·</span><span class="hx:mr-1">{{ . | int }} min read</span>{{ end -}}
 
           {{- /* Tags, reusing the index card chip style. */ -}}
           {{- with .Params.tags }}
