@@ -1,10 +1,10 @@
 ---
 title: "Seeing Beyond Assemblies"
 linkTitle: "Beyond Assemblies"
-description: "How ClefPak Adapts Rust's Package Management to Fidelity"
+description: "How .Net and other hosted runtime environments artificially constrain developer optionality"
 date: 2021-09-25T16:59:54+06:00
 authors: ["Houston Haynes"]
-tags: ["Systems"]
+tags: ["Systems", "Compilation"]
 params:
   originally_published: 2021-09-25
   original_url: "https://speakez.tech/blog/seeing-beyond-assemblies/"
@@ -29,7 +29,7 @@ However, this binary-centric approach also introduced limitations that have beco
 flowchart LR
     subgraph DotNetAssembly["Binary Assembly Model"]
         direction TB
-        Source["Source<br>Code"] --> Compiler["C#/Clef<br>Compiler"]
+        Source["Source<br>Code"] --> Compiler["C#/F#<br>Compiler"]
         Compiler --> Assembly["Binary<br>Assembly"]
         Assembly --> Runtime["CLR<br>Runtime"]
         Runtime --> JIT["JIT<br>Compilation"]
@@ -90,9 +90,9 @@ ClefPak, our package management system, draws inspiration from Rust's Cargo whil
 flowchart TD
     subgraph FidelityFramework["Fidelity Compilation Pipeline"]
         direction TB
-        ClefSource["Clef Source<br>Code"] --> CCS["Clef Compiler<br>Service"]
-        CCS --> PureAST["Pure<br>AST"]
-        PureAST --> MLIRGen["AST-to-MLIR<br>Transformation"]
+        ClefSource["Clef Source<br>Code"] --> CCS["Clef Compiler<br>Services"]
+        CCS --> PSG["Program Semantic<br>Graph"]
+        PSG --> MLIRGen["Graph-to-MLIR<br>Lowering"]
         MLIRGen --> MLIR["High-level<br>MLIR"]
         MLIR --> LoweringSteps["Dialect<br>Lowering"]
         LoweringSteps --> LLVMIR["LLVM<br>IR"]
@@ -147,24 +147,23 @@ flowchart LR
 
 ### 3. Progressive Dialect Lowering via MLIR
 
-Unlike Rust which compiles directly to LLVM IR, Fidelity's compilation pipeline leverages MLIR's multi-level representation to progressively transform Clef code through specialized dialects to machine code. This additional layer of abstraction provides much greater flexibility for targeting diverse hardware environments than direct LLVM compilation would allow:
+Where Rust compiles to LLVM IR directly, our Fidelity pipeline is designed to lower Clef through MLIR's multi-level representation, descending from a high-level domain form toward machine code one dialect at a time. That extra layer is meant to give us room to target diverse hardware that a direct LLVM path would not:
 
 ```mermaid
 flowchart TD
     subgraph MLIRDialectLowering["MLIR Dialect Lowering"]
         direction TB
-        HighLevel["Clef High-level<br>Dialect"] --> Functional["Functional<br>Dialect"]
-        Functional --> DataFlow["Dataflow<br>Dialect"]
-        DataFlow --> Standard["Standard<br>Dialect"]
-        Standard --> LLVM["LLVM<br>Dialect"]
+        HighLevel["High-level<br>Domain Dialect"] --> Mid["Mid-level<br>Structured Dialect"]
+        Mid --> Target["Target<br>Dialect"]
+        Target --> LLVM["LLVM<br>Dialect"]
     end
 ```
 
-This integration with MLIR allows for sophisticated analysis and optimization at multiple levels of abstraction, unlocking optimizations that wouldn't be possible in a more traditional compilation model. The multi-level approach also enables Fidelity to target non-LLVM backends where appropriate, such as specialized DSPs, FPGAs, or AI accelerators that may have their own compilation toolchains.
+Lowering one dialect at a time is meant to let analysis and optimization happen at the level where each is cheapest to state, rather than reconstructing high-level intent from LLVM IR after the fact. The multi-level approach is also what lets the pipeline target non-LLVM back ends where the hardware calls for it, such as DSPs, FPGAs, or accelerators that carry their own toolchains.
 
 ### 4. BAREWire: Binary Interlock Memory Management
 
-At the heart of Fidelity's approach to memory lies BAREWire, often referred to as "binary interlock" - a cornerstone innovation of the framework that represents a fundamentally different philosophy to memory safety compared to Rust's borrow checker:
+Our approach to memory at this stage centers on BAREWire, which we called "binary interlock" at the time. We were after a different starting point for memory safety than Rust's borrow checker takes:
 
 ```fsharp
 // Example of BAREWire's flexible memory management
@@ -183,19 +182,15 @@ let serverMemory =
         MemoryConfig.base'
 ```
 
-Where Rust's borrow checker enforces a single, pervasive ownership model that becomes the organizing principle of program design, BAREWire offers a progressive spectrum of memory management strategies that adapt to different contexts:
+Rust's borrow checker settles on one ownership model and makes it the organizing principle of program design, a deliberate choice that gives Rust its guarantees. Our aim with BAREWire was a spectrum of memory strategies chosen by context instead:
 
 1. **Resource-Constrained Environments**: Static allocation with zero-copy operations for predictable memory usage
 2. **Mid-Range Devices**: Region-based memory with isolated heaps, providing safety without global tracking
 3. **Server Systems**: Actor model with message-passing semantics for scalable concurrent systems
 
-This approach acknowledges a fundamental reality: different computing environments have different memory requirements. BAREWire allows developers to focus on their problem domain first and apply appropriate memory management strategies as needed, rather than forcing them to structure their entire program around memory ownership rules.
+The premise is that different computing environments carry different memory requirements, and a developer should be able to lead with the problem domain and choose a strategy to fit it. The intent was for memory safety to fall out of the architecture rather than become the thing every program is organized around, so a developer writes idiomatic Clef and the safety model meets the target instead of the reverse.
 
-The result is a system where memory safety emerges as a feature of the architecture rather than as its central organizing principle. This brings significant benefits to developer experience - programmers can express their intent directly in idiomatic Clef code without constantly wrestling with a rigid ownership system that may not align with Clef's functional and concurrent paradigm or their specific problem domain. BAREWire achieves this balance through a combination of compile-time analysis, type-level constraints, and runtime mechanisms that are selected based on the target environment - providing memory safety that adapts to the computing context rather than demanding adaptation from the developer.
-
-When integrated within the Fidelity compilation pipeline, BAREWire's approach truly shines. By providing explicit memory layouts and safety constraints at the Clef level, it transforms what would normally be a complex analysis problem for MLIR and LLVM into a straightforward mapping exercise. This pre-optimization of memory concerns allows the compiler to focus on generating the most efficient code possible for each target platform, rather than spending cycles reconstructing memory layout information that was present in the source code but lost during compilation.
-
-The result is a system that preserves all the critical type safety guarantees of a well-managed memory model while enabling aggressive compile-time optimizations tailored to each target platform's unique characteristics. This represents a fundamental shift in how memory safety and performance coexist - not as competing concerns that require constant trade-offs, but as complementary aspects of a unified compilation strategy that delivers both without compromise.
+The design also means to carry its weight inside the compilation pipeline. By stating memory layout and safety constraints at the Clef level, the pipeline is meant to receive that information directly rather than reconstruct it from LLVM IR after the source has already lost it. The aim is a model that keeps the type-safety guarantees while leaving the compiler free to optimize for each target's characteristics, so safety and performance are settled together rather than traded against each other.
 
 ## An Architecture Built for Purpose
 
