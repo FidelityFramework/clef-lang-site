@@ -124,13 +124,6 @@ Fidelity and ClefPak are designed from the ground up to target a diverse range o
 
 ```mermaid
 flowchart LR
-    subgraph ComputingSpectrum["Fidelity Target Spectrum"]
-        direction TB
-        Embedded["Embedded<br>Microcontrollers"] --- Mobile["Mobile<br>Devices"]
-        Mobile --- Desktop["Desktop<br>Applications"]
-        Desktop --- Server["Server<br>Systems"]
-        Server --- AI["AI<br>Accelerators"]
-    end
 
     subgraph AdaptationStrategies["Platform Adaptation"]
         direction TB
@@ -140,6 +133,13 @@ flowchart LR
         HardwareVectors["Hardware<br>Vector Operations"] --- ARMNeon["ARM<br>NEON"]
         ARMNeon --- AVX["Intel<br>AVX"]
         AVX --- TensorCore["NVIDIA<br>Tensor Cores"]
+    end
+    subgraph ComputingSpectrum["Fidelity Target Spectrum"]
+        direction TB
+        Embedded["Embedded<br>Microcontrollers"] --- Mobile["Mobile<br>Devices"]
+        Mobile --- Desktop["Desktop<br>Applications"]
+        Desktop --- Server["Server<br>Systems"]
+        Server --- AI["AI<br>Accelerators"]
     end
 
     ComputingSpectrum -.- AdaptationStrategies
