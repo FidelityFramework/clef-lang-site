@@ -1,7 +1,7 @@
 ---
 title: "Seeing Beyond Assemblies"
 linkTitle: "Beyond Assemblies"
-description: "How .Net and other hosted runtime environments artificially constrain developer optionality"
+description: "How .NET and other hosted runtime environments artificially constrain modern systems options"
 date: 2021-09-25T16:59:54+06:00
 authors: ["Houston Haynes"]
 tags: ["Systems", "Compilation"]
