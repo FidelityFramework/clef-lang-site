@@ -46,7 +46,7 @@ Haskell pioneered this model, demonstrating how it expresses infinite data struc
 
 ### Spatial: The Dataflow Pipeline
 
-The third model treats streaming as physical data movement through processing stages. Data flows from producer to consumer through explicit channels. Each stage processes elements as they arrive, with bounded buffering between stages.
+The third model treats streaming as physical data movement through processing stages. Data flows from producer to consumer through explicit channels. Each stage processes elements as they arrive, with bounded buffering between stages. The cost of running such a pipeline on a CPU instead, where the stages collapse onto one instruction stream, is what [flow loss analysis](/docs/design/compilation/flow-loss-analysis/) quantifies as a delta the graph exposes directly.
 
 \[
 \text{Memory}_{spatial} = \sum_{i=1}^{n} \text{buffer}(stage_i) \ll |D| \times \text{sizeof}(T)

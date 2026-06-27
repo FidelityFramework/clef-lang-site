@@ -107,6 +107,8 @@ The unit of analysis is the region, classified by its effect and data dependency
 
 The flat map-and-filter query is the case that least needs interaction nets. Dense data parallelism falls out as the rectangular, degenerate case and is handled by the tensor path. Interaction nets earn their keep on the irregular reductions where the rewrite shape is not known until the data arrives.
 
+Because the independent side carries an ideal parallel reading and the CPU lowering serializes it, the gap between the two is itself a figure the graph makes available. [Flow loss analysis](/docs/design/compilation/flow-loss-analysis/) is what reads that gap, quantifying how much of a region's data-flow parallelism a control-flow target gives up.
+
 ### Sequential Patterns: The DCont Path
 
 When operations must happen in sequence, because each depends on the previous result or involves effects, we need delimited continuations. These capture "the rest of the computation" at specific points:
