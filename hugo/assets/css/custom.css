@@ -139,6 +139,39 @@ code, pre, kbd {
 .blog-card-author { font-weight: 500; }
 
 
+/* ── Blog post header (subtitle deck, read time, tags) ───────── */
+.blog-post-deck {
+  margin: 0.75rem 0 0;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #475569;
+}
+:is(.dark) .blog-post-deck { color: #94a3b8; }
+
+.blog-post-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+.blog-post-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+  background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+.blog-post-tag:hover {
+  background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness), 0.2);
+}
+
+
 /* ── Search modal ────────────────────────────────────────────── */
 .clef-search-modal {
   position: fixed;
