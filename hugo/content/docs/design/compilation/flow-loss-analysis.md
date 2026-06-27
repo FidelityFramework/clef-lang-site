@@ -18,7 +18,21 @@ The grounds for computing the delta are already in the pipeline. Alex witnesses 
 
 So the ideal parallel reading and the serial CPU reading are not two separate compilations of the same source. They are two readings available within the same pipeline: the interaction-net reduction potential the PSG exposes for a pure region, and the sequential instruction stream Alex produces for the CPU target. Flow loss analysis is designed to compare those two readings and report the difference. The interaction-net representation is real for the pure lane today; the part still being built is the analysis pass that reads both and reports their delta as a metric, so the numbers below describe what that pass is designed to surface rather than output it produces in a shipping build.
 
+## Two Axes: Compute and Memory Movement
+
+Flow loss has two orthogonal axes. The first is the compute delta: the work W and the span S, the data-flow parallelism the control-flow lowering forgoes. This is the span-versus-work measure, and it is the territory of Brent's 1974 bound, which relates the time on a finite number of processors to W and S. The second axis is memory movement: the cost of moving data that a control-flow target pays and a spatial substrate does not.
+
+Brent's bound counts compute alone. It measures operations and dependency depth, and it assumes the cost of moving data away rather than charging it. So the work-and-span axis on its own cannot state the full cost a substrate imposes, because it has no term for where data lives or what it costs to feed the computation.
+
+The two axes are separable, and a single example shows why. A discrete GPU and a unified-memory APU hold the same W and the same S: identical compute parallelism, the same ideal reduction depth, the same operation count. They split only on what it costs to feed them. The discrete GPU pays a transfer cost to stage data across its own memory boundary, and the unified-memory APU shares memory with the host and pays no such transfer. The compute axis reads the two architectures as equal and cannot tell them apart. Only the memory axis distinguishes them, which is why memory movement is a separate axis and not another compute metric.
+
+Our coeffect system reads memory residency and access patterns off the same PSG the compute term is read from. Residency and access shape are properties the graph already carries, so the memory term is ours to compute alongside the work-and-span term on one graph rather than through a separate analysis. Escape classification is a working compiler pass and supplies the part of this that already exists; the broader coeffect-driven memory optimization is still in design. The formalization of escape classes and their allocation strategies is described in [memory safety as coeffect algebra](/docs/internals/verification/memory-coeffect-algebra/).
+
+A full formal treatment of flow loss carries both axes, the compute delta and the memory term together, and reaches past Brent's compute-only bound. Formalizing the two axes as one model is design-stage work the flow-loss pass would take on as the pass itself comes into place.
+
 ## Metrics
+
+The metrics below divide across the two axes. Parallelism ratio, critical path against total work, and serialization points read the compute axis. Memory movement overhead reads the memory axis. Substrate comparison estimates combine both.
 
 ### Parallelism Ratio
 
