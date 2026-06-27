@@ -5,6 +5,7 @@ description: "The purpose-built development environment where the framework's de
 date: 2026-06-27
 authors: ["Houston Haynes"]
 tags: ["Tooling", "Design", "Architecture"]
+weight: 90
 params:
   status: "Preliminary design"
 ---

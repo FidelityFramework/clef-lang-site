@@ -5,6 +5,7 @@ description: "How Clef Tooling Evolved From Ionide"
 date: 2026-02-01
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+weight: 50
 params:
   originally_published: 2026-02-01
   original_url: "https://speakez.tech/blog/leveling-up-with-lattice/"
