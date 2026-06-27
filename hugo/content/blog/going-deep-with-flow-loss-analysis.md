@@ -17,6 +17,30 @@ Most developers carry a version of this as a *hunch*. A loop feels like it *shou
 
 The mechanism, the metrics and where each one comes from, is laid out in the companion [Flow Loss Analysis](/docs/design/compilation/flow-loss-analysis/) design document.
 
+A conventional toolchain erases the program's data-flow structure at the first lowering step and pays to rebuild it later. 
+
+```mermaid
+flowchart TD
+    src["Source"]
+
+    subgraph conv["Control-flow toolchain"]
+        direction TB
+        bb["Sequential<br/>basic blocks"] --> recover["Recover parallelism<br/>(polyhedral,<br/>loop-dependency)"] --> accel1["Accelerator"]
+    end
+
+    subgraph ours["Our pipeline"]
+        direction TB
+        psg["PSG<br/>(data-flow preserved)"] --> readings["Both readings<br/>available"] --> accel2["Accelerator"]
+    end
+
+    src -->|"data-flow erased"| bb
+    src -->|"data-flow kept"| psg
+
+    recover -.->|"heroic analysis<br/>rebuilds a graph"| readings
+```
+
+A control-flow toolchain recovers downstream the structure it set aside upstream. Our pipeline carries that structure through, so the comparison others reconstruct is one ours holds from the start. That divergence is why the gap is cheap for us to derive directly and preserve to hardware without the reconstructive effort of standard toolchains.
+
 ## The Inversion
 
 For a pure region, one whose [referential transparency](/docs/internals/concepts/seeking-referential-transparency/) means its operations carry no hidden ordering, the PSG exposes an interaction-net reduction potential where independent operations fire at once, and that is the ideal parallel form. The same region, lowered to a CPU by Alex, our Composer middle-end, takes that parallelism as far as the machine allows: the SIMD vector units run what fits a lane, and Clef's concurrency model, delimited continuations threading the dependent work and actors spreading the independent work across cores, takes the rest that the lanes cannot. What is left in order at the end is the span, the dependency chain no scheduling can shorten. Both describe the same computation. Flow loss is the gap, and the [DCont/Inet duality](/docs/design/concurrency/dcont-inet-duality/) is where that gap is meant to first surface as a figure the graph makes available at design time, rather than one a profiler reconstructs after a run.
@@ -40,30 +64,6 @@ the available parallelism. Most engineers will recognize this ceiling in Amdahl'
 It's reported as the ratio \(W/S\) a control-flow target cannot close, or equivalently as the fraction of work \(1 - S/W\) that could run concurrently on hardware shaped to take it. Brent's proof is 'constructive' in the *formal methods* sense: it balances the parse tree into the log-depth form the span measures. That balanced form is the thing a control-flow toolchain has to rebuild before it can read \(W\) and \(S\) at all. What is ours to consider is that the graph we build already holds a form of it, so we read the two numbers off directly rather than reconstructing them. The parallel reading rests on confluence, which our 'tiered' proof scaffold already discharges as a verification obligation. Brent's result and that *confluence* are the ground a fresh formal treatment of flow loss would likely stand on. That treatment would also reach past Brent, whose bound counts compute alone and assumes the cost of moving data away. 
 
 The substrate table below shows why this matters: a discrete GPU and a unified-memory APU hold the same \(W/S\), and split only on what it costs to feed them. Memory movement is a ***second* axis**, orthogonal to the work and span, and our coeffect system reads residency and access off the same graph, so the term is ours to compute alongside the first. Formalizing both is work we expect to emerge in due course as our engineering solutions take shape.
-
-The two pipelines diverge at the first lowering step, which is why the figure is cheap for us and expensive for everyone else.
-
-```mermaid
-flowchart TD
-    src["Source"]
-
-    subgraph conv["Control-flow toolchain"]
-        direction TB
-        bb["Sequential<br/>basic blocks"] --> recover["Recover parallelism<br/>(polyhedral,<br/>loop-dependency)"] --> accel1["Accelerator"]
-    end
-
-    subgraph ours["Our pipeline"]
-        direction TB
-        psg["PSG<br/>(data-flow preserved)"] --> readings["Both readings<br/>available"] --> accel2["Accelerator"]
-    end
-
-    src -->|"data-flow erased"| bb
-    src -->|"data-flow kept"| psg
-
-    recover -.->|"heroic analysis<br/>rebuilds a graph"| readings
-```
-
-A control-flow toolchain recovers downstream the structure it set aside upstream. Our pipeline carries that structure through, so the comparison others reconstruct is one ours holds from the start.
 
 Whether the gap reads as a loss or a speedup follows from which representation the framework treats as primary. A control-flow compiler treats the sequential instruction stream as the ground truth and asks how much faster an accelerator could go. We treat the data-flow structure as the ground truth, already present before any target is chosen, and ask how much of it a control-flow target gives up. The interaction-net representation for the pure lane is real today, and Alex's CPU lowering is the operational native path. The analysis pass that reads both and reports their delta is the part still being built, so the figures it produces are what that pass is designed to surface rather than output from a shipping build. The two readings, though, already live inside one pipeline, which is what makes the comparison a natural pipeline operation rather than a separate tool that rebuilds a data-flow graph from machine code. That recovery problem is the one a conventional control-flow language cannot avoid.
 
