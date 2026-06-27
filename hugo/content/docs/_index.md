@@ -8,10 +8,10 @@ Clef is a concurrent systems language in the ML family, targeting heterogeneous 
 
 **[Guides](/docs/guides/)** are the starting point. They describe the current state of the project and will expand into installation, setup, and tutorial content as the toolchain matures.
 
-**[Reference](/docs/reference/)** covers the tools and infrastructure of the Clef ecosystem: the Composer build system, ClefPak package manager, and the assembly model that connects them.
-
 **[Design Rationale](/docs/design/)** explains _why_ Clef works the way it does — the research, trade-offs, and prior art behind decisions in the memory model, type system, and concurrency architecture.
 
 **[Compiler Internals](/docs/internals/)** documents how Composer is built: the nanopass pipeline, MLIR integration, hypergraph-based optimization, and backend code generation for native and embedded targets.
+
+**[Tooling](/docs/tooling/)** covers the developer-facing surface of the Clef ecosystem: the Lattice language server, autocomplete, the ClefPak package manager, and source-level dependency resolution.
 
 The [language specification](/spec/draft/) is maintained separately and defines Clef's semantics in normative detail.

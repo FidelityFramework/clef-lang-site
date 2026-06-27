@@ -15,7 +15,7 @@ A compiler without proper tooling is like a sports car without a steering wheel:
 
 ## The Innovation Budget
 
-Every developer has a limited capacity for absorbing new concepts. When introducing a novel compilation target like Composer, we must be thoughtful about where we ask developers to spend their "innovation budget." As explored in [ClefPak: Native Clef Source-Based Package Management](/docs/reference/clefpak-source-based-package-management/), the TOML-based `.fidproj` format, the `clefpak` package manager, and the clefpak.dev registry all represent necessary departures from .NET conventions.
+Every developer has a limited capacity for absorbing new concepts. When introducing a novel compilation target like Composer, we must be thoughtful about where we ask developers to spend their "innovation budget." As explored in [ClefPak: Native Clef Source-Based Package Management](/docs/tooling/clefpak-source-based-package-management/), the TOML-based `.fidproj` format, the `clefpak` package manager, and the clefpak.dev registry all represent necessary departures from .NET conventions.
 
 These changes exist for good reasons: they signal a fundamentally different compilation model and enable capabilities that MSBuild's XML-based approach would strain significantly to accommodate. However, requiring developers to also abandon their familiar editor experience would be a step too far.
 

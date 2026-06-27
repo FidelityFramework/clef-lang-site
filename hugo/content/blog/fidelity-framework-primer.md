@@ -295,7 +295,7 @@ This primer provides an overview of the Fidelity Framework. For detailed treatme
 - [Baker: A Key Ingredient to Composer](/docs/internals/pipeline/baker-saturation-engine/): the nanopass architecture, two-tree zipper pattern, and SRTP resolution
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/): how the native type system evolved from a standalone library to compiler intrinsics
 - [Intelligent Tree-Shaking](/docs/internals/pipeline/intelligent-tree-shaking/): semantic reachability analysis, soft-delete patterns, and library boundary classification
-- [Clef Source-Based Package Management](/docs/reference/clefpak-source-based-package-management/): the `.fidproj` format, `cpk` package manager, and clefpak.dev registry
+- [Clef Source-Based Package Management](/docs/tooling/clefpak-source-based-package-management/): the `.fidproj` format, `cpk` package manager, and clefpak.dev registry
 - [Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/): type-safe concurrency primitives and actor supervision hierarchies
 - [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): actor-aware memory management through deterministic lifetimes and arena allocation
 - [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): zero-copy serialization, reactive signals, and cross-platform data exchange

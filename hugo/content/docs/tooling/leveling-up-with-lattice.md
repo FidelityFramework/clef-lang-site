@@ -144,7 +144,7 @@ We preserve the original MIT License with Ionide copyright holders. We maintain 
 | **Projects** | `.fsproj` (MSBuild XML) | `.fidproj` (TOML) |
 | **Type Semantics** | BCL (UTF-16 strings, `System.Object`) | Native (UTF-8 strings, value types) |
 | **Execution** | CoreCLR, .NET runtime | LLVM (for now), bare metal |
-| **Package Manager** | NuGet, Paket | [ClefPak](/docs/reference/clefpak-source-based-package-management/) (clefpak.dev) |
+| **Package Manager** | NuGet, Paket | [ClefPak](/docs/tooling/clefpak-source-based-package-management/) (clefpak.dev) |
 | **Compiler Service** | FCS (F# Compiler Services) | CCS (Clef Compiler Services) |
 
 If you're building web apps with Giraffe, microservices with Saturn, or data pipelines with .NET, **use Ionide**. That role will not change.

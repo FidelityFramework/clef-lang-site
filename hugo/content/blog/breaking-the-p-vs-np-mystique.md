@@ -42,7 +42,7 @@ The mathematical complexity hasn't changed, since SAT is still NP-complete. But 
 
 When companies claim breakthrough performance on NP-complete problems, they're typically doing one of three things:
 
-**1. Hardware Specialization**: Building circuits that naturally express the problem structure. This is what we do with our design for [ternary models on FPGAs](/docs/internals/hardware/unified-vision-ternary-models/), where the hardware literally reshapes itself to match the computation.
+**1. Hardware Specialization**: Building circuits that naturally express the problem structure. This is what we do with our design for [ternary models on FPGAs](/blog/unified-vision-ternary-models/), where the hardware literally reshapes itself to match the computation.
 
 **2. Approximate Solutions**: Finding "good enough" answers in polynomial time. Many real-world applications don't need optimal solutions, just acceptable ones. This doesn't solve the NP-complete problem; it recognizes that the practical problem is often easier than its theoretical formulation. When considering how LLMs take exactly this approach to generative language constructs, it makes apparent in real terms what approximation can do, within limits.
 
@@ -66,7 +66,7 @@ Let's be concrete about what this means for actual applications:
 
 **Scheduling Systems**: A hospital scheduling system with 100 nurses and complex constraints might take hours to find valid schedules using traditional approaches. Compiled to interaction nets on an FPGA, the same problem solves in seconds. The constraints haven't changed, but they're evaluated in parallel rather than sequentially.
 
-**Financial Optimization**: Portfolio optimization with thousands of assets and risk constraints appears computationally prohibitive. But as we detailed in our [unified vision for heterogeneous computing](/docs/internals/hardware/unified-vision-ternary-models/), compiling to specialized accelerators makes real-time optimization practical.
+**Financial Optimization**: Portfolio optimization with thousands of assets and risk constraints appears computationally prohibitive. But as we detailed in our [unified vision for heterogeneous computing](/blog/unified-vision-ternary-models/), compiling to specialized accelerators makes real-time optimization practical.
 
 **Route Planning**: Delivery routing for hundreds of packages seems to require checking exponentially many possibilities. Yet when compiled to spatial computation architectures, the problem decomposes into parallel subproblems that solve efficiently.
 

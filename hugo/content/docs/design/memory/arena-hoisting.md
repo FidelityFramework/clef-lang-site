@@ -63,4 +63,4 @@ On a unikernel or bare-metal target the picture sharpens, and this is the direct
 - [Managed Mutability](/docs/design/language/managed-mutability/) - Escape classification and the inferred-with-override pattern
 - [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) - Actor-scoped arenas, sentinels, and deterministic lifetimes
 - [Deadlock Freedom as an Obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) - The sibling liveness property, proven where visible and guarded where not
-- [Leveling Up With Lattice](/docs/internals/tooling/leveling-up-with-lattice/) - The language server that presents these suggestions
+- [Leveling Up With Lattice](/docs/tooling/leveling-up-with-lattice/) - The language server that presents these suggestions

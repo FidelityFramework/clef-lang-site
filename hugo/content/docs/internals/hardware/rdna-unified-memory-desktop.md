@@ -424,7 +424,7 @@ This is refinement, not foundation model training. The unified memory architectu
 
 ## The Ternary Inference Frontier
 
-Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/docs/internals/hardware/unified-vision-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} replace multiplication with simple addition and subtraction. This transformation fundamentally changes which processors handle which workloads efficiently.
+Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/blog/unified-vision-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} replace multiplication with simple addition and subtraction. This transformation fundamentally changes which processors handle which workloads efficiently.
 
 The research question we are pursuing in SpeakEZ's lab: can we partition a ternary model enhanced with Multi-head Latent Attention (MLA) across CPU, GPU, and NPU in a way that leverages each processor's strengths while BAREWire eliminates the traditional penalty for heterogeneous dispatch?
 
@@ -469,7 +469,7 @@ let applyTernaryFFN
     output
 ```
 
-The CPU handles trit unpacking using the [base-3 encoding scheme](/docs/internals/hardware/unified-vision-ternary-models/) that packs 5 ternary values into 8 bits. AVX-512's bit manipulation instructions can unpack these efficiently, preparing weight vectors for GPU dispatch or handling smaller layers directly.
+The CPU handles trit unpacking using the [base-3 encoding scheme](/blog/unified-vision-ternary-models/) that packs 5 ternary values into 8 bits. AVX-512's bit manipulation instructions can unpack these efficiently, preparing weight vectors for GPU dispatch or handling smaller layers directly.
 
 What makes this architecture distinctive is the absence of copies between stages.
 
