@@ -12,6 +12,7 @@ tags:
   - native-compilation
   - cross-platform
   - source-based-packages
+weight: 60
 params:
   originally_published: 2025-05-31T11:59:54+04:00
   original_url: "https://speakez.tech/blog/source-level-dependency-resolution/"

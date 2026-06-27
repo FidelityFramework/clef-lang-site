@@ -3,7 +3,7 @@ title: "Flow Loss Analysis"
 linkTitle: "Flow Loss"
 description: "Flow loss is the data-flow parallelism a CPU serializes, framed as the delta between a graph-native program and its control-flow lowering"
 date: 2026-06-27T00:00:00-04:00
-weight: 50
+weight: 70
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Performance"]
 ---

@@ -5,6 +5,7 @@ description: "How Clef's design expresses low-level efficiency with safety"
 date: 2025-07-28
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+weight: 10
 params:
   originally_published: 2025-07-28
   original_url: "https://speakez.tech/blog/why-fsharp-is-a-natural-fit-for-mlir/"
@@ -154,7 +155,7 @@ let withDelimitedContinuations data =
     )
 ```
 
-The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. The correspondence is structural: the same mathematical relationship expressed directly at the semantic level, rather than discovered through multiple intermediate transforms.
+The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. The correspondence is structural: the same mathematical relationship expressed directly at the semantic level, rather than discovered through multiple intermediate transforms. The formal account of how that structure sequences the compiler's lowering passes, with Huet's zipper and Petricek's codata and coeffect formalism carrying grade, escape, and representation annotations through MLIR, is the [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854).
 
 ### Compilation Advantages
 
@@ -312,4 +313,4 @@ Andrew Appel's result that "SSA is Functional Programming" describes the structu
 
 Clef code aimed at MLIR works with the compilation model rather than against it. The source expresses the SSA structure that other languages must reconstruct. Delimited continuations make explicit the control flow that others have to analyze. Composed operations map onto the optimization opportunities that MLIR's passes act on.
 
-That alignment is what drew us to MLIR as the lowering target, and it is the structure we will keep building our Composer compiler around as the rest of the framework comes into place.
+That alignment is what makes one source map cleanly onto a CPU, a GPU, and an FPGA without three reconstructions, which is the reach our Composer compiler is built to extend.

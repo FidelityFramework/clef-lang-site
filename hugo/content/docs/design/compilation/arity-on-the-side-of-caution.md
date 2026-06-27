@@ -5,6 +5,7 @@ description: "Why Fidelity Tracking Function Arity Puts the Machine Back In 'Sta
 date: 2026-01-14
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+weight: 30
 params:
   originally_published: 2026-01-14
   original_url: "https://speakez.tech/blog/arity-on-the-side-of-caution/"

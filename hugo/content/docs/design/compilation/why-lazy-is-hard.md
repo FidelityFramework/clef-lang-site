@@ -6,6 +6,7 @@ date: 2026-01-17T12:00:00-05:00
 authors:
   - SpeakEZ
 tags: ["design", "architecture", "lazy-evaluation", "thunks", "closures", "memory-model", "native-compilation", "functional-programming"]
+weight: 50
 params:
   originally_published: 2026-01-17T12:00:00-05:00
   original_url: "https://speakez.tech/blog/why-lazy-is-hard/"

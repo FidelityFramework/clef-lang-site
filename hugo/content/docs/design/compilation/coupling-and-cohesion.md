@@ -5,6 +5,7 @@ description: "Using functional programming structure to guide efficient compilat
 date: 2025-07-09T00:00:00+00:00
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+weight: 20
 params:
   originally_published: 2025-07-09
   original_url: "https://speakez.tech/blog/coupling-and-cohesion/"

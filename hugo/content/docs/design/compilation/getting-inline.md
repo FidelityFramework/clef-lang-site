@@ -5,6 +5,7 @@ description: "Understanding When the inline Keyword Actually Matters - and When 
 date: 2026-02-05T10:00:00-05:00
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
+weight: 40
 params:
   originally_published: 2026-02-05
   original_url: "https://speakez.tech/blog/getting-inline/"
