@@ -60,7 +60,7 @@ Like electric vehicles waiting for lithium-ion batteries and climate urgency, LI
 
 Decades later, the architectural landscape is transforming in ways that mirror the LISP machine era while learning from its failures. Energy efficiency has emerged as the primary constraint driving innovation, with AI workloads consuming unprecedented amounts of power. This is the same pressure that brought electric vehicles back to relevance. It has catalyzed development of different approaches to computing that sacrifice generality for domain-specific optimization, with one further change: these new architectures move past traditional Instruction Set Architectures (ISAs) to embrace a spatial computing model.
 
-This puts a double burden on the developer community. There's an imperative to move faster, do more, and create more opportunities in less time. Dataflow architectures offer this inherently, but it requires new thinking. This new paradigm can be aided by the valuable lessons learned in previous technology eras.
+This puts a double burden on the developer community. There's an imperative to move faster, do more, and create more opportunities in less time. Dataflow architectures offer this inherently, but it requires new thinking. Part of that new thinking is having a figure for how much dataflow parallelism a given region holds, which is what [flow loss analysis](/blog/going-deep-with-flow-loss-analysis/) reads off the graph. This new paradigm can be aided by the valuable lessons established in previous technology eras, modernized in a new tool chain that can target current generation processors.
 
 ### Dataflow Architectures: More Than ISAs
 
