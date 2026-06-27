@@ -21,7 +21,7 @@ The published EUF-CMA proof for ML-DSA is about an abstract scheme. The compiler
 
 This is not hypothetical. The Symbolic Software audit of the [hax pipeline](https://symbolic.software/blog/2026-04-07-cryspen-hax/), which translates a Rust subset into an external proof assistant, found that it verified panic freedom and functional correctness of an ML-DSA implementation while missing the zero-knowledge property, because the rejection-sampling loop extracted to a proof-inert form. The verification ran against a model the extraction had quietly severed from the security-critical behavior, and the gap is the kind that recovers the secret key from roughly a thousand signature passes. A proof about a model is only as good as its integrity to the computation substrate, and an extraction step in standard proof mechanics is where that integrity is lost.
 
-### Maintaining the Chain
+## Maintaining the Chain
 
 The signing routine shown below is spawned from ordinary Clef. The constant-time primitives transcribe directly from the scrutinized references, because the operations are the same branchless bit manipulations, and control flow never depends on a secret.
 
@@ -59,9 +59,11 @@ In our design, the compiler derives the security property, so the developer neve
 
 While we have a strong belief in providing maximum reach for the developer, we also seek out every opportunity available to provide sensible automation that helps streamline the design-time and build-time experience.
 
-## Where the difference surfaces
+## Negative-Cost Verification
 
-What makes this framework different is that it looks beyond the usual verification burden. The usual pitch is that proof is a cost the developer can be talked into paying: write the annotations, accept the slowdown, collect the warrant. We took the opposite position. A large share of the proof work is meant to be automated as structural support the compiler derives from the program already written, and that automation is an accelerant rather than a tax.
+Stroustrup's negative-cost abstraction says the high-level construct yields better machine code than hand-rolling, because structure feeds the optimizer, where significant machine-level knowledge lives. Negative-cost verification is the same claim for correctness. The facts the proof establishes (dimensions, ranges, escape, grade) are the facts our pipeline reads to choose representation and placement for a given hardware substrate. In our design Composer verifies for safety, and the binary emerges with stronger guarantees optimized to the target, in a [Native Type Universe](/docs/design/types/) that resolves the compute graph and proofs quickly. 
+
+What also makes this framework different is that it looks beyond the usual verification burden. The usual pitch is that proof is a cost the developer can be talked into paying: write the annotations, accept the slowdown, collect the warrant. We took the opposite position. A large share of the proof work is meant to be automated as structural support the compiler derives from the program already written, and that automation is an accelerant rather than a tax.
 
 It is meant to move development forward, because the obligations will be discharged as the program is elaborated, surfaced in the editor at the point of writing. We want the most common proof terms to be a design-time element in order to support correctness, a property that identifies issues immediately instead of after a separate verification pass, a failed audit, or worse, a production incident. The feedback loop that formal methods usually defer to the far end of a project sits at the moment of authorship instead. Our approach should also lighten the annotation burden, because the structural facts that higher obligations consume, the dimensions and lifetimes and escape behavior and grade, are inferred from the code's own structure rather than declared by hand. The annotations a conventional verified-programming workflow makes the developer write are, in the cases our algebra covers, derived by the compiler instead of requiring the developer to hand-roll it directly.
 
