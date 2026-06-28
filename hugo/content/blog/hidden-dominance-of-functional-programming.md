@@ -1,12 +1,12 @@
 ---
 title: "The Hidden Dominance of Functional Programming"
 date: 2022-02-02T16:59:54+06:00
-description : "FP Became Successful by Hiding in Plain Sight"
+description: "FP Became Successful by Hiding in Plain Sight"
 tags: ["Analysis"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2022-02-02
-  original_url: https://speakez.tech/blog/hidden-dominance-of-functional-programming/
+  original_url: "https://speakez.tech/blog/hidden-dominance-of-functional-programming/"
   migration_date: 2026-03-29
 ---
 

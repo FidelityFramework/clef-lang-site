@@ -12,6 +12,10 @@ params:
   migration_date: 2026-02-15
 ---
 
+## Update: 2026
+
+> This is the framework's founding primer, written when the surface language was still framed as "F# native" and verification as an F\* sidecar. Both have since matured: the present language is Clef, which carries its F# heritage forward, and the verification story consolidated into a [tiered model](/docs/design/categorical-foundations/the-compilation-sheaf/) we arrived at through our own work. The architecture this piece lays out, type-preserving compilation through CCS to MLIR with memory layout and the decidable proof tiers carried through the middle-end, is the design we have kept building toward. We have updated the language and verification framing below; the original goals stand.
+
 The computing world has fragmented into specialized ecosystems. Embedded systems demand byte-level control, mobile platforms enforce strict resource constraints, and server applications require elasticity and parallelism. Traditionally, these environments have forced developers to choose between conflicting approaches: use a high-level language with garbage collection and accept the performance overhead, or drop down to systems programming with manual memory management and lose expressiveness. The targets themselves have grown more capable. Mobile devices now ship multi-processor architectures with multi-threading the norm. The near future is in being able to directly address heterogeneous architectures for a given device or solution.
 
 ## Beyond Runtime Boundaries
@@ -93,6 +97,7 @@ type Shape =
 
 // Compiler determines: 24-byte layout with 8-byte tag
 // All variants share the same memory footprint
+ 
 ```
 
 The Alex code generation component will work directly with enriched PSG types to calculate alignment requirements, padding, and optimal memory structures for all user-defined types.
@@ -114,7 +119,7 @@ Operating on the Program Semantic Graph, Composer performs precise reachability 
 Our plans for Composer's static analyzer will calculate memory usage, enabling:
 - Compile-time verification of stack bounds for embedded targets
 - Automatic transformation to stack or arena allocations
-- Stack usage visualization for debugging and optimizationallocations
+- Stack usage visualization for debugging and optimization
 
 For developers, this means smaller binaries with only the code actually needed, determined through precise compute graph analysis. Our zipper traversal with XParsec is meant to flatten the compute graph accurately into a focused layout, without the extra baggage of assemblies.
 
@@ -141,7 +146,7 @@ The Composer compiler implements a nanopass architecture: a series of small, foc
 CCS like its predecessor provides both the syntax tree (AST) and typed tree. Baker correlates these into the Program Semantic Graph (PSG), where every node carries both structural context and resolved type information. This is the "compiler front end" that will see continuous refinement as the native architecture progresses.
 
 ### Reachability and Enrichment
-Before expensive type operations, the compiler performs reachability analysis to narrow scope. For now, the "soft-delete" approach allows greater troubleshooting, marking unreachable nodes rather than removing them, preserving structural integrity for easier graph traveresal. Type enrichment phases then resolve statically resolved type parameters (SRTPs) and compute memory layouts. These operations would be prohibitively expensive on the full library graph. We may eventually take the more direct path of full pruning of unused portions of the graph, as again this is a subject for some research in future iterations as we grow more confident of the "zipper" traversal and full capture of the application and its dependencies.
+Before expensive type operations, the compiler performs reachability analysis to narrow scope. For now, the "soft-delete" approach allows greater troubleshooting, marking unreachable nodes rather than removing them, preserving structural integrity for easier graph traversal. Type enrichment phases then resolve statically resolved type parameters (SRTPs) and compute memory layouts. These operations would be prohibitively expensive on the full library graph. We may eventually take the more direct path of full pruning of unused portions of the graph, as again this is a subject for some research in future iterations as we grow more confident of the "zipper" traversal and full capture of the application and its dependencies.
 
 ### Code Generation
 Alex (the "Library of Alexandria" code generation component) transforms the enriched PSG into MLIR, selecting appropriate dialects based on operation types:
@@ -191,6 +196,7 @@ let embeddedConfig =
 // - Verify all functions fit within stack limit
 // - Select appropriate MLIR lowering strategies
 // - Generate size-optimized code
+ 
 ```
 
 ## The Olivier Actor Model: Type and Memory-Safe Concurrency
@@ -227,6 +233,7 @@ type SensorReading = {
 // No runtime reflection, no allocation overhead
 let reading = { Timestamp = 1702483200UL; Value = 23.5f; SensorId = "temp-01" }
 let buffer = BAREWire.encode reading  // Direct memory write
+ 
 ```
 
 This approach aims to transform how Fidelity applications communicate. Inter-process communication could become zero-copy memory sharing. Network protocols would use the same schema definitions as in-memory structures. Hardware interfaces map directly to Clef types with guaranteed memory alignment.
@@ -257,15 +264,11 @@ This opens a path for .NET developers to access the broader native ecosystem wit
 
 ## Verification: Types as Proofs
 
-The preserved type information enables deeper F* integration, and this is where we believe our Fidelity Framework will have its longest-lived impact. We have several patents pending in this area, covering the intersection of type-preserving compilation, formal verification, and hardware targeting.
+The preserved type information turns types into proofs that survive compilation, and this is where we believe our Fidelity Framework will have its longest-lived impact. We have several patents pending in this area, covering the intersection of type-preserving compilation, formal verification, and hardware targeting.
 
-### Incremental Verification
-1. Standard Clef code with rich types
-2. Gradual addition of refinement types
-3. Formal proofs about critical sections
-4. Verification preserved through MLIR generation
+The mechanism we first sketched here has since matured into a [tiered verification model](/docs/design/categorical-foundations/the-compilation-sheaf/) with typed [mode shifts](/docs/internals/verification/mode-shifts/) between strata: the structural properties are free from the dimensional and grade types, the decidable obligations are discharged by a solver, and the harder ones travel up the tiers. We arrived at this discipline through our own type-theoretic work, recognizing F* and the decidability-first [Dafny](https://dafny.org/) as constituency in the same problem space rather than antecedents; the reasoning is set out in ['Free' Proofs from Dimensional Types](/blog/proofs-from-dimensional-types/) and [Between Rocq & A Hard Case](/blog/between-a-rocq-and-a-hard-case/).
 
-The type-preserving pipeline is designed to ensure verification guarantees aren't lost during compilation; proofs established at the Clef level carry through to the generated native code.
+The constant through every revision is the original goal: keeping verification from being lost across lowering. The local, decidable facts, up to the solver-discharged tiers, travel through Composer's middle-end in MLIR's SMT dialect, re-checked at each pass, so a property established at the Clef level is preserved to the output artifact. Re-deriving a property from the final hardware-specific binary is a further, deliberately-gated step, as [Between Rocq & A Hard Case](/blog/between-a-rocq-and-a-hard-case/) and [From Proofs to Silicon](/docs/internals/verification/proofs-to-silicon/) set out.
 
 ### High-Performance and Security Applications
 

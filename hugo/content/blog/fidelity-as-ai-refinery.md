@@ -12,6 +12,10 @@ params:
   migration_date: 2026-02-15
 ---
 
+## Update: 2026
+
+> We have updated our priors since this 2023 piece. The verification direction it sketches as a "bridge to F\*" has since resolved into a tiered model with typed [mode shifts](/docs/internals/verification/mode-shifts/) that we arrived at through our own type-theoretic work; we now read F\* and [Dafny](https://dafny.org/) as constituency in the same problem space rather than antecedents. The framework's present language is Clef, which carries its F# heritage forward. The body below reflects these corrections; the architectural thesis it argues has held.
+
 The AI industry is shifting in how computational resources are allocated and optimized. While the last decade saw rapid advances through massive pre-training efforts on repurposed GPUs, we're now entering an era where **test-time compute (TTC)** and custom accelerators are emerging as the next stage of AI advancement. As highlighted in recent industry developments, DeepSeek AI lab disrupted the market with a model that delivers high performance at a fraction of competitors' costs, signaling two significant shifts: smaller labs producing state-of-the-art models and test-time compute becoming the next driver of AI progress.
 
 ## From Training to Test-Time Compute
@@ -37,11 +41,11 @@ Our Fidelity Framework addresses these limitations through a different starting 
 3. **BAREWire interface**: Would deliver high-performance, low-burden binary communication
 4. **Furnace auto-differentiation**: Would support reliable machine learning operations
 
-Together these would form a foundation for high-trust AI deployment that holds correctness and performance in the same path. For workloads that require formal certification, our Fidelity Framework would add high-assurance capabilities through a bridge to the F* (F-star) verification framework, which we will detail in future technical publications.
+Together these would form a foundation for high-trust AI deployment that holds correctness and performance in the same path. For workloads that require formal certification, our Fidelity Framework would add high-assurance capabilities. We arrived at this discipline on our own, through type-theoretic work that resolves into a tiered verification model with typed [mode shifts](/docs/internals/verification/mode-shifts/) between strata; we recognize F* (F-star) and the decidability-first, SMT-backed [Dafny](https://dafny.org/) as constituency in the same problem space rather than antecedents we depend on.
 
 ## Type Safety for Neural Representations
 
-A cornerstone of our approach is Clef's type system, which provides compile-time safety without runtime overhead. This shifts away from the current paradigm where models must learn constraints through extensive training rather than having these constraints built into their foundation. And it follows that even in model training the burden of runtime marshaling of tensor shapes conveys an outsized time and computational cost for current model building practices.
+A cornerstone of our approach is Clef's type system, which provides compile-time safety without runtime overhead; we develop how these dimensional guarantees come for free from the types in ['Free' Proofs from Dimensional Types](/blog/proofs-from-dimensional-types/). This shifts away from the current paradigm where models must learn constraints through extensive training rather than having these constraints built into their foundation. And it follows that even in model training the burden of runtime marshaling of tensor shapes conveys an outsized time and computational cost for current model building practices.
 
 Consider how neural networks process data through tensor operations, where shape inconsistencies and dimensional mismatches are common sources of errors that can only be detected at runtime in Python-based frameworks. Through the use of Clef and Furnace, those runtime considerations would be resolved before compilation even begins:
 
@@ -65,6 +69,7 @@ let convolutionLayerCT
     (filters: int)
     : MedicalImage<mm/voxel, HU> =
     // convolution preserving the input's physical units
+ 
 ```
 
 In both examples, the Clef type system ensures that operations maintain dimensional and physical consistency at compile time. If a developer attempts to use incompatible dimensions or units, the Clef tooling reports a compilation error at design time. This is a constructive constraint that supports correctness and safety, and we have found no other representative implementations of it for neural representations in the standing literature we have reviewed.
@@ -147,7 +152,7 @@ And in that process companies would get higher performance, greater reliability,
 
 ## Multi-Head Latent Attention
 
-Our Fidelity Framework's envisioned use of [the Furnace library](https://github.com/fsprojects/Furnace) would show how to adapt recent techniques like DeepSeek's Multi-Head Latent Attention (MLA) while tuning models for performance. MLA reports efficiency improvements up to a 93.3% reduction in KV cache size while improving model throughput. [see the Appendix for an extended example]
+Our Fidelity Framework's envisioned use of [the Furnace library](https://github.com/fsprojects/Furnace) would show how to adapt recent techniques like DeepSeek's Multi-Head Latent Attention (MLA) while tuning models for performance. MLA reports efficiency improvements up to a 93.3% reduction in KV cache size while improving model throughput. [see the Appendix for an extended example] We carry this MLA conversion across heterogeneous hardware in [High Speed Inference](/blog/high-speed-inference/).
 
 This approach would include:
 
@@ -177,7 +182,7 @@ By focusing on inference optimization through compile-time verification and Clef
 
 2. **Computational Performance**: Direct compilation to MLIR/LLVM would create highly optimized execution paths that deliver superior inference speed compared to interpreted approaches.
 
-3. **Verification Guarantees**: Unlike black-box models whose behaviors can only be validated through extensive testing, models built with the Fidelity Framework would carry type guarantees and even algorithmic proofs of their properties and constraints.
+3. **Verification Guarantees**: Unlike black-box models whose behaviors can only be validated through extensive testing, models built with the Fidelity Framework would carry type guarantees and even algorithmic proofs of their properties and constraints. The tiered proof architecture this depends on is set out in [The Compilation Sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/).
 
 4. **Hardware Adaptability**: The framework's universal adaptation interface would enable targeting of diverse hardware architectures from a single verified codebase, maximizing performance across the computing ecosystem.
 
@@ -195,7 +200,7 @@ The result would be AI systems that combine reasoning capabilities with formal s
 
 ## Looking Forward: Neuromorphic Oracle Architecture
 
-Building on Clef's type safety and our Fidelity Framework's compilation architecture, our research is exploring how our Composer compiler's Program Semantic Graph (PSG) can evolve into a **knowledge-aware compilation substrate** that bridges symbolic reasoning with neuromorphic hardware execution. We have found no other representative implementations of this substrate in the standing literature we have reviewed.
+Building on Clef's type safety and our Fidelity Framework's compilation architecture, our research is exploring how our Composer compiler's Program Semantic Graph (PSG) can evolve into a **knowledge-aware compilation substrate** that bridges symbolic reasoning with neuromorphic hardware execution, the hypergraph direction we develop in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/). We have found no other representative implementations of this substrate in the standing literature we have reviewed.
 
 The PSG already represents computational relationships as a graph structure, and our current work suggests this same graph can encode semantic knowledge, proof obligations, and even target neuromorphic spike patterns. Pairing the PSG with emerging spiking neural chips from companies like Infineon opens an architectural possibility we are pursuing: **AI systems that consult structured knowledge graphs as oracle memory** during inference.
 

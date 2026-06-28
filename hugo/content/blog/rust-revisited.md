@@ -30,21 +30,17 @@ Rust's ecosystem maturity provides valuable lessons about system design at scale
 
 ### Rust's Runtime Fragmentation
 
-While Rust's async/await syntax appears clean, the underlying reality involves runtime fragmentation that impacts the entire ecosystem:
+While Rust's async/await syntax appears clean, the surface hides a choice the code never shows. The same function reads identically whether it runs on Tokio, async-std, or smol, yet each is a different runtime with its own scheduling, performance, and debugging behavior, and the ecosystem fragments along those lines:
 
 ```rust
-// Surface simplicity hiding runtime complexity
 async fn fetch_and_process(url: &str) -> Result<Data, Error> {
     let response = fetch_url(url).await?;
     let processed = process_data(response).await?;
     Ok(processed)
 }
-
-// Reality: Which runtime? Tokio? async-std? smol?
-// Each has different scheduling, performance, debugging
 ```
 
-This creates cascading challenges:
+Nothing in that signature reveals which runtime governs it. This creates cascading challenges:
 
 1. **Ecosystem Lock-in**: Choose Tokio, and your entire dependency tree must align
 2. **Opaque Debugging**: State machine transformations obscure stack traces
@@ -130,6 +126,7 @@ impl Process for DataTypeB { /* ... */ }
 // Constraints emerge from usage
 let inline process x =
     x.Process()  // Works for any type with Process member
+ 
 ```
 
 Clef infers constraints from usage patterns, reducing boilerplate while maintaining type safety.
@@ -154,6 +151,7 @@ fn process<'a>(data: &'a mut Vec<Data>) -> Result<&'a Stats, Error> {
 let process (data: Data list) : Result<Stats, Error> =
     // Memory optimization available when needed
     // Not mandatory in every function
+ 
 ```
 
 As detailed in [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/), our BAREWire design is meant to enable optimization where beneficial without polluting all code with memory concerns.

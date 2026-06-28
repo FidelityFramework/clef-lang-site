@@ -10,6 +10,8 @@ params:
   migration_date: 2026-02-15
 ---
 
+*Note: This comparison was written in 2023, when the framework's surface language was still framed as "F# native." That direction later emerged as a distinct language, Clef, which carries the F# heritage forward while compiling natively through our own pipeline. The text below reconciles the framework's present language to Clef; F# is named where the lineage and its proven track record are the point.*
+
 Mojo is an experiment in bridging two worlds that usually stay apart. Created by Chris Lattner, whose work on LLVM and MLIR reshaped how we build compiler infrastructure, Mojo sets out to bring Python's accessibility to systems programming on top of MLIR.
 
 At SpeakEZ, we've been working in similar territory with our Fidelity framework and its Clef language. Both projects build on MLIR, yet they approach modern language design from different starting points. That divergence is what I want to walk through here.
@@ -130,7 +132,7 @@ let agent = MailboxProcessor.Start(fun inbox ->
 )
 ```
 
-F#'s agent model, inspired by Erlang, is a practical application of delimited continuations. That foundation lets our Fidelity framework carry control flow analysis through compilation to MLIR. Running control flow and data flow graphs in parallel gives the framework options for resource targeting that we have found no other representative implementations of in the standing literature we have reviewed.
+Clef's agent model, inherited from F# and inspired by Erlang, is a practical application of delimited continuations. That foundation lets our Fidelity framework carry control flow analysis through compilation to MLIR. Running control flow and data flow graphs in parallel gives the framework options for resource targeting that we have found no other representative implementations of in the standing literature we have reviewed.
 
 ## Memory Management: Navigating Constraints
 
@@ -177,7 +179,7 @@ What I find worth watching about this moment in language design is how many diff
 
 The challenges Mojo faces are substantial. A language that satisfies both Python developers' expectations and systems programmers' requirements means working through a long list of design decisions. That the Mojo compiler remains closed source likely reflects the scope of the undertaking, getting the basics right before opening the implementation to broader scrutiny.
 
-F#'s mature foundation offers different opportunities. With twenty years of production use through .NET and Fable compilers, and a type system refined through decades of research, our Composer compiler can focus on the compilation and deployment work that MLIR enables. The framework benefits from F#'s lack of historical baggage from Python's module system or object model, which allows a more direct mapping to MLIR's capabilities.
+The F# lineage offers different opportunities. With twenty years of production use through .NET and Fable compilers, and a type system refined through decades of research, our Composer compiler can focus on the compilation and deployment work that MLIR enables. Clef carries none of the historical baggage of Python's module system or object model, which allows a more direct mapping to MLIR's capabilities.
 
 ## Learning from Each Other
 

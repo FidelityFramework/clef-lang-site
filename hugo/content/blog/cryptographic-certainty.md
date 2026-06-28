@@ -353,6 +353,7 @@ let benchmarkResults =
 // Naive Multisig:  842ms average, 45 network round trips
 // FROST:           127ms average, 2 network round trips
 // FROST+HSM:       89ms average, 2 network round trips
+ 
 ```
 
 ## Compile-Time Security Analysis
@@ -385,6 +386,7 @@ type ThresholdAnalysis =
 
 // let analysis = ThresholdAnalysis.SecurityLevel<T3, N5>()
 // compiler ensures T3 <= N5 and both are positive
+ 
 ```
 
 ## Future Directions: Post-Quantum FROST
