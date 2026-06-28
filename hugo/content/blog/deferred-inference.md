@@ -13,22 +13,17 @@ Every developer, whether by accident of history or through a specific educationa
 
 Nowhere is the concrete end of that spectrum more exposed than in the choice of a numeric format. The first quantities of a computation go down before the computation has a shape, a force, a velocity, a voltage off a sensor, and already the language wants a concrete answer: store this as what, a `float`, a `double`? The answer is not available, because the range these values will take is a property of the computation that is not finished being built. So the developer does what everyone does, reaches for `double` because it is wide and forgiving, and keeps going, because the work was to get the computation right and not to stop at the door and adjudicate a number format before the second line is written. The cost of that reflex shows up years later, if ever, when a `float` would have held the precision that mattered, or when a long run drifts because the format spent its bits in the wrong place.
 
-The reflex can do worse than drift. Here is the textbook one-pass variance, written in C the way it gets written, with `float` chosen because the inputs were sensor readings and `float` is what the sensor library returned:
+The reflex can do worse than drift. Here is a running accumulation, the kind at the heart of any integrator or sensor total, written in C the way it gets written, with `float` chosen because the inputs were sensor readings and `float` is what the sensor library returned:
 
 ```c
-// variance of n samples, one pass. looks fine. ships.
-float variance(const float *x, int n) {
-    float sum = 0.0f, sumsq = 0.0f;
-    for (int i = 0; i < n; i++) {
-        sum   += x[i];          // grows with the data
-        sumsq += x[i] * x[i];   // grows with the SQUARE of the data
-    }
-    float mean = sum / n;
-    return sumsq / n - mean * mean;   // subtract two large, nearly-equal numbers
+// running total of a long stream of small increments
+float total = 0.0f;
+for (long i = 0; i < n; i++) {
+    total += sample[i];   // each sample is small; total grows without bound
 }
 ```
 
-For readings clustered around a large offset, say a pressure line idling near 4000 with millivolt wiggle, `sumsq / n` and `mean * mean` are both enormous and nearly equal, and `float` carries about seven significant digits. The subtraction cancels the leading digits and returns the noise that was left in the low bits. On a real dataset this routine returns a *negative* variance, a quantity that cannot be negative, and the program either crashes taking its square root or reports a standard deviation that is silently wrong. Nothing in the language objected. The format was named at the keyboard, before anyone knew the values would sit far from zero, and the format was the bug. The fix every numerical-methods course teaches, a two-pass algorithm or Welford's method, is a workaround for a representation chosen too early against a range nobody had yet.
+The algorithm is correct. The format is not. A `float` carries about seven significant digits. Once `total` has grown to a few million while each `sample[i]` is still around one, the value `total + sample[i]` rounds back to `total`. The increment is smaller than the gap between two representable floats at that magnitude, so it is swallowed whole. The sum stops advancing while the loop keeps running, and a reading that should have climbed sits frozen, off by an amount that grows with every step. Nothing in the language objected. This is not unstable math that a better algorithm would rescue; the same loop in `double` runs for far longer before it stalls, and a format matched to the real magnitude of `total` does not stall at all. The format was named at the keyboard, before anyone knew how large the total would grow, and the format was the bug.
 
 The other extreme exacts the same tax in a different currency. The same variance, in APL, is close to the mathematical definition and a pleasure to read:
 
@@ -198,7 +193,9 @@ The "rescale to AU" suggestion is itself a dimensional operation, and the compil
 
 ## On the FPGA, the choice becomes the circuit
 
-This is where the experience stops being a convenience and becomes the only way the thing can work at all. [FPGA and hardware inference](/blog/fpga-and-hardware-inference/) makes the foundational observation for integers, and it transfers wholesale to reals: on a CPU, a numeric type means "whatever the machine register holds," and the width is a platform property fixed before the program runs. On an FPGA there are no machine registers. Every wire and every flip-flop is exactly as wide as the design requires, so width, and now representation, is a design property, read from the structure. The counter in HelloArty that resets against a roughly four-hundred-million modulus has range `[0, 399,999,999]`, and the compiler reads it off the structure as 29 bits, not the 64 a CPU would have spent. Every narrower width is fewer flip-flops, shorter carry chains, smaller multipliers; the post walks a 17-by-64 multiplier collapsing to 17-by-29 and the carry-chain depth halving. The representation choice is not bookkeeping there. It is the gate count.
+This is where the experience stops being a convenience and becomes the only way the thing can work at all. [FPGA and hardware inference](/blog/fpga-and-hardware-inference/) makes the foundational observation for integers, and it transfers wholesale to reals: on a CPU, a numeric type means "whatever the machine register holds," and the width is a platform property fixed before the program runs. On an FPGA there are no machine registers. Every wire and every flip-flop is exactly as wide as the design requires, so width, and now representation, is a design property, read from the structure. The counter in HelloArty that resets against a roughly four-hundred-million modulus has range `[0, 399,999,999]`, and the compiler reads it off the structure as 29 bits, not the 64 a CPU would have spent. Every narrower width is fewer flip-flops, shorter carry chains, and less LUT-based logic; the post walks a 17-by-64 multiply collapsing to 17-by-29 and the carry-chain depth halving. The representation choice is not bookkeeping there. It is the gate count.
+
+One honest qualification belongs here, because a hardware engineer will reach for it. Width inference does not shrink everything in equal measure. Flip-flops, routing, carry chains, and LUT-based arithmetic scale with the inferred width directly, and that is most of a design. A multiply is the exception when it lands in a hardened DSP slice, a Xilinx `DSP48` natively spanning roughly eighteen by twenty-seven bits: a 17-by-29 multiply maps into one such slice and spends the same silicon a wider multiply would, because the slice is a fixed block. The inference still pays there, just in a different coin. It frees fabric the synthesizer would otherwise burn building a multiplier out of LUTs, and it packs more of the design's arithmetic into the slices a part actually has. Width is the gate count everywhere the logic is built from gates, and a negotiation with the hard blocks everywhere it is not.
 
 ```mermaid
 flowchart TB
@@ -248,7 +245,9 @@ So the FPGA is the place to take the gradual-typing worry seriously and watch it
 
 ## The quire is where stating intent closes the rest
 
-There is a point in numerical code where the developer does want to say something the compiler cannot infer, and it is not a representation. It is an *intent*: that an accumulation must be exact. A dot product, a force sum over an *n*-body step, a fold of products that in ordinary floating point bleeds precision through catastrophic cancellation, where differencing nearly-equal large quantities loses the significance that mattered. The posit standard answers this with a quire, a wide fixed accumulator that holds the sum without rounding until a single conversion at the end. In Clef the developer reaches for the quire to declare the one thing that is genuinely theirs to declare: *this sum is exact*.
+There is a point in numerical code where the developer wants to say something that is a choice rather than a fact, and it is not a representation. It is an *intent*: that an accumulation must be exact. A dot product, a force sum over an *n*-body step, a fold of products that in ordinary floating point bleeds precision, whether through small terms swallowed by a large running sum or through the cancellation of nearly-equal quantities. The posit standard answers this with a quire, a wide fixed accumulator that holds the sum without rounding until a single conversion at the end.
+
+The compiler can recognize the shape that would use one. A fold or reduce of products over a posit is a pattern the pass already matches. What it cannot read off the structure is whether exactness is wanted here, and that is the part that has to be said. The quire is not a saving the analysis would find on its own; it is a deliberate spend, a fixed wide accumulator allocated unconditionally so the accumulation length never bounds the result. The range analysis tracks worst-case bounds, and worst-case bounds cannot tell a subtraction that will cancel from two intervals that merely overlap, so inferring exactness from intervals alone would either promote every fold of products to a wide accumulator or miss the ones that matter. Exactness is therefore a declaration, not a forecast. The developer is not predicting a failure mode the graph will hit; they are opting into a guarantee and the resource it costs. In Clef the developer reaches for the quire to declare the one thing that is genuinely theirs to declare: *this sum is exact*.
 
 Once they have, almost nothing is left to decide. Stating exactness is stating the intent, and the structure falls out of it almost completely. The quire pairs with a posit, so the representation is implied. The posit width fixes the accumulator: the quire is `n²/2` bits, 512 of them for a 32-bit posit, which is exactly one cache line, and the pass verifies that each per-product intermediate fits that field independent of how long the accumulation runs.
 
