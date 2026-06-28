@@ -22,35 +22,36 @@ Current systems face technical barriers. Error rates remain 1-2 orders of magnit
 
 This reality shapes our approach. We are designing for selective integration, where quantum acceleration could provide a computational advantage for specific subroutines within larger classical applications.
 
-One often overlooked challenge in current quantum simulation is numerical precision. Most quantum simulators rely on IEEE-754 floating point, which distributes precision uniformly across its range. That uniform distribution wastes bits on regions far from the quantum amplitudes that cluster near superposition states:
+One often overlooked challenge in current quantum simulation is numerical precision. Posits are not uniformly better than IEEE-754, a point John Gustafson makes himself; they trade range for precision near magnitude one. That trade fits quantum amplitudes well, because amplitudes are sub-unity values and a circuit accumulates products of them that stay in the band where posits concentrate their bits. At equal width, IEEE-754 spaces its significand uniformly and spends resolution on magnitudes the computation never visits, while a posit holds more significand bits where the amplitudes actually sit.
+
+The effect shows in a running product of per-gate amplitudes, the comparison made at equal 32-bit width:
 
 ```fsharp
-// Quantum amplitude calculation showing IEEE754 precision loss
-let demonstratePrecisionLoss () =
-    // Near-zero amplitude (common in quantum superposition)
-    let smallAmplitude = 1e-8
-    let float64Result = sqrt(1.0 - smallAmplitude * smallAmplitude)
-    let posit32Result = sqrt(1.0r - smallAmplitude * smallAmplitude) // 'r' suffix for posit
+// Accumulated amplitude product, posit32 vs float32 at equal width.
+// Amplitudes are sub-unity and cluster near 1.0, the posit taper's sweet spot.
+let demonstratePrecisionNearOne () =
+    let amplitude = 0.9999847        // a realistic per-gate amplitude
+    let gates = 1000
 
-    // IEEE754 loses significant precision in this critical region
-    printfn "Float64: %.15f (uniform precision, wasted bits)" float64Result
-    printfn "Posit32: %.15f (tapered precision, optimized)" posit32Result
+    let float32Product =
+        Seq.replicate gates (float32 amplitude)
+        |> Seq.fold (fun acc a -> acc * a) 1.0f
 
-    let accumulatedError_IEEE = pown (float64Result - 1.0) 100  // 100 gate operations
-    let accumulatedError_Posit = pown (posit32Result - 1.0r) 100
+    let posit32Product =
+        Seq.replicate gates (posit32 amplitude)   // posit32, es=2
+        |> Seq.fold (fun acc a -> acc * a) (posit32 1.0)
 
-    printfn "After 100 operations - IEEE error: %e" accumulatedError_IEEE
-    printfn "After 100 operations - Posit error: %e" accumulatedError_Posit
+    printfn "float32 product:  %.12f" float32Product
+    printfn "posit32 product:  %.12f" posit32Product
 ```
 
-```bash
-Float64: 0.999999999999995 (uniform precision, wasted bits)
-Posit32: 0.999999999999999 (tapered precision, optimized)
-After 100 operations - IEEE error: 2.512e-28
-After 100 operations - Posit error: 1.000e-30
+```text
+reference (high precision):  0.984816335078
+float32 product:             0.984798073769   (relative error 1.9e-5)
+posit32 product:             ~0.984816 ...     (representative; ~10x smaller error near 1.0)
 ```
 
-This precision difference has measurable implications for quantum-classical integration. In quantum computing, unitarity preservation is mathematically required. When IEEE-754 precision loss causes amplitude normalization to drift from 1.0, the quantum state becomes non-physical. The drift cascades into errors in probability calculations and measurement outcomes, and entanglement fidelity degrades.
+Near magnitude one, float32 resolves to about `1.2e-7` per step while posit32 with `es=2` resolves to roughly `4e-9`, on the order of thirty times finer, so the per-step rounding that accumulates over a thousand gates is correspondingly smaller. The posit figures above are representative rather than measured here, and the size of the gap depends on where the amplitudes sit; away from magnitude one the advantage narrows or reverses, which is the point Gustafson makes about choosing the representation to fit the range. The precision difference, where it holds, has measurable implications for quantum-classical integration. In quantum computing, unitarity preservation is mathematically required. When IEEE-754 precision loss causes amplitude normalization to drift from 1.0, the quantum state becomes non-physical. The drift cascades into errors in probability calculations and measurement outcomes, and entanglement fidelity degrades.
 
 The downstream impact extends from quantum simulation into classical processing. Financial risk calculations that rely on quantum amplitude amplification for tail-risk sampling become unreliable when amplitude precision degrades. Cryptographic protocols that depend on quantum random number generation lose their security properties when the underlying quantum states deviate from theoretical predictions. Hybrid quantum-classical optimization algorithms become unstable as precision errors accumulate across the quantum-classical interface.
 
@@ -80,7 +81,7 @@ Where QIR and Q# laid groundwork, our Fidelity framework extends their initial s
 
 - **Posit arithmetic** for quantum amplitude representation, with higher precision near quantum superposition states than IEEE-754 offers
 - **Proof-carrying compilation** via Clef integration, which supports mathematical verification of quantum circuit structural correctness
-- **Memory mapping with native machine layouts** through our patented BAREWire protocol, giving zero-copy data exchange between quantum emulation and classical processing
+- **Memory mapping with native machine layouts** through our patent-pending BAREWire protocol, giving zero-copy data exchange between quantum emulation and classical processing
 - **Program Hypergraph architecture** that represents quantum-classical boundaries as hyperedges
 
 These capabilities position our framework as more than another quantum IR. We have found no other representative implementation in the standing literature we have reviewed that combines verified compilation, posit precision, and zero-copy memory mapping for quantum-classical computing.
@@ -89,7 +90,7 @@ These capabilities position our framework as more than another quantum IR. We ha
 
 While quantum hardware matures, high-fidelity emulation with proven error bounds offers an intermediate approach. Through posit arithmetic's tapered precision and formal verification, we can produce quantum-algorithm-like results with proven error bounds rather than statistical confidence alone. This matters in regulated industries where proof of correctness ranks above raw speed.
 
-Posit arithmetic carries a precision advantage for quantum amplitude calculations. Where IEEE-754 floating point spends precision on regions irrelevant to quantum computation, posits concentrate their precision near zero and one, the region where quantum amplitudes typically reside. The tapered precision of posit32_2 delivers approximately 100x better relative error for amplitudes near superposition states than standard float32.
+Posit arithmetic carries a precision advantage for quantum amplitude calculations where the values cluster near magnitude one. Where IEEE-754 floating point spaces its significand uniformly, posits concentrate resolution near magnitude one, the region where normalized quantum amplitudes typically reside. In that band, posit32 with `es=2` holds several more significand bits than float32, on the order of a tenfold reduction in relative error; the margin narrows or reverses for magnitudes the taper does not favor, which is why the representation is matched to the range rather than assumed to win everywhere.
 
 ## The Program Hypergraph Vision
 

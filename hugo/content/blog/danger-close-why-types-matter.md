@@ -263,11 +263,12 @@ define double @calculatePower(double %0, double %1) #0 {
 }
 ```
 
-```armasm
+```asm
 ; x86-64 assembly - pure machine operations
 calculatePower:
     mulsd   xmm0, xmm1   ; multiply two doubles in SSE registers
     ret                  ; return result in xmm0
+ 
 ```
 
 At each stage, more abstraction disappears. Units of measure exist only in the Clef source. By MLIR, they're gone but the operation remains typed. By assembly, even the operation names vanish. The type safety that prevents unit confusion exists only at compile time, protecting us during development and vanishing completely in the deployed code.

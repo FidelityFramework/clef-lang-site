@@ -1,7 +1,7 @@
 ---
 title: "A Unified Vision for Ternary Models"
 linkTitle: "Ternary Models Vision"
-description: "Exploring AMD As A Potential Seed Bed For Innovation In Heterogenous AI Inference"
+description: "Exploring AMD As A Potential Seed Bed For Innovation In Heterogeneous AI Inference"
 date: 2025-06-19
 authors: ["Houston Haynes"]
 tags: ["Architecture", "AI", "Innovation"]
@@ -148,7 +148,7 @@ let unpackTernary (packedBytes: byte<packed> array) (actualTritCount: int<trit>)
     allUnpacked.[0 .. (int actualTritCount - 1)]
 ```
 
-This 96.9% storage efficiency, combined with SIMD-friendly unpacking operations, enables CPU cores to process ternary operations at speeds approaching specialized hardware, all while maintaining the flexibility to run on commodity processors.
+This 99% storage efficiency, combined with SIMD-friendly unpacking operations, enables CPU cores to process ternary operations at speeds approaching specialized hardware, all while maintaining the flexibility to run on commodity processors.
 
 ## Memory Architecture Evolution: The CXL Advantage
 

@@ -55,6 +55,7 @@ let multiply (a: Matrix<float, 'R1, 'C1>)
 
 // This below would be a compile error - dimensions don't match:
 // let bad = multiply (Matrix<float, 3<row>, 4<col>>) (Matrix<float, 5<row>, 2<col>>)
+ 
 ```
 
 This use of type-level programming shows that our framework's foundation already embraces complexity where it serves correctness goals. The deterministic memory guarantees and compile-time memory layout verification require type system features that go beyond what standard F# typically employs. Haskell developers might recognize this as similar to using type-level naturals for sized vectors, while Scala developers might see parallels with 'shapeless' or refined types.
@@ -72,6 +73,7 @@ type ColdStream<'T> = ...
 
 // With HKTs, could abstract over the stream constructor
 type Stream<'F, 'T> = ...  // where 'F :: * -> *
+ 
 ```
 
 This pattern *could* apply to multiple places in our design. Our BAREWire protocol implements serialization for numerous container types. The Furnace ML library must handle operations across different tensor shapes and storage strategies. The Olivier actor model needs to work with various message queue implementations. Each of these represents a case where abstracting over type constructors could eliminate duplication while preserving type safety.
@@ -163,6 +165,7 @@ module ColdStream =
 // - Identical control flow optimized into shared implementations
 // - Type-specific processHot/processCold kept only where semantically different
 // - Final binary contains minimal, optimized machine code
+ 
 ```
 
 This strengthens the case against HKTs in our framework. The primary cost of avoiding HKTs, code duplication, is addressed by the compilation pipeline. The primary benefit of avoiding them, a simpler developer experience, stays intact. Modern compilation techniques let us keep both: source code that prioritizes developer understanding, and final executables that are as efficient as if we had used the abstractions.

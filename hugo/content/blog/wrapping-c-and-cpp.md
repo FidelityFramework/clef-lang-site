@@ -11,11 +11,19 @@ params:
   migration_date: 2026-03-12
 ---
 
+---
+
+## Update: 2026
+
+This post was written while formal verification in the framework was still framed as an F\*-style sidecar, with proof obligations hand-annotated on each wrapper. F\* was the natural starting point: it descends from F#, the lineage Clef carries forward, so it was the first verification tradition this work reached for. The design has since consolidated into a [four-tier model](/blog/proofs-from-dimensional-types/), and two things changed. First, the kindred influence turned out to be [Dafny](https://dafny.org/) as much as F\*, a decidability-first, SMT-backed tradition that keeps a proof assistant out of the common path, which is the discipline the tiers below settled into, developed in [Between Rocq & A Hard Case](/blog/between-a-rocq-and-a-hard-case/). Second, most of what a shadow wrapper guarantees, the memory layout that crosses the boundary, the null and bounds discipline, the escape class of the buffer, now falls into the lower tiers and is *derived* from the structure the wrapper already has, with no proof annotations written by hand. The dimensional and escape facts are free at Tier 1; the integer bounds are a Tier 2 obligation the compiler infers from the wrapper's own branches and a solver discharges. Hand-written annotation reappears only for the genuinely higher-tier properties, a functional-correctness or relational guarantee that has to be *established* rather than read off the structure. The examples below are preserved as written; read the hand-annotated versions as the period detail, and the tier framing here as where the design now sits.
+
+---
+
 The cybersecurity landscape has shifted dramatically in recent years, with memory safety vulnerabilities accounting for approximately 70% of critical security issues in systems software. This reality has prompted governments and industries to mandate transitions to memory-safe languages for critical infrastructure. Yet the economics of wholesale rewrites are daunting: decades of refined C and C++ code represent trillions of dollars in intellectual property and domain expertise. What if, instead of rewriting everything, we could wrap existing code in provably safe interfaces?
 
 ## The Architectural Vision
 
-Our Fidelity framework takes a different approach to the memory safety challenge. Rather than treating existing C and C++ code as technical debt to be eliminated, we can view it as a valuable asset to be protected. The architecture creates thin, verifiable safety wrappers around native libraries, adding memory safety at the boundary without touching the underlying implementation. Today, Farscape already generates `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding stubs (Layer 1) and idiomatic safety wrappers (Layer 2) from C headers. That generation gives this design its foundation.
+Our Fidelity framework takes a different approach to the memory safety challenge. Rather than treating existing C and C++ code as technical debt to be eliminated, we can view it as a valuable asset to be protected. The architecture creates thin, verifiable safety wrappers around native libraries, adding memory safety at the boundary without touching the underlying implementation. The binding half of this is not a proposal. [Farscape](https://speakez.tech/blog/the-farscape-bridge/), our bindings generator, parses C headers with clang and generates `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding declarations (Layer 1) and idiomatic safety wrappers (Layer 2) today. It runs against real libraries in shipping code; [HelloWayland](https://github.com/FidelityFramework/HelloWayland) draws a native window through Farscape-generated `wayland-client` bindings. What remains forward-looking is the verification layer described later in this post, the proof obligations the tiers carry on top of those wrappers; the generation that produces them is working software.
 
 Consider this architectural pattern:
 
@@ -30,7 +38,7 @@ graph LR
     
 ```
 
-The wrapper serves several purposes. First, it provides type-safe interfaces that make illegal states un-representable. Second, it uses our BAREWire compile-time memory layout verification to ensure all data crossing the language boundary follows strict safety rules. Third, the compiler pipeline can carry formal proofs of correctness using SMT verification attributes.
+The wrapper serves several purposes. First, it provides type-safe interfaces that make illegal states unrepresentable. Second, it uses our BAREWire compile-time memory layout verification to ensure all data crossing the language boundary follows strict safety rules. Third, the boundary's safety properties fall into the framework's verification tiers, derived from the wrapper's structure for the common cases and carried as explicit obligations only where a property genuinely needs establishing.
 
 ## Shadow APIs for Drop-in Safety
 
@@ -47,13 +55,13 @@ int process_data(char* buffer, int size, char* output, int output_size);
 // - size accurately reflects buffer length
 // - output buffer is large enough
 // - output_size is correct
+ 
 ```
 
 The Fidelity shadow API preserves this exact interface:
 
 ```fsharp
 // Clef shadow API - same name, same signature, added safety
-[<DllExport("process_data")>]
 [<BAREWire.MemoryLayout>]
 let process_data (buffer: nativeptr<byte>) (size: int) 
                  (output: nativeptr<byte>) (output_size: int) : int =
@@ -71,7 +79,7 @@ let process_data (buffer: nativeptr<byte>) (size: int)
         Native.process_data_impl(inputSpan, outputSpan)
 ```
 
-It's worthwhile to note that C code calling `process_data` continues to work exactly as before. The function name is identical, the parameters are identical, and even the error codes remain the same. But now the function includes safety checks that prevent common vulnerabilities like null pointer dereferences and buffer overruns.
+C code calling `process_data` continues to work exactly as before. The function name is identical, the parameters are identical, and even the error codes remain the same. But now the function includes safety checks that prevent common vulnerabilities like null pointer dereferences and buffer overruns.
 
 This shadow API approach extends to scenarios involving callbacks, structures, and even global variables. Every aspect of the original C API can be preserved while adding a layer of safety beneath the surface. It is like replacing the brakes of a car with more reliable pads and rotors while keeping the same pedals and steering wheel. The driver's experience stays the same, and the vehicle becomes safer to operate.
 
@@ -91,27 +99,26 @@ For C and C++ developers accustomed to choosing between void pointers (unsafe bu
 
 The result we are designing toward is a binary that runs at a substantially similar speed to the original C and C++ code, carrying compile-time safety guarantees that would be impractical to achieve in the original language.
 
-## Formal Verification Potential
+## Verification the Tiers Already Carry
 
-The architecture reaches further when we consider formal verification. By annotating a shadow API with SMT proof obligations, we can attach machine-checkable safety properties to it while holding exact API compatibility:
+Most of a shadow wrapper's safety is not something you annotate; it is something the compiler reads off the wrapper's own structure. The layout that crosses the boundary is fixed by BAREWire and the dimensional types, which the framework verifies for free at Tier 1, with no proof code. The bounds and null discipline are Tier 2 integer obligations the compiler infers from the branches the wrapper already contains and a solver discharges. This is the same decidability-first posture [Dafny](https://dafny.org/) takes, where the obligations live in a fragment an SMT solver settles directly rather than in a proof assistant. Consider the array accessor with no proof annotations at all:
 
 ```fsharp
-[<DllExport("array_access")>]
-[<SMT Requires("arr <> null")>]
-[<SMT Ensures("index < arr_len ==> result = int (NativePtr.get arr (int index))")>]
-[<SMT Ensures("index >= arr_len ==> result = -1")>]
 let array_access (arr: nativeptr<byte>) (arr_len: uint32) (index: uint32) : int =
     // C convention: -1 for error, value for success
     if arr = NativePtr.nullPtr || index >= arr_len then
         -1
     else
         int (NativePtr.get arr (int index))
+ 
+```
 
-[<DllExport("memcpy")>]
-[<SMT Requires("dst <> null && src <> null")>]
-[<SMT Requires("n >= 0")>]
-[<SMT Ensures("result = dst")>]
-[<SMT Ensures("forall i in 0..n-1. (NativePtr.get dst i) = (NativePtr.get src i)")>]
+The guard `index >= arr_len` is the precondition. The compiler reads the range off that branch, the access on the `else` path is provably in bounds, and the solver discharges the resulting bounds obligation as a build-time fact. Nothing here is hand-written as a proof; the safety is a consequence of the code the wrapper already had to contain.
+
+Some properties do still have to be stated, and the line is worth drawing precisely. A *functional-correctness* claim, that `memcpy` actually copies each byte, is not derivable from the wrapper's branches the way a bounds check is; it is a property of the copy semantics that has to be established rather than read off the structure. That is the one place an explicit obligation earns its keep:
+
+```fsharp
+[<Ensures("forall i in 0..n-1. (NativePtr.get dst i) = (NativePtr.get src i)")>]  // established, not derived
 let memcpy (dst: nativeptr<byte>) (src: nativeptr<byte>) (n: unativeint) : nativeptr<byte> =
     if dst = NativePtr.nullPtr || src = NativePtr.nullPtr then
         NativePtr.nullPtr
@@ -119,10 +126,13 @@ let memcpy (dst: nativeptr<byte>) (src: nativeptr<byte>) (n: unativeint) : nativ
         let srcSpan = Span<byte>(src |> NativePtr.toVoidPtr, int n)
         let dstSpan = Span<byte>(dst |> NativePtr.toVoidPtr, int n)
         srcSpan.CopyTo(dstSpan)
-        dst  // Return dst to match standard memcpy
+        dst  // return dst to match standard memcpy
+ 
 ```
 
-For mission-critical systems in aerospace, medical devices, or financial infrastructure, these proofs provide a level of assurance that goes beyond traditional testing. The wrapper doesn't just claim to be safe; it comes with machine-checkable proofs of its safety properties, all while maintaining complete compatibility with existing C APIs.
+The null and bounds safety here is still derived, as in the accessor; only the byte-for-byte copy guarantee is annotated, because it is the kind of claim the tiers above Tier 2 are for. The split is the point: the common boundary hazards, the ones that produce most of the CVEs, are caught with no annotation burden, and the developer reaches for an explicit obligation only where the property genuinely requires establishing. For the relational guarantees a regulated domain sometimes needs, a constant-time discipline on a crypto wrapper, the same surface carries the obligation to the top tier, where it is checked against a proved lemma library rather than discharged by the solver alone.
+
+For mission-critical systems in aerospace, medical devices, or financial infrastructure, this is assurance that goes beyond traditional testing, and most of it costs nothing at the call site. The wrapper does not just claim to be safe; its safety is a byproduct of compilation, with explicit proof reserved for the properties that earn it, all while holding complete compatibility with existing C APIs.
 
 ## Economic Implications
 
@@ -136,6 +146,6 @@ The cost model favors this path. A safety wrapper might be 1% the size of the li
 
 We see the safety wrapper architecture as a way to keep the C and C++ code an organization already trusts while adding the memory safety its regulators now require. The trillions of dollars of refined native code in service today does not have to be rewritten to be protected.
 
-Three pieces of our framework carry this design. Clef's type safety makes illegal states un-representable at the boundary. Our BAREWire layout verification fixes the memory layout that crosses it. Composer is meant to compile the wrapper away in release builds. Together they let us retrofit safety onto an existing system without a wholesale rewrite or a large performance penalty. As memory safety requirements become mandatory across critical infrastructure, we expect this pattern to be one of the practical paths for protecting the investment in C and C++ while meeting the new requirements.
+Three pieces of our framework carry this design. Clef's type safety makes illegal states unrepresentable at the boundary. Our BAREWire layout verification fixes the memory layout that crosses it. Composer is meant to compile the wrapper away in release builds. Together they let us retrofit safety onto an existing system without a wholesale rewrite or a large performance penalty. As memory safety requirements become mandatory across critical infrastructure, we expect this pattern to be one of the practical paths for protecting the investment in C and C++ while meeting the new requirements.
 
-We have found no other representative implementations of this wrapping approach in the standing literature we have reviewed. Farscape already generates the binding and wrapper layers today, and the SMT-annotated shadow APIs are the direction we will keep building toward as the rest of the framework comes into place.
+We have found no other representative implementations of this wrapping approach in the standing literature we have reviewed. Farscape already generates the binding and wrapper layers today, and carrying the tier-derived safety from the boundary structure, with explicit proof reserved for the properties that need it, is the direction we will keep building toward as the rest of the framework comes into place.

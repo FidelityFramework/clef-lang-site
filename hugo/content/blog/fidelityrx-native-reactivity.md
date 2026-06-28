@@ -228,7 +228,7 @@ Our Fidelity.Rx takes a different approach. There is no hidden runtime machinery
 let observable = { Current = 0; Previous = 0; Observers = [||]; Count = 0 }
 
 // Direct observation
-observable.Observers.[observable.Count] <- (fun (old, new) -> printfn "%d -> %d" old new)
+observable.Observers.[observable.Count] <- (fun (old, curr) -> printfn "%d -> %d" old curr)
 observable.Count <- observable.Count + 1
 observable.Previous <- observable.Current
 observable.Current <- 42

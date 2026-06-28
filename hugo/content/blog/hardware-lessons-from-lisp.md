@@ -10,7 +10,7 @@ params:
   migration_date: 2026-03-29
 ---
 
-The computing industry sits at a notable juncture in 2025. After decades of general-purpose processor dominance that led to the accidental emergence of general purpose GPU, we're witnessing what appears to be a reverse inflection point. Specialized architectures are re-emerging as an economic imperative, with important differences from the LISP machines of the past. We examine here how languages inheriting from LISP's legacy, particularly [Clef](https://clef-lang.com) and others with lineage to OCaml and StandardML, are positioned to realize the advantages of new hardware coming from vendors like NextSilicon, Groq, Cerebras and Tenstorrent. We call this concept Dataflow Graph Architecture (DGA).
+The computing industry sits at a notable juncture in 2025. After decades of general-purpose processor dominance that led to the accidental emergence of general purpose GPU, we're witnessing what appears to be a reverse inflection point. Specialized architectures are re-emerging as an economic imperative, with important differences from the LISP machines of the past. We examine here how languages inheriting from LISP's legacy, particularly [Clef](https://clef-lang.com) and others with lineage to OCaml and Standard ML, are positioned to realize the advantages of new hardware coming from vendors like NextSilicon, Groq, Cerebras and Tenstorrent. We call this concept Dataflow Graph Architecture (DGA).
 
 ## The Phoenix Pattern: An Electric Car Saga
 
@@ -127,7 +127,7 @@ For example, in dataflow and spatial computing architectures, confusing timing w
 ```fsharp
 // Dataflow timing and throughput units
 [<Measure>] type token       // Data tokens in flight
-[<Measure>] type stage       // Pipeline stages
+[<Measure>] type cycles      // Clock cycles
 [<Measure>] type ns          // Nanoseconds
 
 type DataflowNode<'input, 'output> = {
@@ -147,7 +147,7 @@ let calculateBackpressure (node: DataflowNode<_,_>) (clockRate: int<cycles/ns>) 
 
 Clef's Units of Measure are erased at runtime, so this compile-time safety carries no runtime cost. In our compilation design, types are carried through MLIR as attributes to serve memory mapping and optimization, then elided where appropriate to leave primitive numeric types while preserving the verified dimensional consistency. This suits the goal of dependency-free, native compilation: the checking happens during development, and the compiled output runs as plain numerics.
 
-**Clef's Agent-Based Concurrency via MailboxProcessor**, inherited from Erlang's actor model, provides a message-passing primitive that aligns with dataflow semantics. Each agent maintains its own state and processes messages asynchronously, essentially a dataflow node that activates on message arrival. This Erlang-inspired feature means Clef developers already have the optionality to think in terms of isolated computational units communicating through messages, exactly the mental model needed for dataflow architectures where data packets trigger computation as they arrive at processing junctures.
+**Clef's Agent-Based Concurrency via MailboxProcessor**, the F# message-passing agent Don Syme added as a nod to Erlang's actor model, provides a message-passing construct that aligns with dataflow semantics. Each agent maintains its own state and processes messages asynchronously, essentially a dataflow node that activates on message arrival. This Erlang-inspired feature means Clef developers already have the optionality to think in terms of isolated computational units communicating through messages, exactly the mental model needed for dataflow architectures where data packets trigger computation as they arrive at processing junctures.
 
 **Type Providers** enable compile-time integration with external data sources, a critical capability for real-world dataflow systems that must ingest, validate, and process heterogeneous data streams. Unlike traditional approaches that discover data format errors at runtime, Clef's type providers generate strongly-typed representations from external schemas at compile time. This means a dataflow graph processing financial feeds, sensor streams, or scientific datasets knows the exact shape and constraints of its inputs before a single operation executes.
 
