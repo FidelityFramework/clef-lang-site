@@ -41,7 +41,7 @@ The intuition most people carry is that being more specific means supplying more
 
 For decades the range of options was short enough that the format choice barely *was* one. A real number was an IEEE `float` or an IEEE `double`, and which one a value got was decided less by the value than by what the target register held. 
 
-> A scarce option set does not simply limit the developer. It placed the burden of understanding hardware squarely on the designer. 
+> A scarce option set was not simply about limited choices. It placed the burden of understanding hardware squarely on the designer. 
 
 The C programmer choosing between `float`, `double`, and `long double` was choosing register widths. To choose well they had to know the target. Was this platform's `long double` eighty bits or sixty-four? Which width landed in a register, and which spilled? What was the precision once the hardware had its say? The knowledge that should have decided the format lived in the engineer, not in the toolchain, and the engineer carried it by being hardware-cognizant on every line.
 
