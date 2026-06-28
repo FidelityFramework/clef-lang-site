@@ -767,3 +767,17 @@ code, pre, kbd {
   .chroma .gl  { text-decoration: underline }
   .chroma .w   { color: #6e7681 }
 }
+
+/* ── Mermaid diagrams: center the rendered SVG ─────────────────
+   Hextra renders mermaid as <pre class="mermaid">, and mermaid.js
+   replaces the content with an inline <svg> that defaults to the
+   left. Flex-centering the container centers every diagram, and
+   max-width keeps wide diagrams from overflowing on small screens. */
+pre.mermaid {
+  display: flex;
+  justify-content: center;
+}
+pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
