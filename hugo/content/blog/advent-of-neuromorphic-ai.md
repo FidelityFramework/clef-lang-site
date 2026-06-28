@@ -123,7 +123,7 @@ This approximation replaces the undefined gradient with a smooth surrogate funct
 
 #### The Forward Gradient Approach
 
-Work by Baydin, Pearlmutter, Siskind and Syme[^1] gives an alternative that removes the surrogate entirely. The forward gradient method computes unbiased gradient estimates using only forward-mode automatic differentiation:
+Work by Baydin, Pearlmutter, Syme, Wood, and Torr[^1] gives an alternative that removes the surrogate entirely. The forward gradient method computes unbiased gradient estimates using only forward-mode automatic differentiation:
 
 \[
 g(\theta) = (\nabla f(\theta) \cdot v) v
@@ -246,7 +246,7 @@ let computeMembranePotential (current: Posit<32,2>) (input: Posit<32,2>) =
 
 ## Integration with Furnace Auto-Differentiation
 
-[The Furnace library](https://github.com/fsprojects/Furnace), originally developed as 'DiffSharp' by the same team behind the forward gradient work (Syme, Baydin, Pearlmutter and Siskind), gives us the forward-mode AD foundation for SNNs:
+[The Furnace library](https://github.com/fsprojects/Furnace), originally developed as 'DiffSharp' by Baydin, Pearlmutter, Siskind, and Syme, several of whom went on to the forward gradient work, gives us the forward-mode AD foundation for SNNs:
 
 ```fsharp
 module Furnace.Neuromorphic =

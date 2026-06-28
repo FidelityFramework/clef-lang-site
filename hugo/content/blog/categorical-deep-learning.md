@@ -14,7 +14,7 @@ params:
 
 ## A Confession and a Vision
 
-> A personal note from the founder of SpeakEZ Technolgies, Houston Haynes
+> A personal note from the founder of SpeakEZ Technologies, Houston Haynes
 
 I must admit something upfront: when I began design of the Fidelity framework in 2020, I was driven by practical engineering frustrations, particularly with AI development. The limitations of a managed runtime, the endless battle with numeric precision, machine learning framework quirks, constant bug chasing; these weren't just inconveniences, they felt like fundamental architectural flaws. So I started building something different, guided more by engineering intuition than mathematical theory. Then I recently encountered the position paper ["Categorical Deep Learning is an Algebraic Theory of All Architectures"](https://arxiv.org/pdf/2402.15332) by Gavranović et al., and experienced that rare moment of recognition: the mathematical foundations for what I have been building *already existed*.
 
@@ -79,7 +79,7 @@ Where \(\text{Para}\) is the parameterized category construction that enables gr
 
 ### Why Clef Is a Natural Choice for This Domain
 
-Clef is designed to express these higher-order mathematical structures directly. The functional foundation comes by way of F# and OCaml; the type-safety lineage runs through languages like Rust. Clef carries capabilities aimed specifically at categorical deep learning:
+Clef is designed to express these higher-order mathematical structures directly. The functional foundation comes by way of F# and OCaml, the same ML lineage whose OCaml branch also bootstrapped Rust's first compiler. Clef carries capabilities aimed specifically at categorical deep learning:
 
 #### Computation Expressions: Native Categorical Structures
 

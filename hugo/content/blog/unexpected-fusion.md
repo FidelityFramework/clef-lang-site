@@ -31,9 +31,9 @@ The divergences from OCaml were deliberate and thoughtful. Where OCaml required 
 
 Beyond syntax, F# introduced semantic innovations that OCaml hadn't explored. Units of measure brought dimensional analysis to the type system, allowing developers to catch unit conversion errors at compile time. Computation expressions provided a general framework for defining domain-specific languages within F#, from async workflows to query expressions. These features would later prove essential for expressing complex behaviors.
 
-## The Critical Addition: MailboxProcessor as Language Primitive
+## The Critical Addition: MailboxProcessor in the Core Library
 
-Perhaps the most significant departure from OCaml was F#'s inclusion of the MailboxProcessor as a built-in language feature. More than a library addition, it gave message-passing concurrency first-class support. The MailboxProcessor brought Erlang's actor model directly into F#'s type-safe world:
+Perhaps the most significant departure from OCaml was F#'s inclusion of the MailboxProcessor in its core library, FSharp.Core. Shipping it with the language gave message-passing concurrency a first-class, type-safe form that OCaml's standard distribution had no equivalent for. The MailboxProcessor brought Erlang's actor model directly into F#'s type-safe world:
 
 ```fsharp
 type Message =
@@ -69,7 +69,7 @@ This synthesis draws OCaml's web compilation legacy through jsoo, Fable's reimag
 
 ## Extending the Actor Vision
 
-Our [Fidelity Framework](/blog/fidelity-framework-primer/) extends F#'s actor model when unconstrained by the .NET SDK and runtime. By building on the MailboxProcessor primitive, the framework introduces an actor system with supervision hierarchies, distributed message passing, and deterministic resource management.
+Our [Fidelity Framework](/blog/fidelity-framework-primer/) extends F#'s actor model when unconstrained by the .NET SDK and runtime. By building on the MailboxProcessor model, the framework introduces an actor system with the potential for supervision hierarchies, distributed message passing, and deterministic resource management.
 
 Where F#'s standard MailboxProcessor operates within the CLR's managed environment, our Olivier actor model is designed to compile directly to native code. By operating outside a managed runtime, the framework can provide guarantees about memory usage, execution timing, and resource consumption that would be difficult to reach in managed runtime environments.
 
@@ -88,7 +88,7 @@ graph TD
     end
 ```
 
-Our Prospero supervision layer, detailed in our exploration of [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/), brings Erlang-style supervision trees to F#. Where Erlang's process-per-actor model gives each actor an isolated heap, Prospero uses arena allocation within shared process memory. This design choice reflects modern hardware realities: cache coherence has advanced, memory is abundant, and the cost of message copying often exceeds the benefit of complete isolation.
+Our Prospero supervision layer, detailed in our exploration of [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/), is designed to bring Erlang-style supervision trees to F#. Where Erlang's process-per-actor model gives each actor an isolated heap, Prospero uses arena allocation within shared process memory. This design choice reflects modern hardware realities: cache coherence has advanced, memory is abundant, and the cost of message copying often exceeds the benefit of complete isolation.
 
 ```fsharp
 module Olivier =
