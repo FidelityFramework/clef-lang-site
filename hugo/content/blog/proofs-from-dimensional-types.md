@@ -7,7 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Type Systems", "Innovation"]
 ---
 
-In 1989, Philip Wadler published ["Theorems for free!"](https://people.mpi-sws.org/~dreyer/tor/papers/wadler.pdf), a paper that demonstrated a remarkable property of polymorphic type systems: the type of a function, by itself, determines non-trivial theorems about that function's behavior. No implementation needs to be examined. No test cases need to be run. The type is the theorem.
+In 1989, Philip Wadler published ["Theorems for free!"](https://people.mpi-sws.org/~dreyer/tor/papers/wadler.pdf), a paper that demonstrated a counterintuitive property of polymorphic type systems: the type of a function, by itself, determines non-trivial theorems about that function's behavior. No implementation needs to be examined. No test cases need to be run. The type is the theorem.
 
 This result, grounding John Reynolds' earlier abstraction theorem (1983) in a form accessible to working programmers, has quietly underpinned the design of ML-family type systems for over three decades. It is a direct influence on our Dimensional Type System, and the lineage is worth tracing.
 

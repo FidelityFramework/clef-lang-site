@@ -276,7 +276,7 @@ The working-set numbers from the Conventional Path section are not abstract. For
 
 ### Security surface
 
-A native binary with no JIT, no garbage collector, no interpreter, and a small dependency set is a tractable target for formal-methods auditing. For our broader commercial thesis, this property is load-bearing. A [QuantumCredential](https://speakez.tech/portfolio/quantumcredential/) client compiled to run natively on an iPhone would preserve the constant-time and side-channel-resistance properties that our coeffect verifier reasoned about, because the binary on the device is the binary the verifier saw. Constant-time is a pillar of any verification stack, and it depends on the executing binary matching the audited code.
+A native binary with no JIT, no garbage collector, no interpreter, and a small dependency set is a tractable target for formal-methods auditing. For our broader commercial thesis, this property is load-bearing. A [Post-Quantum Credential](https://speakez.tech/portfolio/post-quantum-credential/) client compiled to run natively on an iPhone would preserve the constant-time and side-channel-resistance properties that our coeffect verifier reasoned about, because the binary on the device is the binary the verifier saw. Constant-time is a pillar of any verification stack, and it depends on the executing binary matching the audited code.
 
 ### Cross-cutting verification across all targets
 

@@ -209,7 +209,7 @@ This behavior definition compiles to either target without modification. The bus
 
 ## Fidelity/Olivier Runtime
 
-In the Fidelity framework, actors execute as native code compiled through MLIR. The runtime builds on Clef's `MailboxProcessor`, a primitive that serializes message delivery to a single logical thread. This serialization eliminates data races within an actor without requiring explicit locks.
+In the Fidelity framework, actors execute as native code compiled through MLIR. The runtime builds on the `MailboxProcessor` model that Clef inherits from F#, a core-library actor type that serializes message delivery to a single logical thread. This serialization eliminates data races within an actor without requiring explicit locks.
 
 The implementation pairs each actor with a memory arena, a pre-allocated region from which the actor draws its allocations. When the actor terminates or restarts, the entire arena releases as a unit. This approach aligns with Fidelity's RAII model, detailed in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), where resource lifetimes bind to continuation boundaries.
 

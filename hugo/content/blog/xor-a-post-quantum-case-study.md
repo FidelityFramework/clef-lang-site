@@ -39,7 +39,7 @@ var rng2 = new Random();  // Same millisecond = same seed
 // can try seeds around that time and find your sequence
 ```
 
-The limitation is structural. PRNGs are finite state machines with small internal state. For `System.Random`, knowing the seed means knowing the entire infinite sequence. The default constructor seeds from system uptime in milliseconds: roughly \(2^{25}\) possibilities for a system that's been running less than a year. An attacker can try all of them in seconds.
+The limitation is structural. PRNGs are finite state machines with small internal state. For `System.Random`, knowing the seed means knowing the entire infinite sequence. The default constructor seeds from system uptime in milliseconds: roughly \(2^{35}\) possibilities for a system that's been running less than a year. An attacker can try all of them in seconds.
 
 **Cryptographically Secure PRNGs (CSPRNGs)** improve on basic PRNGs by using cryptographic primitives and continuously mixing in environmental entropy. .NET's `RandomNumberGenerator.Create()` delegates to operating system facilities: CryptGenRandom on Windows, /dev/urandom on Linux. These systems harvest entropy from various sources (keyboard timing, mouse movements, disk I/O patterns, network packet arrival times) and use it to re-seed cryptographic algorithms.
 
@@ -161,7 +161,7 @@ Starting with 5% bias per channel, the four-channel tree reduces it to 0.005%: a
 
 ### The Co-Design Advantage
 
-The \(8\varepsilon^4\) formula has a notable implication: the starting bias \(\varepsilon\) is raised to the fourth power. This means small reductions in per-channel bias yield enormous improvements in output quality. Reducing \(\varepsilon\) from 5% to 2% doesn't sound dramatic, but the final bias drops from 0.005% to 0.00001%. That represents a 400× improvement from a 2.5× change in input quality.
+The \(8\varepsilon^4\) formula has a notable implication: the starting bias \(\varepsilon\) is raised to the fourth power. This means small reductions in per-channel bias yield outsized improvements in output quality. Reducing \(\varepsilon\) from 5% to 2% doesn't sound dramatic, but the final bias drops from 0.005% to 0.00013%. Because the bias scales as \(\varepsilon^4\), a 2.5× change in input quality yields a \(2.5^4 \approx 39\)× improvement in the output.
 
 This is where hardware/software co-design proves its value. The mathematics tells us exactly where hardware optimization matters most. Each channel can be individually tuned:
 
