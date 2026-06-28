@@ -370,7 +370,7 @@ The dimensional discipline also points toward safety certification, because the 
 
 Beyond our INS reference design, our broader aim is to carry these constraints from shape correctness into deeper mathematical properties, for instance that small perturbations of an input preserve a model's topological features. A property of that kind is not a free theorem from the types; it is a higher-tier obligation, the sort the proof stack reaches where structural typing alone cannot, through the solver's probabilistic fragment or the relational layer that reasons about a model's behavior across paired runs.
 
-While these capabilities are still being developed, they represent the logical extension of our dimensional constraint system - moving from ensuring correct shapes to proving deeper mathematical properties of the models we deploy.
+While these capabilities are still being developed, they represent the logical extension of our dimensional constraint system, moving from ensuring correct shapes to proving deeper mathematical properties of the models we deploy.
 
 ## Where the Design Stands
 

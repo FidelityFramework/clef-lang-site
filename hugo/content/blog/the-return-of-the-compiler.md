@@ -12,8 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
----
-
 The computing landscape has undergone seismic shifts over the past three decades, yet many of our foundational software platforms remain anchored to paradigms established during a vastly different technological era. Virtual machines and managed runtime environments like Java's JVM and .NET's CLR emerged during the late 1990s and early 2000s as solutions to very specific problems of that time: platform independence, memory safety, and simplified development in an era of relatively homogeneous computing resources.
 
 Today, we face a different set of challenges. The explosion of heterogeneous computing architectures, accelerator-based workloads, and the demand for computational efficiency has exposed the limitations of these legacy approaches. This paper examines how virtual machines and managed runtimes have become vestigial structures in our computing ecosystem, technological appendages that once served crucial functions but now increasingly impede progress in a world of specialized computing.
@@ -128,7 +126,7 @@ Another reason to move beyond virtual machines is their mismatch with modern acc
 
 ### The Fidelity Model: Adapting to Platform Constraints
 
-Our Fidelity Framework takes an approach to cross-platform development that adapts to the constraints of each target platform without requiring a virtual machine. Unlike many cross-platform frameworks that rely on conditional compilation or runtime detection, the framework uses functional composition for platform adaption. This approach is designed to let the same source code compile natively for different targets, from embedded systems to server environments, without the overhead of a runtime:
+Our Fidelity Framework takes an approach to cross-platform development that adapts to the constraints of each target platform without requiring a virtual machine. Unlike many cross-platform frameworks that rely on conditional compilation or runtime detection, the framework uses functional composition for platform adaptation. This approach is designed to let the same source code compile natively for different targets, from embedded systems to server environments, without the overhead of a runtime:
 
 ```clef
 // Base configuration

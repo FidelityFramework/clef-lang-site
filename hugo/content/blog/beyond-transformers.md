@@ -22,7 +22,7 @@ Current language models train on vast corpora of text, essentially a frozen snap
 
 The research community has been converging on addressing these limitations from multiple directions. In October 2023, Microsoft Research introduced BitNet, demonstrating that large language models could function with weights quantized to just 1 bit. They followed this in February 2024 with "The Era of 1-bit LLMs," showing that 1.58 bits per weight was sufficient for state-of-the-art performance. That finding challenged conventional wisdom about the precision requirements of AI models.
 
-In a separate thrust of work, researchers from the University of California, Santa Cruz [published a paper](https://arxiv.org/abs/2406.02528) in April 2024 titled "Scalable MatMul-free Language Modeling." This research demonstrated that large language models can be built without any matrix multiplication operations while maintaining strong performance at billion-parameter scales.
+In a separate thrust of work, researchers from the University of California, Santa Cruz [published a paper](https://arxiv.org/abs/2406.02528) in June 2024 titled "Scalable MatMul-free Language Modeling." This research demonstrated that large language models can be built without any matrix multiplication operations while maintaining strong performance at billion-parameter scales.
 
 Parallel to these weight-focused innovations, other researchers have been tackling the quadratic complexity challenges of transformer architectures. The Mamba architecture, introduced by Albert Gu and colleagues in late 2023, employs state space models (SSMs) that process sequences with linear scaling, enabling efficient handling of extremely long contexts. Similarly, extended LSTMs (xLSTMs) have emerged as hybrid approaches that combine the parameter efficiency of recurrent networks with mechanisms inspired by transformers. Other notable sub-quadratic alternatives include Linear Attention variants like Performer and MEGA (Moving Average Equipped Gated Attention), as well as structured state space models such as S4 and S5.
 
@@ -279,6 +279,7 @@ The challenge in training quantized neural networks lies in their non-differenti
 ```
 Forward: y = q(x)  # q is the non-differentiable quantization function
 Backward: dx/dy = 1  # STE pretends q'(x) = 1 during backpropagation
+ 
 ```
 
 While this approximation enables training, it introduces systematic errors that accumulate with network depth. For MatMul-free models with billions of parameters, these errors can significantly impair training dynamics.

@@ -12,8 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
----
-
 The computing world has fragmented into specialized ecosystems. Embedded systems demand byte-level control, mobile platforms enforce strict resource constraints, and server applications require elasticity and parallelism. Traditionally, these environments have forced developers to choose between conflicting approaches: use a high-level language with garbage collection and accept the performance overhead, or drop down to systems programming with manual memory management and lose expressiveness. The targets themselves have grown more capable. Mobile devices now ship multi-processor architectures with multi-threading the norm. The near future is in being able to directly address heterogeneous architectures for a given device or solution.
 
 ## Beyond Runtime Boundaries

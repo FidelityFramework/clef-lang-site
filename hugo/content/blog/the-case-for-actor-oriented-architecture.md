@@ -1,12 +1,12 @@
 ---
 title: "The Case for Actor-Oriented Architecture"
 date: 2024-06-20T16:59:54+06:00
-description : "Process-Level Protection Without Runtime Overhead: The Actor Advantage"
+description: "Process-Level Protection Without Runtime Overhead: The Actor Advantage"
 tags: ["Design"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2024-06-20
-  original_url: https://speakez.tech/blog/the-case-for-actor-oriented-architecture/
+  original_url: "https://speakez.tech/blog/the-case-for-actor-oriented-architecture/"
   migration_date: 2026-03-29
 ---
 
@@ -16,9 +16,9 @@ As computing platforms continue to diversify across embedded systems, mobile dev
 
 Our Olivier/Prospero actor model provides the security benefits of managed memory without the restrictions and overhead of conventional runtimes. It also changes how we think about the relationship between application code, platform capabilities, and safety properties. Rather than interposing a universal abstraction layer between developers and hardware, we provide compositional building blocks that adapt to each deployment context while preserving consistent semantics.
 
-## THE RUNTIME LANDSCAPE: A REPEATING CYCLE
+## The Runtime Landscape: A Repeating Cycle
 
-#### The Legacy of Monolithic Runtimes
+### The Legacy of Monolithic Runtimes
 
 Traditional runtimes like the JVM and .NET CLR emerged during an era of relative platform homogeneity, where the primary concern was providing memory safety and cross-platform compatibility across a narrow range of hardware configurations. In the late 1990s and early 2000s, "cross-platform" largely meant spanning Windows, Linux, and perhaps Solaris servers, with occasional forays into desktop applications. The hardware landscape was dominated by x86 and x86-64 architectures, with relatively predictable memory hierarchies and performance characteristics.
 
@@ -26,7 +26,7 @@ These systems introduced significant abstraction layers between application code
 
 These runtimes never delivered on the "build once, run anywhere" [marketing that was promoted at the time](https://www.theregister.com/2003/06/09/sun_preps_500m_java_brand/). Instead, developers discovered that subtle differences in runtime implementations, platform-specific bugs, and varying performance characteristics meant that "write once, test everywhere" became the reality. A Java application that ran smoothly on one JVM version might exhibit entirely different behavior on another, even on the same operating system. The promise of universality gave way to the pragmatic recognition that platform diversity could not be abstracted away. It could only be managed through repeated testing and platform-specific tuning.
 
-#### The Rust Community's Runtime Renaissance
+### The Rust Community's Runtime Renaissance
 
 Despite the industry's experience with the limitations of monolithic runtimes, we continue to see new runtime environments emerging. This pattern reflects a persistent belief that the problem wasn't runtimes themselves, but rather the specific implementation choices of previous generations. The thinking goes: "If we could just build a *better* runtime with modern engineering practices and lessons learned, we could avoid the pitfalls of the past."
 
@@ -36,7 +36,7 @@ The proliferation of async runtimes in Rust illustrates a recurring problem: whe
 
 These efforts, while innovative and well-intentioned, ultimately reproduce many of the same challenges that plagued earlier runtime systems: version fragmentation, performance overhead, and adverse deployment burden. A WebAssembly-based runtime still requires a WebAssembly host environment. An async runtime still needs careful tuning for different workload characteristics. And critically, each runtime imposes architectural constraints that limit how directly you can interact with platform capabilities, from hardware accelerators to OS-specific features.
 
-#### The .NET Story: Rescued but Still Confined
+### The .NET Story: Rescued but Still Confined
 
 The .NET ecosystem presents a particularly instructive case study in the challenges of runtime portability and ecosystem evolution. Despite Microsoft's considerable resources and engineering talent, .NET initially struggled with cross-platform adoption. The original .NET Framework was deeply intertwined with Windows, relying on Win32 APIs and Windows-specific infrastructure for everything from file I/O to UI rendering. Promises of cross-platform compatibility through the CLI specification remained largely theoretical for years.
 
@@ -48,9 +48,9 @@ However, even with these advancements and Microsoft's renewed commitment to open
 
 Even well-designed runtimes struggle to achieve genuine platform diversity once architectural decisions (and public perceptions) are "locked in". The runtime becomes a dependency that must be justified, installed, managed, and maintained across diverse environments. Each new platform or deployment target requires runtime adaptation, testing, and validation. The runtime itself becomes a barrier to adoption, regardless of the quality of the languages and libraries built atop it.
 
-### WHY NOT ANOTHER RUNTIME?
+## Why Not Another Runtime?
 
-#### The Diminishing Returns of Runtime Development
+### The Diminishing Returns of Runtime Development
 
 Building a new runtime system presents several significant challenges that compound over time:
 
@@ -64,25 +64,25 @@ Building a new runtime system presents several significant challenges that compo
 
 **Maintenance Burden**: Once deployed, runtimes create significant backwards compatibility constraints that limit architectural evolution and innovation. Breaking changes fragment the ecosystem, as libraries and applications depend on specific runtime behaviors. Yet maintaining compatibility prevents fixing core design issues. The Java platform still carries legacy APIs from the 1990s that no one recommends but that can't be removed. The .NET Framework compatibility surface became so large that Microsoft effectively had to start over with .NET Core to enable meaningful architectural improvements.
 
-#### The Hidden Costs of "Write Once, Run Anywhere"
+### The Hidden Costs of "Write Once, Run Anywhere"
 
 The traditional runtime promise of "write once, run anywhere" reveals itself as "write once, debug everywhere" in practice. Consider a Java application that works perfectly on OpenJDK 11 on Linux but exhibits different behavior on Oracle JDK 11 on Windows due to subtle differences in file system handling or thread scheduling. Or a .NET application that runs smoothly in development on Windows but crashes intermittently in production on Linux because of differences in how signals are handled or how DNS resolution works.
 
 Subtle platform differences in runtime behavior persist despite abstraction attempts. DateTime handling varies across platforms. File path normalization behaves differently. Network timeout semantics diverge. These differences often surface only in production under specific load conditions, leading to more complex debugging scenarios than direct native compilation approaches would encounter. With native compilation, platform differences are explicit and visible during development. With runtime abstraction, they hide beneath layers of indirection, emerging unexpectedly as "works on my machine" problems scaled to infrastructure level.
 
-### THE ACTOR MODEL: A MORE FLEXIBLE ALTERNATIVE
+## The Actor Model: A More Flexible Alternative
 
-#### Security Without the Runtime Tax
+### Security Without the Runtime Tax
 
 Our actor model provides the memory safety guarantees traditionally associated with managed runtimes, without the architectural overhead. Process isolation already provides the memory protection we need, while RAII provides deterministic cleanup within process boundaries. We do not need to reinvent these wheels.
 
 **Process-Level Memory Protection**: By using OS processes as the primary isolation boundary, we leverage existing hardware protection mechanisms rather than duplicating them in software. When Actor A sends a message to Actor B running in a different process, the operating system's memory management unit enforces isolation. Actor A cannot accidentally corrupt Actor B's memory, not because of runtime checks or software sandboxing, but because the hardware prevents it. This is the same mechanism that prevents your web browser from corrupting your text editor's memory. It is enforced in hardware, it is already present on the target platforms, and it costs us nothing to leverage.
 
-**Shared Memory Pools**: In our design, actors within a process share memory pools managed with RAII (Resource Acquisition Is Initialization). When an actor allocates memory for a message, that memory's lifetime is bound to lexical scope. When the scope exits, the memory is deterministically freed. No garbage collection pauses. No mark-and-sweep algorithms. No generational collection heuristics. Our compiler is designed to track object lifetimes and insert cleanup code at the appropriate points, keeping memory utilization efficient while maintaining logical separation between actors sharing a process.
+**Shared Memory Pools**: In our design, actors within a process share memory pools managed with RAII (Resource Acquisition Is Initialization). When an actor allocates memory for a message, that memory's lifetime is bound to lexical scope. When the scope exits, the memory is deterministically freed. No garbage collection pauses. No mark-and-sweep algorithms. No generational collection heuristics. Our compiler is designed to track object lifetimes and insert cleanup code at the appropriate points, keeping memory utilization efficient while maintaining logical separation between actors sharing a process. We work out this RAII discipline in detail in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/).
 
 **Message-Passing Security**: The actor model's emphasis on message passing naturally enforces clean memory boundaries between components. Actors don't share mutable state. They send copies of data (or ownership transfers) via messages. This eliminates entire classes of concurrency bugs: data races, deadlocks from lock ordering issues, and race conditions from unsynchronized access. The programming model itself prevents the most common memory safety issues without requiring garbage collection overhead or complex runtime analysis.
 
-#### Dynamic Allocation Where It Matters
+### Dynamic Allocation Where It Matters
 
 Our architecture provides dynamic memory management where beneficial without imposing it universally. This flexibility stems from treating memory management as a compositional concern rather than a fixed runtime characteristic.
 
@@ -90,9 +90,9 @@ Our architecture provides dynamic memory management where beneficial without imp
 
 **Workload-Adaptive Allocation**: The actor supervisor hierarchy allows dynamic adaptation to changing workloads, allocating resources where needed without the heavy-handed approach of global garbage collection. When request volume increases, supervisors can spawn additional worker actors. When load decreases, workers can be retired and their resources reclaimed. This happens at the granularity of individual actors, not entire application heaps. If a particular subsystem experiences memory pressure, its supervisor can take corrective action without affecting the rest of the application. This fine-grained resource management enables graceful degradation under load rather than application-wide garbage collection pauses.
 
-**Zero-Copy Optimization**: Our BAREWire protocol is designed for communication with minimal copying, which matters most for data-intensive applications. When transferring large buffers between actors, we can pass ownership of memory regions rather than copying data. The receiving actor takes ownership of the buffer, the sending actor releases it, and no memcpy occurs. For communication between actors in the same process, the design uses direct pointer passing with ownership semantics enforced at compile time. For cross-process communication, it uses shared memory segments with appropriate synchronization. The protocol adapts to the deployment context, using the most efficient mechanism available while maintaining consistent semantics.
+**Zero-Copy Optimization**: Our BAREWire protocol is designed for communication with minimal copying, which matters most for data-intensive applications. When transferring large buffers between actors, we can pass ownership of memory regions rather than copying data. The receiving actor takes ownership of the buffer, the sending actor releases it, and no memcpy occurs. For communication between actors in the same process, the design uses direct pointer passing with ownership semantics enforced at compile time. For cross-process communication, it uses shared memory segments with appropriate synchronization. The protocol adapts to the deployment context, using the most efficient mechanism available while maintaining consistent semantics. The shared-heap message passing this rests on is the subject of [our analysis of Erlang's model](/blog/ode-to-erlang/).
 
-#### Platform Diversity Without Abstraction Penalties
+### Platform Diversity Without Abstraction Penalties
 
 Unlike monolithic runtimes that attempt to abstract away platform differences, our approach embraces platform diversity. We recognize that different platforms have different strengths, and attempting to hide those differences behind a universal abstraction inevitably compromises performance on all targets.
 
@@ -102,7 +102,7 @@ Unlike monolithic runtimes that attempt to abstract away platform differences, o
 
 **Graceful Degradation**: When boundary conditions cause elements to fall into an unknown state, the system gracefully adapts rather than halting or requiring significant intervention. If an actor fails, its supervisor can restart it, route around it, or fail gracefully according to policy. If a platform capability isn't available, the compiler selects an alternative implementation path rather than throwing a runtime exception. If memory pressure develops, the actor system can shed load by refusing new work rather than thrashing in garbage collection. The system acknowledges that failures happen and plans for them structurally rather than treating them as exceptional conditions requiring human intervention.
 
-### Beyond the Runtime Paradigm
+## Beyond the Runtime Paradigm
 
 Building another runtime would step back into an architectural pattern that is increasingly misaligned with the realities of modern computing. The computing landscape of 2024 and beyond bears little resemblance to the relatively homogeneous environment that spawned the JVM and CLR. We now deploy to:
 
@@ -115,7 +115,7 @@ Building another runtime would step back into an architectural pattern that is i
 
 The traditional runtime approach of abstracting these differences behind a universal interface leaves performance on the table everywhere. An abstraction broad enough to span this diversity necessarily compromises on each platform's unique strengths.
 
-The future demands embracing hardware diversity rather than abstracting it away, providing developers with consistent programming models that adapt to their deployment targets rather than forcing those targets to adapt to a runtime. This means compilation targeting specific platforms, not interpretation of universal bytecode. It means leveraging OS primitives for process isolation rather than software sandboxing. It means using the type system to enforce safety properties at compile time rather than checking them at runtime.
+The future demands embracing hardware diversity rather than abstracting it away, providing developers with consistent programming models that adapt to their deployment targets rather than forcing those targets to adapt to a runtime. This means compilation targeting specific platforms, not interpretation of universal bytecode. It means leveraging OS primitives for process isolation rather than software sandboxing. It means using the type system to enforce safety properties at compile time rather than checking them at runtime. The concrete shape of that native, runtime-free async model is the subject of [Clef Async from .NET to Fidelity](/blog/dotnet-to-fidelity-concurrency/).
 
 Our actor-oriented approach with Olivier/Prospero is built toward this architecture. It draws the security properties traditionally associated with managed runtimes from process isolation and RAII. It adapts to diverse computing environments through compositional memory management and platform-specific code generation. It aims at the performance characteristics of native code by compiling directly to machine instructions without runtime overhead.
 

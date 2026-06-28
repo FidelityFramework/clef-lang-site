@@ -264,6 +264,7 @@ module UIProcessArchitecture =
         interface IDisposable with
             member this.Dispose() =
                 arena.Dispose()  // All view data cleaned up
+ 
 ```
 
 In this design the view hierarchy lives in the coordinator's arena and is reclaimed when the coordinator terminates. No separate tracking is needed.

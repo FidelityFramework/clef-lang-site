@@ -173,6 +173,7 @@ let create_grid parent =
                                   LV_GRID_ALIGN_STRETCH 0 1
     
     // ... similar for other children
+ 
 ```
 
 As implied above, we would not implement a layout system from scratch. Instead, we would build a functional API layer that compiles down to LVGL's existing layout system, pairing a functional programming surface with a native implementation underneath.
@@ -257,6 +258,7 @@ let update_view container old_model new_model =
         create_data_view container data
     
     // ... other transitions
+ 
 ```
 
 This approach would combine Fabulous's diffing concept with compile-time analysis to generate minimal update code. The UI updates would stay functional in style while running as direct native calls.

@@ -12,8 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
----
-
 Erlang emerged in the late 1980s at Ericsson, when distributed systems were in their infancy and reliability was becoming a critical concern in telecommunications. It was built to meet a practical need: telephone exchanges that could achieve the "nine nines" (99.9999999%) of uptime. To get there, Erlang took an unusual position on concurrency and fault tolerance.
 
 ## A Pioneer in Reliable Distributed Computing
@@ -202,7 +200,7 @@ let banking = orchestrator {
 }
 ```
 
-This builds on Erlang's supervision model in a few ways. The type system holds supervisors and their charges to compatible message types, which makes a class of runtime errors unrepresentable. The supervision strategies are checked at compile time, with exhaustive exception handling enforced by the compiler. By making the relationship between Akka.NET and Erlang's supervision models explicit, Prospero is designed to bridge the two ecosystems, so systems built on Fidelity can interoperate with existing Akka.NET deployments.
+This builds on Erlang's supervision model in a few ways. The type system is meant to hold supervisors and their charges to compatible message types, making a class of runtime errors unrepresentable. The design checks supervision strategies at compile time, with exhaustive exception handling enforced by the compiler. By making the relationship between Akka.NET and Erlang's supervision models explicit, Prospero is designed to bridge the two ecosystems, so systems built on Fidelity can interoperate with existing Akka.NET deployments.
 
 This keeps the core of Erlang's approach, that systems should be designed to recover from failure rather than prevent all of it, and adds compile-time checking and ecosystem compatibility.
 
