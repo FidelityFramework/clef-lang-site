@@ -164,6 +164,19 @@ module DeployPages =
             let fileCount = Directory.GetFiles(publicDir, "*", SearchOption.AllDirectories).Length
             if verbose then printfn "        Found %d files in public directory" fileCount
 
+            // Guard against shipping dev-server output. A `hugo server` build injects
+            // livereload.js into every page and uses the non-minified asset variants; if
+            // such output reaches Pages, Subresource-Integrity mismatches block scripts
+            // (e.g. mermaid) and pages render broken. A production `hugo --minify` build
+            // never contains livereload, so its presence means a stale dev public/ leaked.
+            let devArtifact =
+                Directory.GetFiles(publicDir, "*.html", SearchOption.AllDirectories)
+                |> Array.tryFind (fun f -> (File.ReadAllText f).Contains "livereload.js")
+            match devArtifact with
+            | Some f ->
+                return Error $"Refusing to deploy: built public/ contains dev-server output (livereload.js in {f}). This is a stale `hugo server` build, not `hugo --minify`. Stop any running `hugo server`, then redeploy."
+            | None ->
+
             // Deploy (project is created by provision step; skip existence check to avoid API auth flakes)
             nextStep (sprintf "Deploying to Pages project: %s" projectName)
 
