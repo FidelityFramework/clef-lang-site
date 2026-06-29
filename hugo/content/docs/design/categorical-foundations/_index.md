@@ -1,6 +1,6 @@
 ---
 title: Categorical Foundations
-weight: 7
+weight: 60
 ---
 
 Fidelity's type system and memory model were designed from engineering requirements; dimensional preservation through compilation, deterministic allocation without a garbage collector, and multi-target code generation from a single source. The categorical deep learning paper by Gavranović et al. provided the formal recognition that these properties instantiate a 2-categorical structure. Its adjoint correspondences place gradient computation, sensitivity analysis, and quantum evolution under a single algebraic framework.

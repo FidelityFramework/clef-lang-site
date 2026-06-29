@@ -1,6 +1,6 @@
 ---
 title: JavaScript Targeting
-weight: 5
+weight: 80
 ---
 
 Fidelity.CloudEdge is the edge computing layer of the Fidelity Framework. It provides substrate-agnostic actor model support across bare metal and Cloudflare's edge platform: 727 runtime types covering the complete Workers surface (Durable Objects, D1, R2, KV, Queues, Workers AI, Vectorize, Containers, and more) plus 32 management service clients for infrastructure provisioning and orchestration. Actors written against `MailboxProcessor` run on either substrate without code changes, with Durable Objects providing the sequential execution context at the edge.

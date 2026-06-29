@@ -1,7 +1,7 @@
 ---
 title: "Language Semantics"
 description: "Type universe, collections, metaprogramming, and managed mutability as compilation infrastructure"
-weight: 6
+weight: 10
 ---
 
 Semantics and syntax differ in every language. This section offers some insights beyond notation. We centralize F# features such as quotations, active patterns, and computation expressions to be the carriers that move semantic information through the pipeline, anchoring Clef's ***concurrent* programming model**. Two other lineages contribute: F* for refinement types that carry proof obligations, and Scheme for the nanopass framework that organizes the compiler's passes.

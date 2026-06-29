@@ -1,6 +1,6 @@
 ---
 title: Memory Model
-weight: 1
+weight: 40
 ---
 
 Clef manages memory without a garbage collector. Instead, the compiler infers ownership, lifetimes, and region boundaries from the program's structure, producing deterministic allocation and cleanup that is both safe and predictable.

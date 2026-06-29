@@ -1,6 +1,6 @@
 ---
 title: Constrained Machine Learning
-weight: 10
+weight: 70
 ---
 
 Our Adaptive Domain Model carries a domain's known structure in its types. A conserved grade, the domain's many dimensions, an equivariance: our model encodes each of these in the type, and the type directly informs the weights the model fits. Our design considers a unique Bayesian approach that allows for inference with confidence intervals, and opens the door for continuous learning. 

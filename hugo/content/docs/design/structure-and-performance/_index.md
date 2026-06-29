@@ -2,7 +2,7 @@
 title: "Structure and Performance"
 linkTitle: "Structure and Performance"
 description: "How the structure of functional code becomes efficient native execution: the design decisions that make Clef lower well, before any compiler stage runs."
-weight: 4
+weight: 50
 ---
 
 Performance in Clef is a property of how code is structured, not a phase that recovers it afterward. The same functional discipline that makes a program tractable to reason about, explicit data flow, bounded arity, controlled laziness, cohesive modules, is what makes it tractable to lower into fast native code. These articles are about that connection: why the shape of the language is the shape that compiles well.

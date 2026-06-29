@@ -1,6 +1,6 @@
 ---
 title: Concurrency
-weight: 3
+weight: 30
 ---
 
 Clef's concurrency model is built on delimited continuations. This primitive replaces the colored-function problem of traditional async/await with a single mechanism for suspension, resumption, and structured concurrency.

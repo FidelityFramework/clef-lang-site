@@ -1,6 +1,6 @@
 ---
 title: Type System
-weight: 2
+weight: 20
 ---
 
 Clef's type system is grounded in our Native Type Universe (NTU), a unified representation that maps ML-family types directly to machine-native layouts without an intermediate managed runtime.
