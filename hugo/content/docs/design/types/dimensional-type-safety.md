@@ -1,6 +1,7 @@
 ---
 title: "Dimensional Type Safety Across Execution Models"
 linkTitle: "Dimensional Type Safety"
+weight: 40
 description: "How Intrinsic Units of Measure Puts Clef in a New Orbit"
 date: 2026-01-10T00:00:00+00:00
 authors: ["Houston Haynes"]

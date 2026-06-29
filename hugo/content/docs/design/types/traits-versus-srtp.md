@@ -1,6 +1,7 @@
 ---
 title: "Traits Versus Statically Resolved Type Parameters"
 linkTitle: "Traits vs SRTP"
+weight: 20
 description: "How F# SRTP stands in contrast to Rust's approach to polymorphism"
 date: 2025-09-05T10:00:00-04:00
 authors:

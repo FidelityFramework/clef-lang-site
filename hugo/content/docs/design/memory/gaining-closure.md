@@ -202,7 +202,7 @@ Getting the foundation right here is what lets the higher-order machinery sit on
 For more on the Fidelity framework and native Clef compilation:
 
 - [ByRef Resolved](/docs/design/types/byref-resolved/) - Reference semantics in native Clef compilation
-- [Clef: From IL to NTU](/docs/design/types/il-to-ntu/) - The Native Type Universe architecture
+- [Clef: From BCL to NTU](/docs/design/types/bcl-to-ntu/) - The Native Type Universe architecture
 - [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes are becoming vestigial
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home
 - [Memory Management By Choice](/docs/design/memory/native-memory-management/) - BAREWire and region-based memory

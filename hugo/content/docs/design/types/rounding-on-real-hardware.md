@@ -2,7 +2,7 @@
 title: "Rounding on Real Hardware"
 linkTitle: "Rounding on Real Hardware"
 description: "How rounding is selected and realized per target once representation is no longer fixed by the platform, across CPU, FPGA, posit, and fixed-point."
-weight: 45
+weight: 60
 ---
 
 This page accompanies the [Rounding spec chapter](/spec/draft/rounding/) with the hardware background behind its requirements: why representation selection makes rounding an explicit per-target decision, and how that decision is realized on a CPU, an FPGA, and across the posit and fixed-point formats.

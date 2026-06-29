@@ -1,6 +1,7 @@
 ---
 title: "Bringing Posit Arithmetic to Clef"
 linkTitle: "Posit Arithmetic"
+weight: 50
 description: "How Gustafson's posit arithmetic compiles natively through the Fidelity framework"
 date: 2025-12-20T14:00:00-05:00
 authors: ["Houston Haynes"]

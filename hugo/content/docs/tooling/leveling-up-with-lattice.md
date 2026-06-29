@@ -38,7 +38,7 @@ Clef isn't just another compile target. It's a fundamental reconception of F#'s 
 - Platform words (`nativeint`) are first-class citizens
 - No .NET runtime, no garbage collector, no BCL
 
-> For a detailed exploration of these type system differences, see [FSharp.Native: From IL to NTU](/docs/design/types/il-to-ntu/) and [Doubling Down](/blog/doubling-down-dmm-dts/) for more information on our dimentional type system.
+> For a detailed exploration of these type system differences, see [From BCL to NTU](/docs/design/types/bcl-to-ntu/) and [Doubling Down](/blog/doubling-down-dmm-dts/) for more information on our dimensional type system.
 
 These aren't superficial differences. They're architectural. An IDE that understands `.fsproj` project files, NuGet packages, and BCL types fundamentally cannot understand `.fidproj` manifests (TOML), native linking, and bare-metal semantics without becoming two tools forced into one codebase.
 

@@ -1,6 +1,7 @@
 ---
 title: "ByRef Resolved"
 linkTitle: "ByRef Resolved"
+weight: 30
 description: "How our compile-time structural analysis produces native binaries whose memory safety guarantees survive into the artifact"
 date: 2025-05-16
 authors: ["Houston Haynes"]

@@ -1,6 +1,7 @@
 ---
-title: "Clef: From IL to NTU"
-linkTitle: "From IL to NTU"
+title: "Clef: From BCL to NTU"
+linkTitle: "From BCL to NTU"
+weight: 10
 description: "How we innovated a unique type machinery vision to support Fidelity framework"
 date: 2026-01-04T12:00:00-05:00
 authors: ["Houston Haynes"]
@@ -15,7 +16,7 @@ When we began designing the Fidelity framework, we encountered a fundamental arc
 
 We chose a different path. The Native Type Universe (NTU) represents our answer to this challenge, a type architecture where platform awareness flows through the compilation pipeline as structured metadata, where type identity and type width are separated by design, and where the compiler retains full control over memory layout decisions until the final lowering stage.
 
-This document traces the evolution from IL-based type assumptions to the NTU architecture, explaining why this transformation was necessary, how it was accomplished, and what it enables for hardware-software co-design across the computing spectrum.
+This document traces the evolution from BCL-based type assumptions to the NTU architecture, explaining why this transformation was necessary, how it was accomplished, and what it enables for hardware-software co-design across the computing spectrum. The normative treatment is in the spec's type-universe chapters: the [Native Type Universe](/spec/draft/native-type-universe/) itself, the [NTU type nomenclature](/spec/draft/ntu-types/), the [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) that layers units of measure onto it, and [types and type constraints](/spec/draft/types-and-type-constraints/).
 
 ## The IL Assumption: A Pervasive Constraint
 
