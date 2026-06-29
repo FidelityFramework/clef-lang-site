@@ -196,10 +196,20 @@ module PagesClient =
                     let! response = jwtClient.PostAsync(url, content) |> Async.AwaitTask
                     let! responseBody = response.Content.ReadAsStringAsync() |> Async.AwaitTask
 
-                    if response.IsSuccessStatusCode then
-                        return Ok ()
-                    else
+                    if not response.IsSuccessStatusCode then
                         return Error $"Upload failed - HTTP {int response.StatusCode}: {responseBody}"
+                    else
+                        // A 2xx does not guarantee the files landed: Cloudflare reports
+                        // {"success": false, ...} in the body on a partial/failed upload.
+                        // Treat that as an error so the verify-and-retry loop re-sends them.
+                        let ok =
+                            try
+                                use doc = JsonDocument.Parse(responseBody)
+                                let mutable s = Unchecked.defaultof<JsonElement>
+                                not (doc.RootElement.TryGetProperty("success", &s)) || s.GetBoolean()
+                            with _ -> true   // unparseable body on a 2xx: assume ok, verify step will catch drops
+                        if ok then return Ok ()
+                        else return Error $"Upload reported success=false: {responseBody}"
                 with
                 | ex -> return Error $"Failed to upload assets: {ex.Message}"
             }
@@ -388,9 +398,17 @@ module PagesClient =
                                           ContentType = f.ContentType
                                           FilePath = f.RelativePath })
 
-                                // Batch uploads (max 50MB or 100 files per batch)
-                                let maxBatchSize = 50L * 1024L * 1024L // 50MB
-                                let maxFilesPerBatch = 100
+                                // Batch limits. The payload is base64 (~1.33x the raw bytes)
+                                // wrapped in JSON, so we size batches by the ESTIMATED PAYLOAD
+                                // size, not raw bytes: a 50MB raw batch becomes a ~67MB request
+                                // that exceeds Cloudflare's limit and fails as a whole, dropping
+                                // whichever files iteration order placed in it (the source of the
+                                // non-deterministic "a few pages broke" failures). 20MB payload
+                                // and 50 files per batch keeps every request comfortably small.
+                                let maxPayloadBytes = 20L * 1024L * 1024L
+                                let maxFilesPerBatch = 50
+                                // base64 of n bytes is ceil(n/3)*4; add a small per-file JSON overhead.
+                                let payloadCost (f: FileUpload) = (int64 f.Content.Length + 2L) / 3L * 4L + 256L
 
                                 let rec uploadBatches (remaining: FileUpload list) (batchNum: int) =
                                     async {
@@ -403,8 +421,10 @@ module PagesClient =
                                             let batch, rest =
                                                 remaining
                                                 |> List.fold (fun (batch, rest) file ->
-                                                    let newSize = batchSize + int64 file.Content.Length
-                                                    if batchCount < maxFilesPerBatch && newSize < maxBatchSize then
+                                                    let newSize = batchSize + payloadCost file
+                                                    // Always allow at least one file per batch, even if a
+                                                    // single file's payload exceeds the soft limit.
+                                                    if batchCount = 0 || (batchCount < maxFilesPerBatch && newSize < maxPayloadBytes) then
                                                         batchSize <- newSize
                                                         batchCount <- batchCount + 1
                                                         (file :: batch, rest)
@@ -434,22 +454,53 @@ module PagesClient =
                     | Error e -> return Error e
                     | Ok () ->
 
-                    // Step 3b: Verify the upload actually landed. The upload endpoint can
-                    // report a 2xx while silently dropping files (e.g. a partial batch), which
-                    // leaves the deployment manifest pointing at hashes Cloudflare has no bytes
-                    // for; it then serves the previous deployment's content for those paths.
-                    // Re-check the hashes we just uploaded and fail loudly if any are missing,
-                    // instead of creating a deployment that serves stale content.
-                    let! verifyResult =
-                        if missingHashes.Length > 0 then this.CheckMissingAssets(jwt, missingHashes)
-                        else async { return Ok [] }
+                    // Step 3b: Verify-and-retry. The upload endpoint can report a 2xx while
+                    // silently dropping a file (a transient partial-batch failure), which leaves
+                    // the deployment manifest pointing at a hash Cloudflare has no bytes for; it
+                    // then serves the previous deployment's content for that path. That is why
+                    // a different small set of pages would break on each deploy. Re-check the
+                    // hashes we uploaded and re-upload any that did not land, a few times, before
+                    // giving up — so a transient drop self-heals instead of shipping stale content.
+                    let uploadByHash =
+                        files
+                        |> List.map (fun f ->
+                            { Hash = f.Hash
+                              Content = File.ReadAllBytes(f.FullPath)
+                              ContentType = f.ContentType
+                              FilePath = f.RelativePath })
+                        |> List.map (fun fu -> fu.Hash, fu)
+                        |> Map.ofList
+
+                    let reuploadBatch (hashes: string list) =
+                        async {
+                            let batch = hashes |> List.choose (fun h -> Map.tryFind h uploadByHash)
+                            return! this.UploadAssetBatch(jwt, batch)
+                        }
+
+                    let rec verifyAndRetry (attempt: int) (maxAttempts: int) =
+                        async {
+                            let! verifyResult =
+                                if missingHashes.Length > 0 then this.CheckMissingAssets(jwt, missingHashes)
+                                else async { return Ok [] }
+                            match verifyResult with
+                            | Error e -> return Error $"Failed to verify uploaded assets: {e}"
+                            | Ok [] -> return Ok ()
+                            | Ok stillMissing when attempt >= maxAttempts ->
+                                let sample = stillMissing |> List.truncate 3 |> String.concat ", "
+                                progressCallback $"ERROR: {stillMissing.Length} file(s) did not land after {maxAttempts} attempts"
+                                return Error $"Upload incomplete: {stillMissing.Length} of {missingHashes.Length} file(s) are still missing from Cloudflare after {maxAttempts} upload attempts (e.g. {sample}). The deployment was not created. Retry the deploy."
+                            | Ok stillMissing ->
+                                progressCallback $"Re-uploading {stillMissing.Length} file(s) that did not land (attempt {attempt + 1}/{maxAttempts})..."
+                                let! retryResult = reuploadBatch stillMissing
+                                match retryResult with
+                                | Error e -> return Error $"Re-upload failed: {e}"
+                                | Ok () -> return! verifyAndRetry (attempt + 1) maxAttempts
+                        }
+
+                    let! verifyResult = verifyAndRetry 1 4
                     match verifyResult with
-                    | Error e -> return Error $"Failed to verify uploaded assets: {e}"
-                    | Ok stillMissing when stillMissing.Length > 0 ->
-                        let sample = stillMissing |> List.truncate 3 |> String.concat ", "
-                        progressCallback $"ERROR: {stillMissing.Length} file(s) did not land after upload"
-                        return Error $"Upload incomplete: {stillMissing.Length} of {missingHashes.Length} file(s) are still missing from Cloudflare after upload (e.g. {sample}). The deployment was not created. Retry the deploy."
-                    | Ok _ ->
+                    | Error e -> return Error e
+                    | Ok () ->
 
                     // Step 4: Upsert all hashes
                     progressCallback "Registering assets..."
