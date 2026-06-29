@@ -1,11 +1,11 @@
 ---
 title: "Rounding on Real Hardware"
 linkTitle: "Rounding on Real Hardware"
-description: "Why rounding stops being free once representation leaves the platform's hands, and how each processor realizes it"
+description: "How rounding is selected and realized per target once representation is no longer fixed by the platform, across CPU, FPGA, posit, and fixed-point."
 weight: 45
 ---
 
-The [Rounding spec chapter](/spec/draft/rounding/) states what must hold. This page is the readable version: why rounding becomes a decision the framework has to make at all, and how that decision lands differently on a CPU, an FPGA, and the formats in between. The spec binds; this page explains.
+This page accompanies the [Rounding spec chapter](/spec/draft/rounding/) with the hardware background behind its requirements: why representation selection makes rounding an explicit per-target decision, and how that decision is realized on a CPU, an FPGA, and across the posit and fixed-point formats.
 
 ## Why rounding was implicit under IEEE 754
 
@@ -13,7 +13,7 @@ Rounding is normally invisible, because IEEE 754 fixed it. The standard defines 
 
 That uniformity rests on a single assumption: every value uses the same representation, so a single rounding rule suffices. When representation is selected per target rather than fixed by the platform, that assumption no longer holds. A posit does not round the way an IEEE float does; a fixed-point value rounds at a scale the developer set; an interval rounds its two ends in opposite directions. No single rule covers them, so rounding becomes an explicit property the framework selects and carries, the same way it selects and carries representation and width. This chapter unpacks how.
 
-The scope is narrower than that framing suggests. When numeric selection (see [Numeric Selection](/spec/draft/numeric-selection/)) yields an IEEE float supported on the target's hardware, which is the common case, the standard IEEE rounding and precision behavior applies unchanged. The mechanisms below engage only when selection chooses a non-IEEE representation, or an interval, to obtain precision or a dynamic-range profile a float does not provide. For the many computations where that additional precision is not warranted, the end-user-visible difference is minimal; the value of the apparatus is in the cases where it is.
+When numeric selection (see [Numeric Selection](/spec/draft/numeric-selection/)) yields an IEEE float supported on the target's hardware, which is the common case, the standard IEEE rounding and precision behavior applies unchanged. The mechanisms below engage only when selection chooses a non-IEEE representation, or an interval, to obtain precision or a dynamic-range profile a float does not provide. For the many computations where that additional precision is not warranted, the end-user-visible difference is minimal; the value of the apparatus is in the cases where it is.
 
 ## The two roles of rounding
 
