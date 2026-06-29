@@ -434,6 +434,23 @@ module PagesClient =
                     | Error e -> return Error e
                     | Ok () ->
 
+                    // Step 3b: Verify the upload actually landed. The upload endpoint can
+                    // report a 2xx while silently dropping files (e.g. a partial batch), which
+                    // leaves the deployment manifest pointing at hashes Cloudflare has no bytes
+                    // for; it then serves the previous deployment's content for those paths.
+                    // Re-check the hashes we just uploaded and fail loudly if any are missing,
+                    // instead of creating a deployment that serves stale content.
+                    let! verifyResult =
+                        if missingHashes.Length > 0 then this.CheckMissingAssets(jwt, missingHashes)
+                        else async { return Ok [] }
+                    match verifyResult with
+                    | Error e -> return Error $"Failed to verify uploaded assets: {e}"
+                    | Ok stillMissing when stillMissing.Length > 0 ->
+                        let sample = stillMissing |> List.truncate 3 |> String.concat ", "
+                        progressCallback $"ERROR: {stillMissing.Length} file(s) did not land after upload"
+                        return Error $"Upload incomplete: {stillMissing.Length} of {missingHashes.Length} file(s) are still missing from Cloudflare after upload (e.g. {sample}). The deployment was not created. Retry the deploy."
+                    | Ok _ ->
+
                     // Step 4: Upsert all hashes
                     progressCallback "Registering assets..."
                     let! upsertResult = this.UpsertHashes(jwt, allHashes)
