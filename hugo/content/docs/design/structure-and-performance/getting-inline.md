@@ -475,7 +475,7 @@ Our Fidelity path forward treats `inline` as a semantic tool for type system req
 
 ### Clef Design Series
 
-- [Arity On The Side of Caution](/docs/design/compilation/arity-on-the-side-of-caution/) - How Fidelity tracks function arity for native compilation
+- [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) - How Fidelity tracks function arity for native compilation
 - [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
 
 ### External References

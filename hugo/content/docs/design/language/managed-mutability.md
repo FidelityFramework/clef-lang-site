@@ -320,7 +320,7 @@ We have the detection machinery. We need the integration and inference. The fail
 
 ## The Trust-the-Optimizer Parallel
 
-In our [recent post about `inline`](/docs/design/compilation/getting-inline/), we argued that the `inline` keyword should be a semantic tool, not an optimization directive. Trust MLIR to optimize. It has full program context, target-specific knowledge, and sophisticated heuristics.
+In our [recent post about `inline`](/docs/design/structure-and-performance/getting-inline/), we argued that the `inline` keyword should be a semantic tool, not an optimization directive. Trust MLIR to optimize. It has full program context, target-specific knowledge, and sophisticated heuristics.
 
 Managed mutability follows the same principle: developers write idiomatic Clef (`let mutable x = 0`). The compiler infers where allocation belongs.
 
@@ -460,9 +460,9 @@ Escape analysis is the next waypoint. We have mutable variable support (TMemRef 
 
 ### Clef Design Documents
 
-- [Getting Inline](/docs/design/compilation/getting-inline/) - Why `inline` is semantic, not optimization, and trusting the optimizer
+- [Getting Inline](/docs/design/structure-and-performance/getting-inline/) - Why `inline` is semantic, not optimization, and trusting the optimizer
 - [ByRef Resolved](/docs/design/types/byref-resolved/) - How Fidelity addresses memory management with byref handling
-- [Arity On The Side of Caution](/docs/design/compilation/arity-on-the-side-of-caution/) - How Composer tracks function arity for native compilation
+- [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) - How Composer tracks function arity for native compilation
 - [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Saturation engine for expanding high-level constructs
 - [Coeffects and Codata](/docs/internals/concepts/coeffects-and-codata/) - Pre-computed analysis architecture
 

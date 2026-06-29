@@ -441,5 +441,5 @@ The future we're building is one where choosing Clef means choosing both eleganc
 - [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Type resolution and the zipper-based correlation pipeline
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library absorbed into CCS
 - [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/) - Sample programs demonstrating native compilation
-- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
+- [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
 - [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/) - The compilation phase architecture

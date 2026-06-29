@@ -15,7 +15,7 @@ A CPU is not purely serial about this. Its SIMD vector units run one operation a
 
 Most developers carry a version of this as a *hunch*. A loop feels like it *should* parallelize, a pipeline feels like it is leaving something on the table, and the feeling never becomes more than a feeling without a profiler and significant head-scratching after the fact. There is a great deal of that latent sense in working code, with no number attached to it. Flow loss analysis is the tool that makes that subjective ***objective***: our compiler has a design goal to embody the parallel structure where a conventional toolchain discards it, so the gap between the source as written and what the CPU does would be a figure read off the graph at design time, before anything runs.
 
-The mechanism, the metrics and where each one comes from, is laid out in the companion [Flow Loss Analysis](/docs/design/compilation/flow-loss-analysis/) design document.
+The mechanism, the metrics and where each one comes from, is laid out in the companion [Flow Loss Analysis](/docs/design/structure-and-performance/flow-loss-analysis/) design document.
 
 A conventional toolchain erases the program's data-flow structure at the first lowering step and pays to rebuild it later. 
 
@@ -120,7 +120,7 @@ The CPU is not the villain in this reading. A region with a parallelism ratio ne
 
 ## Memory Movement
 
-Compute parallelism, span against work, is classical graph theory, and the critical-path walk that computes it rests only on dependency edges the [PSG](/docs/design/compilation/coupling-and-cohesion/) already carries. What actually breaks a real hardware cost model is not arithmetic flow loss but the cost of moving the data around it. A value that would be a zero-cost physical wire or an on-chip channel on a CGRA is an L3-cache round-trip on a CPU, and that round-trip dominates the cost long before the arithmetic does.
+Compute parallelism, span against work, is classical graph theory, and the critical-path walk that computes it rests only on dependency edges the [PSG](/docs/design/structure-and-performance/coupling-and-cohesion/) already carries. What actually breaks a real hardware cost model is not arithmetic flow loss but the cost of moving the data around it. A value that would be a zero-cost physical wire or an on-chip channel on a CGRA is an L3-cache round-trip on a CPU, and that round-trip dominates the cost long before the arithmetic does.
 
 This is where the analysis is designed to reach past compute. Because our coeffect system tracks memory space and access pattern, and the [dimensional types](/docs/design/types/dimensional-type-safety/) make those explicit, a streaming access that would stay local to a processing element can be distinguished from a cache-dependent load at the type level. The escape classification this rests on is a working compiler pass, so the memory-movement figure reuses information the pipeline already computes, and its [formalization as coeffect algebra](/docs/internals/verification/memory-coeffect-algebra/) is the account of how. The framing rhymes with a point from [the Rocq companion piece](/blog/between-a-rocq-and-a-hard-case/): the figure that matters is the one for the code that runs on the hardware actually targeted, not the one for an idealized model. A loss measured against an interaction net that ignores where values live would be a tidy number about a machine no one is targeting.
 

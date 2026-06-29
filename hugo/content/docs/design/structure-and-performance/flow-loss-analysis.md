@@ -59,7 +59,7 @@ Data that would stay local to a processing element on a spatial architecture but
 Given a cost model for a specific architecture, the delta can be stated in concrete units rather than ratios: a subgraph that the model estimates at a few dozen reduction cycles on a spatial fabric against a few thousand instruction cycles on a CPU. The cost models come from outside our framework. A hardware vendor with a published timing model for their architecture supplies the substrate side, and the analysis is designed to map the interaction-net structure onto it. The CPU side is what Alex already emits.
 
 ```mermaid
-flowchart TB
+flowchart LR
     subgraph compare["Two readings of: sensors |> Array.map calibrate"]
         psg["PSG region<br/>App(Array.map, Lambda(calibrate))"]
 

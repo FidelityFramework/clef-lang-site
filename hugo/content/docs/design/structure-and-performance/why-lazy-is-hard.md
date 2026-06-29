@@ -322,5 +322,5 @@ For more on the Fidelity framework and native Clef compilation:
 - [Gaining Closure](/docs/design/memory/gaining-closure/) - MLKit-style flat closures in Fidelity
 - [From BCL to NTU](/docs/design/types/bcl-to-ntu/) - The Native Type Universe architecture
 - [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes face architectural limits
-- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - SSA form and functional compilation
+- [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - SSA form and functional compilation
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home

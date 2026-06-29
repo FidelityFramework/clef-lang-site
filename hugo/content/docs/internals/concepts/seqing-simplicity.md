@@ -395,7 +395,7 @@ The journey continues. Each step reveals the next.
 - [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): Lazy thunks as extended closures, the immediate precursor to sequences
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/): Types belong in the compiler, not a library
 - [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/): The nanopass pipeline that processes sequence expressions
-- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/): SSA and functional programming share the same foundations
+- [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/): SSA and functional programming share the same foundations
 - [Baker Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/): The typed tree zipper used for semantic analysis
 - [WREN Stack](https://speakez.tech/blog/wren-stack/): The broader desktop development vision that sequences support
 

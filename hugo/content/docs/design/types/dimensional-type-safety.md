@@ -48,7 +48,7 @@ Consider three execution models:
 
 2. **Parallel (GPU/SIMD)**: Multiple execution units process data simultaneously. Control flow becomes expensive (divergent warps), while uniform data operations are cheap.
 
-3. **Dataflow (FPGA/CGRA)**: Computation is spatially organized. Data flows through configured logic blocks or reconfigurable processing elements. There is no "instruction pointer" - operations fire when their inputs are available. The parallelism a CPU gives up by imposing an instruction pointer on this kind of work is what [flow loss analysis](/docs/design/compilation/flow-loss-analysis/) measures, reading the memory space and access pattern these same dimensional types make explicit.
+3. **Dataflow (FPGA/CGRA)**: Computation is spatially organized. Data flows through configured logic blocks or reconfigurable processing elements. There is no "instruction pointer" - operations fire when their inputs are available. The parallelism a CPU gives up by imposing an instruction pointer on this kind of work is what [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) measures, reading the memory space and access pattern these same dimensional types make explicit.
 
 Traditional type systems work well for sequential execution. Rust's ownership model, for instance, provides memory safety by tracking when values can be read or written. But ownership assumes a Von Neumann model with linear memory access patterns. As we noted in [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/):
 
@@ -423,7 +423,7 @@ This is the reason we built Clef as its own compilation path: to carry Clef's se
 ### Related Articles
 
 - [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
-- [Why Clef Fits MLIR](/docs/design/compilation/why-clef-fits-mlir/) - The theoretical foundation connecting concurrent programming to modern compilation
+- [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - The theoretical foundation connecting concurrent programming to modern compilation
 - [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/) - Why ownership semantics assume Von Neumann architectures
 - [Beyond Zero-Allocation](/docs/design/memory/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model
 - [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/) - Coeffects and their role in optimization decisions

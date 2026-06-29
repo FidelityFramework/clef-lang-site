@@ -902,6 +902,6 @@ The binding architecture stays a cornerstone of where we are taking our Fidelity
 - [Baker: The Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/): Type resolution and the zipper-based correlation pipeline
 - [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
 - [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/): The nanopass architecture underlying the compilation pipeline
-- [Getting Inline](/docs/design/compilation/getting-inline/): How Fidelity handles inlining for native compilation
+- [Getting Inline](/docs/design/structure-and-performance/getting-inline/): How Fidelity handles inlining for native compilation
 - [Fidelity on STM32](/docs/internals/hardware/fidelity-on-stm32/): Embedded deployment targeting constrained microcontrollers
 - [Native Memory Management](/docs/design/memory/native-memory-management/): Memory management across the computing spectrum
