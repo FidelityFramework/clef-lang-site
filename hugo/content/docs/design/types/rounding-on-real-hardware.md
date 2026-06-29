@@ -9,13 +9,13 @@ The [Rounding spec chapter](/spec/draft/rounding/) states what must hold. This p
 
 ## Why rounding was ever free
 
-For most of a working programmer's life, rounding is something they never think about, and that is a gift from IEEE 754. The standard picked one rounding rule, round-to-nearest with ties going to the even digit, and made every mainstream processor implement it the same way in hardware. A program adds two floats and the result rounds correctly without anyone asking for it. The rounding was decided once, in 1985, for everyone.
+Rounding is normally invisible, and that is a gift from IEEE 754. The standard picked one rounding rule, round-to-nearest with ties going to the even digit, and made every mainstream processor implement it the same way in hardware. A program adds two floats and the result rounds correctly without anyone asking for it. The rounding was decided once, in 1985, for everyone.
 
 That free ride depends on a single assumption: every value uses the same representation, so they can all share one rounding rule. The moment a framework takes representation away from the platform and chooses it per target, the shared rule is gone. A posit does not round the way an IEEE float does. A fixed-point value rounds at a scale the developer set. An interval has to round its two ends in opposite directions. There is no longer one rule the platform carries for you, so the framework has to carry it instead. That is the reason a rounding chapter exists: representation selection bought a precision win, and the bill it left behind is that rounding is now a choice someone has to make on purpose.
 
 ## Two jobs rounding does
 
-It helps to separate the two places rounding shows up, because they behave nothing alike.
+Rounding shows up in two places, and they behave nothing alike.
 
 The first is **converting a value from one representation to another**. A 64-bit result has to become a 32-bit one to fit a register; a quire's exact sum becomes a posit at the end of an accumulation; a value computed on the FPGA crosses to the host. Something has to give, and rounding decides what. Get it wrong and the answer is a little less accurate than it could have been. That is a real cost, but it is a cost in precision, and the value is still a perfectly good number.
 
@@ -35,9 +35,9 @@ Multiplication breaks the illusion, and it breaks it instructively, because ever
 
 That four-product min and max is not a brute-force shortcut anyone would optimize away. It is the actual shape of the operation, because an interval is a set, not a pair, and multiplying two sets is a question about where their product can land. This is the lesson addition hid: interval operations are sign-case analyses, not endpoint formulas.
 
-It also clarifies the sign-crossing reciprocal the spec treats elsewhere, where `1/[lo, hi]` splits into two pieces when the interval contains zero. That looks like a reciprocal-specific oddity until you see multiplication do the same thing more gently. Both are the same phenomenon, an output that reshapes itself when an input crosses zero. Reciprocal is just the case where the pieces fly off to infinity. Multiplication is the bounded version, which is why it is the better teacher.
+It also clarifies the sign-crossing reciprocal the spec treats elsewhere, where `1/[lo, hi]` splits into two pieces when the interval contains zero. That looks like a reciprocal-specific oddity until you see multiplication do the same thing more gently. Both are the same phenomenon, an output that reshapes itself when an input crosses zero. Reciprocal is the case where the pieces fly off to infinity; multiplication is the bounded case, which is why it shows the structure more plainly.
 
-Now the part that ties back to rounding, and it is the reason this section sits next to the hardware. Each of those four products has to be rounded, and the direction it rounds depends on where it is headed. The products feeding the low end all round down, toward negative infinity; the products feeding the high end all round up. And the rounding has to happen *before* the min and max, not after. Round first, then reduce:
+Rounding is where this connects to the hardware. Each of those four products has to be rounded, and the direction it rounds depends on where it is headed. The products feeding the low end all round down, toward negative infinity; the products feeding the high end all round up. And the rounding has to happen *before* the min and max, not after. Round first, then reduce:
 
 ```text
 correct:   lo = min( roundDown(aLo·bLo), roundDown(aLo·bHi), ... )
@@ -46,11 +46,11 @@ broken:    lo = roundDown( min(aLo·bLo, aLo·bHi, ...) )
 
 The broken version rounds the winner once, at the end. If the true smallest product was already slightly below what the hardware computed, rounding the unrounded min downward does not recover the bit that was lost choosing it, and the enclosure quietly fails to contain a value it claimed to bound. So directed rounding is not a stamp you put on the operation. It threads through every sub-product, tied to that product's destination, before anything is compared.
 
-There is one more wrinkle multiplication exposes, and it bites the three-body force calculation directly. Interval arithmetic has no memory that two quantities are the same quantity. Multiply `X` by `X` and the math treats the two \(X\)s as if they could vary independently, so for \(X = [-2, 3]\) it considers one \(X\) being \(-2\) while the other is \(3\) and reports \([-6, 9]\). But \(X^2\) is never negative; its real range is \([0, 9]\). The phantom \(-6\) is the cost of pretending the two factors are strangers. This is why a squaring operation is a hard requirement and not syntactic sugar: `sqr(X)` knows the two factors are one variable and gives \([0, 9]\), while generic `X·X` cannot. The over-estimate is always safe, it only ever widens the enclosure, but it is looser than the truth, and on an expression like the \(1/r^2\) of a gravitational force that looseness is exactly what you do not want.
+Multiplication exposes one more failure, and it bites the three-body force calculation directly. Interval arithmetic has no memory that two quantities are the same quantity. Multiply `X` by `X` and the math treats the two \(X\)s as if they could vary independently, so for \(X = [-2, 3]\) it considers one \(X\) being \(-2\) while the other is \(3\) and reports \([-6, 9]\). But \(X^2\) is never negative; its real range is \([0, 9]\). The phantom \(-6\) is the cost of pretending the two factors are strangers. This is why a squaring operation is a hard requirement and not syntactic sugar: `sqr(X)` knows the two factors are one variable and gives \([0, 9]\), while generic `X·X` cannot. The over-estimate is always safe, it only ever widens the enclosure, but it is looser than the truth, and on an expression like the \(1/r^2\) of a gravitational force that looseness is exactly what you do not want.
 
 ## How a CPU rounds: a global switch
 
-A CPU has a rounding mode, and the surprising part is that there is exactly one of them, shared by everything. On an x86 chip it lives in a control register called MXCSR; on an ARM chip it is the FPCR. Two bits select the direction, and once set, that direction applies to every floating-point instruction that follows until something changes it. It is a switch on the wall, not a setting on each lamp.
+A CPU has exactly one rounding mode, shared by everything. On an x86 chip it lives in a control register called MXCSR; on an ARM chip it is the FPCR. Two bits select the direction, and once set, that direction applies to every floating-point instruction that follows until something changes it. It is a switch on the wall, not a setting on each lamp.
 
 For ordinary arithmetic this is fine, because the switch sits on round-to-nearest and stays there. For an interval it is a genuine problem. An interval wants its low end rounded down and its high end rounded up, which means flipping the switch between the two halves of every operation. And flipping the switch is slow. In one published benchmark, changing the rounding mode and changing it back cost on the order of thirty times a normal operation on an Apple M1, and closer to seventy times on a high-end x86 part. The chip stalls its pipeline each time the mode moves.
 
@@ -70,13 +70,13 @@ The gap widens with the operation. An interval multiplication is where it shows 
 
 ## The posit's missing direction
 
-There is a wrinkle that catches people, and it is better to meet it head-on. The Posit Standard defines exactly one rounding mode, round-to-nearest, and no directed modes at all. There is no "round a posit toward negative infinity" in the standard, because posits were designed around a different idea, the quire, which makes the common need for directed rounding go away by making accumulation exact.
+The Posit Standard defines exactly one rounding mode, round-to-nearest, and no directed modes at all. There is no "round a posit toward negative infinity" in the standard, because posits were designed around a different idea, the quire, which makes the common need for directed rounding go away by making accumulation exact.
 
 This means a sound interval *over posits* cannot lean on the posit's own arithmetic to round its ends outward, because that arithmetic does not know how. The fix is old and reliable: compute each end with the rounding you have, round-to-nearest, then nudge the low end down by one unit in the last place and the high end up by one. That nudge is Moore's outward-widening trick, and it guarantees the interval still contains the truth, at the cost of being a hair looser than a natively directed one would be. The design specifies exactly this construction, with a diagnostic that distinguishes a synthesized posit interval from a natively directed one, so a posit interval is never meant to be quietly passed off as something it is not.
 
 ## The quire: rounding once, on purpose
 
-The quire deserves its own moment here, because it is the cleanest example of rounding as a deliberate design choice rather than a default.
+The quire is the cleanest example of rounding as a deliberate design choice rather than a default.
 
 An ordinary running sum in floating point rounds after every addition, and those tiny roundings pile up across a long accumulation until they matter. The quire refuses to do that. It is a wide accumulator, 512 bits for a 32-bit posit, large enough to hold every partial product of a long sum exactly, with no rounding at all along the way. The rounding happens once, at the very end, when the exact accumulated value is converted back to a posit. One rounding for the whole sum, not one per step.
 
