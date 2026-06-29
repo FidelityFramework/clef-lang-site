@@ -18,7 +18,7 @@ We chose a different path. The Native Type Universe (NTU) represents our answer 
 
 This document traces the evolution from BCL-based type assumptions to the NTU architecture, explaining why this transformation was necessary, how it was accomplished, and what it enables for hardware-software co-design across the computing spectrum. The normative treatment is in the spec's type-universe chapters: the [Native Type Universe](/spec/draft/native-type-universe/) itself, the [NTU type nomenclature](/spec/draft/ntu-types/), the [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) that layers units of measure onto it, and [types and type constraints](/spec/draft/types-and-type-constraints/).
 
-## The IL Assumption: A Pervasive Constraint
+## The BCL Assumption: A Pervasive Constraint
 
 The F# compiler, through F# Compiler Services (FCS), was designed with a reasonable assumption for its time: all F# programs target the .NET Common Language Runtime. This assumption manifests not as a single configuration option but as a structural property that permeates the entire type-checking infrastructure.
 
@@ -242,6 +242,41 @@ flowchart LR
 
     X64 -.->|"witnesses"| I64
     ARM32 -.->|"witnesses"| I32_ARM
+```
+
+## From Erased Width to Inferred Width and Representation
+
+Separating type identity from width does more than let `int` resolve to the target's word size. Once width is metadata resolved late rather than a property fixed at the keyboard, the resolution itself can be *inferred* from what the program does with a value, not merely read from a platform table. This is the through-line from NTU to the rest of the type system, and it runs in three steps.
+
+The first is **arbitrary integer width**. A value's range is a fact the compiler can read off the program graph, and the minimal width that holds that range is a function of it. A counter bounded to roughly four hundred million needs 29 bits, not the 64 a host register would spend; on a fixed-instruction target the inferred width rounds up to the nearest native size, but on an FPGA every bit is gate count, and the narrower width is the smaller circuit. NTU makes this expressible because the width was never part of the type's identity to begin with. [Width inference](/docs/design/types/dimensional-type-safety/) is the integer realization of this, and it lowers to fabric today.
+
+The second is **real representation**. The same range that selects an integer width selects, for a real-valued quantity, a *representation*: IEEE-754, a posit, or fixed-point, whichever preserves the most accuracy across the range the value actually occupies. The dimensional type carries the kind, a units-of-measure annotation that survives compilation; the analyzed range carries the choice. [Numeric selection](/spec/draft/numeric-selection/) specifies this as the real-valued sibling of width inference, with the dimensional range as its principal input. Our preliminary designs lean toward inferring it through the same coeffect machinery that carries width.
+
+The third is the arithmetic the chosen representation brings with it. A [posit](/docs/design/types/posit-arithmetic/) tapers precision toward magnitude one, where natural-unit values cluster, and pairs with the quire, a wide accumulator that holds a sum of products exactly and rounds once at the end. The representation choice in turn settles a [rounding](/docs/design/types/rounding-on-real-hardware/) discipline, which is no longer carried implicitly by a shared IEEE platform once representation varies per target. Each of these rides the same separation NTU established at the start: the type names the quantity, and the representation, the width, and the rounding are facts resolved against the target rather than committed in the source.
+
+```mermaid
+flowchart LR
+    subgraph Source["Clef Source"]
+        IVAL["a value<br/>(int, or float&lt;dim&gt;)"]
+    end
+
+    subgraph Analysis["Range on the program graph"]
+        RANGE["analyzed / dimensional range"]
+    end
+
+    subgraph Resolved["Resolved against the target"]
+        WIDTH["integer width<br/>(e.g. i29, not i64)"]
+        REP["real representation<br/>(posit / IEEE / fixed-point)"]
+        ROUND["rounding discipline"]
+    end
+
+    IVAL --> RANGE
+    RANGE -->|"integer"| WIDTH
+    RANGE -->|"real"| REP
+    REP --> ROUND
+
+    WIDTH -.->|"ships today"| Resolved
+    REP -.->|"design-stage"| Resolved
 ```
 
 ## Platform Predicates: Conditional Compilation Without Preprocessor
@@ -688,7 +723,7 @@ Teams developing custom accelerators can define their platform bindings early, e
 
 ## A New Universe
 
-The journey from IL-based type assumptions to the Native Type Universe represents more than a technical migration. It reflects a fundamental rethinking of how type systems can serve diverse deployment targets, and how the Clef language is uniquely positioned to deliver on this vision.
+The journey from BCL-based type assumptions to the Native Type Universe represents more than a technical migration. It reflects a fundamental rethinking of how type systems can serve diverse deployment targets, and how the Clef language is uniquely positioned to deliver on this vision.
 
 The key insights that emerged:
 

@@ -22,7 +22,7 @@ Rust deserves recognition for proving that memory safety doesn't require sacrifi
 
 Both Rust and F# trace their lineage to OCaml. Rust's first compiler was written in OCaml, leaving traces in its pattern matching and type system design. F# began as an explicit adaptation of OCaml for .NET, later spawning the Fable compiler for JavaScript transpilation. This shared heritage manifests in similar constructs such as algebraic data types, pattern matching, and functional influences, though the languages pursued divergent paths. Where F# embraced functional programming with immutability by default, Rust chose an imperative foundation with ownership-based safety.
 
-Our Fidelity Framework acknowledges these contributions while charting its own course, drawing on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/types/traits-versus-srtp/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor. Clef inherits these approaches and carries them into native compilation.
+Our Fidelity Framework acknowledges these contributions while charting its own course, drawing on F#'s twenty-year evolution. Since Don Syme's initial development, F# has pioneered units of measure, type providers, computation expressions, and statically resolved type parameters (detailed in our [companion analysis](/docs/design/types/structural-polymorphism/)). F# also synthesized OCaml's type safety with Erlang's actor model through MailboxProcessor. Clef inherits these approaches and carries them into native compilation.
 
 ## The Async Runtime Divergence
 
@@ -106,7 +106,7 @@ Both maintain type safety and composability, though Clef's computation expressio
 
 ## Type System Philosophies
 
-While traits vs SRTP deserves [its own detailed analysis](/docs/design/types/traits-versus-srtp/), the fundamental difference impacts daily development:
+While traits vs SRTP deserves [its own detailed analysis](/docs/design/types/structural-polymorphism/), the fundamental difference impacts daily development:
 
 ### Rust's Explicit Implementations
 
@@ -273,5 +273,5 @@ As computing becomes more heterogeneous, spanning FPGAs, neuromorphic processors
 
 For deeper exploration of specific topics:
 - [Abstract Machine Models and heterogeneous computing](/blog/abstract-machine-model-paradox/)
-- [Traits vs SRTP: polymorphism approaches](/docs/design/types/traits-versus-srtp/)
+- [Structural Polymorphism](/docs/design/types/structural-polymorphism/)
 - [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/)

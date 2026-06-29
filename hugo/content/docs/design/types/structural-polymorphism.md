@@ -1,8 +1,8 @@
 ---
-title: "Traits Versus Statically Resolved Type Parameters"
-linkTitle: "Traits vs SRTP"
+title: "Structural Polymorphism: Resolution over the Algebraic Substrate"
+linkTitle: "Structural Polymorphism"
 weight: 20
-description: "How F# SRTP stands in contrast to Rust's approach to polymorphism"
+description: "How Clef resolves ad-hoc polymorphism from the structure of types over the same abelian-group substrate that carries dimensions, grades, and coeffects, rather than from declared trait implementations."
 date: 2025-09-05T10:00:00-04:00
 authors:
   - SpeakEZ
@@ -13,9 +13,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-Rust's trait system is often compared to Haskell's type classes, suggesting that Rust has successfully brought type class polymorphism to systems programming. Rust's traits are inspired by type classes and provide ad-hoc polymorphism, but the mechanics reveal differences. Rust's traits, as a multi-paradigm systems language feature, make deliberate design tradeoffs that differ from Haskell's type classes. This is also a place to review how Rust compares to our Clef language's approach to polymorphism.
+Polymorphism in Clef is resolved from the structure of types, not from declared implementations. A function is generic over any type that has the operations it uses, and the compiler infers those requirements from the operations themselves. This is the surface most developers see as Statically Resolved Type Parameters (SRTP), the F#-lineage mechanism Clef carries forward. The deeper account is that this resolution runs over the same [abelian-group algebraic substrate](/docs/design/types/bcl-to-ntu/) the rest of the type system uses: the dimensional algebra, the memory-placement coeffects, the grade discipline, and the [negative and fractional duals](/docs/design/types/negative-fractional-types/) are all resolved through one unification machinery, and structural polymorphism is that machinery applied to operations rather than to dimensions or grades.
 
-Clef's Statically Resolved Type Parameters (SRTP), a feature in our Fidelity framework, deliver a different form of ad-hoc polymorphism that follows a distinct design philosophy. These differences cascade into how polymorphism integrates with compilation, how it integrates with optimization, and how developers think about generic programming.
+The consequence is both ergonomic and structural. Ergonomically, there are no trait bounds to declare and no implementations to write; the polymorphism emerges from what the code does. Structurally, the type relationships survive into compilation as facts the Program Semantic Graph carries, where later passes specialize against them. To make the contrast concrete, the rest of this page sets Clef's structural resolution against the explicit-implementation model of Rust traits, then returns to what the substrate enables that a trait system does not.
 
 ## Method Call Syntax and Design Philosophy
 
@@ -449,19 +449,29 @@ Both languages continue to evolve their approaches to polymorphism:
 - Potential for custom type and numeric system extensions specific to scientific computing
 - Option for future heterogeneous computing models through partitioned compilation to multiple hardware targets
 
-## The Cognitive Load of SRTP
+## What the Substrate Adds
 
-Rust's trait system and Clef's SRTP represent different philosophies about polymorphism, and the difference matters. Rust chose explicit implementation requirements and complex resolution rules to manage memory safety. That choice imposes a cognitive burden on developers, even with the benefit of automatic code generation. Every generic function requires explicit trait bounds. Every type needs explicit implementations. Every operation must consider borrowing semantics, lifetimes, and ownership.
+The comparison with traits is the ergonomic story. The structural one is what distinguishes Clef's polymorphism from SRTP as F# shipped it, and it is the reason this resolution is more than a convenience.
 
-Clef's SRTP in our Fidelity framework takes a less burdensome path for systems programming:
+Structural resolution runs over the same abelian-group machinery the rest of the type system uses. When a generic function requires `(+)`, the compiler resolves that requirement the way it resolves a dimensional constraint or a grade obligation, by unification over a finitely-generated abelian group, decidable in polynomial time. The operations a function demands, the dimensions its values carry, the memory coeffects its allocations declare, and the grades a geometric computation tracks are not separate checks bolted together; they are one unification over one substrate, and the cost of carrying them together stays polynomial because each is the same kind of structure.
+
+Two consequences follow. The first is that polymorphism composes with the other disciplines for free. A function generic over a numeric operation and over a unit of measure is resolved in a single pass, because the operation constraint and the dimensional constraint live in the same algebra; there is no separate trait-resolution phase to reconcile with dimensional inference. The second is that the resolution survives compilation. In F#, SRTP is resolved during type checking and the relationship is gone before code generation. In Clef, the resolved structure is recorded as codata on the Program Semantic Graph, where later passes specialize against it per target, the same carriage that moves dimensional, representation, and grade facts through lowering.
+
+The substrate is also what makes the framework's further type-level disciplines reachable through the same mechanism. The [negative and fractional duals](/docs/design/types/negative-fractional-types/) extend the abelian group with additive and multiplicative inverses, and they are resolved by the same unification, now over rational rather than integer exponents. A trait system has no equivalent move: traits are a dispatch mechanism, not an algebra, so there is nowhere in a trait to put an inverse. Clef's polymorphism is structural in the literal sense that the structure is an algebra, and the algebra is what the rest of the type system is built from.
+
+## The Cognitive Load of Structural Resolution
+
+Rust's trait system and Clef's structural resolution represent different philosophies about polymorphism, and the difference matters. Rust chose explicit implementation requirements and complex resolution rules to manage memory safety. That choice imposes a cognitive burden on developers, even with the benefit of automatic code generation. Every generic function requires explicit trait bounds. Every type needs explicit implementations. Every operation must consider borrowing semantics, lifetimes, and ownership.
+
+Clef's structural resolution takes a less burdensome path for systems programming:
 
 - **Write once, work everywhere**: Generic functions that work with any type that has the right shape
 - **Zero ceremony**: No trait implementations to write, no bounds to declare, no orphan rules to navigate
 - **Lighter cognitive load**: Focus on the problem domain, rather than on satisfying the type system's bureaucracy
 - **Zero-cost**: Compile-time resolution without vtables, trait objects, or runtime overhead
 
-The developer ergonomics make Clef with SRTP a fit for our Fidelity framework's domain. When you implement complex business processes, work with heterogeneous computing, or build scientific applications, you want to express intent with precision rather than satisfy trait bounds and implementation ceremonies.
+The developer ergonomics make structural polymorphism a fit for the framework's domain. When you implement complex business processes, work with heterogeneous computing, or build scientific applications, you want to express intent with precision rather than satisfy trait bounds and implementation ceremonies.
 
-For our Fidelity framework's direction of bringing functional programming to bare metal, SRTP is a design advantage. It supports a development experience where polymorphism emerges from code structure, the integrity of mathematical relationships is preserved through compilation, and the work stays on the domain rather than on appeasing the type system.
+The deeper fit is that polymorphism is not a separate subsystem here. It is the same algebraic substrate that carries dimensions, memory coeffects, grades, and the negative and fractional duals, applied to the operations a function uses. Polymorphism emerges from code structure, the mathematical relationships survive compilation as codata on the Program Semantic Graph, and the resolution composes with every other discipline through one unification rather than a stack of separate checks.
 
-For intelligent systems programming, machine learning, scientific applications, and developer productivity, Clef's SRTP offers a direct approach to polymorphism. We have found no other representative implementation of this approach in the standing literature we have reviewed, and it is the design we will keep building toward as the rest of the framework comes into place.
+We have found no other representative implementation of structural polymorphism resolved over a shared algebraic substrate in the standing literature we have reviewed, and it is the design we will keep building toward as the rest of the framework comes into place.
