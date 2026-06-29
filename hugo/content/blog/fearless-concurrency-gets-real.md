@@ -19,7 +19,7 @@ A recent Pragmatic Engineer episode with Alice Ryhl talks through how the Rust t
 
 I've written about Rust before (see [the prior post](/blog/rust-revisited/)), and I want to be careful here, because none of this is Rust doing something silly or wrong. It's Rust being honest about a real limit. Ryhl [puts the limit plainly](https://www.youtube.com/watch?v=q9xD36NCtZ8&t=1566s) (26:06): "Rust kind of assumes that it can check the scope of that reference by just looking at a single function. But if you have your struct and you're passing it over functions, it might not be possible to make that analysis and so you just get a compiler error." The check is function-local. Once a value's lifetime crosses a function boundary in a way the local view can't follow, you either restructure your data so the analyzer can see it, or fall back to a counted pointer and pay per clone.
 
-A language that sells you zero-cost memory safety hands you reference counting by hand at exactly the points where its static analysis is needed most, and asks you to reshape your program until the analyzer is happy. The burden sits on the designer. Which raises the question: 
+A language that sells you zero-cost memory safety hands you reference counting by hand at exactly the points where its static analysis is needed most, and asks you to reshape your program until the analysis is satisfied. The burden sits on the designer. Which raises the question: 
 
 > Does a concurrent language have to make you contort your code to fit the checker, or can the toolchain be structured to fit the shape of the problem space? 
 
@@ -148,7 +148,7 @@ When no such ranking exists, the relation has a cycle, and the developer would s
 
 ## An analyzer and the structure it rides
 
-Come back to the function-local limit Ryhl named at the top. A struct passed across functions can defeat Rust's borrow checker, whose single-function view loses the reference, and her remedy is to change the data structure: reach for an `Rc`, or redesign so the lifetime fits inside one function's view again. The analyzer has a shape it can reason about, and the developer's job is to deform the program until it matches.
+Come back to the function-local limit Ryhl named at the top. A struct passed across functions can defeat Rust's borrow checker, whose single-function view loses the reference, and her remedy is to change the data structure: reach for an `Rc`, or redesign so the lifetime fits inside one function's view again. The borrow checker reasons one function at a time, so the developer reshapes a program that was already correct until that single-function view can sign off on it.
 
 Our escape analysis works the other way. The lifetime question lives in our program graph, which spans functions and actors, so a value passed across a call boundary is the same value the analyzer was already tracking. You write the data structure the problem wants. The analyzer does the cross-boundary reasoning. `let mutable x = 0` is ordinary syntax, and Composer classifies the escape (`StackScoped`, `ClosureCapture`, `ReturnEscape`, `ByRefEscape`) and places `x` on the stack or in an arena from that classification. There are no `'a`-tick lifetime annotations to thread, because the lifetime is a fact the compiler derives rather than a constraint you declare. We spent some time defining [managed mutability](/docs/design/language/managed-mutability/) for how the classification lowers.
 
