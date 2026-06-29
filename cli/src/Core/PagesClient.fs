@@ -454,54 +454,6 @@ module PagesClient =
                     | Error e -> return Error e
                     | Ok () ->
 
-                    // Step 3b: Verify-and-retry. The upload endpoint can report a 2xx while
-                    // silently dropping a file (a transient partial-batch failure), which leaves
-                    // the deployment manifest pointing at a hash Cloudflare has no bytes for; it
-                    // then serves the previous deployment's content for that path. That is why
-                    // a different small set of pages would break on each deploy. Re-check the
-                    // hashes we uploaded and re-upload any that did not land, a few times, before
-                    // giving up — so a transient drop self-heals instead of shipping stale content.
-                    let uploadByHash =
-                        files
-                        |> List.map (fun f ->
-                            { Hash = f.Hash
-                              Content = File.ReadAllBytes(f.FullPath)
-                              ContentType = f.ContentType
-                              FilePath = f.RelativePath })
-                        |> List.map (fun fu -> fu.Hash, fu)
-                        |> Map.ofList
-
-                    let reuploadBatch (hashes: string list) =
-                        async {
-                            let batch = hashes |> List.choose (fun h -> Map.tryFind h uploadByHash)
-                            return! this.UploadAssetBatch(jwt, batch)
-                        }
-
-                    let rec verifyAndRetry (attempt: int) (maxAttempts: int) =
-                        async {
-                            let! verifyResult =
-                                if missingHashes.Length > 0 then this.CheckMissingAssets(jwt, missingHashes)
-                                else async { return Ok [] }
-                            match verifyResult with
-                            | Error e -> return Error $"Failed to verify uploaded assets: {e}"
-                            | Ok [] -> return Ok ()
-                            | Ok stillMissing when attempt >= maxAttempts ->
-                                let sample = stillMissing |> List.truncate 3 |> String.concat ", "
-                                progressCallback $"ERROR: {stillMissing.Length} file(s) did not land after {maxAttempts} attempts"
-                                return Error $"Upload incomplete: {stillMissing.Length} of {missingHashes.Length} file(s) are still missing from Cloudflare after {maxAttempts} upload attempts (e.g. {sample}). The deployment was not created. Retry the deploy."
-                            | Ok stillMissing ->
-                                progressCallback $"Re-uploading {stillMissing.Length} file(s) that did not land (attempt {attempt + 1}/{maxAttempts})..."
-                                let! retryResult = reuploadBatch stillMissing
-                                match retryResult with
-                                | Error e -> return Error $"Re-upload failed: {e}"
-                                | Ok () -> return! verifyAndRetry (attempt + 1) maxAttempts
-                        }
-
-                    let! verifyResult = verifyAndRetry 1 4
-                    match verifyResult with
-                    | Error e -> return Error e
-                    | Ok () ->
-
                     // Step 4: Upsert all hashes
                     progressCallback "Registering assets..."
                     let! upsertResult = this.UpsertHashes(jwt, allHashes)
