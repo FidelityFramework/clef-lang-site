@@ -256,10 +256,12 @@ module SmartDeploy =
                 let allWorkers = Set.ofList ["search"; "smart-search"; "content-sync"]
                 let! _ = deployChangedWorkers config allWorkers verbose
 
-                // 2. Deploy Pages (refresh spec module)
+                // 2. Deploy Pages (refresh spec module). forceUpload=true: --force re-uploads
+                // every asset, bypassing the check-missing gate that can leave a deployment
+                // serving stale bytes held under a hash from a prior bad deploy.
                 printfn ""
                 printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
+                let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true true verbose
                 match pagesResult with
                 | Error e -> return Error $"Pages deployment failed: {e}"
                 | Ok url ->
@@ -330,7 +332,7 @@ module SmartDeploy =
 
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
                     // Always refresh spec module to pick up upstream changes
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true false verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
@@ -347,7 +349,7 @@ module SmartDeploy =
 
                     // 1. Deploy Pages (refresh spec module — this path triggers on go.sum/content changes)
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true false verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
@@ -383,7 +385,7 @@ module SmartDeploy =
                     // Always deploy pages when infra changes (refresh spec to pick up any module updates)
                     printfn ""
                     printfn "=== Deploying Hugo Site to Cloudflare Pages ==="
-                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true verbose
+                    let! pagesResult = DeployPages.execute config "./hugo" "clef-lang" true false verbose
                     match pagesResult with
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->

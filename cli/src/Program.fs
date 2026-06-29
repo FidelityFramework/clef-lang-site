@@ -285,7 +285,7 @@ module Program =
                         let force = args.Contains <@ DeployPagesArgs.Force @>
                         let refreshSpec = force || args.Contains <@ DeployPagesArgs.Refresh_Spec @>
                         let verbose = args.Contains <@ DeployPagesArgs.Verbose @>
-                        Commands.DeployPages.execute config hugoDir projectName refreshSpec verbose
+                        Commands.DeployPages.execute config hugoDir projectName refreshSpec force verbose
                         |> runAsync
 
                 | CLIArgs.Migrate args ->

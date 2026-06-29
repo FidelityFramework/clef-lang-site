@@ -116,6 +116,7 @@ module DeployPages =
         (hugoDir: string)
         (projectName: string)
         (refreshSpec: bool)
+        (forceUpload: bool)
         (verbose: bool)
         : Async<Result<string, string>> =
         async {
@@ -181,7 +182,7 @@ module DeployPages =
             nextStep (sprintf "Deploying to Pages project: %s" projectName)
 
             let progressCallback msg = if verbose then printfn "        %s" msg else printfn "        %s" msg
-            let! deployResult = pages.DeployDirectory projectName publicDir (Some "main") (Some "Deploy from CLI") None verbose progressCallback
+            let! deployResult = pages.DeployDirectory projectName publicDir (Some "main") (Some "Deploy from CLI") None forceUpload verbose progressCallback
             match deployResult with
             | Error e -> return Error $"Deployment failed: {e}"
             | Ok url ->

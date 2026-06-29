@@ -326,6 +326,7 @@ module PagesClient =
             (branch: string option)
             (commitMessage: string option)
             (commitHash: string option)
+            (forceUpload: bool)
             (verbose: bool)
             (progressCallback: string -> unit)
             : Async<Result<string, string>> =
@@ -346,9 +347,24 @@ module PagesClient =
 
                     if verbose then progressCallback $"Found {files.Length} files, {allHashes.Length} unique hashes"
 
-                    // Step 2: Check which files are missing
-                    progressCallback "Checking for existing assets..."
-                    let! missingResult = this.CheckMissingAssets(jwt, allHashes)
+                    // Step 2: Determine which files to upload. Normally we ask Cloudflare
+                    // which hashes it lacks and upload only those. With forceUpload we skip
+                    // that check and re-upload every file: the content-addressable store can
+                    // hold stale bytes under a hash from a prior bad deploy, and check-missing
+                    // would then report "nothing to upload" while the deployment keeps serving
+                    // the old content. Forcing a full re-upload guarantees the deployment's
+                    // bytes match the freshly built directory.
+                    let! missingResult =
+                        if forceUpload then
+                            async {
+                                progressCallback "Force upload — re-uploading all files (skipping check-missing)..."
+                                return Ok allHashes
+                            }
+                        else
+                            async {
+                                progressCallback "Checking for existing assets..."
+                                return! this.CheckMissingAssets(jwt, allHashes)
+                            }
 
                     match missingResult with
                     | Error e -> return Error $"Failed to check missing assets: {e}"
