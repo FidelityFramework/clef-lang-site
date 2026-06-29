@@ -1,4 +1,4 @@
----
+OK ---
 title: "Posit Arithmetic and Dimensional Type Systems"
 linkTitle: "Posit Arithmetic & DTS"
 description: "Representation Selection for Domain-Aware Computation"
@@ -34,11 +34,25 @@ The dimensional annotation constrains the value's semantic range. A value with d
 
 Given this range, the compiler can evaluate representation candidates against a concrete criterion: worst-case relative error within the value domain.
 
-Formally, given a value \(v\) with dimension \(d\), a value range \([a, b]\) inferred from dimensional constraints, and a set of available representations \(R = \{r_1, \ldots, r_k\}\) on target \(T\), the compiler selects:
+Formally, given a value \(v\) with dimension \(d\), a value range \([a, b]\) inferred from dimensional constraints, and a set of available representations \(R(T)\) on target \(T\), the compiler selects the representation that minimizes worst-case error over the range:
 
-\[r^* = \arg\min_{r \in R} \max_{x \in [a,b]} \frac{|x - \text{round}_r(x)|}{|x|}\]
+\[r^* = \arg\min_{r \in R_{\mathrm{cov}}(T,\,[a,b])} \max_{x \in [a,b]} \mathrm{err}_r(x)\]
 
-This is a deterministic function from dimensional constraints and target capabilities to representation choice. It is computable at compile time, and its inputs are properties of the Program Semantic Graph (PSG) that the compiler already maintains for other purposes.
+Two side-conditions make this objective sound, and both are part of the criterion rather than diagnostics layered on after it.
+
+The candidate set is filtered for coverage before the minimization. A representation whose dynamic range does not contain the whole interval saturates to a finite relative error rather than diverging, so the unfiltered minimization can select a format that cannot hold the values at all. The filter removes that possibility:
+
+\[R_{\mathrm{cov}}(T,\,[a,b]) = \bigl\{\, r \in R(T) : \mathrm{dynrange}(r) \supseteq [a, b] \,\bigr\}\]
+
+An empty \(R_{\mathrm{cov}}\) is a reported error, not a near-unity silent pick. No representation on the target covers the range, and the compiler says so.
+
+The error term carries a per-representation ULP floor in its denominator, so a range that straddles zero does not send the worst case to infinity. Signed dimensioned ranges straddle zero routinely (a membrane potential runs roughly \(-80\) to \(+40\) millivolts), and a bare relative error \(|x - \mathrm{round}_r(x)| / |x|\) diverges as \(x \to 0\):
+
+\[\mathrm{err}_r(x) = \frac{|x - \mathrm{round}_r(x)|}{\max\bigl(|x|,\; \mathrm{ulp}_{\min}(r)\bigr)}\]
+
+Below a representation's smallest representable magnitude the metric becomes effectively absolute, which is the correct near-zero semantics: the contest there is which representation best resolves the cluster near zero, not which is precise near zero, since posits taper toward \(1.0\) and lose precision at zero like every representation.
+
+This is a deterministic function from dimensional constraints and target capabilities to representation choice. It is computable at compile time, and its inputs are properties of the Program Semantic Graph (PSG) that the compiler already maintains for other purposes. The score is accuracy alone; no cost, latency, or area term enters it, and performance is handled by filtering the candidate set rather than by perturbing the objective.
 
 ## The Quire: A Coeffect Case Study
 
