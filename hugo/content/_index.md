@@ -44,7 +44,7 @@ toc: false
   {{< hextra/feature-card
     title="ClefPak"
     subtitle="Source-based package management with deterministic builds and reproducible dependency resolution."
-    link="docs/reference"
+    link="docs/tooling/clefpak-source-based-package-management"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(245,130,32,0.15),hsla(0,0%,100%,0));"
   >}}
 {{< /hextra/feature-grid >}}

@@ -9,8 +9,14 @@ open System.Text
 open System.Text.Json
 open System.Text.RegularExpressions
 open ClefLang.CLI
+open ClefLang.CLI.Core
 
 module Index =
+
+    /// Embedding preset for the Vectorize index. Must match Provision exactly, so a
+    /// hard-recreated index is byte-for-byte the one provisioning would have made.
+    [<Literal>]
+    let private VectorizePreset = "@cf/baai/bge-base-en-v1.5"
 
     type ContentSection = {
         Id: string
@@ -226,14 +232,75 @@ module Index =
                 printfn "  Warning: purge-index failed: %s" body
         }
 
+    /// Tear down and re-provision the Vectorize index from the control plane, then
+    /// wait until it is ready. This is the ONLY way to clear orphaned vectors: the
+    /// worker's /purge-index deletes by the section IDs still recorded in D1, so a
+    /// vector whose section was moved or deleted (its D1 row already gone) is never
+    /// named and survives every soft purge. A delete-recreate names nothing — it
+    /// drops the whole namespace — so orphans cannot survive it.
+    ///
+    /// Runs at the CLI / management-API level on purpose: a worker cannot delete the
+    /// index it is bound to. The metadata index is recreated to match Provision, or
+    /// content_type filtering would silently break after a recreate.
+    let private hardRecreateVectorize (verbose: bool) : Async<Result<unit, string>> =
+        async {
+            match Config.loadConfig () with
+            | Error e -> return Error $"Cannot hard-recreate Vectorize index: {e}"
+            | Ok config ->
+                use httpClient = HttpHelpers.createAuthenticatedClient config.ApiToken
+                let resources = Config.defaultResourceNames
+                let vectorize = VectorizeClient.VectorizeOperations(httpClient, config.AccountId)
+                let indexName = resources.VectorizeIndexName
+
+                printfn "  Hard recreate: deleting Vectorize index '%s'..." indexName
+                let! deleteResult = vectorize.DeleteIndex(indexName)
+                match deleteResult with
+                // A missing index is fine — recreate proceeds either way.
+                | Error e when not (e.Contains "not_found" || e.Contains "404" || e.Contains "does not exist") ->
+                    return Error $"Vectorize delete failed: {e}"
+                | _ ->
+                    if verbose then printfn "    deleted (or already absent)."
+                    // Recreate is idempotent-on-exists; after a delete it makes a fresh empty index.
+                    let! createResult = vectorize.CreateIndex(indexName, VectorizePreset)
+                    match createResult with
+                    | Error e -> return Error $"Vectorize recreate failed: {e}"
+                    | Ok _ ->
+                        let! metaResult = vectorize.CreateMetadataIndex(indexName, "content_type")
+                        match metaResult with
+                        | Error e -> return Error $"Vectorize metadata-index recreate failed: {e}"
+                        | Ok () ->
+                            // Index creation is async on Cloudflare's side. Re-pushing vectors before
+                            // the index is ready can silently drop the first upserts, so poll until a
+                            // GET on the index succeeds, with a bounded timeout.
+                            printfn "  Waiting for Vectorize index to become ready..."
+                            let deadline = DateTime.UtcNow.AddMinutes(3.0)
+                            let mutable ready = false
+                            let mutable lastErr = ""
+                            while not ready && DateTime.UtcNow < deadline do
+                                let! probe = vectorize.CreateIndex(indexName, VectorizePreset)  // GET-checks; Ok once it exists
+                                match probe with
+                                | Ok _ -> ready <- true
+                                | Error e ->
+                                    lastErr <- e
+                                    do! Async.Sleep 5000
+                            if ready then
+                                printfn "  Vectorize index ready."
+                                return Ok ()
+                            else
+                                return Error $"Vectorize index did not become ready within timeout: {lastErr}"
+        }
+
     let execute
         (hugoContentDir: string)
         (force: bool)
+        (hardRecreate: bool)
         (useLocal: bool)
         (localPort: int)
         (verbose: bool)
         : Async<Result<int, string>> =
         async {
+            // A hard recreate implies a force reindex: the index is empty after it.
+            let force = force || hardRecreate
             let verbose = verbose || force
             let workerUrl, apiKey =
                 if useLocal then
@@ -246,6 +313,10 @@ module Index =
 
             if String.IsNullOrEmpty(workerUrl) then
                 return Error "Search worker not deployed. Run 'deploy' first or use --local flag."
+            elif hardRecreate && useLocal then
+                // --hard recreates the live Vectorize index via the Cloudflare management
+                // API; there is no local equivalent.
+                return Error "--hard recreates the live Vectorize index via the Cloudflare API; it cannot run against --local."
             else
 
             // Resolve Hugo directory (parent of content dir)
@@ -305,6 +376,22 @@ module Index =
             use httpClient = new HttpClient()
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}")
             httpClient.Timeout <- TimeSpan.FromMinutes(5.0) // Embedding generation takes time
+
+            // Hard recreate runs at the control-plane level before the worker purge,
+            // because it is the only step that clears orphaned vectors (see
+            // hardRecreateVectorize). On success it falls through to the D1/BM25 purge
+            // below so FTS5 matches the now-empty Vectorize index.
+            let! recreateError =
+                async {
+                    if hardRecreate then
+                        match! hardRecreateVectorize verbose with
+                        | Error e -> return Some e
+                        | Ok () -> return None
+                    else return None
+                }
+            match recreateError with
+            | Some e -> return Error e
+            | None ->
 
             if force then
                 do! purgeIndex httpClient workerUrl verbose
@@ -375,6 +462,43 @@ module Index =
                 printfn "Failure reasons:"
                 for kv in failureReasons |> Seq.sortByDescending (fun kv -> kv.Value) do
                     printfn "  [%dx] %s" kv.Value kv.Key
+
+            // Reconcile: delete the stale remainder — sections whose id is no longer in
+            // the current content set (content moved, so its content-type/slug/section-index
+            // changed its id; or it was deleted). Without this their D1 rows and vectors
+            // linger and keep surfacing in search. This is the prevention sweep that keeps
+            // orphans from accumulating between hard recreates.
+            //
+            // Skipped when:
+            //   - hardRecreate: the index was just rebuilt from empty, nothing is stale.
+            //   - totalFailed > 0: the valid-id set this run is incomplete (a section that
+            //     failed to index is still valid), so reconciling against it could delete
+            //     good content. Reconcile only against a fully-successful pass.
+            if not hardRecreate && totalFailed = 0 then
+                let validIds = allSections |> List.map (fun s -> s.Id) |> Array.ofList
+                let reconcilePayload = {| validIds = validIds |}
+                let reconcileJson = JsonSerializer.Serialize(reconcilePayload, jsonOptions)
+                use reconcileContent = new StringContent(reconcileJson, Encoding.UTF8, "application/json")
+                try
+                    let! resp = httpClient.PostAsync($"{workerUrl}/reconcile", reconcileContent) |> Async.AwaitTask
+                    let! respBody = resp.Content.ReadAsStringAsync() |> Async.AwaitTask
+                    if resp.IsSuccessStatusCode then
+                        use doc = JsonDocument.Parse(respBody)
+                        let root = doc.RootElement
+                        let mutable e = Unchecked.defaultof<JsonElement>
+                        let staleVecs = if root.TryGetProperty("staleVectorsDeleted", &e) then e.GetInt32() else 0
+                        let staleRows = if root.TryGetProperty("staleRowsDeleted", &e) then e.GetInt32() else 0
+                        if staleVecs > 0 || staleRows > 0 then
+                            printfn "  Reconciled: removed %d stale vectors, %d stale rows" staleVecs staleRows
+                        elif verbose then
+                            printfn "  Reconciled: nothing stale."
+                    else
+                        // Non-fatal: a failed reconcile leaves orphans but does not corrupt
+                        // the fresh index. Surface it; a forced deploy's hard recreate clears
+                        // any orphans regardless.
+                        printfn "  Warning: reconcile failed (orphans may remain): %s" respBody
+                with ex ->
+                    printfn "  Warning: reconcile error (orphans may remain): %s" ex.Message
 
             if totalFailed > 0 then
                 return Error $"Indexing partially failed: {totalFailed} sections"

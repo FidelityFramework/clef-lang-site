@@ -65,6 +65,11 @@ module Main =
                             let! response = Handlers.handlePurgeIndex request env
                             return response
 
+                        | "POST", "/reconcile" ->
+                            // Delete the stale remainder after an index pass (authenticated)
+                            let! response = Handlers.handleReconcile request env
+                            return response
+
                         | "GET", "/health" ->
                             return Handlers.handleHealth ()
 
@@ -80,6 +85,7 @@ module Main =
                                     createObj [ "method" ==> "POST"; "path" ==> "/synthesize-stream"; "description" ==> "Hybrid search + AI synthesis (SSE)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/index"; "description" ==> "Batch index content (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/purge-index"; "description" ==> "Clear all indexed content (authenticated)" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/reconcile"; "description" ==> "Delete stale sections/vectors not in the current content set (authenticated)" ]
                                     createObj [ "method" ==> "GET"; "path" ==> "/health"; "description" ==> "Health check" ]
                                 |]
                             ]

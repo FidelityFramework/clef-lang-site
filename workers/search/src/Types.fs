@@ -62,6 +62,15 @@ module Types =
     type BatchIndexRequest =
         abstract member sections: IndexSectionRequest array with get
 
+    /// Reconcile request from CLI: the complete set of section IDs that should exist
+    /// after the current index pass. The worker deletes every D1 row and vector whose
+    /// id is NOT in this set — the stale remainder left when content moves (its
+    /// content-type/slug/section-index changes its id) or is deleted.
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type ReconcileRequest =
+        abstract member validIds: string array with get
+
     /// Cloudflare Workers AI binding
     [<AllowNullLiteral>]
     [<Interface>]

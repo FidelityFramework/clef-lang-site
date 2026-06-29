@@ -160,7 +160,11 @@ module SmartDeploy =
 
             printfn ""
             printfn "=== Indexing Content for Search ==="
-            let! indexResult = Index.execute "./hugo/content" force false 8787 verbose
+            // A forced smart-deploy hard-recreates the Vectorize index: a soft purge
+            // only deletes vectors D1 still tracks, so orphaned vectors from moved or
+            // deleted content survive and keep surfacing in search. --force must mean a
+            // genuine clean rebuild, so it tears the index down and re-pushes from empty.
+            let! indexResult = Index.execute "./hugo/content" force force false 8787 verbose
             match indexResult with
             | Ok indexed -> printfn "  Indexed: %d sections" indexed
             | Error e -> printfn "  Skipped: %s" e

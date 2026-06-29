@@ -119,6 +119,7 @@ module Program =
     type IndexArgs =
         | [<AltCommandLine("-d")>] Content_Dir of path: string
         | [<AltCommandLine("-f")>] Force
+        | Recreate
         | [<AltCommandLine("-l")>] Local
         | [<AltCommandLine("-p")>] Port of int
         | [<AltCommandLine("-v")>] Verbose
@@ -127,7 +128,8 @@ module Program =
             member this.Usage =
                 match this with
                 | Content_Dir _ -> "Hugo content directory (default: ./hugo/content)"
-                | Force -> "Purge existing index before re-indexing"
+                | Force -> "Purge existing index before re-indexing (soft: deletes only sections still tracked in D1)"
+                | Recreate -> "Hard reset: delete and recreate the Vectorize index to clear ORPHANED vectors from moved/deleted content, then full reindex. Implies --force. Cannot be used with --local."
                 | Local -> "Use local search worker (localhost:8787)"
                 | Port _ -> "Local worker port (default: 8787, requires --local)"
                 | Verbose -> "Enable verbose output"
@@ -347,10 +349,11 @@ module Program =
                 | CLIArgs.Index args ->
                     let contentDir = args.GetResult(<@ IndexArgs.Content_Dir @>, "./hugo/content")
                     let force = args.Contains <@ IndexArgs.Force @>
+                    let hardRecreate = args.Contains <@ IndexArgs.Recreate @>
                     let useLocal = args.Contains <@ IndexArgs.Local @>
                     let localPort = args.GetResult(<@ IndexArgs.Port @>, 8787)
                     let verbose = args.Contains <@ IndexArgs.Verbose @>
-                    Commands.Index.execute contentDir force useLocal localPort verbose
+                    Commands.Index.execute contentDir force hardRecreate useLocal localPort verbose
                     |> runAsync
 
                 | CLIArgs.Purge args ->

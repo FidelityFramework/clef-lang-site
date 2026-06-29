@@ -341,6 +341,59 @@ module Handlers =
             return jsonResponse {| success = true; message = "Index purged"; vectorsDeleted = vectorsDeleted; sectionsDeleted = ids.Length |} 200
         }
 
+    /// POST /reconcile (auth required) — delete the stale remainder after an index pass.
+    /// The CLI sends the complete set of IDs that SHOULD exist now; this deletes every
+    /// D1 row and Vectorize entry whose id is not in that set. This is the prevention
+    /// sweep for orphaned vectors: when content moves (content-type/slug/section-index
+    /// change its id) or is deleted, the old id is never re-indexed, so without this its
+    /// vector survives and keeps surfacing in search. Idempotent; safe to run every pass.
+    let handleReconcile (request: Request) (env: WorkerEnv) : JS.Promise<Response> =
+        promise {
+            if not (verifyAuth request env) then
+                return jsonResponse {| success = false; message = "Unauthorized" |} 401
+            else
+
+            let! body = request.json<ReconcileRequest>()
+            let validIds =
+                if isNullOrUndefined body || isNullOrUndefined body.validIds then [||]
+                else body.validIds
+
+            // Guard: an empty valid set would delete the entire index. That is what
+            // /purge-index is for; reconcile refuses it so a CLI bug that sends nothing
+            // cannot silently wipe everything.
+            if validIds.Length = 0 then
+                return jsonResponse {| success = false; message = "reconcile received an empty validIds set; refusing to delete the whole index (use /purge-index for a full wipe)" |} 400
+            else
+
+            let validSet = Set.ofArray validIds
+
+            // Every id currently in D1
+            let! idResult = env.DB.prepare("SELECT id FROM content_sections").all<obj>()
+            let allIds =
+                match idResult.results with
+                | Some r -> r |> Seq.map (fun row -> string row?id) |> Seq.toArray
+                | None -> [||]
+
+            // Stale = present in D1 but not in the valid set
+            let staleIds = allIds |> Array.filter (fun id -> not (validSet.Contains id))
+
+            // Delete stale vectors (Vectorize limit is 100 per call)
+            let mutable vectorsDeleted = 0
+            for batch in staleIds |> Array.chunkBySize 100 do
+                let idList = ResizeArray(batch)
+                let! _ = env.VECTORIZE.deleteByIds(idList)
+                vectorsDeleted <- vectorsDeleted + batch.Length
+
+            // Delete stale D1 rows (triggers clean FTS5). Bind per-id to avoid building
+            // a giant IN-clause; the stale set is small in normal operation.
+            let mutable rowsDeleted = 0
+            for id in staleIds do
+                let! _ = env.DB.prepare("DELETE FROM content_sections WHERE id = ?").bind(id).run<obj>()
+                rowsDeleted <- rowsDeleted + 1
+
+            return jsonResponse {| success = true; message = "Reconciled"; staleVectorsDeleted = vectorsDeleted; staleRowsDeleted = rowsDeleted; validCount = validIds.Length |} 200
+        }
+
     /// Handle health check endpoint
     let handleHealth () : Response =
         jsonResponse { status = "ok" } 200
