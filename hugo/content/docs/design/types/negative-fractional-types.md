@@ -14,7 +14,7 @@ An abelian group has inverses. That is the property this page is about. Once the
 
 ## The two dualities
 
-The duality of computation has been treated under many banners, call-by-value versus call-by-name, value versus continuation, classical versus constructive, often as a single phenomenon. James and Sabry's result is that it is two orthogonal phenomena.
+The duality of computation has been treated under many banners, call-by-value versus call-by-name, value versus continuation, classical versus constructive, often as a single phenomenon. Liskov's CLU staked out a careful position inside the first of these decades ago, which we acknowledge in retrospect: call-by-sharing, where an argument is a reference passed by value, so mutation is visible to the caller but rebinding is not. James and Sabry's result is that the duality is, more precisely, two orthogonal phenomena.
 
 The **additive duality** gives every type `'T` a negative type `Neg<'T>`, with the isomorphism `'T + Neg<'T> ↔ 0`. A value of `Neg<'T>` is an ordinary `'T` value flowing in the reverse direction of evaluation. When it enters a computation, the operational reading is that execution reverses to satisfy the demand it represents. This is the type-level account of backtracking.
 
