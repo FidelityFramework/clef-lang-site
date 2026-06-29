@@ -14,9 +14,9 @@ The boundary between Olivier actors is often described as if it carried a single
 
 > A session type is a linear-logic account of who may say what, and when, over a channel. 
 
-The shape an Olivier actor needs is a formalization referred to as a "stateful server" that threads state across a growing pool of clients, and the connective that types it has a name in the recent literature: the ***coexponential*** of Qian, Kavvos, and Birkedal. It rides the tier architecture the other two layers already use, so it does not require new verification machinery. As you'll see below, reconstructing the session type automatically is still an open issue we will keep working as time and engineering allow. What is established here is our current understanding, and we expect it to develop as the details of formalism and implementation emerge.
+A stateful Olivier actor is a formalization the literature calls a "stateful server": one that threads state across a growing pool of clients. The connective that types it has a name in the recent work, the ***coexponential*** of Qian, Kavvos, and Birkedal, and it rides the tier architecture the other two layers already use, so it requires no new verification machinery. Reconstructing the session type automatically is still an open problem, developed below and pursued as engineering allows. What is established here is the current understanding, and the details of formalism and implementation are expected to develop further.
 
-This is a proof-theory-heavy entry, and placing it in "Concurrency" instead of "Verification" is a deliberate choice. Clef is a concurrent language first, so a precise account of how the actor mechanism is designed matters on both mathematical and *mechanical* grounds. The harder half of the task is placing that mechanism on a range of hardware substrates. What follows is one way to deliver a well-formed distributed compute model onto any substrate that can support it, without giving up the computational integrity claims our Fidelity Framework makes.
+This is a proof-theory-heavy entry, and placing it in "Concurrency" instead of "Verification" is deliberate. Clef is a concurrent language first, so a precise account of how the actor mechanism is designed matters on both mathematical and *mechanical* grounds. The harder half of the task is placing that mechanism on a range of hardware substrates, delivering a well-formed distributed compute model onto any substrate that can support it without giving up the framework's computational-integrity claims.
 
 ## What the boundary carries today
 
@@ -38,7 +38,7 @@ The boundary is three contracts stacked on one channel.
 | Protocol | message ordering, choice, state threading | session type (coexponential for stateful pools) | Tier 1 in character; invariants at Tier 2; probabilistic or relational guarantees at Tier 3 or 4 |
 | Liveness | progress, absence of deadlock | wait-for relation | Tier 2, a projection of the protocol layer |
 
-The middle row is the one to develop. It slots into the existing machinery as richer labeling on an axis our Fidelity Framework already carries, and the bottom row is a shadow the middle row casts.
+The middle row is the one to develop. It slots into the existing machinery as richer labeling on an axis the framework already carries, and the bottom row is a projection of the middle row.
 
 ## Protocol fidelity is a Tier-1-character property
 
@@ -99,7 +99,7 @@ let client = Olivier.spawn system "client-7" (fun () -> actor {
 
 The state thread, `return! loop (table.Add ...)`, is the operational shadow of what the coexponential types: the session whose fixpoint hands each request's state to the next. The reply is an ordinary message send back on the `IActorRef` the client passed as `Actor.self()`, so each request is handled deterministically once the mailbox has picked it; the nondeterminism is in which client the pool serves next, not in how a given request runs. The wait-for relationship that the `Lookup` round trip induces is what Tier 2 ranks for acyclicity, and nothing in this code asserts a session type was reconstructed by the solver.
 
-The diagram reads the three contracts off the same boxes and arrows. Every message arrow carries our BAREWire payload, and the data layer types that payload at each endpoint. The direction and ordering of the arrows is the protocol layer, the coexponential session structure the server and clients share, drawn as the design-time target it is. The liveness layer lives on the one back-edge from a blocked client to the server it waits on, the place a cycle would deadlock and where the acyclic wait-for rank has to hold.
+The diagram shows all three contracts on the same boxes and arrows. Every message arrow carries a BAREWire payload, and the data layer types that payload at each endpoint. The direction and ordering of the arrows is the protocol layer, the coexponential session structure the server and clients share, drawn as the design-time target it is. The liveness layer is the one back-edge from a blocked client to the server it waits on, the place a cycle would deadlock and where the acyclic wait-for rank has to hold.
 
 ```mermaid
 flowchart TD
@@ -132,7 +132,7 @@ flowchart TD
 
 ## How it rides the existing architecture
 
-The protocol layer introduces no new verification axis. It is richer labeling on structures our Fidelity Framework already carries, which is what makes our architecture the place this connective can land without new machinery: the joint-constraint axis, the tier ladder, and the BAREWire wire format are already in hand, and the protocol layer reuses each in turn.
+The protocol layer introduces no new verification axis. It is richer labeling on structures the framework already carries, which is what makes our architecture the place this connective can land without new machinery: the joint-constraint axis, the tier ladder, and the BAREWire wire format are already in hand, and the protocol layer reuses each in turn.
 
 **Joint-constraint axis.** The session type of an actor interface is a hyperedge on the same joint-constraint axis that already holds region, lifetime, and wait-for edges. The wait-for edge is the projection of the session edge onto the liveness question. In session-typed process calculi, deadlock freedom is a corollary of typing; our Composer compiler currently extracts the lightweight slice of that corollary, the wait-for rank, without imposing full session typing. The protocol layer names the fuller object the slice is taken from.
 
@@ -170,7 +170,7 @@ The data attribute carries no arithmetic to the solver, because the schema prope
 
 ## Inference, not annotation
 
-The deadlock-freedom design declined the full session-typing disciplines of CP and Priority CP because their costs, the tree restriction and pervasive priority annotation, are the ceremony our Fidelity Framework avoids on principle. The protocol layer respects that decision. The rule is the one already applied to [escape classification](/docs/internals/verification/memory-coeffect-algebra/) and to wait classification: the session type is inferred from actor behavior and surfaced only when inference needs help, never hand-written in the manner of GV.
+The deadlock-freedom design declined the full session-typing disciplines of CP and Priority CP because their costs, the tree restriction and pervasive priority annotation, are the ceremony the framework avoids on principle. The protocol layer respects that decision. The rule is the one already applied to [escape classification](/docs/internals/verification/memory-coeffect-algebra/) and to wait classification: the session type is inferred from actor behavior and surfaced only when inference needs help, never hand-written in the manner of GV.
 
 The coexponential supplies the semantic target for that inference. It says what a stateful-server interface means, so that our CCS front end has something definite to reconstruct. The developer writes ordinary actor code, the analysis infers the session structure as it infers escape kind and wait class, and the inferred type is displayed when a conflict or an ambiguity needs developer attention. The protocol layer is a citizen of the same inferred-with-override regime as the rest of the boundary, not a new annotation burden.
 
