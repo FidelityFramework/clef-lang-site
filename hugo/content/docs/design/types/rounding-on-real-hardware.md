@@ -70,6 +70,24 @@ This asymmetry is the reason the design targets fabric. On a CPU, rounding direc
 
 The gap widens with operation complexity. An interval multiplication is the clearest case: the four corner products each require their own rounding direction. A CPU must set the mode around all four before reducing them, incurring the change cost four times per multiply. On fabric the same multiply is four multipliers in parallel, two wired to round down and two to round up, feeding a comparator tree, resolved in a single cycle. The more complex the arithmetic, the larger the separation between the mode-driven and the synthesis-fixed approach.
 
+## The target landscape
+
+CPU and FPGA are the two poles, but the framework targets a graded range of substrates between them, and each has a different relationship to non-IEEE representation, directed rounding, and exact accumulation. This is the survey the capability gate exists to mediate: selection runs against the set a target actually offers, `R(T) = { r : capability(T, r) ≠ unavailable }`, so a representation is proposed only where it can be realized. A developer can also select b-posit and the quire deliberately, to obtain precision a target's native float path does not provide, and accept that the chosen representation is emulated or synthesized rather than native. The point is not that every target runs posits at full speed; it is that the same source resolves to the right realization on each, and the build reports which.
+
+The substrate axis here is representation and rounding capability, which is distinct from the data-flow placement axis surveyed in [flow-loss analysis](/blog/going-deep-with-flow-loss-analysis/). On that axis a discrete GPU and an integrated APU differ by memory locality; for rounding and representation they are the same case, since both are SIMT float engines that do not synthesize custom numeric formats, so they share a row below.
+
+| Substrate | Posit / b-posit | Directed rounding | Quire (exact accumulation) |
+|---|---|---|---|
+| **CPU** (x86, ARM64) | emulated in software, unless a posit instruction set is present | a global runtime mode (`MXCSR`, `FPCR`); directed rounding for intervals incurs mode-change cost | emulated on the stack, exact but slow |
+| **RISC-V + Xposit** | native, via the extended posit instructions | native posit rounding; directed rounding follows the extension's definition | a hardware quire instruction backed by an architectural register, one cycle per FMA |
+| **FPGA** (Xilinx, Lattice) | synthesized as the datapath at any width and configuration | a synthesis-time property: each datapath is wired to its rounding direction, no runtime cost | a fabric pipeline (512 bits for posit32), one MAC per cycle |
+| **CGRA** (NextSilicon Maverick, Efficient Computer E1, SambaNova) | configurable at word granularity on the reconfigurable fabric, coarser than gate-level | set per processing-element configuration rather than per gate; directed rounding is a configuration property, not a runtime mode | mapped onto the PE array where the configuration admits a wide accumulator |
+| **NPU / tile mesh** (AMD XDNA2, Tenstorrent) | the tile's supported formats, fixed by the architecture; custom formats only where the tile ALU admits them | fixed by the tile ALU; not generally a free per-operation choice | the tile's accumulator path, where one of adequate width is present |
+| **GPU / APU** (SIMT; discrete or integrated) | not synthesizable; limited to the formats the lanes implement, so posit support is emulated | the lane's fixed rounding; directed rounding is emulated, at the per-operation cost of any software rounding | emulated in software; no native wide accumulator |
+| **Neuromorphic** (Loihi 2) | not applicable to its arithmetic model | not applicable | **unavailable**: a required quire is a capability failure, never a silent lossy fallback |
+
+The pattern across the rows is the graded one. Reconfigurable substrates (FPGA, then CGRA) realize a chosen representation in their structure, so directed rounding and a quire cost nothing at runtime. Fixed-ISA substrates (RISC-V, CPU, GPU/APU, NPU) realize only the formats their instruction set or tile defines; everything else is emulated, at a cost the gate records, or reported unavailable. RISC-V with the Xposit extension is the case where a fixed-ISA part has posits and the quire natively, which is why naming that target changes the selection outcome. Where a target offers no sound realization of a required capability, the build reports a capability failure rather than substituting a lossy approximation.
+
 ## The posit's missing direction
 
 The Posit Standard defines a single rounding mode, round-to-nearest, and no directed modes. Posit arithmetic addresses the usual motivation for directed rounding through a different mechanism, the quire, which makes accumulation exact rather than offering directed rounding.
