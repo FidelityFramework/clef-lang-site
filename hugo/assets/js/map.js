@@ -6,12 +6,36 @@
   var CY_SRC = "https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js";
   var GRAPH_URL = window.CLEF_GRAPH_URL || "/graph.json";
 
-  // node category -> color and radial level (1 = innermost)
-  var COLOR = { preprint: "#e3b341", external: "#8b949e", spec: "#f78166", docs: "#58a6ff", blog: "#3fb950" };
-  // radial rings, center → out: pre-prints, external citations, spec, docs, blog
-  var LEVEL = { preprint: 1, external: 2, spec: 3, docs: 4, blog: 5 };
+  // The docs layer is chunky enough to split into three sub-rings by top-level group:
+  // design (conceptual, nearest the spec kernel) → internals (mechanism) → tooling/guides
+  // (peripheral, nearest the discursive blog edge). This keys color + radial level off a
+  // "band" derived from layer (+ docs top-group), not the bare layer.
+  function bandOf(data) {
+    if (data.layer !== "docs") return data.layer;
+    // top-group from contentType (live worker) or the id path (static preview)
+    var g = data.contentType;
+    if (!g || g === "docs") {
+      var parts = (data.id || "").split("/").filter(Boolean); // ["docs","design",...]
+      g = parts[1] || "";
+    }
+    if (g === "design") return "docs-design";
+    if (g === "internals") return "docs-internals";
+    return "docs-tooling"; // tooling, guides, reference
+  }
+  // band -> color. Docs sub-bands are three shades of the blue family.
+  var COLOR = {
+    preprint: "#e3b341", external: "#8b949e", spec: "#f78166",
+    "docs-design": "#58a6ff", "docs-internals": "#388bfd", "docs-tooling": "#1f6feb",
+    blog: "#3fb950",
+  };
+  // radial rings, center → out
+  var LEVEL = {
+    preprint: 1, external: 2, spec: 3,
+    "docs-design": 4, "docs-internals": 5, "docs-tooling": 6,
+    blog: 7,
+  };
 
-  var cy = null, loaded = false, loadingCy = null;
+  var cy = null, loadingCy = null;
 
   function modal() { return document.getElementById("clef-map-modal"); }
   function isOpen() { var m = modal(); return m && m.style.display !== "none"; }
@@ -36,11 +60,15 @@
 
   function buildLayout(name, indeg) {
     if (name === "grouped") {
-      var ord = { preprint: 500, external: 400, spec: 300, docs: 200, blog: 100 };
-      return { name: "concentric", concentric: function (n) { return ord[n.data("layer")] + (10 - Math.min(9, indeg[n.data("id")] || 0)); },
+      var ord = {
+        preprint: 700, external: 600, spec: 500,
+        "docs-design": 400, "docs-internals": 300, "docs-tooling": 200, blog: 100,
+      };
+      return { name: "concentric", concentric: function (n) { return ord[bandOf(n.data())] + (10 - Math.min(9, indeg[n.data("id")] || 0)); },
                levelWidth: function () { return 3; }, minNodeSpacing: 9, spacingFactor: 1.0, animate: true, animationDuration: 500 };
     }
-    return { name: "concentric", concentric: function (n) { return 6 - LEVEL[n.data("layer")]; },
+    // 7 bands now: preprint(1)…blog(7). Higher concentric value = innermost, so invert.
+    return { name: "concentric", concentric: function (n) { return 8 - LEVEL[bandOf(n.data())]; },
              levelWidth: function () { return 1; }, minNodeSpacing: 12, spacingFactor: 0.9, animate: true, animationDuration: 500 };
   }
 
@@ -57,7 +85,7 @@
       elements: g,
       style: [
         { selector: "node", style: {
-          "background-color": function (e) { return COLOR[e.data("layer")] || "#888"; },
+          "background-color": function (e) { return COLOR[bandOf(e.data())] || "#888"; },
           "width": function (e) { var d = indeg[e.data("id")] || 0; var b = e.data("layer") === "preprint" ? 16 : 8; return b + Math.min(30, d * 2.2); },
           "height": function (e) { var d = indeg[e.data("id")] || 0; var b = e.data("layer") === "preprint" ? 16 : 8; return b + Math.min(30, d * 2.2); },
           "border-width": function (e) { return e.data("layer") === "preprint" ? 1.5 : 0.5; },
@@ -118,13 +146,24 @@
     }
   }
 
-  function ensureGraph() {
-    if (loaded) return Promise.resolve();
+  // Always fetch the graph live on open (the user wants current state every time they pull
+  // it up). Cytoscape itself loads once; the data and the rendered instance are rebuilt each
+  // open, so a re-indexed graph shows immediately without a page reload.
+  function loadGraphLive() {
+    var c = document.getElementById("clef-map-cy");
+    if (c) c.innerHTML = '<div style="padding:2rem;color:#9ca3af">Loading map…</div>';
     return loadCytoscape()
-      .then(function () { return fetch(GRAPH_URL).then(function (r) { return r.json(); }); })
-      .then(function (g) { render(g); loaded = true; })
+      .then(function () {
+        // cache-bust so a CDN/browser cache never serves a stale graph
+        var url = GRAPH_URL + (GRAPH_URL.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now();
+        return fetch(url, { cache: "no-store" }).then(function (r) { return r.json(); });
+      })
+      .then(function (g) {
+        if (cy) { try { cy.destroy(); } catch (e) {} cy = null; }
+        if (c) c.innerHTML = "";
+        render(g);
+      })
       .catch(function (err) {
-        var c = document.getElementById("clef-map-cy");
         if (c) c.innerHTML = '<div style="padding:2rem;color:#9ca3af">Map unavailable: ' + err + "</div>";
       });
   }
@@ -133,7 +172,7 @@
     var m = modal(); if (!m) return;
     m.style.display = "";
     document.body.style.overflow = "hidden";
-    ensureGraph().then(function () { if (cy) cy.resize().fit(undefined, 30); });
+    loadGraphLive().then(function () { if (cy) cy.resize().fit(undefined, 30); });
   }
   function close() {
     var m = modal(); if (!m) return;

@@ -81,8 +81,20 @@ module Graph =
         | "spec" -> "spec"
         | _ -> "docs"
 
-    let private internalLink = Regex(@"\]\((/(?:docs|blog|spec)/[a-zA-Z0-9/_-]+/?)\)")
+    // Absolute internal links to docs/blog/spec pages. The char class now includes '#'
+    // so a section-anchored link (…/foo/#3-2-bar) still captures; the anchor is stripped
+    // to the page node below.
+    let private internalLink = Regex(@"\]\((/(?:docs|blog|spec)/[a-zA-Z0-9/_#.-]+/?)\)")
+    // Relative spec→spec links use the spec's own convention: ](foo.md). These appear only
+    // inside spec files and resolve to /spec/draft/<basename>/.
+    let private relativeSpecLink = Regex(@"\]\(([a-z][a-z0-9-]*)\.md(?:#[a-zA-Z0-9-]+)?\)")
     let private arxivLink = Regex(@"arxiv\.org/abs/([0-9]+\.[0-9]+)")
+
+    /// Normalize a link target to a canonical page-node URL: strip any #anchor and ensure
+    /// a single trailing slash.
+    let private normalizeTarget (raw: string) : string =
+        let noAnchor = match raw.IndexOf('#') with | -1 -> raw | i -> raw.Substring(0, i)
+        if noAnchor.EndsWith("/") then noAnchor else noAnchor + "/"
 
     let execute
         (hugoContentDir: string)
@@ -164,11 +176,17 @@ module Graph =
 
             for KeyValue(pageUrl, body) in bodies do
                 let seen = System.Collections.Generic.HashSet<string>()
+                let addEdge (target: string) =
+                    if pageSet.Contains target && target <> pageUrl && seen.Add(target) then
+                        edges.Add { Source = pageUrl; Target = target; EdgeType = "href"; Weight = 1.0; Label = "" }
+                // Absolute /docs|blog|spec links (anchor stripped to the page node).
                 for m in internalLink.Matches(body) do
-                    let mutable d = m.Groups.[1].Value
-                    if not (d.EndsWith("/")) then d <- d + "/"
-                    if pageSet.Contains d && d <> pageUrl && seen.Add(d) then
-                        edges.Add { Source = pageUrl; Target = d; EdgeType = "href"; Weight = 1.0; Label = "" }
+                    addEdge (normalizeTarget m.Groups.[1].Value)
+                // Relative foo.md spec→spec links resolve to /spec/draft/<basename>/, but only
+                // when the SOURCE page is itself a spec page (relative links are spec-internal).
+                if pageUrl.StartsWith("/spec/draft/") then
+                    for m in relativeSpecLink.Matches(body) do
+                        addEdge $"/spec/draft/{m.Groups.[1].Value}/"
                 for m in arxivLink.Matches(body) do
                     let aid = m.Groups.[1].Value
                     if not (arxivCiters.ContainsKey aid) then
@@ -219,7 +237,27 @@ module Graph =
 
             let allNodes = (contentNodes.Values |> List.ofSeq) @ (paperNodes |> List.ofSeq)
 
-            printfn "Graph: %d nodes (%d pages, %d papers), %d edges" allNodes.Length contentNodes.Count paperNodes.Count edges.Count
+            // Narrate the extraction the way the search index does — the graph rebuild should
+            // be as legible as indexing, not an opaque two-liner.
+            let countLayer layer = allNodes |> List.filter (fun n -> n.Layer = layer) |> List.length
+            let countEdge t = edges |> Seq.filter (fun e -> e.EdgeType = t) |> Seq.length
+            // Connectivity: inbound href degree per node — the "is the spec ring lit" signal.
+            let inboundHref = System.Collections.Generic.Dictionary<string, int>()
+            for e in edges do
+                if e.EdgeType = "href" then
+                    inboundHref.[e.Target] <- (if inboundHref.ContainsKey e.Target then inboundHref.[e.Target] else 0) + 1
+            let specNodes = allNodes |> List.filter (fun n -> n.Layer = "spec")
+            let specLit = specNodes |> List.filter (fun n -> inboundHref.ContainsKey n.PageUrl) |> List.length
+
+            printfn ""
+            printfn "Building corpus graph from %d pages..." contentNodes.Count
+            printfn "  Nodes: %d total" allNodes.Length
+            printfn "    spec %d, docs %d, blog %d, pre-prints %d, external %d"
+                (countLayer "spec") (countLayer "docs") (countLayer "blog") (countLayer "preprint") (countLayer "external")
+            printfn "  Edges: %d total" edges.Count
+            printfn "    href (cross-links) %d, cites (papers) %d, tag (themes) %d"
+                (countEdge "href") (countEdge "cites") (countEdge "tag")
+            printfn "  Spec connectivity: %d/%d spec entries reached by an inbound link" specLit specNodes.Length
 
             // POST the rebuild
             let nodePayload =
@@ -242,7 +280,8 @@ module Graph =
             try
                 let! response = httpClient.PostAsync($"{workerUrl}/graph/rebuild", content) |> Async.AwaitTask
                 if response.IsSuccessStatusCode then
-                    printfn "✓ Graph rebuilt: %d nodes, %d edges" allNodes.Length edges.Count
+                    printfn "  Posting to %s/graph/rebuild ..." workerUrl
+                    printfn "✓ Graph live: %d nodes, %d edges served from the edge (D1)" allNodes.Length edges.Count
                     return Ok 0
                 else
                     let! err = response.Content.ReadAsStringAsync() |> Async.AwaitTask

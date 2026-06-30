@@ -1,19 +1,19 @@
-{{/* Corpus Map — trigger button (sits beside Smart Search) + modal overlay */}}
-<button type="button" class="clef-map-trigger" onclick="clefMap.open()" title="Corpus map" aria-label="Open corpus map">
+{{/* Atlas — corpus-graph trigger button (sits beside Smart Search) + modal overlay */}}
+<button type="button" class="clef-map-trigger" onclick="clefMap.open()" title="Atlas" aria-label="Open the Atlas">
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="6" cy="6" r="2.5"></circle><circle cx="18" cy="7" r="2.5"></circle>
     <circle cx="12" cy="17" r="2.5"></circle>
     <line x1="8" y1="7" x2="15.5" y2="7.5"></line><line x1="7" y1="8" x2="11" y2="15"></line>
     <line x1="17" y1="9" x2="13" y2="15"></line>
-  </svg><span>Map</span>
+  </svg><span>Atlas</span>
 </button>
 
 <div id="clef-map-modal" class="clef-map-modal" style="display: none;">
   <div class="clef-map-backdrop" onclick="clefMap.close()"></div>
   <div class="clef-map-container">
     <div class="clef-map-header">
-      <h2>Corpus Map</h2>
+      <h2>Atlas</h2>
       <div class="clef-map-legend">
         <span class="swatch"><span class="dot" style="background:#e3b341"></span>pre-prints</span>
         <span class="swatch"><span class="dot" style="background:#f78166"></span>spec</span>
@@ -28,7 +28,7 @@
         <button type="button" class="clef-map-btn active" data-map-edge="href" title="Cross-links between pages">Links</button>
         <button type="button" class="clef-map-btn active" data-map-edge="cites" title="Citations to arXiv papers">Citations</button>
         <button type="button" class="clef-map-btn active" data-map-edge="tag" title="Shared-topic membership">Themes</button>
-        <button type="button" class="clef-map-btn" onclick="clefMap.close()" title="Close (Esc)" aria-label="Close map">Exit</button>
+        <button type="button" class="clef-map-btn" onclick="clefMap.close()" title="Close (Esc)" aria-label="Close the Atlas">Exit</button>
       </div>
     </div>
     <div id="clef-map-cy"></div>
