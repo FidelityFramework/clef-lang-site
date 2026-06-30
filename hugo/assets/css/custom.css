@@ -840,6 +840,13 @@ pre.mermaid svg {
 .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; margin-left: 0.4rem; }
 :is(.dark) .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; }
 .clef-map-btn-clear:hover { background: #e3b34122; }
+/* Touch callout actions: tap pins the tooltip, navigation is a deliberate "Go →", plus an
+   in-callout Freeze (the long-press alternative). On touch the tip must accept taps (the
+   desktop tip stays pointer-events:none so it never blocks the canvas under the mouse). */
+@media (hover: none), (pointer: coarse) { .clef-map-tip { pointer-events: auto; } }
+.clef-map-tipactions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.clef-map-go { font-size: 0.8rem; font-weight: 600; color: #58a6ff; text-decoration: none; padding: 0.35rem 0.7rem; border: 1px solid #30363d; border-radius: 6px; }
+.clef-map-freezebtn { font-size: 0.8rem; color: #e3b341; background: transparent; border: 1px solid #e3b341; border-radius: 6px; padding: 0.35rem 0.7rem; cursor: pointer; }
 .clef-map-stats { font-size: 0.7rem; color: #9ca3af; margin-left: 0.5rem; }
 #clef-map-cy { flex: 1; min-height: 0; background: #fafafa; }
 :is(.dark) #clef-map-cy { background: #0d1117; }

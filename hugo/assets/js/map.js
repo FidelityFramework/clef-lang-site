@@ -138,32 +138,45 @@
         { selector: 'edge[type="cites"]', style: { "width": 0.8, "line-color": "#e3b341", "curve-style": "haystack", "opacity": 0.55 } },
         { selector: 'edge[type="tag"]', style: { "width": 0.3, "line-color": "#bc8cff", "line-style": "dashed", "curve-style": "haystack", "opacity": 0.2 } },
         { selector: "node:selected", style: { "border-width": 2.5, "border-color": dark ? "#e6edf3" : "#1f2328" } },
+        // Cascade (later selectors win): faded states first, then the lit frozen set, then the
+        // brightest live-hover on top.
+        // .restdim = the PERSISTENT fade of everything outside the frozen sub-graph (resting
+        // state once a set is frozen). .dim = the transient fade during a live hover. Same look.
+        { selector: ".restdim", style: { "opacity": 0.05 } },
         { selector: ".dim", style: { "opacity": 0.05 } },
-        // Frozen sub-graph: persistent bold-but-dimmed. Overrides .dim (frozen wins over faint),
-        // stays below .hi (live hover is brightest). Ordered before .hi so the cascade is correct.
+        // Frozen sub-graph = the active working set: lit (full color), nodes gold-ringed, edges
+        // emphasized. Overrides the fades so it stays bright while the rest is dimmed.
         { selector: "node.frznode", style: { "opacity": 1, "border-width": 2, "border-color": "#e3b341" } },
-        { selector: "edge.frz", style: { "opacity": 0.7, "width": 1.1, "line-color": dark ? "#8b949e" : "#6e7681", "line-style": "solid" } },
+        { selector: "edge.frz", style: { "opacity": 0.9, "width": 1.2, "line-color": "#e3b341", "line-style": "solid" } },
+        // Live hover: brightest, layered on top of whatever resting state exists.
         { selector: ".hi", style: { "opacity": 0.95, "width": 1.4, "line-color": dark ? "#e6edf3" : "#1f2328" } }
       ],
       layout: buildLayout("concentric", indeg)
     });
 
-    // ── Freeze: persistent, accumulated sub-graphs the user builds by right-clicking ──────
-    // Three visual states: .frz (frozen, persistent bold-dimmed) < .hi (live hover, brightest)
-    // < everything else (.dim faint background). The frozen set persists across navigation
-    // (sessionStorage) so on resume the user's custom graph is still highlighted.
+    // ── Freeze: the frozen set becomes the working sub-graph ──────────────────────────────
+    // When a frozen set exists, it IS the resting state of the graph: frozen nodes/edges are
+    // lit (full color) and EVERYTHING ELSE IS PERSISTENTLY DIMMED — the user is hand-building a
+    // reviewable sub-graph. The set grows only when the user hovers/taps an active (frozen)
+    // node, lighting its links so they can freeze the next hop. Persists across navigation
+    // (sessionStorage) so resuming the Atlas restores the sub-graph exactly as left.
+    //
+    // Class cascade (later wins in cy.style order): .restdim (persistent fade of non-frozen)
+    // < .frznode/.frz (lit frozen set) < .hi (live hover, brightest, layered on top).
     function applyFrozen() {
       cy.batch(function () {
-        cy.elements().removeClass("frz frznode");
+        cy.elements().removeClass("frz frznode restdim");
         if (!frozen.size) return;
+        // 1) fade everything by default (the persistent resting dim)
+        cy.elements().addClass("restdim");
+        // 2) lift the frozen set back to lit
         frozen.forEach(function (id) {
           var n = cy.getElementById(id);
           if (!n || n.empty()) return;
-          n.addClass("frznode");
-          // freeze edges between this node and any other frozen node (the 1-hop sub-graph)
+          n.addClass("frznode").removeClass("restdim");
           n.connectedEdges().forEach(function (ed) {
             var s = ed.data("source"), t = ed.data("target");
-            if (frozen.has(s) && frozen.has(t)) ed.addClass("frz");
+            if (frozen.has(s) && frozen.has(t)) ed.addClass("frz").removeClass("restdim");
           });
         });
       });
@@ -177,32 +190,68 @@
       applyFrozen();
     }
 
-    cy.on("mouseover", "node", function (e) {
-      var d = e.target.data(), p = e.renderedPosition;
-      tip('<div class="tt">' + (d.title || d.id) + '</div><div class="tu">' + (d.url || d.id) + '</div>'
-        + '<div class="tm">' + d.layer + " · " + (indeg[d.id] || 0) + " inbound" + (d.iso ? " · isolated" : "")
-        + (frozen.has(d.id) ? " · frozen" : "") + "</div>", p.x, p.y);
+    // Touch devices have no hover, and a navigating tap is the wrong default (it yanks the
+    // user off the page mid-exploration). So the input model differs by device:
+    //   desktop: hover = highlight, left-click = navigate, right-click = freeze
+    //   touch:   tap = highlight + pinned callout (with a "Go →" link), long-press = freeze,
+    //            navigation only via the callout link (a deliberate second action)
+    var TOUCH = false;
+    try { TOUCH = window.matchMedia("(hover: none), (pointer: coarse)").matches; } catch (e) {}
+
+    function navigate(d) {
+      var u = d.url || d.id; if (!u) return;
+      if (/^https?:\/\//.test(u)) window.open(u, "_blank", "noopener,noreferrer");
+      else window.location.href = u;
+    }
+    function highlight(node) {
+      // transient live highlight: dim everything, then light this node's neighborhood on top.
+      // Layers over the frozen resting state (.restdim/.frz stay underneath; .hi is brightest).
       cy.elements().addClass("dim");
-      e.target.removeClass("dim"); e.target.neighborhood().removeClass("dim");
-      e.target.connectedEdges().addClass("hi").removeClass("dim");
-    });
-    cy.on("mouseout", "node", function () {
-      tip(null);
-      // drop live-hover state but KEEP frozen highlighting
+      node.removeClass("dim"); node.neighborhood().removeClass("dim");
+      node.connectedEdges().addClass("hi").removeClass("dim");
+    }
+    function clearHighlight() {
       cy.elements().removeClass("dim hi");
-    });
-    // Left-click navigates (frozen set persists so resume restores it).
-    cy.on("tap", "node", function (e) {
-      var d = e.target.data(), u = d.url || d.id;
-      if (!u) return;
-      if (/^https?:\/\//.test(u)) {
-        window.open(u, "_blank", "noopener,noreferrer");
-      } else {
-        window.location.href = u;
-      }
-    });
-    // Right-click freezes the node's 1-hop sub-graph (additive). Suppress the browser menu.
-    cy.on("cxttap", "node", function (e) { freezeNeighborhood(e.target); });
+      // If a sub-graph is frozen, the resting state is NOT all-bright — restore the frozen
+      // baseline (frozen lit, the rest persistently dimmed) instead of clearing to full.
+      if (frozen.size) applyFrozen();
+    }
+    function tipFor(d) {
+      return '<div class="tt">' + (d.title || d.id) + '</div><div class="tu">' + (d.url || d.id) + '</div>'
+        + '<div class="tm">' + d.layer + " · " + (indeg[d.id] || 0) + " inbound" + (d.iso ? " · isolated" : "")
+        + (frozen.has(d.id) ? " · frozen" : "") + "</div>";
+    }
+
+    if (!TOUCH) {
+      // ── Desktop ──
+      cy.on("mouseover", "node", function (e) {
+        var d = e.target.data(), p = e.renderedPosition;
+        tip(tipFor(d), p.x, p.y);
+        highlight(e.target);
+      });
+      cy.on("mouseout", "node", function () { tip(null); clearHighlight(); });
+      cy.on("tap", "node", function (e) { navigate(e.target.data()); });
+      cy.on("cxttap", "node", function (e) { freezeNeighborhood(e.target); });
+    } else {
+      // ── Touch: tap highlights + pins a callout; navigation is via the callout's link ──
+      cy.on("tap", "node", function (e) {
+        var d = e.target.data(), p = e.renderedPosition;
+        clearHighlight(); highlight(e.target);
+        var t = document.getElementById("clef-map-tip");
+        var go = '<a class="clef-map-go" href="' + (d.url || d.id) + '"'
+          + (/^https?:\/\//.test(d.url || d.id) ? ' target="_blank" rel="noopener noreferrer"' : '')
+          + '>Go →</a>';
+        tip(tipFor(d) + '<div class="clef-map-tipactions">' + go
+          + '<button type="button" class="clef-map-freezebtn">Freeze</button></div>', p.x, p.y);
+        // wire the in-callout Freeze button (touch alternative to long-press)
+        var fb = t && t.querySelector(".clef-map-freezebtn");
+        if (fb) fb.onclick = function (ev) { ev.stopPropagation(); freezeNeighborhood(e.target); };
+      });
+      // long-press = freeze (the right-click equivalent)
+      cy.on("taphold", "node", function (e) { freezeNeighborhood(e.target); });
+      // tapping empty space dismisses the callout + transient highlight
+      cy.on("tap", function (e) { if (e.target === cy) { tip(null); clearHighlight(); } });
+    }
     var cyContainer = document.getElementById("clef-map-cy");
     if (cyContainer) cyContainer.addEventListener("contextmenu", function (ev) { ev.preventDefault(); });
 
