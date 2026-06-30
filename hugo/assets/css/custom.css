@@ -851,8 +851,8 @@ pre.mermaid svg {
    JS swaps wording for touch vs mouse. Auto-shows once on touch first-run. */
 .clef-map-btn-help { font-weight: 700; min-width: 2rem; }
 .clef-map-help { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 30;
-  width: min(92vw, 30rem); background: #0d1117; color: #e6edf3; border: 1px solid #e3b341; border-radius: 12px;
-  padding: 1.25rem 1.4rem; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  width: min(92vw, 30rem); max-height: 85vh; overflow-y: auto; background: #0d1117; color: #e6edf3;
+  border: 1px solid #e3b341; border-radius: 12px; padding: 1.25rem 1.4rem; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
 .clef-map-help[hidden] { display: none; }
 .clef-map-help h3 { margin: 0 0 0.85rem; font-size: 1.05rem; color: #e3b341; }
 .clef-map-help ul { list-style: none; margin: 0 0 0.9rem; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
@@ -890,3 +890,19 @@ pre.mermaid svg {
 .clef-map-trigger:hover { background: rgba(0,0,0,.09); }
 :is(.dark) .clef-map-trigger:hover { background: rgba(255,255,255,.12); }
 @media (max-width: 640px) { .clef-map-trigger span { display: none; } }
+/* Mobile: the Atlas header is one horizontal row that overflows at phone widths. Let it wrap,
+   drop the right-push on the controls, and move the legend into the ? popover (where the color
+   key is shown for all viewports) so the header stays as short as possible. */
+@media (max-width: 640px) {
+  .clef-map-container { width: 96vw; height: 90vh; }
+  .clef-map-header { flex-wrap: wrap; gap: 0.4rem 0.5rem; padding: 0.55rem 0.7rem; }
+  .clef-map-header .clef-map-legend { display: none; }
+  .clef-map-controls { margin-left: 0; flex-wrap: wrap; gap: 0.3rem; }
+  .clef-map-btn { padding: 0.3rem 0.55rem; font-size: 0.8rem; }
+  .clef-map-sep { margin: 0 0.1rem; }
+}
+/* Color key shown inside the ? help popover (so mobile, which hides the header legend, still has
+   it; harmless on desktop where it just adds the key to the popover). */
+.clef-map-help-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; margin: 0.9rem 0 0; padding-top: 0.75rem; border-top: 1px solid #21262d; font-size: 0.8rem; color: #9ca3af; }
+.clef-map-help-legend .swatch { display: inline-flex; align-items: center; gap: 0.35rem; }
+.clef-map-help-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
