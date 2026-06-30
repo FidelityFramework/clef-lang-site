@@ -13,7 +13,7 @@ params:
 
 Our Fidelity framework takes an approach to building desktop applications with [the Clef language](https://clef-lang.com) that aims to let developers create native user interfaces across multiple platforms. We draw on the patterns established by Elmish and the MVU pattern, particularly within Avalonia, and we take many lessons from [Fabulous](https://github.com/fabulous-dev/Fabulous). Our FidelityUI design adapts these approaches for native compilation, with the goal of a framework that feels familiar to Clef developers while delivering performance through direct hardware access.
 
-This document is how our Fidelity framework approaches rich UI experiences by building on the foundation laid by Fabulous, adapting its patterns for deterministic memory management in a natively compiled target.
+This document is how our Fidelity framework approaches rich UI experiences by building on the foundation laid by [Fabulous]({{< ref "leveraging-fabulous-for-native-ui" >}}), adapting its patterns for deterministic memory management in a natively compiled target. As an application grows past simple views, [the actor model extends this into a full application architecture]({{< ref "scaling-fidelityui" >}}).
 
 ## Learning from Fabulous: A Functional Foundation
 

@@ -25,7 +25,7 @@ This wasn't a failure of testing, monitoring, or procedures. It was a failure of
 
 ## Clef Units of Measure: Your First Line of Defense
 
-Our Clef language carries units of measure with zero runtime cost. We have found no other representative implementations of native zero-cost units of measure in the standing literature we have reviewed. Here is how that freezer monitoring system would be written in Clef:
+Our Clef language carries units of measure with zero runtime cost. We have found no other representative implementations of native zero-cost units of measure in the standing literature we have reviewed. The [dimensional type safety](/docs/design/types/dimensional-type-safety/) this rests on is formalized in our [Dimensional Type System paper](https://arxiv.org/abs/2603.16437). Here is how that freezer monitoring system would be written in Clef:
 
 ```fsharp
 [<Measure>] type celsius
@@ -56,7 +56,7 @@ These unit checks disappear entirely at runtime. The compiled code is identical 
 
 ## Beyond Numbers: UMX for Domain Safety
 
-Our Fidelity Framework extends this concept beyond numeric types using the UMX (Units of Measure eXtensions) approach. This brings the same compile-time safety to any type in your domain:
+Our Fidelity Framework extends this concept beyond numeric types using the UMX (Units of Measure eXtensions) approach, part of a measure-type algebra that reaches even [negative and fractional types](/docs/design/types/negative-fractional-types/). This brings the same compile-time safety to any type in your domain:
 
 ```fsharp
 // Define domain-specific units for a medical system
@@ -84,7 +84,7 @@ let wrongOrder = prescribeMedication patientId doctorId medication
 
 ## Real-World Applications in Systems Programming
 
-Our Fidelity Framework uses units of measure throughout its stack for systems-level safety:
+Our Fidelity Framework uses units of measure throughout its stack for systems-level safety, including [native memory management](/docs/design/memory/native-memory-management/) where the same dimensional discipline carries through to allocation:
 
 ### Memory Management with Units
 
