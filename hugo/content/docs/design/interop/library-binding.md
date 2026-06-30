@@ -55,7 +55,7 @@ We want an approach that spans both choices, so developers can make fine-grained
 
 ### The Hybrid Approach
 
-Our hybrid binding architecture changes where the linking decision is made. Rather than forcing wholesale decisions about linking strategy at project inception, it defers binding decisions to build time, based on deployment requirements, while keeping a consistent development experience.
+Our [hybrid binding architecture](/spec/draft/platform-bindings/) changes where the linking decision is made. Rather than forcing wholesale decisions about linking strategy at project inception, it defers binding decisions to build time, based on deployment requirements, while keeping a consistent development experience.
 
 This architecture rests on three principles:
 

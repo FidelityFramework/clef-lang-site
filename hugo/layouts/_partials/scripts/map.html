@@ -1,0 +1,11 @@
+{{/* Clef Corpus Map loader — mirrors scripts/search.html */}}
+{{- if (site.Params.map.enable | default true) -}}
+  <script>
+    window.CLEF_GRAPH_URL = "{{ site.Params.graphUrl | default "/graph.json" }}";
+  </script>
+  {{- $jsMap := resources.Get "js/map.js" -}}
+  {{- if hugo.IsProduction -}}
+    {{- $jsMap = $jsMap | minify | fingerprint -}}
+  {{- end -}}
+  <script defer src="{{ $jsMap.RelPermalink }}"{{ if hugo.IsProduction }} integrity="{{ $jsMap.Data.Integrity }}"{{ end }}></script>
+{{- end -}}

@@ -39,7 +39,7 @@ The solution was to parse headers directly, using XParsec. This parser combinato
 
 - No external dependencies. The parser is written in Clef, compiled alongside everything else.
 - Type-safe parsing. Parse failures produce structured error messages with precise source locations.
-- Semantic preservation. The parser captures `__I`, `__O`, and `__IO` qualifiers as first-class constructs, mapping them directly to `AccessKind` values that flow through the compilation pipeline.
+- Semantic preservation. The parser captures `__I`, `__O`, and `__IO` qualifiers as first-class constructs, mapping them directly to [`AccessKind` values](/spec/draft/access-kinds/) that flow through the compilation pipeline.
 
 ```fsharp
 // CMSIS qualifiers become first-class parse results

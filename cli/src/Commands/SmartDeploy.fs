@@ -169,6 +169,16 @@ module SmartDeploy =
             | Ok indexed -> printfn "  Indexed: %d sections" indexed
             | Error e -> printfn "  Skipped: %s" e
 
+            // Rebuild the corpus graph (Map modal) from the same content walk. Idempotent
+            // full rebuild, so it carries both broad-stroke (--force) and incremental updates;
+            // soft-fails like sync/index if the search worker is not deployed.
+            printfn ""
+            printfn "=== Rebuilding Corpus Graph (Map) ==="
+            let! graphResult = Graph.execute "./hugo/content" false 8787 verbose
+            match graphResult with
+            | Ok _ -> ()
+            | Error e -> printfn "  Skipped: %s" e
+
             return syncCount
         }
 

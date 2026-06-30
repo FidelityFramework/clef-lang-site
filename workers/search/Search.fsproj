@@ -8,6 +8,7 @@
     <Compile Include="src/Types.fs" />
     <Compile Include="src/Search.fs" />
     <Compile Include="src/Indexing.fs" />
+    <Compile Include="src/Graph.fs" />
     <Compile Include="src/Handlers.fs" />
     <Compile Include="src/Main.fs" />
   </ItemGroup>

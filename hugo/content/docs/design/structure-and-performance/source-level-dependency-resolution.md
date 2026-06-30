@@ -51,7 +51,7 @@ This innocent-looking program depends on a range of functions across multiple mo
 
 A key aspect of our dependency resolution strategy is how we handle C/C++ libraries. The [Farscape CLI](https://speakez.tech/blog/farscape-bridge/) generates `[<FidelityExtern>]` attributed Clef binding declarations from C headers, producing source-based packages that flow through the same dependency resolution pipeline as any other Fidelity library.
 
-Farscape generates up to three layers of output for each library binding:
+Farscape generates up to three layers of output for each [library binding](/spec/draft/platform-bindings/):
 
 1. **Layer 1 (Binding Declarations)**: `[<FidelityExtern>]` attributed function declarations that carry library name and symbol metadata through the entire compilation pipeline. These are regenerated from C headers on each `farscape project` run.
 

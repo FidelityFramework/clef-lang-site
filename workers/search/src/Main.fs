@@ -70,6 +70,16 @@ module Main =
                             let! response = Handlers.handleReconcile request env
                             return response
 
+                        | "POST", "/graph/rebuild" ->
+                            // Idempotent full rebuild of the corpus graph (authenticated)
+                            let! response = Handlers.handleGraphRebuild request env
+                            return response
+
+                        | "GET", "/graph" ->
+                            // Cytoscape-shaped corpus graph for the Map modal
+                            let! response = Handlers.handleGraph env
+                            return Handlers.withCORS env origin response
+
                         | "GET", "/health" ->
                             return Handlers.handleHealth ()
 
@@ -86,6 +96,8 @@ module Main =
                                     createObj [ "method" ==> "POST"; "path" ==> "/index"; "description" ==> "Batch index content (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/purge-index"; "description" ==> "Clear all indexed content (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/reconcile"; "description" ==> "Delete stale sections/vectors not in the current content set (authenticated)" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/graph/rebuild"; "description" ==> "Idempotent full rebuild of the corpus graph (authenticated)" ]
+                                    createObj [ "method" ==> "GET"; "path" ==> "/graph"; "description" ==> "Cytoscape-shaped corpus graph for the Map modal" ]
                                     createObj [ "method" ==> "GET"; "path" ==> "/health"; "description" ==> "Health check" ]
                                 |]
                             ]

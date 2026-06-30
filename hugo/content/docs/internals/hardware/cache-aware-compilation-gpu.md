@@ -156,7 +156,7 @@ Our vision for Composer includes identifying these opportunities for shared memo
 
 ### GPU Memory Ordering
 
-Memory ordering on GPUs differs fundamentally from CPU models. Where CPUs provide strong ordering guarantees (x86's TSO model, for instance, ensures stores become visible in program order), GPUs employ a relaxed memory model where writes may become visible to other threads in any order unless explicit barriers enforce ordering.
+[Memory ordering](/spec/draft/atomic-operations/) on GPUs differs fundamentally from CPU models. Where CPUs provide strong ordering guarantees (x86's TSO model, for instance, ensures stores become visible in program order), GPUs employ a relaxed memory model where writes may become visible to other threads in any order unless explicit barriers enforce ordering.
 
 CUDA provides several fence primitives:
 

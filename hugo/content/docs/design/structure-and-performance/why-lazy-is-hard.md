@@ -121,7 +121,7 @@ This works well in the .NET ecosystem. For native compilation, every aspect of t
 
 ## Fidelity's Approach: Extended Flat Closures
 
-Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A lazy value is a flat closure with additional fields for memoization state.
+Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A [lazy value is a flat closure](/spec/draft/lazy-representation/) with additional fields for memoization state.
 
 | Lazy<T> | | | | |
 |:---:|:---:|:---:|:---:|:---:|

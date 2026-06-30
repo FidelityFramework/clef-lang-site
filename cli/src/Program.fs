@@ -135,6 +135,21 @@ module Program =
                 | Verbose -> "Enable verbose output"
 
     [<RequireQualifiedAccess>]
+    type GraphArgs =
+        | [<AltCommandLine("-d")>] Content_Dir of path: string
+        | [<AltCommandLine("-l")>] Local
+        | [<AltCommandLine("-p")>] Port of int
+        | [<AltCommandLine("-v")>] Verbose
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Content_Dir _ -> "Hugo content directory (default: ./hugo/content)"
+                | Local -> "Use local search worker (localhost:8787)"
+                | Port _ -> "Local worker port (default: 8787, requires --local)"
+                | Verbose -> "Enable verbose output"
+
+    [<RequireQualifiedAccess>]
     type PurgeArgs =
         | [<AltCommandLine("-l")>] Local
         | [<AltCommandLine("-p")>] Port of int
@@ -158,6 +173,7 @@ module Program =
         | [<CliPrefix(CliPrefix.None); CustomCommandLine("analyze-diff")>] AnalyzeDiff of ParseResults<AnalyzeDiffArgs>
         | [<CliPrefix(CliPrefix.None); CustomCommandLine("smart-deploy")>] SmartDeploy of ParseResults<SmartDeployArgs>
         | [<CliPrefix(CliPrefix.None)>] Index of ParseResults<IndexArgs>
+        | [<CliPrefix(CliPrefix.None)>] Graph of ParseResults<GraphArgs>
         | [<CliPrefix(CliPrefix.None)>] Purge of ParseResults<PurgeArgs>
         | [<AltCommandLine("-V")>] Version
 
@@ -173,6 +189,7 @@ module Program =
                 | AnalyzeDiff _ -> "Analyze git diff to determine deployment scope"
                 | SmartDeploy _ -> "Deploy based on git diff analysis"
                 | Index _ -> "Index content into D1 FTS5 + Vectorize for search"
+                | Graph _ -> "Rebuild the corpus graph (Map modal) from content links + citations"
                 | Purge _ -> "Purge all content from R2 bucket"
                 | Version -> "Show version"
 
@@ -354,6 +371,14 @@ module Program =
                     let localPort = args.GetResult(<@ IndexArgs.Port @>, 8787)
                     let verbose = args.Contains <@ IndexArgs.Verbose @>
                     Commands.Index.execute contentDir force hardRecreate useLocal localPort verbose
+                    |> runAsync
+
+                | CLIArgs.Graph args ->
+                    let contentDir = args.GetResult(<@ GraphArgs.Content_Dir @>, "./hugo/content")
+                    let useLocal = args.Contains <@ GraphArgs.Local @>
+                    let localPort = args.GetResult(<@ GraphArgs.Port @>, 8787)
+                    let verbose = args.Contains <@ GraphArgs.Verbose @>
+                    Commands.Graph.execute contentDir useLocal localPort verbose
                     |> runAsync
 
                 | CLIArgs.Purge args ->

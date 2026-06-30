@@ -92,7 +92,7 @@ let processDocumentBatch documents =
 
 ## Honoring Functional Structures
 
-We have noted, as many others have, that functional programming structures have natural affinities with efficient memory patterns. Immutable records map to contiguous memory blocks, discriminated unions correspond to tagged memory layouts, and higher-order functions often resolve statically.
+We have noted, as many others have, that functional programming structures have natural affinities with efficient memory patterns. Immutable records map to contiguous memory blocks, [discriminated unions correspond to tagged memory layouts](/spec/draft/discriminated-union-representation/), and higher-order functions often resolve statically.
 
 Our BAREWire draws on these correspondences to generate efficient memory layouts without requiring explicit annotations. The compiler does not need to infer these patterns from scratch, since they follow from the functional programming model. For more on how Clef's compiler handles closures and captured variables, see [Gaining Closure]({{< relref "gaining-closure" >}}).
 

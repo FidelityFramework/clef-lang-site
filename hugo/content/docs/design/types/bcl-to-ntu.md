@@ -281,7 +281,7 @@ flowchart LR
 
 ## Platform Predicates: Conditional Compilation Without Preprocessor
 
-Beyond type width, platforms differ in capabilities. A desktop x86-64 processor may support AVX-512 vector instructions. An ARM Cortex-A may support NEON. An embedded Cortex-M0 may have neither. Traditional approaches handle this through preprocessor conditionals or runtime feature detection. NTU introduces platform predicates as a more principled alternative.
+Beyond type width, platforms differ in capabilities. A desktop x86-64 processor may support AVX-512 vector instructions. An ARM Cortex-A may support NEON. An embedded Cortex-M0 may have neither. Traditional approaches handle this through preprocessor conditionals or runtime feature detection. NTU introduces [platform predicates](/spec/draft/platform-predicates/) as a more principled alternative.
 
 ### Abstract Propositions
 

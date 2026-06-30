@@ -34,7 +34,7 @@ type InferenceResponse =
     | StreamError of message: string         // tag 2
 ```
 
-The Clef compiler verifies this type at design time. The BAREWire schema is derived from it: three cases, three tags, each with a fixed payload layout. Each token becomes a single frame:
+The Clef compiler verifies this type at design time. The BAREWire schema is derived from it: [three cases, three tags, each with a fixed payload layout](/spec/draft/discriminated-union-representation/). Each token becomes a single frame:
 
 ```
 ┌────────────┬────────┬───────────────┬──────────────────────────┐

@@ -51,3 +51,35 @@ CREATE TRIGGER IF NOT EXISTS content_fts_update AFTER UPDATE ON content_sections
     INSERT INTO content_fts(rowid, page_title, section_title, content)
     VALUES (new.rowid, new.page_title, new.section_title, new.content);
 END;
+
+-- ── Corpus graph (the "Map" modal — another index sharing this DB) ──────────
+-- Page-grained: node id = canonical page_url (trailing-slash). Distinct from the
+-- section-grained content_sections.id. Populated by the CLI `graph` command via
+-- POST /graph/rebuild (idempotent full rebuild). No FK/CASCADE (D1 doesn't enforce
+-- reliably); no degree triggers (they break under upsert) — degree is read at query time.
+
+CREATE TABLE IF NOT EXISTS graph_nodes (
+    page_url     TEXT PRIMARY KEY,          -- canonical trailing-slash URL = node id
+    content_type TEXT NOT NULL,             -- blog|spec|design|internals|reference|guides|preprint|external
+    layer        TEXT NOT NULL,             -- derived ring: preprint|external|spec|docs|blog
+    title        TEXT NOT NULL DEFAULT '',
+    summary      TEXT DEFAULT '',
+    tags         TEXT DEFAULT '',
+    published_at TEXT DEFAULT '',
+    ext_url      TEXT DEFAULT '',           -- for preprint/external nodes: the arxiv URL to open
+    updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_graph_nodes_layer ON graph_nodes(layer);
+
+CREATE TABLE IF NOT EXISTS graph_edges (
+    source_url TEXT NOT NULL,               -- a graph_nodes.page_url
+    target_url TEXT NOT NULL,               -- a graph_nodes.page_url (or arxiv: id)
+    edge_type  TEXT NOT NULL,               -- 'href' | 'cites' | 'tag'  (plain string)
+    weight     REAL NOT NULL DEFAULT 1.0,
+    label      TEXT DEFAULT '',
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (source_url, target_url, edge_type)
+);
+CREATE INDEX IF NOT EXISTS idx_graph_edges_source ON graph_edges(source_url);
+CREATE INDEX IF NOT EXISTS idx_graph_edges_target ON graph_edges(target_url);
+CREATE INDEX IF NOT EXISTS idx_graph_edges_type   ON graph_edges(edge_type);

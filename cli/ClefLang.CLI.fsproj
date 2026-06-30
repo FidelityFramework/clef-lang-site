@@ -19,6 +19,7 @@
     <Compile Include="src/Commands/DeployPages.fs" />
     <Compile Include="src/Commands/Sync.fs" />
     <Compile Include="src/Commands/Index.fs" />
+    <Compile Include="src/Commands/Graph.fs" />
     <Compile Include="src/Commands/Status.fs" />
     <Compile Include="src/Commands/Migrate.fs" />
     <Compile Include="src/Commands/AnalyzeDiff.fs" />

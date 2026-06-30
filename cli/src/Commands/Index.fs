@@ -80,7 +80,7 @@ module Index =
 
     /// Determine content type and page URL from file path
     /// Handles both local content dirs and vendored spec paths
-    let private classifyContent (baseDirs: string list) (filePath: string) : (string * string) option =
+    let classifyContent (baseDirs: string list) (filePath: string) : (string * string) option =
         // Normalize to forward slashes and find the relative path against any known base
         let normalized = filePath.Replace("\\", "/")
         let relativePath =
@@ -202,7 +202,7 @@ module Index =
         (proc.ExitCode, stdout, stderr)
 
     /// Vendor Hugo modules and return the spec content directory if found
-    let private vendorSpecContent (hugoDir: string) (verbose: bool) : string option =
+    let vendorSpecContent (hugoDir: string) (verbose: bool) : string option =
         if verbose then printfn "  Vendoring Hugo modules for spec content..."
         let exitCode, _, stderr = runProcess "hugo" "mod vendor" hugoDir
         if exitCode <> 0 then

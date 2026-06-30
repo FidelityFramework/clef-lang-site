@@ -71,6 +71,36 @@ module Types =
     type ReconcileRequest =
         abstract member validIds: string array with get
 
+    /// A graph node received from the CLI graph extractor (page-grained)
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type GraphNodeRequest =
+        abstract member pageUrl: string with get
+        abstract member contentType: string with get
+        abstract member layer: string with get
+        abstract member title: string with get
+        abstract member summary: string with get
+        abstract member tags: string with get
+        abstract member publishedAt: string with get
+        abstract member extUrl: string with get
+
+    /// A graph edge received from the CLI graph extractor
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type GraphEdgeRequest =
+        abstract member source: string with get
+        abstract member target: string with get
+        abstract member edgeType: string with get
+        abstract member weight: float with get
+        abstract member label: string with get
+
+    /// Full graph rebuild payload from the CLI (idempotent replace)
+    [<AllowNullLiteral>]
+    [<Interface>]
+    type GraphRebuildRequest =
+        abstract member nodes: GraphNodeRequest array with get
+        abstract member edges: GraphEdgeRequest array with get
+
     /// Cloudflare Workers AI binding
     [<AllowNullLiteral>]
     [<Interface>]

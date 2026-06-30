@@ -781,3 +781,79 @@ pre.mermaid svg {
   max-width: 100%;
   height: auto;
 }
+
+/* ── Corpus Map modal (peer to Smart Search) ───────────────── */
+/* Reuses .clef-search-modal/.clef-search-backdrop positioning; wider/taller for the graph. */
+.clef-map-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.clef-map-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+.clef-map-container {
+  position: relative;
+  width: 92vw;
+  height: 86vh;
+  max-width: 1400px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+:is(.dark) .clef-map-container {
+  background: #0d1117;
+  border-color: #30363d;
+}
+.clef-map-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+:is(.dark) .clef-map-header { border-color: #30363d; }
+.clef-map-header h2 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.clef-map-legend { display: flex; gap: 0.9rem; font-size: 0.72rem; color: #6b7280; }
+.clef-map-legend .swatch { display: inline-flex; align-items: center; gap: 0.3rem; }
+.clef-map-legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+.clef-map-controls { margin-left: auto; display: flex; gap: 0.4rem; align-items: center; }
+.clef-map-btn {
+  background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb;
+  border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.75rem; cursor: pointer;
+}
+:is(.dark) .clef-map-btn { background: #21262d; color: #c9d1d9; border-color: #30363d; }
+.clef-map-btn.active { background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness)); color: #fff; border-color: transparent; }
+.clef-map-stats { font-size: 0.7rem; color: #9ca3af; margin-left: 0.5rem; }
+#clef-map-cy { flex: 1; min-height: 0; background: #fafafa; }
+:is(.dark) #clef-map-cy { background: #0d1117; }
+.clef-map-tip {
+  position: absolute; z-index: 30; max-width: 300px; display: none; pointer-events: none;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.6rem 0.75rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+:is(.dark) .clef-map-tip { background: #161b22; border-color: #30363d; }
+.clef-map-tip .tt { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.15rem; }
+.clef-map-tip .tu { font-size: 0.72rem; color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness)); word-break: break-all; }
+.clef-map-tip .tm { font-size: 0.72rem; color: #9ca3af; margin-top: 0.3rem; }
+/* trigger button in navbar, beside the search box */
+.clef-map-trigger {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: rgba(0,0,0,.05); border: none; border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem; font-size: 0.85rem; cursor: pointer; color: inherit; white-space: nowrap;
+}
+:is(.dark) .clef-map-trigger { background: rgba(255,255,255,.08); }
+.clef-map-trigger:hover { background: rgba(0,0,0,.09); }
+:is(.dark) .clef-map-trigger:hover { background: rgba(255,255,255,.12); }
+@media (max-width: 640px) { .clef-map-trigger span { display: none; } }

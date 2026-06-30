@@ -141,7 +141,7 @@ With the type information properly flowing through the PSG, MLIR emission become
 
 For .NET developers, discriminated unions (DUs) are similar to algebraic data types or tagged unions in other languages. The `Result` type in Clef can be either `Ok` with a success value or `Error` with an error value.
 
-Composer represents discriminated unions using MLIR's type system. A Result type compiles to a tagged representation where the tag indicates which case is active:
+Composer [represents discriminated unions](/spec/draft/discriminated-union-representation/) using MLIR's type system. A Result type compiles to a tagged representation where the tag indicates which case is active:
 
 ```mlir
 // Result DU layout: tag (i32) + payload space

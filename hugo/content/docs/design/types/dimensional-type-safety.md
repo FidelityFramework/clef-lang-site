@@ -54,7 +54,7 @@ Traditional type systems work well for sequential execution. Rust's ownership mo
 
 > "Rust's ownership model fundamentally assumes von Neumann architecture with linear memory. There's no 'owner' of a signal propagating through configured logic blocks."
 
-This is where dimensional type safety becomes essential. **Units of measure express constraints that are orthogonal to execution model**. Whether a value is processed sequentially, in parallel, or through spatial dataflow, its dimensional properties remain invariant. A `float<meters>` is still a length measurement regardless of how it's computed.
+This is where dimensional type safety becomes essential. **[Units of measure](/spec/draft/units-of-measure/) express constraints that are orthogonal to execution model**. Whether a value is processed sequentially, in parallel, or through spatial dataflow, its dimensional properties remain invariant. A `float<meters>` is still a length measurement regardless of how it's computed.
 
 ## Historical Foundations: Ada's Lesson
 
