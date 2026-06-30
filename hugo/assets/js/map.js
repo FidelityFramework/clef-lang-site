@@ -290,7 +290,7 @@
         ["Tap “Go →”", "open that spec / doc / blog entry"],
         ["Clear", "reset the frozen sub-graph"]
       ] : [
-        ["Hover a node", "highlight it and its links"],
+        ["Hover over a node", "highlight it and its links"],
         ["Click a node", "open that spec / doc / blog entry"],
         ["Right-click a node", "freeze its sub-graph (build a custom graph hop by hop)"],
         ["Clear", "reset the frozen sub-graph"]
