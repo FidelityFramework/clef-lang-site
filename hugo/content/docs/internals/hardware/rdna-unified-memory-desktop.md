@@ -424,7 +424,7 @@ This is refinement, not foundation model training. The unified memory architectu
 
 ## The Ternary Inference Frontier
 
-Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/blog/unified-vision-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} replace multiplication with simple addition and subtraction. This transformation fundamentally changes which processors handle which workloads efficiently.
+Beyond conventional quantization lies a more radical optimization that BAREWire.HSA is uniquely positioned to enable: ternary model inference distributed across all three compute domains. As explored in [A Unified Vision for Ternary Models](/blog/unified-vision-ternary-models/), models quantized to balanced ternary weights {-1, 0, +1} [replace multiplication with simple addition and subtraction](https://arxiv.org/abs/2406.02528). This transformation fundamentally changes which processors handle which workloads efficiently.
 
 The research question we are pursuing in SpeakEZ's lab: can we partition a ternary model enhanced with Multi-head Latent Attention (MLA) across CPU, GPU, and NPU in a way that leverages each processor's strengths while BAREWire eliminates the traditional penalty for heterogeneous dispatch?
 

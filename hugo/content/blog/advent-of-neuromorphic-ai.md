@@ -487,6 +487,6 @@ Our control-flow to data-flow compilation, forward gradient training through Fur
 
 ---
 
-[^1]: Baydin, A. G., Pearlmutter, B. A., Syme, D., Wood, F., & Torr, P. (2022). Gradients without Backpropagation. arXiv preprint arXiv:2202.08587.
+[^1]: Baydin, A. G., Pearlmutter, B. A., Syme, D., Wood, F., & Torr, P. (2022). Gradients without Backpropagation. arXiv preprint [arXiv:2202.08587](https://arxiv.org/abs/2202.08587).
 
 [^2]: Liu, Y., Deng, X., & Yu, Q. (2024). Multi-Plasticity Synergy with Adaptive Mechanism Assignment for Training Spiking Neural Networks. arXiv preprint arXiv:2508.13673v1

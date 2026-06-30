@@ -22,7 +22,7 @@ Gradient checkpointing and other memory-reduction techniques trade compute for m
 
 ## The Forward Gradient
 
-Baydin, Pearlmutter, Syme, Wood, and Torr [1] demonstrated a different approach. The *forward gradient* is an unbiased estimate of the gradient computed via forward-mode automatic differentiation. For a random perturbation vector \(v\), the forward gradient computes the directional derivative:
+[Baydin, Pearlmutter, Syme, Wood, and Torr](https://arxiv.org/abs/2202.08587) [1] demonstrated a different approach. The *forward gradient* is an unbiased estimate of the gradient computed via forward-mode automatic differentiation. For a random perturbation vector \(v\), the forward gradient computes the directional derivative:
 
 \[\nabla_v f(\theta) = \langle \nabla f(\theta), v \rangle\]
 

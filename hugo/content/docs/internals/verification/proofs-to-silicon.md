@@ -205,5 +205,5 @@ As computing evolves toward greater specialization of hardware, the challenge of
 4. Petricek, T., Orchard, D., and Mycroft, A. "Coeffects: A calculus of context-dependent computation," in *ICFP*, 2014.
 5. Gustafson, J. L. and Yonemoto, I. T. "Beating Floating Point at its Own Game: Posit Arithmetic," *Supercomputing Frontiers and Innovations*, vol. 4, no. 2, 2017.
 6. Posit Working Group, "Standard for Posit Arithmetic (2022)," posithub.org, 2022.
-7. Baydin, A. G., Pearlmutter, B. A., Syme, D., Wood, F., and Torr, P. "Gradients without Backpropagation," *arXiv preprint arXiv:2202.08587*, 2022.
+7. Baydin, A. G., Pearlmutter, B. A., Syme, D., Wood, F., and Torr, P. "Gradients without Backpropagation," [*arXiv preprint arXiv:2202.08587*](https://arxiv.org/abs/2202.08587), 2022.
 8. Lattner, C. et al. "MLIR: Scaling compiler infrastructure for domain specific computation," in *CGO*, 2021.

@@ -362,7 +362,7 @@ As we enter an era of increasingly heterogeneous hardware - CPUs, GPUs, TPUs, DP
 
 ## Advanced Implementation: Hybrid BitNet with Compressed KV Cache
 
-To illustrate the transformative power of coeffect-guided compilation, consider a cutting-edge hybrid architecture that combines BitNet's ternary operations with DeepSeek-style compressed key-value caching. This exemplifies how coeffects enable optimal workload distribution across heterogeneous hardware.
+To illustrate the transformative power of coeffect-guided compilation, consider a cutting-edge hybrid architecture that combines [BitNet's ternary operations](https://arxiv.org/abs/2406.02528) with DeepSeek-style compressed key-value caching. This exemplifies how coeffects enable optimal workload distribution across heterogeneous hardware.
 
 ### The Architectural Innovation
 

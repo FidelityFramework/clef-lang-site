@@ -30,7 +30,7 @@ This would, in effect, provide a coherent framework to explore them all from a s
 
 Over the past several years, SpeakEZ has been designing components that form the foundation for a unified vision. Each piece on its own was solving a technical problem, and each was removing a source of computational inefficiency:
 
-The exploration of [matmul-free architectures](https://speakez.tech/blog/beyond-transformers/) demonstrated that the industry's obsession with matrix multiplication was more historical accident than mathematical necessity. It showed how ternary quantization and sub-quadratic models could achieve comparable performance with dramatically lower computational requirements, often 10-100x more efficient.
+The exploration of [matmul-free architectures](https://speakez.tech/blog/beyond-transformers/) demonstrated that the industry's obsession with matrix multiplication was more historical accident than mathematical necessity. It showed how [ternary quantization and sub-quadratic models](https://arxiv.org/abs/2406.02528) could achieve comparable performance with dramatically lower computational requirements, often 10-100x more efficient.
 
 And work on [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) speculated on how AMD's unified memory architecture could enable new paradigms for distributed AI inference, with BAREWire providing the zero-copy substrate for efficient model orchestration, eliminating the memory bandwidth bottleneck that consumes up to 90% of cycle wait times in current systems.
 

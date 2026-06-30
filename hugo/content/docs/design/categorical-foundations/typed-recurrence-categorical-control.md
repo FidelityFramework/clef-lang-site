@@ -99,4 +99,4 @@ This grounds the HRM → RRM → Porous RRM progression in a pattern that alread
 
 [2] B. Gavranović, P. Lessard, A. Dudzik, et al., "Categorical Deep Learning is an Algebraic Theory of All Architectures," arXiv:2402.15332, 2024.
 
-[3] M. Zhu, W. A. Tali, R. D. Lange, et al., "Scalable MatMul-free Language Modeling," arXiv:2406.02528, 2024.
+[3] M. Zhu, W. A. Tali, R. D. Lange, et al., "Scalable MatMul-free Language Modeling," [arXiv:2406.02528](https://arxiv.org/abs/2406.02528), 2024.

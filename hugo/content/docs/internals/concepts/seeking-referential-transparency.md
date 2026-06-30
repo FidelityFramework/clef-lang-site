@@ -78,7 +78,7 @@ func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
 
 ## Post-Transformer Revolution
 
-While interaction nets might seem "rare" for traditional ML workloads dominated by matrix multiplication, post-transformer architectures fundamentally change this equation. MatMul-free and sub-quadratic models are *perfectly* suited for interaction net compilation.
+While interaction nets might seem "rare" for traditional ML workloads dominated by matrix multiplication, post-transformer architectures fundamentally change this equation. [MatMul-free](https://arxiv.org/abs/2406.02528) and sub-quadratic models are *perfectly* suited for interaction net compilation.
 
 ### MatMul-Free Networks as Interaction Patterns
 

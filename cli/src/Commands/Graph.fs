@@ -28,10 +28,9 @@ module Graph =
     /// External paper labels resolved from how the prose cites them (curated).
     let private externalTitles =
         // Consistent format across all external nodes: "Surname(s) — Brief Title".
-        // Mamba-3 has no author surnames in the corpus (cited by its model name, institutions
-        // only: Cartesia/CMU/Princeton/Together), so the model name stands as the label.
         [ "2511.01754", "Beckmann & Setzer — Access Hoare Logic"
-          "2603.15569", "Mamba-3"
+          "2202.08587", "Baydin et al. — Gradients without Backprop"
+          "2603.15569", "Lahoti et al. — Mamba-3"
           "2509.00587", "Mehta & Hsu — Symmetry Hoare Logic"
           "2603.28627", "Cain et al. — Shor's at 10k Qubits"
           "2603.20105", "Roy et al. — Y-Combinator for LLMs"

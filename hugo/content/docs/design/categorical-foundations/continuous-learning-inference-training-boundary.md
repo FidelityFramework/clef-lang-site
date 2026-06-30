@@ -135,7 +135,7 @@ The reason to record this direction now, rather than waiting until the lemma lib
 
 ## References
 
-[1] A. G. Baydin, B. A. Pearlmutter, D. Syme, F. Wood, and P. Torr, "Gradients without Backpropagation," arXiv:2202.08587, 2022.
+[1] A. G. Baydin, B. A. Pearlmutter, D. Syme, F. Wood, and P. Torr, "Gradients without Backpropagation," [arXiv:2202.08587](https://arxiv.org/abs/2202.08587), 2022.
 
 [2] A. Rico, S. Pareek, J. Cabezas, D. Clarke, et al., "AMD XDNA NPU in Ryzen AI Processors," *IEEE Micro*, vol. 44, no. 6, pp. 73-83, 2024.
 
