@@ -351,3 +351,9 @@ The memory management strategy is determined when the library is generated based
 The Fidelity Framework with its BAREWire pre-optimization approach represents a fundamental reimagining of how high-level languages can target constrained devices. The combination of Clef's expressive type system, BAREWire's pre-optimized memory mapping, Farscape's quotation-based binding generation, and MLIR/LLVM's code generation capabilities aims to create a hardware/software co-design methodology where safety and performance coexist. Developers need not choose between abstraction and control, or between productivity and efficiency.
 
 With the right approach and community collaboration, embedded development could become as accessible and productive as any other domain of software development. The Fidelity Framework envisions embedded development in Clef that is not just possible, but productive, safe, and accessible.
+
+## See also
+
+- [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis this STM32 target sits inside
+- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of graduated-memory evolution on bare metal
+- [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): memory placement decided at compile time across hardware

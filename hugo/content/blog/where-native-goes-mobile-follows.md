@@ -26,7 +26,7 @@ flowchart LR
     Composer --> MCU["STM32, RA6M5<br>bare ELF / picolibc"]
 ```
 
-Our approach to mobile and embedded programming was built from the other direction. We compile directly to native artifacts across heterogeneous platforms. The compiler architecture and binding tooling were chosen because they support producing native artifacts for several targets without a runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary. What follows walks through our early design decisions and the cross-platform native capability they produce. That thinking traces back through our earlier UI work, from the [window layout system]({{< ref "window-layout-with-fidelity" >}}) and [the FidelityUI model]({{< ref "fidelity-ui-model" >}}) to [leveraging Fabulous for native UI]({{< ref "leveraging-fabulous-for-native-ui" >}}). LLVM platform tuples serve as the low-level back end, with two adjacent UI patterns our framework supports today. We describe per-platform packaging, the language mechanism that lets one design satisfy multiple platform targets, and the costs and benefits the approach carries.
+Our approach to mobile and embedded programming was built from the other direction. We compile directly to native artifacts across heterogeneous platforms, [down to bare-metal microcontrollers like the STM32](/docs/internals/hardware/fidelity-on-stm32/). The compiler architecture and binding tooling were chosen because they support producing native artifacts for several targets without a runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary. What follows walks through our early design decisions and the cross-platform native capability they produce. That thinking traces back through our earlier UI work, from the [window layout system]({{< ref "window-layout-with-fidelity" >}}) and [the FidelityUI model]({{< ref "fidelity-ui-model" >}}) to [leveraging Fabulous for native UI]({{< ref "leveraging-fabulous-for-native-ui" >}}). LLVM platform tuples serve as the low-level back end, with two adjacent UI patterns our framework supports today. We describe per-platform packaging, the language mechanism that lets one design satisfy multiple platform targets, and the costs and benefits the approach carries.
 
 The wrapper around each artifact is what differs across the platform set; the binary inside is what Composer produces from substantially shared Clef source code and per-target handling of the compilation back end.
 
@@ -287,3 +287,16 @@ The four-tier verification architecture from [Cryptographic Certainty](https://c
 Linux desktop and embedded targets are working today, and the HelloWayland UI is our clearest demonstration of that arc. Linux mobile (primarily postmarketOS) and Tizen TV are scoped additions to the target tuple matrix. The `libc` and packaging differences are real, and the architectural work is within reach. Android and iOS are the next tier up in platform-specific shim tooling; our design accounts for them, and we are building the Composer pipeline to produce the right output formats. The path forward from here is tooling and certificate logistics.
 
 Native goes where our Composer IR reaches, and we made that reach part of the design from the start. Mobile and the rest of the matrix are targets we will keep building toward as the pipeline and the per-platform tooling come into place.
+
+## See also
+
+### Hardware targets
+
+- [Fidelity Lowered to STM32](/docs/internals/hardware/fidelity-on-stm32/): the bare-metal end of the same native-compilation path
+- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of evolution in graduated memory across native targets
+- [RDNA Unified Memory on the Desktop](/docs/internals/hardware/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
+
+### UI patterns
+
+- [The FidelityUI Model]({{< ref "fidelity-ui-model" >}}): the UI design the native artifacts render
+- [A Window Layout System for Fidelity]({{< ref "window-layout-with-fidelity" >}}): the layout substrate beneath the native UI pattern
