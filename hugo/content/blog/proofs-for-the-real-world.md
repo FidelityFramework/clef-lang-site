@@ -17,7 +17,7 @@ The answer is yes, within well-characterized boundaries, and the mechanism is on
 
 ## Range Propagation as Proof Machinery
 
-The DTS includes a representation selection function (detailed in Section 2.6 of the [DTS/DMM paper](https://arxiv.org/abs/2603.16437)). Given a value with a declared dimensional range, the compiler evaluates candidate numeric representations (IEEE 754, b-posit at various widths) against worst-case relative error within the range. The mechanism is interval arithmetic over the computation graph: declared ranges at the inputs propagate through arithmetic operations to produce derived ranges at the outputs.
+The DTS includes a representation selection function (detailed in Section 2.6 of the [DTS/DMM paper](https://arxiv.org/abs/2603.16437)). Given a value with a declared dimensional range, the compiler evaluates candidate numeric representations (IEEE 754, [b-posit](https://arxiv.org/abs/2603.01615) at various widths) against worst-case relative error within the range. The mechanism is interval arithmetic over the computation graph: declared ranges at the inputs propagate through arithmetic operations to produce derived ranges at the outputs.
 
 This mechanism was designed to select posit widths. It also generates safety proofs.
 

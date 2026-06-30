@@ -61,7 +61,7 @@ let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
 
 ## Precise arithmetic is what makes the tangents trustworthy
 
-The forward-propagated tangent is itself a long accumulation, and its quality is the same accumulation-precision question the [architecture article]({{< ref "architecture-and-arithmetic" >}}) raised for the rate objective. The precision pillar and the efficiency pillar are not two separate choices. The quire that keeps the coding-rate separation sharp is the same quire that keeps the forward tangent accurate, because both are long accumulations carried without intermediate rounding. Committing to b-posit and the quire for the architecture's sake is intended to give the trustworthy tangents the efficiency mechanism needs, at no additional cost. The two pillars share one substrate decision.
+The forward-propagated tangent is itself a long accumulation, and its quality is the same accumulation-precision question the [architecture article]({{< ref "architecture-and-arithmetic" >}}) raised for the rate objective. The precision pillar and the efficiency pillar are not two separate choices. The quire that keeps the coding-rate separation sharp is the same quire that keeps the forward tangent accurate, because both are long accumulations carried without intermediate rounding. Committing to [b-posit](https://arxiv.org/abs/2603.01615) and the quire for the architecture's sake is intended to give the trustworthy tangents the efficiency mechanism needs, at no additional cost. The two pillars share one substrate decision.
 
 ## Where the Saving Concentrates
 

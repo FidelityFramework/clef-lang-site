@@ -22,7 +22,7 @@ Gustafson and Yonemoto's posit arithmetic [1] addresses this with *tapered preci
 
 The two representations make different tradeoffs. IEEE 754 provides uniform relative error of approximately \(2^{-52}\) for `float64`, independent of value magnitude. Posit32 with es = 2 provides approximately \(2^{-27}\) relative error near 1.0, degrading to approximately \(2^{-8}\) at regime extremes. For computations whose values concentrate near unity, posit provides better precision per bit. For computations that span the full representable range with equal probability, IEEE 754's uniformity is the correct choice.
 
-Jonnalagadda, Thotli, and Gustafson's bounded posit (b-posit) [4] constrains the regime field so that decode and encode circuits match IEEE 754 in area and latency while preserving posit's tapered-precision accuracy. With the hardware gap closed, the choice between IEEE 754 and a posit variant becomes purely an accuracy-range question within the dimensional range the value actually occupies, which is the question dimensional annotations let the compiler answer.
+Jonnalagadda, Thotli, and Gustafson's [bounded posit (b-posit)](https://arxiv.org/abs/2603.01615) [4] constrains the regime field so that decode and encode circuits match IEEE 754 in area and latency while preserving posit's tapered-precision accuracy. With the hardware gap closed, the choice between IEEE 754 and a posit variant becomes purely an accuracy-range question within the dimensional range the value actually occupies, which is the question dimensional annotations let the compiler answer.
 
 The question is: how does the compiler know which case applies?
 

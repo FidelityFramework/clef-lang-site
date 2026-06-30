@@ -91,7 +91,7 @@ The blur is not intrinsic to the architecture. It is intrinsic to the arithmetic
 
 ## b-posit and the quire close the gap
 
-The substrate the ADM work already uses, b-posit arithmetic with quire accumulation, is built for the operations the coding-rate objective stresses. A quire is a wide fixed-point accumulator that carries a long sum or a dot product without rounding at each intermediate step, rounding only once at the end. The log-determinant and covariance computations that the rate objective depends on are exactly such accumulations, so they are what the quire protects.
+The substrate the ADM work already uses, [b-posit arithmetic](https://arxiv.org/abs/2603.01615) with quire accumulation, is built for the operations the coding-rate objective stresses. A quire is a wide fixed-point accumulator that carries a long sum or a dot product without rounding at each intermediate step, rounding only once at the end. The log-determinant and covariance computations that the rate objective depends on are exactly such accumulations, so they are what the quire protects.
 
 ```fsharp
 // The rate term's long accumulation, carried through the quire and rounded once at the end.
