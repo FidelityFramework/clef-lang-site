@@ -125,7 +125,7 @@ The difference is not micro-optimization. In the dense version the block structu
 
 The move is therefore not to tolerate the floating-point slack but to remove its cause. Keep the derived architecture exactly as the white-box derivation gives it, and run its sensitive operations on arithmetic whose accumulation discipline makes the convergence sharp. This is the first point at which the language-model component stops being the one piece of the framework that runs on a foreign numeric format. It rejoins the b-posit world that the domain models, the [dimensional types](https://arxiv.org/abs/2603.16437), and the rest of the substrate already inhabit, which is a precondition for the adjacency the [constellation article]({{< ref "the-constellation" >}}) describes.
 
-## The friction this resolves, and the one it does not
+## The Friction This Resolves
 
 The [building article]({{< ref "building-the-model" >}}) named a real tension: the CPU deployment target wants four-bit or ternary weights, and those are the regimes where the rate-reduction operations are worst-conditioned. The b-posit substrate is the resolution, because it offers dynamic range that fixed low-bit integer formats cannot, and the borrowed ternary format was never more than a terminal artifact someone else's pipeline produced. Building the model on our framework's own arithmetic makes the deployment numeric format a free variable chosen for the framework's reasons rather than inherited from an external recipe.
 

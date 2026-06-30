@@ -15,7 +15,7 @@ In March 2025, we published [Building Composer With Alloy](https://speakez.tech/
 
 Over the months that followed, we deepened our reading of ML-family languages, studied production MLIR frameworks, and refined the Native Type Universe architecture. We reached a different position: types belong in the compiler, not in a library. This may seem obvious to software engineers who live in other ecosystems, but we wanted it to arrive as an emergent property of the design rather than a reflexive withdrawal from current art in the .NET ecosystem.
 
-## The Library Pattern: A Familiar Approach
+## The Library Pattern
 
 When we designed Alloy, we followed a well-established pattern. Just as .NET has the Base Class Library, Rust has its standard library, and OCaml has its Core modules, we would provide a library of native types and operations for Clef code targeting native compilation.
 

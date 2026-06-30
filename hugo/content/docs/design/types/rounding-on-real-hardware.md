@@ -94,7 +94,7 @@ The Posit Standard defines a single rounding mode, round-to-nearest, and no dire
 
 A sound interval over posits therefore cannot obtain outward rounding from the posit arithmetic directly. The standard construction is to compute each endpoint round-to-nearest, then widen the low endpoint down by one unit in the last place and the high endpoint up by one. This is Moore's outward widening: it guarantees containment, at the cost of an enclosure slightly looser than one produced by native directed rounding. The design calls for this construction, with a diagnostic distinguishing a widened posit interval from a natively directed one, so the two are not conflated.
 
-## The quire: rounding once, by design
+## The Quire
 
 The quire is the clearest case of rounding as a deliberate design choice rather than a default.
 

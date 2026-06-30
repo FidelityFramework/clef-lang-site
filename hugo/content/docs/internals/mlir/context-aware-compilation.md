@@ -99,7 +99,7 @@ let enrichDataPoints (points: DataPoint[]) = async {
 
 The choice between interaction nets and delimited continuations fundamentally determines what optimizations are possible and which hardware can efficiently execute the code.
 
-## Coeffects: The Missing Link
+## Coeffects
 
 This is where coeffects revolutionize compilation. By tracking what code needs from its environment, coeffects provide exactly the information needed to choose between parallel execution strategies:
 
@@ -220,7 +220,7 @@ let runInference (model: Model) (input: Tensor) =
 // Maverick reconfigures between layers!
 ```
 
-## The Coeffect Advantage: Clean Code, Optimal Execution
+## The Coeffect Advantage
 
 The beauty of coeffect-driven compilation is that developers write clean, intent-focused code while the compiler handles the messy details of determining strategies for parallel execution:
 

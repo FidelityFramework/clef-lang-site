@@ -138,7 +138,7 @@ This generalization matters for our current work on hardware security modules. D
 
 The Fidelity architecture accommodates these variations without becoming fragmented. Whether targeting STM32 for its ecosystem maturity, Renesas for its security features, or other families for their specific strengths, the same Clef source compiles through the same pipeline to optimal native code.
 
-## Beyond Stack Allocation: The Memory Model Matures
+## Beyond Stack Allocation
 
 The original article emphasized stack-only allocation as the target memory model. This was intentional. Proving that Clef could compile to native code with purely stack-based memory management served two purposes: it validated that our approach could work in the most constrained environments (microcontrollers with kilobytes of RAM), and it demonstrated a clean break from managed runtime ideology. If we could compile Clef without any dynamic memory allocation, we had truly escaped the assumptions that garbage collection embeds in language design.
 

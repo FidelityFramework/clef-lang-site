@@ -63,7 +63,7 @@ let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
 
 The forward-propagated tangent is itself a long accumulation, and its quality is the same accumulation-precision question the [architecture article]({{< ref "architecture-and-arithmetic" >}}) raised for the rate objective. The precision pillar and the efficiency pillar are not two separate choices. The quire that keeps the coding-rate separation sharp is the same quire that keeps the forward tangent accurate, because both are long accumulations carried without intermediate rounding. Committing to b-posit and the quire for the architecture's sake is intended to give the trustworthy tangents the efficiency mechanism needs, at no additional cost. The two pillars share one substrate decision.
 
-## Where the saving concentrates: adaptation and distillation
+## Where the Saving Concentrates
 
 The payoff is sharpest where this section's models are built and rebuilt. The [building article]({{< ref "building-the-model" >}}) commits the tuning to low-rank adaptation throughout: a stable functional base with a swappable Clef adapter over it, the adapter warm-rotating as the language evolves. A low-rank adapter is a natural fit for multi-tangent forward-mode, because the adapter's trainable space is already low-rank by construction, so the tangent set that spans it is small for a reason independent of the architecture's own rank. Adapting the model means taking gradients over the adapter's handful of dimensions, in a few storage-free forward passes, instead of taping activations through the entire base for a backward sweep.
 

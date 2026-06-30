@@ -16,7 +16,7 @@ This article advances a claim that is larger than the engineering use that follo
 
 This is design theory. The engineering payoff below, a recurrent cache that is partly virtual, is real and worth having, but it is the first instance of the idea, not its boundary. The reason to take the idea seriously is that it points at a useful exertion of type theory into model building, a place where a type-theoretic contribution does work that statistical machine learning has no other way to do. The field has reversible architectures, built by convention and trusted by construction. It does not have a type discipline that makes reversibility a proven, compiler-exploitable property of a model's internals. That gap is the opportunity.
 
-## A storage problem at inference, not training
+## The Cost of Recall
 
 Recurrent and cache-augmented sequence models hold a memory of earlier hidden states so that a long context stays available for recall. As the sequence proceeds, checkpoints of hidden states accumulate, the effective memory grows with sequence length, and the cost being managed is storage: holding every hidden state across a long context is expensive, and the management question is which states to keep.
 
@@ -53,7 +53,7 @@ How much of the cache to materialize versus reconstruct on demand is not a runti
 
 This is the layer the model-architecture literature does not reach. A published cache mechanism proposes a cache and ways to manage it at the model layer. The placement of that cache, the operating point between storage and reconstruction, and the per-target variation of that operating point are compilation concerns, and they are our framework's heterogeneous-targeting claim applied to the inference cache. A reversible model variant compiled through our framework has a cache that is partly virtual: reconstructed on demand with verified fidelity, and placed at the operating point each target's memory hierarchy dictates.
 
-## The binding constraint, stated honestly
+## The binding constraint
 
 Only the reversible part of a transition can be reconstructed this way. A transition that discards information, a lossy nonlinearity or a dimension-reducing projection, has no adjoint, and the prior state cannot be recovered by running backward. This is the constraint the reversible-architecture literature lives under, and our framework does not relax it. Recurrent models compress context precisely through lossy operations, so a published cache-augmented model is not reversible, and this machinery does not extract reversibility from a model that was not built to have it.
 
@@ -65,13 +65,13 @@ There is a connection here to the sub-quadratic thread the [constellation articl
 
 This tightens the whole thread. The field's sub-quadratic models drift because their generator is untyped, as the constellation article argues; the same untyped generator is also not cleanly reversible, because floating-point forward and inverse steps do not compose to the identity. There is a current illustration of the stakes: [Mamba-3](https://arxiv.org/abs/2603.15569) reintroduced complex-valued state transitions precisely because the rotational dynamics they provide add expressivity, and a rotation is the one transition that is exactly invertible by negating its angle. The newest models are therefore moving toward generators that are, in principle, cleanly reversible, while still computing them in arithmetic that does not preserve the round trip. Typing the generator buys three things at once from one construction: the sub-quadratic cost, because it is a recurrence; the exact structure, because the grade decomposition holds through training; and the verified reversibility this article needs for inference-time recall, because the adjoint is exact. Sub-quadratic, structurally exact, and reversible are three consequences of one typed generator, and the hardware payoff would compound accordingly, a model that is designed to be linear in context, sparse in structure, and able to trade stored state for recomputed state against each target's memory hierarchy.
 
-## The case for reversibility: limiting drift in recall
+## The Cost of Drift
 
 It is worth setting aside algebraic framing to present directly what reversibility buys, because the practical consequence is larger than the storage saving that motivated it. A sub-quadratic model works by compressing the entire past into a fixed-size state. When a later token needs something from earlier in the sequence, the model is relying on that state to still faithfully contain it. In the ordinary construction there is no way to check: the state is whatever the recurrence produced, recall is whatever the state yields, and if the state has quietly drifted from what the earlier tokens actually established, the model produces a confident answer from a corrupted memory with no recourse to correct it. This is the failure mode that makes long-context behavior in these models hard to trust, and it is invisible precisely because the model never reconstructs the earlier state to compare against.
 
 A reversible, verified transition changes the kind of guarantee available. Because the transition has an exact adjoint, an earlier state is not merely *estimated* from the current one; it is *recovered*, and recovered to the exact value it held, with the round-trip identity discharged rather than assumed. This moves the reliability of long-range recall from a property one hopes the training instilled to a property the construction guarantees, and it limits drift not by training against it but by making the backward step exact.
 
-### Two senses of reversible, kept apart
+### Two senses of reversible
 
 The claim has two senses that are easy to conflate, so it is worth pulling them apart. There is *structural* reversibility, a static property carried in the type strata: the negative type is the adjoint of the transition, and the type system certifies that an inverse exists and that the round trip is the identity. And there is the *runtime traversal mechanism* itself: an attention head whose state actually steps backward, in real arithmetic on real hardware, to reconstruct an earlier value during inference. The first is a guarantee about the program; the second is a thing the program does. The framework's contribution is to make the second sound by discharging the first, but they are not the same claim.
 
@@ -107,7 +107,7 @@ let recallAt (head: ReversibleHead) (current: HeadState) (stepsBack: int) : Head
     retreat current stepsBack
 ```
 
-### How our reversible attention heads behave at runtime
+### How reversible attention heads would behave at runtime
 
 The mechanism's behavior at runtime determines whether the guarantee is worth its cost. A reversible head does not store the full history of its states; it stores the current state and, by the [placement decision]({{< ref "reversible-cores" >}}) the compiler makes, a sparse set of anchor states. Recall of an earlier position runs the backward step from the nearest anchor, so the runtime cost of a recall is the number of backward steps from that anchor, traded against the memory the anchors would otherwise occupy.
 
@@ -144,13 +144,13 @@ In our reversible attention heads, this means a recall is not a memory lookup bu
 
 A reversible head trades compute for trust: where an ordinary head reads whatever its single state yields, a reversible head may run several backward steps to reconstruct the state it needs, and it accepts the constraint that its transition be information-preserving, which the [binding constraint]({{< ref "reversible-cores" >}}) section above states is not free. What the trade buys is the thing the ordinary attention head cannot offer: a recall that is provably the value the head held, on hardware, at inference time, rather than an estimate the model hopes is faithful. For an attention mechanism meant to carry information across a long context, the difference between "the state probably still contains this" and "the state provably still contains this" is the difference between a mechanism you must validate empirically and one whose recall is correct by the same discipline that bounds the rest of the constellation. Reliability stops being a thing measured after training and becomes a thing built into the traversal, which is the entire posture our framework takes everywhere else, now reaching with confidence the places a sub-quadratic model is most likely to fail silently.
 
-## The bookend: a graded generator on both sides
+## One Generator on Both Sides
 
 The reversible core connects to the positional-encoding structure the constellation article isolates. The [constellation article]({{< ref "the-constellation" >}}) showed that the admissible positional encodings are one-parameter subgroups, the exponential of a graded generator, with the antisymmetric part a rotor and the defective part a translator. A reversible state transition is itself a one-parameter-group action when it is the exponential of a generator, and its inverse is the exponential of the negated generator. The reversibility this article relies on is therefore the same group-theoretic object the positional-encoding analysis isolated: where the transition is built from graded generators, the adjoint is exact and grade-preserving by the same algebra that keeps the positional-encoding generator inside its admissible decomposition.
 
 That is a strong hint that the typed positional encoding the constellation article wants and the reversible core this article wants are two applications of one structure. A transition built from graded one-parameter-group generators would be simultaneously the encoding the one wants and the reversible core the other wants. Whether the two coincide in a usable architecture is a discovery question, and it is the question this frontier turns on: our framework's type machinery, withheld from the language model's bulk by the scope rule of the scaffold article, reaches back in through the one door the algebra leaves open, the graded generator that is at once an encoding and an adjoint.
 
-## The frontier, stated as such
+## The frontier
 
 The honest status here is a design theory with one instance worked through. The instance, a verified-reversible cache placed by the compiler against a target's memory hierarchy, is enough to show the idea is not vacuous: the work it would do is checkable. But the instance is not the contribution. The contribution is the reframing of a type, from a memory-management construct into a design-time assertion about reversible computation inside a model, and the claim that this reframing opens a useful and largely unexplored line of work.
 
@@ -158,7 +158,7 @@ The field has spent its type-theoretic energy on verification after the fact, ch
 
 Our framework's reading of [*Principles and Practice of Deep Representation Learning*](https://ma-lab-berkeley.github.io/deep-representation-learning-book/) diverges furthest from the common one here. The book's §6, on consistent and self-consistent representations, is the closest the book comes to reversibility: closed-loop transcription and autoencoding both turn on a representation that can be carried forward and recovered. The common reading treats that recovery as an approximate reconstruction trained to be good enough, a reconstruction loss minimized. Our framework reads it differently, asking for the round trip to be *exact by type*, the negative type's adjoint discharged to identity, which is a property §6's autoencoding objective approaches asymptotically and never asserts. Where the book trains toward self-consistency, the framework types it. That is the same alignment-and-divergence the rest of the section describes, carried into the one corner of the book that already gestures at reversibility, and it is why this frontier is continuous with the program rather than a departure from it.
 
-## A research agenda, not a list of caveats
+## A Research Agenda
 
 The open questions below are the shape of that frontier, and they are stated as an agenda to pursue rather than as risks to disclaim.
 

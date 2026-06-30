@@ -297,7 +297,7 @@ graph TD
     end
 ```
 
-## Why This Matters: Hidden Parallelism Everywhere
+## Hidden Parallelism Everywhere
 
 The graph coloring approach reveals that much seemingly sequential code is actually parallel:
 

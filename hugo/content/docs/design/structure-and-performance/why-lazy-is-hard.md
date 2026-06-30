@@ -157,7 +157,7 @@ flowchart TD
     SET --> RETURN
 ```
 
-### Capture Analysis: The Subtle Challenge
+### Capture Analysis
 
 A lazy expression may reference variables from multiple scopes: local bindings, function parameters, module-level definitions.
 
@@ -231,7 +231,7 @@ Our roadmap includes memoizing lazy values once the arena-based memory model is 
 
 For now, the pure thunk semantics validate the architecture. Memoization is an optimization that builds on correct foundations.
 
-## SSA Complexity: The Real Work
+## SSA Complexity
 
 Much of the implementation challenge lies not in the conceptual model but in the SSA (Static Single Assignment) accounting. Creating a lazy value requires multiple MLIR operations:
 
@@ -307,7 +307,7 @@ GHC's thunk representation influenced our understanding of lazy evaluation chall
 
 Standard ML of New Jersey's closure conversion, documented in Appel's "Compiling with Continuations," establishes the foundations for flat closure representations that Fidelity builds upon.
 
-## A Foundation, Not a Destination
+## A Foundation
 
 Lazy evaluation in Fidelity is not a checkbox feature added for completeness. It is infrastructure that validates architectural decisions and enables future capabilities. The flat closure model scales. The coeffect approach composes. The SSA discipline holds.
 

@@ -283,7 +283,7 @@ graph LR
     L1 --> L2 --> L3
 ```
 
-### Level 1: Default - Standard Clef with compiler-generated layouts
+### Level 1: Default
 
 ```fsharp
 // Standard Clef code with no memory management concerns
@@ -305,7 +305,7 @@ let processDocuments (documents: Document[]) =
 ```
 Here, the developer focuses purely on business logic. Our Composer compiler is designed to analyze this code and generate the corresponding BAREWire schemas behind the scenes, deciding on memory layouts without developer input.
 
-### Level 2: Hint - Memory pattern guidance
+### Level 2: Hint
 
 ```fsharp
 [<Struct>] // Standard struct attribute
@@ -376,7 +376,7 @@ let inline processDocuments (documents: Document[]) =
 
 At this level, the developer provides guidance about memory usage patterns without specifying exact layouts. These hints help the compiler make better decisions about memory allocation and reuse.
 
-### Level 3: Explicit - Precise memory layouts for critical components
+### Level 3: Explicit
 
 ```fsharp
 // Explicit memory control for maximum performance

@@ -75,7 +75,7 @@ This approach caught real bugs in real systems. The Boeing 777, developed in the
 
 But Ada's approach had limitations. The types are distinct but not parameterized - you can't write generic code that works with "any length unit" while preserving dimensional correctness. And critically for our purposes, Ada's type system was designed for sequential execution on conventional processors.
 
-## VHDL: When Hardware Demanded Type Safety
+## VHDL
 
 VHDL (VHSIC Hardware Description Language) emerged from the same DoD initiative as Ada, standardized as IEEE 1076 in 1987 for hardware description[^3]. It inherited Ada's type safety philosophy but extended it for a fundamentally different execution model: **concurrent dataflow**.
 
@@ -129,7 +129,7 @@ When VHDL code is synthesized to an FPGA, the physical types don't just prevent 
 
 This is precisely the pattern we're implementing in the Fidelity framework: **dimensional types that serve both correctness and code generation purposes**.
 
-## FSharp.UMX: Bringing Dimensional Safety to Functional Programming
+## FSharp.UMX
 
 Before discussing our intrinsic implementation, we must acknowledge the work that made it possible. **FSharp.UMX**, created by Eirik Tsarpalis in 2019[^4], demonstrated that F#'s units of measure could be extended beyond numeric types through clever use of the type system.
 
@@ -162,7 +162,7 @@ This approach works within standard F# and .NET. It provides non-numeric dimensi
 
 > Our approach differs from .NET implementation but shares the same fundamental insight: dimensional constraints are too valuable to limit to numbers.
 
-## Beyond Library to Intrinsic: The Clef Decision
+## Beyond Library to Intrinsic
 
 In Clef and our Fidelity framework, we have integrated non-numeric units of measure as a **compiler intrinsic** rather than a library feature. This distinction matters for code generation.
 
@@ -208,7 +208,7 @@ let localBuffer : Ptr<float32, Stack, ReadWrite> = ...
 
 The critical point is **when** these constraints are erased. In .NET, phantom types disappear before code generation - they exist only for type checking. In Clef, dimensional constraints are preserved through the Program Semantic Graph (PSG), carried through MLIR generation, and available for target-specific optimization. They're only erased at the final lowering stage, **after** all compilation decisions that can benefit from them have been made. This is what we mean by "intrinsic" - the dimensional information is woven into the compiler's representation at every level where it can inform code generation. It's ***also*** among the reasons why we gave our framework the name "Fidelity".
 
-## The SSA Bridge: Why Control-Flow and Dataflow Are Equivalent
+## The SSA Bridge
 
 Here we arrive at the key technical insight that enables the Fidelity framework's multi-architecture targeting. It's not new - Andrew Appel demonstrated it in 1998[^6] - but its implications for dimensional types have been underappreciated:
 
@@ -325,7 +325,7 @@ The dimensional types (`tableIndex`, `randomState`, memory region constraints) a
 
 This information exists in the programmer's mental model. Traditional compilation erases it. Fidelity preserves it.
 
-## The Program Hypergraph: Encoding Both Views
+## The Program Hypergraph
 
 In our earlier article [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/), we described the evolution from the Program Semantic Graph (PSG) to the Program Hypergraph (PHG). This remains a future design goal - something "on the board" - but the architectural direction is clear.
 
@@ -406,7 +406,7 @@ The path forward includes:
 
 At each stage, the dimensional types provide semantic information that improves code generation. For LLVM targets, they enable better memory layout and access pattern optimization. For GPU targets, they inform memory hierarchy usage (shared vs. global memory, texture sampling). For dataflow targets, they directly guide the graph construction.
 
-## Conclusion: A Language for All Architectures
+## Conclusion
 
 Ada proved that dimensional type safety catches real bugs in real systems. VHDL proved that dimensional information can guide hardware synthesis. FSharp.UMX proved that dimensional constraints extend naturally to non-numeric types. Decades of HLS research proved that control-flow programs can be automatically transformed to dataflow execution.
 

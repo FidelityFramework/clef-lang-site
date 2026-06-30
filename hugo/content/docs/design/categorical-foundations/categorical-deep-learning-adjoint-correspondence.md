@@ -12,7 +12,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-## Recognition, Not Invention
+## Recognition
 
 A personal note is warranted here. When I encountered the position paper ["Categorical Deep Learning is an Algebraic Theory of All Architectures"](https://arxiv.org/pdf/2402.15332) by Gavranović et al., the experience was one of recognition. The mathematical foundations for design decisions I had been making in the Fidelity framework already existed, formalized in a language I had been approaching from the engineering side.
 

@@ -253,7 +253,7 @@ The integrated workflow enables developers to move from concept to deployment wi
 
 Throughout this process, the developer rarely needs to manually specify file paths, manage include directives, or configure compiler settings. The framework manages the complexity of source-level resolution, Farscape-generated bindings, and platform-specific compilation, allowing the developer to focus on the goals of their Clef code.
 
-## Looking to the Future: clefpak.dev
+## ClefPak.dev Registry
 
 While our current implementation focuses on local library resolution, we're actively developing the clefpak.dev package registry that extends source-based distribution to a full ecosystem. Inspired by Rust's Cargo system, ClefPak provides a streamlined way to discover, distribute, and consume Fidelity packages:
 

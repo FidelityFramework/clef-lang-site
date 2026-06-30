@@ -100,7 +100,7 @@ The witness was taking a shortcut. It used a type cast operation to return the s
 
 Just a contract violation that compiled successfully and produced garbage at runtime. That was surprising, at first. Then it became instructive. The architecture had enough integrity to show us exactly where the contract violation occurred.
 
-## The Fix: Honor Contracts, Not Convenience
+## The Fix
 
 The fix required a new pattern: `pStringFromPointerWithLength`. This is a monadic **Pattern** (capital P) that composes Elements across disciplines, rather than a full witness or a shortcut "helper function":
 
@@ -186,7 +186,7 @@ The VarRef witness was forwarding the memref **address** (`%v7`) instead of load
 
 We needed a solution that didn't break the monadic composition model.
 
-## Compositional Auto-Loading: Types over Parameters
+## Compositional Auto-Loading
 
 The solution: compositional auto-loading based on type discrimination. When a Pattern encounters `TMemRef` where a value type is expected, it composes load operations transparently:
 
@@ -273,7 +273,7 @@ func @createCounter() -> closure {
 
 The closure holds a dangling pointer. The compiler doesn't stop you. It generates code that compiles and crashes unpredictably. This is the problem escape analysis will solve.
 
-## Partial Escape Analysis: Taking the Win
+## Partial Escape Analysis
 
 Here's the interesting part: we already have closure capture detection from the flat closure structure (MLKit-inspired):
 
@@ -366,7 +366,7 @@ Compare to the alternative where all samples "work" via manual `stackalloc` with
 
 So the larger goal holds. We'd much rather have principled failures than unsafe successes. And as a happy consequence, principled failures validate our approach. They tell us exactly what's missing. That's architectural integrity, even if it delays the dopamine hit one might get from a crufty leetcode exercise masquerading as integrity.
 
-## The Roadmap: Closing the Gap
+## The Roadmap
 
 Here's what stands between "three samples work" and full "production-ready managed mutability."
 

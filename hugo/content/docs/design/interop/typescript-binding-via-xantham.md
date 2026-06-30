@@ -104,7 +104,7 @@ For the medium-term horizon (months through end of year and beyond), Xantham's r
 - **Contribute back where the contract is being defined**. The decoder MISSREF behavior, package-boundary metadata, and lib.es policy are all best resolved upstream so consumers benefit uniformly. SpeakEZ's role is to surface consumer experience as filed issues; Shayan's role is to maintain the encoder/decoder; both depend on the discipline of the maintenance boundary.
 - **The Fable+F# consumer continues**. Fidelity.CloudEdge ships against the F# binding pipeline today and through the JSIR transition. The eventual rename to FSharp.CloudEdge (when that lands) doesn't affect Xantham consumption; the F# binding pipeline serves F# users indefinitely.
 
-## The Long Arc, Briefly
+## The Long Arc
 
 The analysis capability described in this document has further forms beyond the document's planning horizon. Our Atelier IDE anticipates a polyglot ingestion feature called Transcribe (see [Atelier docs/10_transcribe.md](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md)) that would handle many source languages (F#, Python, Rust, Go, TypeScript / JavaScript, C / C++) as a unified IDE workflow producing matched (Clef binding + Alex lowering witness) pairs. Xantham is the analysis substrate Transcribe consumes for the TypeScript / JavaScript case; Farscape plays the same role for C / C++; other substrates plug in for other languages.
 

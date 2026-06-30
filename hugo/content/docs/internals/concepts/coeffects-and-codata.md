@@ -636,7 +636,7 @@ This will compile to WAMI's DCont dialect:
         (br $generate)))
 ```
 
-#### Why This Matters: True Zero-Copy Suspension
+#### True Zero-Copy Suspension
 
 The `suspend` instruction isn't a compiler trick or runtime simulation - it's a real machine-level operation that:
 
@@ -908,7 +908,7 @@ The theoretical underpinnings of Composer's design draw from several areas of pr
 
 The integration of these concepts - using coeffects to identify codata patterns and compiling them via delimited continuations - represents a novel synthesis that will enable hardware-aware functional programming. We believe that this will enable new opportunities for the Clef language and for new ecosystems to emerge that provide ample opportunity to confidently produce efficient, transparent workloads for high reliability systems.
 
-## Looking Forward: The Future of Functional Systems Programming
+## The Future of Functional Systems Programming
 
 Our "virtual whiteboard" session in the blog post demonstrates that functional programming abstractions need not come at the cost of performance or transparency. By embracing mathematical foundations, we envision building a robust framework that:
 

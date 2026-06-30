@@ -184,7 +184,7 @@ This desugaring happens during PSG construction, in a nanopass called `ReducePip
 
 This is why nanopass architecture matters. Each transformation does one thing. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
 
-## Sample 4: The Iceberg Appears
+## Sample 4
 
 The first three samples are tractable. Direct calls, saturated applications, pipe desugaring. Each adds complexity, but the compiler's walk remains recognizable.
 

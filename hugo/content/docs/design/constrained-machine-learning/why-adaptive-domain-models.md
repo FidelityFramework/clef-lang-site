@@ -61,7 +61,7 @@ Our reading is that Ma frames both generation and inference as constrained optim
 
 That leaves our framework carrying Gaussian at two layers, and one of them aligns with Ma's thesis. The aligning instance estimates on the manifold: the posterior just described. The other certifies the manifold is the shape the types claim: Gaussian elimination, the polynomial [Tier-1 decision procedure]({{< ref "/docs/design/categorical-foundations/formal-verification-compilation-byproduct" >}}) our dimensional types inherit from Kennedy's units of measure, settling dimensional and grade consistency before an inference construct is built. Gaussian elimination is the verification the framework brings of its own, decidable and run before any estimate is drawn.
 
-## Where the language model fits, and why it is secondary
+## Where the Language Model Fits
 
 The argument so far is about the domain models, because they are the contribution. The language model enters as the component the constellation relieves and, in turn, the component the constellation must still contain, because something has to interface with the unstructured world. Natural-language intent, an underspecified goal, a partial program: these have no domain type, and no ADM can accept them directly. The language model is the porous node that takes in the unstructured and routes it to the domain models that can satisfy it.
 

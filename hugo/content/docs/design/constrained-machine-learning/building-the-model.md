@@ -14,7 +14,7 @@ From our design perspective, we see that most of a language node's work is ordin
 
 On that path the model is constrained in three senses. Its idiom, writing Clef the way a fluent practitioner would. Its accent, the imperative and dynamically-typed reflexes of its training corpus, suppressed. And its output, held to syntactically valid Clef by a grammar derived from Clef's own, a static artifact that stands at the boundary on its own. The first two are shaped by tuning, inside the model. The third is imposed by that grammar, which the build produces and the runtime carries forward.
 
-## Instilling and damping, kept apart
+## Instilling and Damping
 
 Instilling Clef and removing the inherited accent are different problems, and conflating them defeats both. Instilling is supervised learning: show the model idiomatic Clef and it learns the distribution. Removing the accent is a preference problem, because the base model already holds high probability mass on imperative loops, dynamic typing, exceptions as control flow, null, and class hierarchies, and adding Clef examples competes with that mass without removing it. A single combined objective makes the two gradients work against each other, the instilling gradient pushing toward Clef while the preference gradient pulls away from the accent, and they partially cancel. They belong in distinct passes.
 
@@ -42,7 +42,7 @@ type JsExampleRole =
 
 The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the opposite of the goal.
 
-## What constrains the output, and when
+## What Constrains the Output
 
 Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node deploys on the grammar alone.
 
@@ -58,7 +58,7 @@ let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Progr
 
 The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
 
-## Where the model runs, and the honest friction
+## Where the Model Runs
 
 The deployment target is CPU, which sets what the tuning operates on. Two routes reach it. The dense-small-then-quantize route takes a one-to-three-billion-parameter code-capable model and quantizes to four-bit, which runs at roughly ten to fifteen tokens per second on a modern CPU with eight to sixteen gigabytes of memory. These carry strong code priors, which is also why they carry the strongest accent to suppress. The native-ternary route takes a model whose weights are already in the integer-add-and-subtract regime, which aligns with the CPU and low-precision interests directly but reaches a working artifact later, since the tuning tooling around such models is thinner.
 

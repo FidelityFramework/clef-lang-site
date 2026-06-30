@@ -39,11 +39,14 @@
     "docs-design": "#58a6ff", "docs-internals": "#388bfd", "docs-tooling": "#1f6feb",
     blog: "#3fb950",
   };
-  // radial rings, center → out
+  // radial rings, center → out. Docs tiers are ordered SMALLEST-count inner → LARGEST outer
+  // (tooling ~8 inner, internals ~35, design ~66 outer) so each ring's node count matches its
+  // circumference — the balanced distribution that makes the spec tiers read cleanly. The
+  // conceptual inside-out story for docs is carried by color, not radius.
   var LEVEL = {
     preprint: 1, external: 2,
     "spec-foundations": 3, "spec-meaning": 4, "spec-machinery": 5,
-    "docs-design": 6, "docs-internals": 7, "docs-tooling": 8,
+    "docs-tooling": 6, "docs-internals": 7, "docs-design": 8,
     blog: 9,
   };
 
@@ -75,14 +78,17 @@
       var ord = {
         preprint: 900, external: 800,
         "spec-foundations": 700, "spec-meaning": 600, "spec-machinery": 500,
-        "docs-design": 400, "docs-internals": 300, "docs-tooling": 200, blog: 100,
+        "docs-tooling": 400, "docs-internals": 300, "docs-design": 200, blog: 100,
       };
       return { name: "concentric", concentric: function (n) { return ord[bandOf(n.data())] + (10 - Math.min(9, indeg[n.data("id")] || 0)); },
                levelWidth: function () { return 3; }, minNodeSpacing: 9, spacingFactor: 1.0, animate: true, animationDuration: 500 };
     }
-    // 9 bands now: preprint(1)…blog(9). Higher concentric value = innermost, so invert.
-    return { name: "concentric", concentric: function (n) { return 10 - LEVEL[bandOf(n.data())]; },
-             levelWidth: function () { return 1; }, minNodeSpacing: 12, spacingFactor: 0.9, animate: true, animationDuration: 500 };
+    // 9 bands, preprint(1)…blog(9). Spread the concentric values widely (×10) and force a
+    // small levelWidth so each band gets its OWN ring — at gap-of-1 Cytoscape was bucketing
+    // adjacent crowded docs tiers (design 66 + internals 35) into one ring, collapsing the
+    // three docs tiers into two. Higher value = innermost, so invert.
+    return { name: "concentric", concentric: function (n) { return (10 - LEVEL[bandOf(n.data())]) * 10; },
+             levelWidth: function () { return 5; }, minNodeSpacing: 10, spacingFactor: 0.9, animate: true, animationDuration: 500 };
   }
 
   function render(g) {

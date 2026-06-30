@@ -76,7 +76,7 @@ func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
 2. **No Synchronization Overhead** - Pure functions need no coordination
 3. **Optimal for GPUs** - Maps directly to SIMD/SIMT execution models
 
-## Post-Transformer Revolution: When Inet Becomes Essential
+## Post-Transformer Revolution
 
 While interaction nets might seem "rare" for traditional ML workloads dominated by matrix multiplication, post-transformer architectures fundamentally change this equation. MatMul-free and sub-quadratic models are *perfectly* suited for interaction net compilation.
 

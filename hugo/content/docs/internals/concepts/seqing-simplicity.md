@@ -212,7 +212,7 @@ func.func private @seq_moveNext(%seq_state: memref<?xi8>) -> i1 {
 
 The control flow graph mirrors how a human might implement an iterator by hand. If you've ever decompiled a C# iterator method, this structure will look familiar: state fields, a switch statement on the state, and explicit transitions between states. The compiler has transformed declarative sequence syntax into explicit state transitions, but the generated code remains straightforward: load state, branch to the right block, do work, update state, return.
 
-## Conditional Yields: The Complexity Within
+## Conditional Yields
 
 Simple sequences that yield on every iteration are straightforward. Complexity emerges when yields are conditional:
 
@@ -334,7 +334,7 @@ cf.br ^loop
 
 The pattern is familiar to anyone who has implemented iterators manually. The compiler generates what you would write by hand, but does so from the high-level `for x in s do` syntax.
 
-## Looking Forward: The Fidelity.Closures Dialect
+## The Fidelity.Closures Dialect
 
 The current implementation generates MLIR using a mix of `func`, `cf`, `arith`, and `llvm` dialect operations. This works well for LLVM targets, but the Fidelity project has broader ambitions.
 

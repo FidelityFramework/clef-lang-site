@@ -18,7 +18,7 @@ We chose a different path. The Native Type Universe (NTU) represents our answer 
 
 This document traces the evolution from BCL-based type assumptions to the NTU architecture, explaining why this transformation was necessary, how it was accomplished, and what it enables for hardware-software co-design across the computing spectrum. The normative treatment is in the spec's type-universe chapters: the [Native Type Universe](/spec/draft/native-type-universe/) itself, the [NTU type nomenclature](/spec/draft/ntu-types/), the [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) that layers units of measure onto it, and [types and type constraints](/spec/draft/types-and-type-constraints/).
 
-## The BCL Assumption: A Pervasive Constraint
+## The BCL Assumption
 
 The F# compiler, through F# Compiler Services (FCS), was designed with a reasonable assumption for its time: all F# programs target the .NET Common Language Runtime. This assumption manifests not as a single configuration option but as a structural property that permeates the entire type-checking infrastructure.
 
@@ -70,7 +70,7 @@ flowchart TD
 
 This analysis led to a pivotal decision: the type-checking layer must be rebuilt for the native type universe, not pruned from the existing implementation. What emerged is CCS, Clef Compiler Services, a purpose-built type checker that makes no assumptions about runtime representation.
 
-## The Native Type Universe: First Principles
+## The Native Type Universe
 
 The native type universe begins with three foundational concepts inherited from the ML family of languages: products, sums, and functions. Every composite type derives from these primitives.
 
@@ -123,7 +123,7 @@ The native representation uses a tag byte followed by the payload:
 
 This follows the algebraic data type tradition from ML and OCaml, with one significant refinement: tag values are deterministic based on declaration order (0, 1, 2, ...), enabling predictable serialization and cross-process communication.
 
-### Functions: First-Class with Inline Semantics
+### Functions
 
 Functions in the native type universe are first-class values that compile to efficient representations based on usage context:
 
@@ -136,7 +136,7 @@ Functions in the native type universe are first-class values that compile to eff
 
 The default behavior leans toward transparency: most functions are considered inline candidates unless they are recursive or explicitly marked opaque. This aligns with how software engineers with low-level or systems programming experience expect compilation to work, where function call overhead is understood and controlled.
 
-## The NTU Architecture: Type Identity Without Width Assumptions
+## The NTU Architecture
 
 The central innovation of NTU is the separation of type identity from type width. In managed runtime environments, `int` typically means a specific bit width, often 32 bits. In native compilation across diverse platforms, this assumption becomes problematic.
 
@@ -279,7 +279,7 @@ flowchart LR
     REP -.->|"design-stage"| Resolved
 ```
 
-## Platform Predicates: Conditional Compilation Without Preprocessor
+## Platform Predicates
 
 Beyond type width, platforms differ in capabilities. A desktop x86-64 processor may support AVX-512 vector instructions. An ARM Cortex-A may support NEON. An embedded Cortex-M0 may have neither. Traditional approaches handle this through preprocessor conditionals or runtime feature detection. NTU introduces [platform predicates](/spec/draft/platform-predicates/) as a more principled alternative.
 
@@ -327,7 +327,7 @@ CCS can use these implications to simplify constraint checking. If the platform 
 
 This approach borrows from the F* programming language, where platform-dependent properties are expressed as erased propositions that guide compilation without introducing runtime overhead.
 
-## Memory Regions: Type-Level Memory Safety
+## Memory Regions
 
 Native compilation requires explicit attention to where data resides in memory. The managed runtime provides a uniform heap with garbage collection. Native environments expose a heterogeneous memory landscape: stack, heap, memory-mapped peripherals, DMA-accessible regions, flash storage.
 
@@ -437,7 +437,7 @@ flowchart TB
 
 We have since "retired" the separate Alloy library and have simply migrated it into the Clef project as intrinsic compiler machinery.
 
-## The Fidelity.Platform Monorepo: Structured Platform Bindings
+## The Fidelity.Platform Monorepo
 
 Platform-specific information resides in a dedicated repository structure:
 
@@ -459,7 +459,7 @@ Each platform provides a complete set of quotations that Alex consumes during co
 
 This structure supports hardware-software co-design workflows where target platforms may not exist yet during initial development. A team designing an FPGA-based accelerator can define their platform bindings before silicon is available, enabling software development against accurate type signatures.
 
-## String Encoding: A Case Study in Native Semantics
+## String Encoding
 
 The treatment of strings illustrates how NTU departs from managed runtime assumptions.
 
@@ -507,7 +507,7 @@ The null-free philosophy extends to string operations:
 
 The shift from exceptions and sentinel values to option types makes error handling explicit in the type signature. This is not merely a stylistic preference; it enables the compiler to verify exhaustive handling of failure cases.
 
-## The Option Type: Stack Allocation by Default
+## The Option Type
 
 The option type transformation demonstrates how NTU rethinks fundamental abstractions.
 
@@ -534,7 +534,7 @@ Key properties:
 
 For performance-sensitive code paths, this transformation eliminates allocation pressure. A loop that creates millions of option values no longer creates millions of heap objects. The type system continues to enforce safe usage; the representation changes.
 
-## The `obj` Elimination: No Universal Base Type
+## The `obj` Elimination
 
 Perhaps the most significant philosophical departure is the elimination of `obj` (System.Object).
 
@@ -557,7 +557,7 @@ The absence of `obj` is not a limitation but a design choice. Every type in NTU 
 
 This has practical consequences. Code that relies on boxing or dynamic type tests must be restructured. SRTP constraints must resolve statically. The benefit is that the resulting code is amenable to ahead-of-time compilation, aggressive inlining, and precise memory management.
 
-## Statically Resolved Type Parameters: Native Resolution
+## Statically Resolved Type Parameters
 
 Clef supports Statically Resolved Type Parameters (SRTPs) for ad-hoc polymorphism:
 
@@ -600,7 +600,7 @@ type WitnessResolution = {
 
 Alex uses this metadata to emit direct calls to the resolved implementation. No virtual dispatch, no method tables, no runtime overhead.
 
-## The Pipeline: From Source to Native Binary
+## The Pipeline
 
 The complete compilation pipeline demonstrates how NTU integrates with other Fidelity components:
 
@@ -687,7 +687,7 @@ Alex traverses the semantic graph using a zipper pattern:
 
 The MLIR output then flows through standard LLVM infrastructure to produce native binaries.
 
-## Hardware-Software Co-Design: The Broader Vision
+## Hardware-Software Co-Design
 
 The NTU architecture positions Fidelity for hardware-software co-design scenarios that are becoming increasingly important.
 

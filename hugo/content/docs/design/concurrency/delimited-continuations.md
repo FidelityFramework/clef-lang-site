@@ -171,7 +171,7 @@ The coherence between type resolution and code generation ensures that continuat
 
 This principled front-loading has a significant consequence: the Composer compiler requires far fewer MLIR and LLVM passes than compilers for imperative languages. As Andrew Appel demonstrated in his seminal 1998 paper, [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf): the Static Single-Assignment form at the heart of optimizing compilers is mathematically equivalent to functional programming with lexical scope. When C++ or Rust compile to LLVM, their compilers must *reconstruct* the functional relationships that imperative syntax obscures: analyzing loops, tracking mutations, resolving aliasing. Fidelity's pipeline preserves what those compilers must rediscover. The continuation structure, the type information, the scope boundaries: in our model ***these features survive intact*** from Clef source through the PSG to MLIR. This is the meaning behind the framework's name: fidelity to the original program structure yields faster compilation and more predictable optimization, because MLIR operates on preserved intent rather than speculative reconstructions.
 
-## Behind the Scenes: Managing Complexity
+## Behind the Scenes
 
 A central design goal is that developers should not need to think about continuation-passing style. The `async { }` syntax, the `actor { }` builder, the standard Clef patterns: these should feel familiar if not 'natural'. The CPS machinery operates invisibly.
 

@@ -24,7 +24,7 @@ Yet the pattern persists. Why? Because the costs remain hidden in the managed ru
 
 In native compilation, these costs become explicit. When targeting MLIR and LLVM without a managed runtime, every optimization decision carries weight. This is the story of how Fidelity's approach to `inline` emerged from fixing a real compiler bug, and why treating it as a semantic tool rather than a performance directive leads to better code on modern architectures.
 
-## The .NET Inline Culture: A Hidden Tax
+## The .NET Inline Culture
 
 The F# ecosystem inherited SRTP from the ML family, where it enables generic programming without runtime type information. Consider this canonical example:
 
@@ -56,7 +56,7 @@ What developers don't see:
 
 In .NET, these costs get absorbed by the runtime infrastructure. The JIT might optimize some of it away. The garbage collector handles the extra allocations from closure creation. The managed heap hides the memory impact. For developers, `inline` feels free because the costs are socialized across the entire runtime.
 
-## Fable's Struggle: When Inline Semantics Don't Transfer
+## When Inline Semantics Don't Transfer
 
 The Fable compiler (F# to JavaScript) reveals just how complex inline semantics become when targeting alternative runtimes. Fable must:
 
@@ -71,7 +71,7 @@ This isn't a criticism of Fable. It's an observation about the fundamental chall
 
 The lesson: inline isn't just a performance hint. It's deeply embedded in the architecture of the compilation pipeline and the assumptions about the target runtime.
 
-## MLIR: A Different Foundation Changes Everything
+## MLIR: A Different Foundation
 
 The Fidelity Framework and its compiler don't target JavaScript or the .NET CLR. They target MLIR, which then lowers to LLVM and multiple backend architectures. This changes the entire optimization landscape.
 
@@ -425,7 +425,7 @@ let compute<'T when 'T :> IComputable<'T>> (x: 'T) (y: 'T) =
     'T.(+)('T.(*)(x, x), 'T.(*)(y, y))
 ```
 
-## Multi-Target Flexibility: Why Real Functions Matter
+## Multi-Target Flexibility
 
 One of Fidelity's design goals is targeting diverse hardware: CPUs, GPUs, TPUs, NPUs, and microcontrollers. Each platform has radically different optimization profiles:
 

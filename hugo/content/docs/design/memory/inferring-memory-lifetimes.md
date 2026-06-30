@@ -408,7 +408,7 @@ The actor boundary becomes the implicit lifetime scope for allocations that outl
 
 This also connects to delimited continuations in Prospero (see [Delimited Continuations: Fidelity's Turning Point](/docs/design/concurrency/delimited-continuations/)). When an actor's execution is suspended (awaiting a message, yielding to scheduler), the continuation boundary aligns with potential arena compaction points. Memory can be reorganized at message boundaries precisely because no byrefs can span those boundaries, a guarantee the lifetime system enforces.
 
-## Standing Art, Applied
+## Standing Art
 
 The capabilities we're describing aren't novel in isolation. Type inference has existed for decades. Escape analysis is well-studied. Arena allocation is a known pattern. Even lifetime tracking at the type level isn't new; Rust proved it viable.
 

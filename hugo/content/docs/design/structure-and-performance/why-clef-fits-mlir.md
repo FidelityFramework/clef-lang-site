@@ -134,7 +134,7 @@ async.func @processData(%input: !fidelity.buffer) -> !fidelity.result {
 
 The structure maps directly to MLIR's dialects, preserving semantic information through multiple compilation stages.
 
-## Delimited Continuations: Making SSA Explicit
+## Delimited Continuations
 
 Appel showed that SSA is functional programming. In our Fidelity framework we use delimited continuations to make the SSA structure explicit, which is how we intend the Composer compiler to construct the Program Hypergraph (PHG):
 

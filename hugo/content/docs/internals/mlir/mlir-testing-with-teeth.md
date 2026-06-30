@@ -526,7 +526,7 @@ let verifyContinuationPreservation
 
 This is **impossible** with FileCheck. You cannot verify semantic preservation with text matching.
 
-## Avoiding Tautology: Independence Through Execution
+## Avoiding Tautology
 
 A critical design principle: avoid testing the generator with itself. The solution:
 
@@ -598,7 +598,7 @@ The test harness could interpret these directives by:
 - Generating test inputs that exercise the specified properties
 - Automatically creating verification rules matching the stated guarantees
 
-### Proofs vs. Tests: A Critical Distinction
+### Proofs vs. Tests
 
 Before exploring test generation, we must clarify a fundamental principle: **proofs are stronger than tests**. Where proofs exist, tests are redundant. This isn't just theoretical, it's architectural.
 

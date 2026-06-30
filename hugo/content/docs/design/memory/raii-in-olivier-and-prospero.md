@@ -17,7 +17,7 @@ This blog entry examines how these three components form an integrated whole, wh
 
 The term RAII originates in C++, where resource cleanup is tied to destructor invocation at scope exit. C++ RAII works well for single-threaded, lexically scoped resources, with concurrent ownership requiring additional patterns like reference counting or explicit synchronization. Rust advances this model by making ownership explicit through the borrow checker, with the Drop trait providing deterministic cleanup. Both languages continue to evolve their approaches to concurrent resource management; Rust's async ecosystem and C++'s coroutine support represent ongoing work in this space. Fidelity takes a different approach by extending RAII principles to actor boundaries: each actor owns an arena that lives exactly as long as the actor. This provides deterministic cleanup aligned with the actor lifecycle, a design that emerges naturally from our actor-oriented architecture rather than being retrofitted onto an existing ownership model.
 
-## Three Systems in Concert: A Design Vision
+## Three Systems in Concert
 
 Effective memory management in a zero-runtime environment requires more than simply allocating and freeing memory. In traditional runtime environments, memory management operates as a global service treating all allocations uniformly. This approach, while suitable for general-purpose applications, fails to exploit the structured nature of actor-based systems. Our design proposes a different philosophy based on deterministic resource lifetimes.
 
@@ -68,7 +68,7 @@ module ArenaManagement =
 
 This design proposes that when Prospero creates a process, it initializes an arena pool specifically configured for that process's expected workload. Within this pool, each actor receives a dedicated arena that serves as its private allocation space.
 
-## Prospero's Role: Orchestrating Lifetimes
+## Prospero's Role
 
 In our current design thinking, Prospero serves as more than a simple scheduler. We envision it as an intelligent orchestrator that understands the relationship between actor behavior and resource patterns. This understanding drives sophisticated allocation strategies:
 
@@ -107,7 +107,7 @@ let createActor<'T when 'T :> Actor<'Message>> (hint: AllocationPattern) =
 
 This tight integration between orchestration and resource management enables optimizations impossible in traditional systems. Prospero observes actor behavior and adjusts allocation strategies, all while maintaining the zero-runtime principle through compile-time specialization.
 
-## Compile-Time Specialization: The Crucial Innovation
+## Compile-Time Specialization
 
 The mechanism that makes this integration possible is the Composer compiler's approach to compile-time transformation. Memory management is treated not as a runtime service but as a compile-time concern that CCS and the nanopass pipeline specialize for each application:
 

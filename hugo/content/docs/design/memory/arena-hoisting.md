@@ -25,7 +25,7 @@ parent <! Accumulate frame
 
 Here `frame` escapes to `parent`. The default keeps `frame` in the worker's own arena and guards the reference the aggregator holds, so the aggregator's access is checked against the worker still being alive. That is correct and it is safe. It also carries a runtime check that would disappear if `frame` were allocated in the aggregator's arena to begin with, because then its lifetime would be the aggregator's and no guard would be needed.
 
-## The default is the safe one, and it is visible
+## The Default Is the Safe One
 
 The default is to guard, not to hoist. The escaped reference stays in the worker's arena and the sentinel validates it at the access boundary, returning `Valid` or `ActorTerminated`. A developer who never opens the suggestion ships a correct program. Nothing about the default is unsafe, and nothing about it is hidden: the guard is a property of the graph, and Lattice surfaces it the same way it surfaces an escape promotion, as a navigable annotation with a plain-language reason.
 
@@ -41,7 +41,7 @@ Accepting is an optimization with guaranteed semantics. The allocation moves to 
 
 The case the analyzer does not offer a hoist for is the one where the receiving actor is chosen by live data. There the compiler cannot place the allocation statically, so the guard is not optional, and the analyzer says so rather than proposing a transformation it cannot guarantee. This is the memory analogue of the dynamic deadlock fragment, and it gets the same honest treatment: proven where the structure is visible, guarded and labeled where it is not.
 
-## The posture is a preference, with a default that holds when nothing is set
+## The Posture Is a Preference
 
 Whether the compiler holds to guard-by-default or elevates aggressively is a declared preference. A team that prizes actor isolation and predictable arena boundaries keeps the default. A real-time or unikernel target that wants the thinnest possible artifact declares aggressive elevation, which hoists wherever a static ancestor is provable and leaves a guard only where the dynamic case forces one. How an accepted hoist is recorded is the same kind of preference: a declaration on the allocation, a rewrite that moves it into the ancestor scope, or a project-level record, chosen once rather than per call site.
 

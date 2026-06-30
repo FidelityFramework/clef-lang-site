@@ -192,7 +192,7 @@ module Inference =
 
 Every precision transition is visible in the type signature. The compiler rejects `forwardLayer weights weights` because Posit8 and Posit16 are distinct types; accidental precision loss requires an explicit narrowing call. The quire accumulation is visible in the loop body, not hidden behind a library call that might or might not use exact arithmetic internally.
 
-### Why Concrete Types, Not Parameterized Generics
+### Concrete Types vs Parameterized Generics
 
 The posit specification is parameterized by `(nbits, es)`, which naturally suggests a generic `Posit<'N, 'ES>` type with phantom parameters. In practice, this generality is unnecessary and counterproductive.
 

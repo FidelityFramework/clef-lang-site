@@ -246,7 +246,7 @@ let rec size tree =
     | Node (l, r) -> size l + size r
 ```
 
-## Making It Concrete: Compilation Strategies
+## Compilation Strategies
 
 Let's trace how these different patterns compile to see the performance implications:
 
@@ -415,7 +415,7 @@ The property that licenses running it at once is strong confluence, Lafont's one
 
 Independence is structural, a consequence of the rules being local to a pair of agents, so no scheduler and no coordination is needed to exploit it. This is the operational content of "the pure side parallelizes for free," and the free-ness is the confluence theorem, proved once over the rule system rather than per program.
 
-## Two Axes, Not One
+## Two Axes
 
 Lowering and soundness are separate questions, and the post is sharper for keeping them apart. Producing the Inet graph is unconditional codegen on the compilation axis: the region is colored independent, and the rewrite emits. Whether running that graph is correct is verification-axis work, and it divides. Confluence is discharged once at the rule-system level, a property of the logic rather than of any program. The per-program supervision obligations, placement, resource bounds, and non-interference for regions that touch shared state, are Tier 2 and above.
 
@@ -453,7 +453,7 @@ type AsyncBuilder() =
 
 The compiler is designed to respect these hints and to check that they match the actual computation patterns.
 
-## Future Directions: Algebraic Effects and Beyond
+## Future Directions
 
 As the programming language community embraces algebraic effects, this partition becomes even more relevant. Algebraic effects are essentially typed delimited continuations, making the DCont path natural for effectful computations. Pure computations remain effect-free, taking the tensor path when dense and the interaction-net path when their reduction is irregular.
 

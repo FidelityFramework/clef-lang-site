@@ -125,7 +125,7 @@ Building out the Native Type Universe (NTU) within CCS is the architectural chan
 
 Both map to **`QF_LIA`** (Quantifier-Free Linear Integer Arithmetic), one of the most well-studied decidable logic fragments in computer science. The NTU is designed to act as the proof apparatus that derives `QF_LIA` assertions from the structural realities of the PSG for Z3.
 
-### Saturation: What the PSG Is Designed to Achieve
+### Saturation
 
 When the PSG reaches "saturation," every node in the graph will have been stamped with its dimensional constraints and memory lifetime coeffects. This is designed to happen incrementally as the compiler builds the graph. Each arithmetic operation generates a dimensional constraint. Each variable binding generates a lifetime constraint. Each function application propagates constraints from arguments to parameters. Z3 checks these constraints as they accumulate, and CCS records the results directly on the PSG nodes.
 

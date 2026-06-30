@@ -176,7 +176,7 @@ This rung is where latency and velocity reach the regime the constellation is bu
 
 Sovereignty is total. The data never leaves, the model is owned and reproducible, the training and adaptation run in-house, and nothing about the organization's work is mined for anyone else's model. For the business audience this technology is for, the audience that needs to keep its data in-house and out of a hyperscaler's training set, this rung is the destination the first rung was already pointed at.
 
-## The ladder, read as one strategy
+## The Ladder
 
 The four rungs are not alternatives; they are stages of one substitution, the same shape as the compiler's path from LLVM to novel backends. Commit to a working artifact now, on the pragmatic backend, behind a stable interface. Then migrate the substrate underneath that interface as the value justifies it: damp the accent and instill the idiom, distill toward the edge against a verifiable signal, and finally build the structurally-compatible model that carries none of the rented backend's baggage. At every rung the interface holds, the domain models stay correct by construction, and the data-sovereignty posture strengthens. Latency falls as the model moves in-house and shrinks, and velocity rises as each rung makes the next cheaper, until the built model closes the flywheel.
 

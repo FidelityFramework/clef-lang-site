@@ -18,7 +18,7 @@ The answer is not chosen freely. It is what our framework's existing commitments
 
 What this arrangement produces is a claim about cost. Building and adapting a model this way should be orders of magnitude cheaper than the standard deep-learning pipeline, and the saving is not a tuning trick. It is structural. A derived architecture has few enough meaningful degrees of freedom that the gradient can be obtained by propagating tangents forward through them, in place of storing an activation tape and sweeping a backward graph over a parameter cloud most of which does no identifiable work. The emergent loss is computed over the degrees of freedom that the architecture's own derivation exposes, and there are far fewer of them than an unstructured model carries. The efficiency is what falls out when the loss is computed over structure instead of over an undifferentiated parameter space.
 
-## A derived architecture, not a searched one
+## A Derived Architecture
 
 The derivation introduced in the section index, set out in Buchanan, Pai, Wang, and Ma's [*Principles and Practice of Deep Representation Learning*](https://ma-lab-berkeley.github.io/deep-representation-learning-book/), treats a network layer not as an arbitrary function to be tuned but as one step of an optimization algorithm descending an information-theoretic objective. Attention emerges as a step that compresses a representation against a set of low-dimensional subspaces; the feed-forward block emerges as a sparsification step. The architecture is the unrolled optimizer, and each block has a closed-form reason to exist. Their [CRATE](https://github.com/Ma-Lab-Berkeley/CRATE) architecture is the worked result, now with a causal variant suited to sequence data.
 
