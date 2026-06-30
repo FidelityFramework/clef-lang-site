@@ -95,6 +95,11 @@ module Graph =
     // inside spec files and resolve to /spec/draft/<basename>/.
     let private relativeSpecLink = Regex(@"\]\(([a-z][a-z0-9-]*)\.md(?:#[a-zA-Z0-9-]+)?\)")
     let private arxivLink = Regex(@"arxiv\.org/abs/([0-9]+\.[0-9]+)")
+    // Hugo ref shortcode: {{< ref "slug" >}} or {{< ref "slug.md" >}} (the blog convention). The
+    // captured slug is the file basename; it resolves to a page URL via the slug→url map built in
+    // Pass 1. Without this, every {{< ref >}} cross-link is invisible to the graph (the cause of
+    // false 0-inbound on heavily-shelved nodes like window-layout).
+    let private refShortcode = Regex(@"\{\{<\s*ref\s+""([a-zA-Z0-9/_-]+?)(?:\.md)?(?:#[a-zA-Z0-9-]+)?""\s*>\}\}")
 
     /// Normalize a link target to a canonical page-node URL: strip any #anchor and ensure
     /// a single trailing slash.
@@ -151,6 +156,8 @@ module Graph =
             let contentNodes = System.Collections.Generic.Dictionary<string, Node>()
             let bodies = System.Collections.Generic.Dictionary<string, string>()
             let tagsByPage = System.Collections.Generic.Dictionary<string, string list>()
+            // slug (file basename) -> page URL, so {{< ref "slug" >}} shortcodes resolve to edges.
+            let slugToUrl = System.Collections.Generic.Dictionary<string, string>()
 
             for file in mdFiles do
                 match Index.classifyContent baseDirs file with
@@ -173,6 +180,7 @@ module Graph =
                     contentNodes.[pageUrl] <- node
                     bodies.[pageUrl] <- body
                     if tags <> "" then tagsByPage.[pageUrl] <- (tags.Split(',') |> Array.toList)
+                    slugToUrl.[Path.GetFileNameWithoutExtension(file)] <- pageUrl
                 | None -> ()
 
             let pageSet = Set.ofSeq contentNodes.Keys
@@ -189,6 +197,12 @@ module Graph =
                 // Absolute /docs|blog|spec links (anchor stripped to the page node).
                 for m in internalLink.Matches(body) do
                     addEdge (normalizeTarget m.Groups.[1].Value)
+                // Hugo {{< ref "slug" >}} cross-links (the blog convention) → resolve slug to URL.
+                for m in refShortcode.Matches(body) do
+                    let slug = m.Groups.[1].Value
+                    match slugToUrl.TryGetValue slug with
+                    | true, url -> addEdge url
+                    | false, _ -> ()
                 // Relative foo.md spec→spec links resolve to /spec/draft/<basename>/, but only
                 // when the SOURCE page is itself a spec page (relative links are spec-internal).
                 if pageUrl.StartsWith("/spec/draft/") then
