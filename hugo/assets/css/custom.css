@@ -835,6 +835,7 @@ pre.mermaid svg {
 }
 :is(.dark) .clef-map-btn { background: #21262d; color: #c9d1d9; border-color: #30363d; }
 .clef-map-btn.active { background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness)); color: #fff; border-color: transparent; }
+.clef-map-sep { font-size: 0.68rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0.15rem 0 0.5rem; align-self: center; }
 .clef-map-stats { font-size: 0.7rem; color: #9ca3af; margin-left: 0.5rem; }
 #clef-map-cy { flex: 1; min-height: 0; background: #fafafa; }
 :is(.dark) #clef-map-cy { background: #0d1117; }

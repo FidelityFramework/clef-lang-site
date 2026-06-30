@@ -24,8 +24,10 @@
       <div class="clef-map-controls">
         <button type="button" class="clef-map-btn active" data-map-layout="concentric">Concentric</button>
         <button type="button" class="clef-map-btn" data-map-layout="grouped">Grouped</button>
-        <button type="button" class="clef-map-btn active" data-map-edges="all">All edges</button>
-        <button type="button" class="clef-map-btn" data-map-edges="notag">Hide tags</button>
+        <span class="clef-map-sep">edges</span>
+        <button type="button" class="clef-map-btn active" data-map-edge="href" title="Cross-links between pages">Links</button>
+        <button type="button" class="clef-map-btn active" data-map-edge="cites" title="Citations to arXiv papers">Citations</button>
+        <button type="button" class="clef-map-btn active" data-map-edge="tag" title="Shared-topic membership">Themes</button>
         <button type="button" class="clef-map-btn" onclick="clefMap.close()" title="Close (Esc)" aria-label="Close map">Exit</button>
       </div>
     </div>

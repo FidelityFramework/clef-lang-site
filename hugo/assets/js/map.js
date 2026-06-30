@@ -101,11 +101,12 @@
         b.classList.add("active"); cy.layout(buildLayout(b.getAttribute("data-map-layout"), indeg)).run();
       };
     });
-    document.querySelectorAll("#clef-map-modal [data-map-edges]").forEach(function (b) {
+    // per-type edge toggles: each button independently shows/hides its own edge type
+    document.querySelectorAll("#clef-map-modal [data-map-edge]").forEach(function (b) {
       b.onclick = function () {
-        document.querySelectorAll("#clef-map-modal [data-map-edges]").forEach(function (x) { x.classList.remove("active"); });
-        b.classList.add("active");
-        cy.edges('[type="tag"]').style("display", b.getAttribute("data-map-edges") === "notag" ? "none" : "element");
+        var type = b.getAttribute("data-map-edge");
+        var on = b.classList.toggle("active");
+        cy.edges('[type="' + type + '"]').style("display", on ? "element" : "none");
       };
     });
 

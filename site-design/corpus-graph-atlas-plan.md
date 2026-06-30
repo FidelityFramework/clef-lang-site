@@ -246,3 +246,27 @@ the owner runs ONE deploy/index process and both search and the map stay current
 - Confirm button placement renders inline across navbar widths (mobile/desktop).
 - External (grey) node titles now display — consider richer tooltips (author + short title).
 - Tooltip/hover-tile refinement; click-to-paper for external/preprint nodes (open arXiv URL).
+
+## Map controls — posture and deferred direction (do not over-build)
+
+Current controls (reasonable baseline, settle before changing):
+- Layout: Concentric / Grouped.
+- Edges: three independent named toggles — **Links** (href) / **Citations** (cites) / **Themes** (tag) —
+  each shows/hides its own edge type. This replaced a confusing binary "All edges / Hide tags" whose
+  label didn't match what it hid. It is a CLARITY fix, not added on the theory that "graphs need edge
+  filters."
+
+Governing posture (owner-stated, June 2026):
+- **Graph-UI control conventions are NOT a settled industry norm.** Do not assert "a graph panel must have
+  X/Y/Z" or accrete "expected" controls speculatively. Unlike a search box, graph-viz controls vary wildly
+  across products; conforming to an assumed standard would be premature.
+- The visual density is good as-is; nobody is pressed to add controls.
+- The owner is still feeling out the controls already in place and does NOT want to overcorrect on a first
+  impression. The agent should likewise hold steady — the next control change should come from the owner's
+  LIVED USE surfacing a real need, not from guessing or from re-churning the scheme each message.
+
+Deferred direction (aspirational, use-driven — NOT a committed norm):
+- Smart-Search-style **meta-filtering** to constrain/"zoom" the graph to a subgraph (facet by layer, tag,
+  content-type, connectivity), echoing how the search modal narrows results. This is the controls' likely
+  future destination IF use validates it — recorded as a direction of interest, explicitly not asserted as a
+  graph-UI requirement. Build only when the owner's interaction shows the need.

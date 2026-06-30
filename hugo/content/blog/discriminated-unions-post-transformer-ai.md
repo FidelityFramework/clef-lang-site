@@ -49,7 +49,7 @@ This homogeneous representation misses an opportunity:
 
 ## Genesis: CNN to TopOC Transfer Learning
 
-Our exploration of discriminated unions for AI architectures emerged from practical challenges we encountered in our work on CNN to Topological Object Classification (TopOC) transfer learning. In that research, we developed dimensionally-constrained models using [the Clef language](https://clef-lang.com)'s Units of Measure system to maintain representational integrity when bridging fundamentally different mathematical domains, convolutional feature spaces and topological invariants.
+Our exploration of [discriminated unions](/spec/draft/discriminated-union-representation/) for AI architectures emerged from practical challenges we encountered in our work on CNN to Topological Object Classification (TopOC) transfer learning. In that research, we developed dimensionally-constrained models using [the Clef language](https://clef-lang.com)'s Units of Measure system to maintain representational integrity when bridging fundamentally different mathematical domains, convolutional feature spaces and topological invariants.
 
 This work revealed a critical insight: **the difficulty of transfer learning between different representational domains often stems from forcing heterogeneous information through homogeneous tensor pipelines**. Our TopOC architecture already employs discriminated union-like patterns out of necessity:
 

@@ -79,7 +79,7 @@ Our DCont dialect in MLIR (discussed in our AMM article) is designed to generate
 
 ## Converging on Error Handling
 
-Both languages independently arrived at Result-based error handling with monadic composition:
+Both languages independently arrived at [Result-based error handling](/spec/draft/error-handling/) with monadic composition:
 
 ```rust
 // Rust: Result with ? operator
