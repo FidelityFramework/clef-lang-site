@@ -17,7 +17,7 @@ AI accelerators are changing the performance characteristics developers can targ
 
 Decades of engineering effort have produced C and C++ libraries that power everything from operating systems to scientific computing. These libraries represent accumulated domain expertise that would be expensive to recreate. Their memory safety properties and imperative APIs sit in tension with the safety properties modern compute targets call for.
 
-Existing approaches force a choice: accept the security risks of unsafe code, or undertake rewrites that may introduce new bugs while discarding tested algorithms. Our Farscape project takes a third route. It generates type-safe [Clef](https://clef-lang.com) bindings intended to preserve the performance of native libraries while wrapping them in the dimensional safety the Clef language carries, with annotations that erase at compile time.
+Existing approaches force a choice: accept the security risks of unsafe code, or undertake rewrites that may introduce new bugs while discarding tested algorithms. Our Farscape project takes a third route. It generates type-safe [Clef](https://clef-lang.com) bindings intended to preserve the performance of native libraries while wrapping them in the dimensional safety the Clef language carries, with annotations that erase at compile time. The deeper treatments follow from here: [binding C++ libraries via Plugify's ABI intelligence](/docs/internals/farscape/binding-cpp-to-clef-in-farscape/), the [modular entry points](/docs/internals/farscape/farscape-modular-entry-points/) that generate drop-in replacements for C tools, and the [FFI boundary semantics](/spec/draft/ffi-boundary/) the specification defines beneath them.
 
 ## Farscape's Architectural Vision
 
