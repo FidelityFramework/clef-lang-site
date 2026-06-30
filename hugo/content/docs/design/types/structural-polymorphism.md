@@ -369,7 +369,7 @@ let total = totalLength containers  // 5
 let stringTotal = totalLength [| "hello"; "world" |]  // 10
 ```
 
-Clef's resolution is based purely on structure: if the type has the member, it works. This is possible because Clef doesn't need to track ownership and lifetimes in the same way. The tradeoff is that 'standard' F#, the lineage Clef descends from, relies on the .NET runtime's garbage collector for memory management, while our Fidelity framework is designed to provide different memory management strategies.
+Clef's resolution is based purely on structure: if the type has the member, it works. This is possible because Clef doesn't need to track ownership and lifetimes in the same way. The tradeoff is that standard F# relies on the .NET runtime's garbage collector for memory management, while our Fidelity framework is designed to provide different memory management strategies.
 
 ## Performance Characteristics
 

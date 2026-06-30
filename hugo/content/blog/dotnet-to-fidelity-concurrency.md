@@ -326,7 +326,7 @@ This alignment between Clef and MLIR comes from independent work in programming 
 
 ## Clef Without the Runtime
 
-Our Fidelity framework is designed to free Clef from the constraints of a managed runtime environment. The aim is to keep the expressive syntax Clef carries from its F# lineage while changing what happens beneath the surface.
+Our Fidelity framework is designed to free Clef from the constraints of a managed runtime environment. The aim is to keep the expressive syntax Clef carries while changing what happens beneath the surface.
 
 Under this design, Clef code is no longer bound by garbage collection pauses, thread pool configurations, or runtime overhead. Instead, the code flows through a progressive lowering pipeline, from computation expressions to continuations, through CCS intrinsics, BAREWire, Frosty, Olivier, and finally Alex, emerging as machine code tailored to the target hardware with semantic intent preserved at every step.
 

@@ -183,7 +183,7 @@ let main args =
     |> Program.run
 ```
 
-At the API level this code is identical to Fabulous. The work happens during compilation, where our Composer compiler would transform these descriptions into native code with deterministic memory management.
+At the API level this code is identical in structure to Fabulous. The work happens during compilation, where our Composer compiler would transform these descriptions into native code with deterministic memory management.
 
 ## Compile-Time Attribute System
 

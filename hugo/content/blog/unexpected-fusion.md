@@ -25,7 +25,7 @@ This convergence wasn't immediately obvious. When Don Syme first presented F# to
 
 ## The OCaml Foundation: More Than Just Syntax
 
-F# began its life in 2002 as what was informally called "Caml for .NET", an attempt to bring OCaml's ML-style functional programming to [Microsoft's new runtime](https://speakez.tech/blog/the-return-of-the-compiler/). But from the beginning, F# was more than a transliteration of OCaml to a new platform. The language took OCaml's core strengths, its type inference, pattern matching, and functional-first philosophy, and enhanced them with features that would prove essential for building concurrent systems.
+F# began its life in 2002 as what was informally called "Caml for .NET", an attempt to bring OCaml's ML-style functional programming to [Microsoft's new runtime](https://speakez.tech/blog/the-return-of-the-compiler/). But from the beginning, F# was more than a transliteration of OCaml to a new platform. It enhanced that ML foundation with features that would prove essential for building concurrent systems.
 
 The divergences from OCaml were deliberate and thoughtful. Where OCaml required explicit type annotations in many contexts, F# pushed type inference further. Where OCaml used semicolons and explicit delimiters, F# adopted Python's significant whitespace, making the code cleaner and more approachable. These might seem like surface-level changes, but they reflected a deeper philosophy: F# would be pragmatic where OCaml was purist, accessible where OCaml was opinionated.
 
@@ -65,7 +65,7 @@ The challenge was architectural. F# was deeply entwined with the .NET runtime, i
 
 Our Fidelity.CloudEdge toolkit builds directly on this foundation. By leveraging Fable's JavaScript targeting, we intend a library to compile and deploy F# actors as lightweight JavaScript functions. The MailboxProcessor abstractions that developers write would compile down to Workers and Queues, maintaining the actor model's semantics while taking up the platform's distribution capabilities.
 
-This synthesis draws OCaml's web compilation legacy through jsoo, Fable's reimagining for F#, and our Fidelity.CloudEdge platform integration into one convergence of functional programming traditions adapted for modern computing. At first glimpse it may seem strange to "re-converge" OCaml's and Erlang's influences in our Fidelity framework and CloudEdge toolkit, but we hope the interested reader will follow us along a path we consider rewarding.
+This synthesis draws OCaml's web compilation legacy through jsoo, Fable's reimagining for F#, and Fidelity.CloudEdge's platform integration into one convergence of functional programming traditions adapted for modern computing. At first glimpse it may seem strange to "re-converge" OCaml's and Erlang's influences in the Fidelity framework and CloudEdge toolkit, but we hope the interested reader will follow us along a path we consider rewarding.
 
 ## Extending the Actor Vision
 

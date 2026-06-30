@@ -159,7 +159,7 @@ None of these languages stand still; Rust and C++ continue evolving to address t
 
 ## Arena Memory and Disciplined Allocation
 
-Arena memory management is new ground for developers coming from the .NET standard application code that F#, Clef's lineage, runs on. It shows how a small syntactic addition to Clef builds memory patterns out of static resolution. Arena allocation provides controlled, efficient memory management for cases where stack allocation is insufficient but full garbage collection is unnecessary.
+Arena memory management is new ground for developers coming from the .NET standard application code that F# runs on. It shows how a small syntactic addition to Clef builds memory patterns out of static resolution. Arena allocation provides controlled, efficient memory management for cases where stack allocation is insufficient but full garbage collection is unnecessary.
 
 ```fsharp
 // arena-based allocation

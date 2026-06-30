@@ -355,7 +355,7 @@ It was a reasonable hypothesis: keep the architecture that fellow developers mig
 
 In a native type ecosystem the language doesn't consume type definitions. From our view, the language *is* type definitions plus evaluation rules. The distinction between "the compiler" and "the standard library" dissolves because there was never a principled boundary there to begin with. It's a vestige of a decision made 25+ years ago.
 
-This changes how we think about Fidelity's future. We are building a native-first framework, with Clef as its language. Clef descends from F#, and that ML heritage gives us the abstractions we want: algebraic data types, pattern matching, quotations for metaprogramming, and statically resolved type parameters for zero-cost generics. Native compilation is the starting point of the design, not a layer bolted onto a .NET alternative.
+This changes how we think about Fidelity's future. We are building a native-first framework, with Clef as its language. Our ML heritage gives us the abstractions we want: algebraic data types, pattern matching, quotations for metaprogramming, and statically resolved type parameters for zero-cost generics. Native compilation is the starting point of the design, not a layer bolted onto a .NET alternative.
 
 The absorption of Alloy into CCS is one manifestation of this shift. There will be others. Each time we find ourselves recreating a .NET pattern, we now ask: is this pattern load-bearing, or is it scaffolding we can remove once we have a firm grasp of what's needed for this framework?
 

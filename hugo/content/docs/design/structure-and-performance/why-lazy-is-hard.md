@@ -265,7 +265,7 @@ let result = lazyAdd 15 25
 let v3 = Lazy.force result  // 40
 ```
 
-The syntax is standard F#. The semantics match expectations. What differs is entirely beneath the surface: stack-allocated flat closures, explicit capture analysis, deterministic memory layout, no runtime dependencies.
+The syntax is substantially similar to F#. The semantics match expectations. What differs is entirely beneath the surface: stack-allocated flat closures, explicit capture analysis, deterministic memory layout, no runtime dependencies.
 
 This continuity is intentional. Fidelity preserves F# idioms at the source level while providing native semantics at the binary level. A developer familiar with F# lazy evaluation can write the same patterns; the compiler handles the translation.
 
