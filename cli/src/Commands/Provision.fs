@@ -91,6 +91,45 @@ module Provision =
         END;
     """
 
+    // Corpus-graph tables (the Map modal — another index in the same DB). Page-grained.
+    // The worker also ensures these on first /graph/rebuild, so an already-provisioned D1
+    // self-heals without a provision re-run.
+    let private searchGraphNodes = """
+        CREATE TABLE IF NOT EXISTS graph_nodes (
+            page_url     TEXT PRIMARY KEY,
+            content_type TEXT NOT NULL,
+            layer        TEXT NOT NULL,
+            title        TEXT NOT NULL DEFAULT '',
+            summary      TEXT DEFAULT '',
+            tags         TEXT DEFAULT '',
+            published_at TEXT DEFAULT '',
+            ext_url      TEXT DEFAULT '',
+            updated_at   TEXT NOT NULL
+        );
+    """
+
+    let private searchGraphNodesIndex = """
+        CREATE INDEX IF NOT EXISTS idx_graph_nodes_layer ON graph_nodes(layer);
+    """
+
+    let private searchGraphEdges = """
+        CREATE TABLE IF NOT EXISTS graph_edges (
+            source_url TEXT NOT NULL,
+            target_url TEXT NOT NULL,
+            edge_type  TEXT NOT NULL,
+            weight     REAL NOT NULL DEFAULT 1.0,
+            label      TEXT DEFAULT '',
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (source_url, target_url, edge_type)
+        );
+    """
+
+    let private searchGraphEdgesIndexes = """
+        CREATE INDEX IF NOT EXISTS idx_graph_edges_source ON graph_edges(source_url);
+        CREATE INDEX IF NOT EXISTS idx_graph_edges_target ON graph_edges(target_url);
+        CREATE INDEX IF NOT EXISTS idx_graph_edges_type   ON graph_edges(edge_type);
+    """
+
     let execute (config: Config.CloudflareConfig) (verbose: bool) : Async<Result<Config.DeploymentState, string>> =
         async {
             use httpClient = HttpHelpers.createAuthenticatedClient config.ApiToken
@@ -144,6 +183,10 @@ module Provision =
                 searchTriggerInsert
                 searchTriggerDelete
                 searchTriggerUpdate
+                searchGraphNodes
+                searchGraphNodesIndex
+                searchGraphEdges
+                searchGraphEdgesIndexes
             ]
             let mutable schemaError = None
             for stmt in searchStatements do

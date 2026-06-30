@@ -102,6 +102,10 @@ params:
 
   searchWorkerUrl: "https://clef-search.engineering-0c5.workers.dev"
 
+  # Corpus Map graph — served live from the search worker's /graph endpoint
+  # (a Cloudflare-hosted index, same as search; no static fallback).
+  graphUrl: "https://clef-search.engineering-0c5.workers.dev/graph"
+
   footer:
     displayCopyright: true
     displayPoweredBy: false

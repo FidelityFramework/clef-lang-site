@@ -14,10 +14,38 @@ module Graph =
     let inline private isNullOrUndefined (x: 'a) : bool =
         emitJsExpr x "$0 == null"
 
+    /// Ensure the graph tables exist. The search D1 may have been provisioned before the
+    /// graph schema existed; rather than require a provision re-run, the worker self-heals
+    /// on first use (the same ensure-on-use discipline Indexing uses for added columns).
+    /// CREATE TABLE IF NOT EXISTS is idempotent and cheap.
+    let private ensureSchema (env: WorkerEnv) : JS.Promise<unit> =
+        promise {
+            let! _ =
+                env.DB.prepare("""
+                    CREATE TABLE IF NOT EXISTS graph_nodes (
+                        page_url TEXT PRIMARY KEY, content_type TEXT NOT NULL, layer TEXT NOT NULL,
+                        title TEXT NOT NULL DEFAULT '', summary TEXT DEFAULT '', tags TEXT DEFAULT '',
+                        published_at TEXT DEFAULT '', ext_url TEXT DEFAULT '', updated_at TEXT NOT NULL
+                    )""").run<obj>()
+            let! _ =
+                env.DB.prepare("""
+                    CREATE TABLE IF NOT EXISTS graph_edges (
+                        source_url TEXT NOT NULL, target_url TEXT NOT NULL, edge_type TEXT NOT NULL,
+                        weight REAL NOT NULL DEFAULT 1.0, label TEXT DEFAULT '', updated_at TEXT NOT NULL,
+                        PRIMARY KEY (source_url, target_url, edge_type)
+                    )""").run<obj>()
+            let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_nodes_layer ON graph_nodes(layer)").run<obj>()
+            let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_source ON graph_edges(source_url)").run<obj>()
+            let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_target ON graph_edges(target_url)").run<obj>()
+            let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_type ON graph_edges(edge_type)").run<obj>()
+            return ()
+        }
+
     /// Idempotent full rebuild. Replaces all nodes and edges with the supplied set.
     /// Refuses an empty node set (a CLI bug must not silently wipe the graph).
     let rebuild (env: WorkerEnv) (nodes: GraphNodeRequest array) (edges: GraphEdgeRequest array) : JS.Promise<obj> =
         promise {
+            do! ensureSchema env
             let now = DateTime.UtcNow.ToString("o")
 
             // Replace-all: clear then insert. The graph is small (a few hundred rows),
