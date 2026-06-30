@@ -47,13 +47,52 @@
   let abortController = null;
   let lastQuery = "";
   // Preserved across close/reopen so the modal rehydrates instead of starting
-  // blank. Cleared only by the explicit Clear button.
+  // blank. Persisted to sessionStorage (see snapshotSession) so the snapshot also
+  // survives full page navigation, since this is a multi-page site with no client
+  // router and the script reloads on every page. Cleared only by the Clear button.
   let lastResultsHtml = "";
   let lastStatsText = "";
   let lastSynthesisHtml = "";
   // True only when the panel holds a genuine, successful summary (not an error or
   // timeout message). Gates whether a shared link carries summarize=yes.
   let lastSynthesisOk = false;
+
+  // ── Session persistence ────────────────────────────────────
+  // The snapshot lives in sessionStorage so it spans navigation within the tab and
+  // clears when the tab closes — the right scope for "don't retype after clicking a
+  // result". All access is wrapped because storage can throw (private mode, quota).
+
+  const SESSION_KEY = "clefSearchSession";
+
+  function snapshotSession() {
+    try {
+      if (!lastQuery) {
+        sessionStorage.removeItem(SESSION_KEY);
+        return;
+      }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        query: lastQuery,
+        resultsHtml: lastResultsHtml,
+        statsText: lastStatsText,
+        synthesisHtml: lastSynthesisHtml,
+        synthesisOk: lastSynthesisOk,
+      }));
+    } catch (_) { /* storage unavailable — in-page state still works */ }
+  }
+
+  function restoreSession() {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (!s || !s.query) return;
+      lastQuery = s.query;
+      lastResultsHtml = s.resultsHtml || "";
+      lastStatsText = s.statsText || "";
+      lastSynthesisHtml = s.synthesisHtml || "";
+      lastSynthesisOk = !!s.synthesisOk;
+    } catch (_) { /* malformed or unavailable — start fresh */ }
+  }
 
   // ── Helpers ────────────────────────────────────────────────
 
@@ -145,6 +184,11 @@
       results.innerHTML = `<div class="clef-search-empty">No results found</div>`;
       stats.textContent = "";
       updateActionButtons();
+      // Snapshot the empty state too, so reopening after a no-result query doesn't
+      // paint back the previous query's results under the current query text.
+      lastResultsHtml = results.innerHTML;
+      lastStatsText = stats.textContent;
+      snapshotSession();
       return;
     }
 
@@ -167,6 +211,7 @@
     // Snapshot for rehydration on reopen.
     lastResultsHtml = results.innerHTML;
     lastStatsText = stats.textContent;
+    snapshotSession();
   }
 
   function updateSelection() {
@@ -218,6 +263,7 @@
         // Only a real summary is snapshotted and marked shareable.
         lastSynthesisHtml = synthesisContent.innerHTML;
         lastSynthesisOk = true;
+        snapshotSession();
       } else if (data.error) {
         synthesisContent.textContent = data.error;
       } else {
@@ -242,6 +288,8 @@
     synthesisContent.textContent = "";
     lastSynthesisHtml = "";
     lastSynthesisOk = false;
+    // Keep the persisted snapshot from re-hydrating a summary that's been dropped.
+    if (lastQuery) snapshotSession();
   }
 
   /** Run a search immediately (no debounce) and render. Shared by the input
@@ -374,6 +422,8 @@
     stats.textContent = "";
     dropSynthesis();
     updateActionButtons();
+    // lastQuery is now empty, so this removes the persisted snapshot entirely.
+    snapshotSession();
     input.focus();
   }
 
@@ -479,9 +529,17 @@
       window.history.replaceState({}, "", cleaned.pathname + cleaned.hash);
     } catch (_) { /* non-fatal: leave the param if replaceState is unavailable */ }
 
+    // Point state at this query before open(), so a restored prior session doesn't
+    // flash its old results for a frame; clear the stale results snapshot so open()
+    // shows nothing under the new query until runSearch fills it in.
+    lastQuery = query;
+    lastResultsHtml = "";
+    lastStatsText = "";
+    lastSynthesisHtml = "";
+    lastSynthesisOk = false;
+
     open();
     input.value = query;
-    lastQuery = query;
     updateActionButtons();
     await runSearch(query);
     // A summarize=yes link runs the AI summary once results are in.
@@ -520,6 +578,11 @@
         // Default anchor navigation will handle it
       }
     });
+
+    // Rehydrate the in-memory snapshot from the prior page so reopening the modal
+    // after navigating restores the last query and results. A ?q= shared link
+    // overrides this below, since hydrateFromUrl sets its own query.
+    restoreSession();
 
     // A shared ?q= link opens and runs the search on arrival.
     hydrateFromUrl();
