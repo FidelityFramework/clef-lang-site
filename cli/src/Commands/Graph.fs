@@ -32,7 +32,7 @@ module Graph =
           "2509.00587", "Mehta & Hsu — Symmetry Hoare Logic"
           "2603.28627", "Cain et al. — Shor's at 10k qubits"
           "2603.20105", "λ-RLM (Roy et al.)"
-          "2603.01615", "Jonnalagadda et al. — b-posit hardware"
+          "2603.01615", "Jonnalagadda et al. — Bounded Posits"
           "2406.02528", "MatMul-free LM"
           "1811.02209", "Better Late Than Never (HCP)"
           "2103.14466", "Prioritise the Best Variation" ]
