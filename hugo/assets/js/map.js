@@ -278,6 +278,44 @@
       b.onclick = function () { frozen.clear(); persistState(); applyFrozen(); };
     });
 
+    // ── Help popover (the ? button) ──────────────────────────────────────────────────────
+    // One source of content, wording adapts to the input model (touch vs mouse). Auto-shows
+    // once on touch first-run (no way to discover long-press otherwise), then remembers it.
+    var help = document.getElementById("clef-map-help");
+    var helpList = document.getElementById("clef-map-help-list");
+    if (helpList) {
+      var rows = TOUCH ? [
+        ["Tap a node", "highlight it and its links; opens a card with “Go →”"],
+        ["Long-press a node", "freeze its sub-graph (or use Freeze on the card)"],
+        ["Tap “Go →”", "open that spec / doc / blog entry"],
+        ["Clear", "reset the frozen sub-graph"]
+      ] : [
+        ["Hover a node", "highlight it and its links"],
+        ["Click a node", "open that spec / doc / blog entry"],
+        ["Right-click a node", "freeze its sub-graph (build a custom graph hop by hop)"],
+        ["Clear", "reset the frozen sub-graph"]
+      ];
+      helpList.innerHTML = rows.map(function (r) {
+        return '<li><b>' + r[0] + '</b><span>' + r[1] + '</span></li>';
+      }).join("");
+    }
+    function showHelp() { if (help) help.hidden = false; }
+    function hideHelp() { if (help) help.hidden = true; }
+    function toggleHelp() { if (help) (help.hidden ? showHelp() : hideHelp()); }
+    document.querySelectorAll("#clef-map-modal [data-map-help]").forEach(function (b) { b.onclick = toggleHelp; });
+    document.querySelectorAll("#clef-map-modal [data-map-help-close]").forEach(function (b) { b.onclick = hideHelp; });
+    // dismiss on tap/click outside the popover (but not when the ? button itself is hit)
+    if (help) help.addEventListener("click", function (e) { if (e.target === help) hideHelp(); });
+    // first-run auto-show on touch only
+    if (TOUCH) {
+      var seen = false;
+      try { seen = localStorage.getItem("clefAtlasHelpSeen") === "1"; } catch (e) {}
+      if (!seen) {
+        showHelp();
+        try { localStorage.setItem("clefAtlasHelpSeen", "1"); } catch (e) {}
+      }
+    }
+
     // Restore any frozen sub-graph the user left behind, then paint it.
     applyFrozen();
 
