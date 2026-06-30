@@ -83,6 +83,7 @@ module Types =
         abstract member tags: string with get
         abstract member publishedAt: string with get
         abstract member extUrl: string with get
+        abstract member category: string with get
 
     /// A graph edge received from the CLI graph extractor
     [<AllowNullLiteral>]

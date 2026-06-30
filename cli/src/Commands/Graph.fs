@@ -44,7 +44,10 @@ module Graph =
 
     type private Node =
         { PageUrl: string; ContentType: string; Layer: string
-          Title: string; Summary: string; Tags: string; PublishedAt: string; ExtUrl: string }
+          Title: string; Summary: string; Tags: string; PublishedAt: string; ExtUrl: string
+          // spec taxonomy category (Process|Language|Semantics|Representation|Compiler|Platform);
+          // empty for non-spec nodes. Drives the spec ring's 3-tier banding in the Atlas.
+          Category: string }
 
     type private Edge =
         { Source: string; Target: string; EdgeType: string; Weight: float; Label: string }
@@ -162,7 +165,8 @@ module Graph =
                     let node =
                         { PageUrl = pageUrl; ContentType = contentType; Layer = layerOf contentType
                           Title = title; Summary = (field yaml "description")
-                          Tags = tags; PublishedAt = (field yaml "date"); ExtUrl = "" }
+                          Tags = tags; PublishedAt = (field yaml "date"); ExtUrl = ""
+                          Category = field yaml "category" }
                     contentNodes.[pageUrl] <- node
                     bodies.[pageUrl] <- body
                     if tags <> "" then tagsByPage.[pageUrl] <- (tags.Split(',') |> Array.toList)
@@ -200,7 +204,7 @@ module Graph =
                 paperNodes.Add
                     { PageUrl = pid; ContentType = "preprint"; Layer = "preprint"
                       Title = label; Summary = $"arXiv:{aid} — Fidelity pre-print"
-                      Tags = ""; PublishedAt = ""; ExtUrl = $"https://arxiv.org/abs/{aid}" }
+                      Tags = ""; PublishedAt = ""; ExtUrl = $"https://arxiv.org/abs/{aid}"; Category = "" }
             for KeyValue(aid, citers) in arxivCiters do
                 if not (preprints.ContainsKey aid) && citers.Count >= extThreshold then
                     let pid = $"arxiv:{aid}"
@@ -208,7 +212,7 @@ module Graph =
                     paperNodes.Add
                         { PageUrl = pid; ContentType = "external"; Layer = "external"
                           Title = label; Summary = $"external citation · {citers.Count} pages · arXiv:{aid}"
-                          Tags = ""; PublishedAt = ""; ExtUrl = $"https://arxiv.org/abs/{aid}" }
+                          Tags = ""; PublishedAt = ""; ExtUrl = $"https://arxiv.org/abs/{aid}"; Category = "" }
 
             let paperIds = paperNodes |> Seq.map (fun n -> n.PageUrl) |> Set.ofSeq
 
@@ -264,7 +268,7 @@ module Graph =
                 allNodes |> List.map (fun n ->
                     {| pageUrl = n.PageUrl; contentType = n.ContentType; layer = n.Layer
                        title = n.Title; summary = n.Summary; tags = n.Tags
-                       publishedAt = n.PublishedAt; extUrl = n.ExtUrl |})
+                       publishedAt = n.PublishedAt; extUrl = n.ExtUrl; category = n.Category |})
             let edgePayload =
                 edges |> Seq.map (fun e ->
                     {| source = e.Source; target = e.Target; edgeType = e.EdgeType

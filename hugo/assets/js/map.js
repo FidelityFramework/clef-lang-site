@@ -6,11 +6,21 @@
   var CY_SRC = "https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js";
   var GRAPH_URL = window.CLEF_GRAPH_URL || "/graph.json";
 
-  // The docs layer is chunky enough to split into three sub-rings by top-level group:
-  // design (conceptual, nearest the spec kernel) → internals (mechanism) → tooling/guides
-  // (peripheral, nearest the discursive blog edge). This keys color + radial level off a
-  // "band" derived from layer (+ docs top-group), not the bare layer.
+  // Two layers are chunky enough to sub-band into concentric tiers:
+  //  - SPEC splits into 3 tiers by its taxonomy category (collapsed 6 categories → 3):
+  //      foundations (Process+Language) → meaning (Semantics+Representation) → machinery
+  //      (Compiler+Platform). Inside-out: what the language IS → what it MEANS → how it COMPILES.
+  //  - DOCS splits into 3 by top-level group: design → internals → tooling/guides.
+  // bandOf() derives the band; color + radial level key off it, not the bare layer.
+  var SPEC_TIER = {
+    Process: "spec-foundations", Language: "spec-foundations",
+    Semantics: "spec-meaning", Representation: "spec-meaning",
+    Compiler: "spec-machinery", Platform: "spec-machinery",
+  };
   function bandOf(data) {
+    if (data.layer === "spec") {
+      return SPEC_TIER[data.category] || "spec-meaning"; // uncategorized → middle tier
+    }
     if (data.layer !== "docs") return data.layer;
     // top-group from contentType (live worker) or the id path (static preview)
     var g = data.contentType;
@@ -22,17 +32,19 @@
     if (g === "internals") return "docs-internals";
     return "docs-tooling"; // tooling, guides, reference
   }
-  // band -> color. Docs sub-bands are three shades of the blue family.
+  // band -> color. Spec sub-bands are three shades of the orange family; docs three of blue.
   var COLOR = {
-    preprint: "#e3b341", external: "#8b949e", spec: "#f78166",
+    preprint: "#e3b341", external: "#8b949e",
+    "spec-foundations": "#f78166", "spec-meaning": "#e8643f", "spec-machinery": "#c4451f",
     "docs-design": "#58a6ff", "docs-internals": "#388bfd", "docs-tooling": "#1f6feb",
     blog: "#3fb950",
   };
   // radial rings, center → out
   var LEVEL = {
-    preprint: 1, external: 2, spec: 3,
-    "docs-design": 4, "docs-internals": 5, "docs-tooling": 6,
-    blog: 7,
+    preprint: 1, external: 2,
+    "spec-foundations": 3, "spec-meaning": 4, "spec-machinery": 5,
+    "docs-design": 6, "docs-internals": 7, "docs-tooling": 8,
+    blog: 9,
   };
 
   var cy = null, loadingCy = null;
@@ -61,14 +73,15 @@
   function buildLayout(name, indeg) {
     if (name === "grouped") {
       var ord = {
-        preprint: 700, external: 600, spec: 500,
+        preprint: 900, external: 800,
+        "spec-foundations": 700, "spec-meaning": 600, "spec-machinery": 500,
         "docs-design": 400, "docs-internals": 300, "docs-tooling": 200, blog: 100,
       };
       return { name: "concentric", concentric: function (n) { return ord[bandOf(n.data())] + (10 - Math.min(9, indeg[n.data("id")] || 0)); },
                levelWidth: function () { return 3; }, minNodeSpacing: 9, spacingFactor: 1.0, animate: true, animationDuration: 500 };
     }
-    // 7 bands now: preprint(1)…blog(7). Higher concentric value = innermost, so invert.
-    return { name: "concentric", concentric: function (n) { return 8 - LEVEL[bandOf(n.data())]; },
+    // 9 bands now: preprint(1)…blog(9). Higher concentric value = innermost, so invert.
+    return { name: "concentric", concentric: function (n) { return 10 - LEVEL[bandOf(n.data())]; },
              levelWidth: function () { return 1; }, minNodeSpacing: 12, spacingFactor: 0.9, animate: true, animationDuration: 500 };
   }
 

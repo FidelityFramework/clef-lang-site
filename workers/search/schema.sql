@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS graph_nodes (
     tags         TEXT DEFAULT '',
     published_at TEXT DEFAULT '',
     ext_url      TEXT DEFAULT '',           -- for preprint/external nodes: the arxiv URL to open
+    category     TEXT DEFAULT '',           -- spec taxonomy category (drives the spec ring tiers)
     updated_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_graph_nodes_layer ON graph_nodes(layer);

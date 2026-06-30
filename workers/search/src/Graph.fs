@@ -25,7 +25,8 @@ module Graph =
                     CREATE TABLE IF NOT EXISTS graph_nodes (
                         page_url TEXT PRIMARY KEY, content_type TEXT NOT NULL, layer TEXT NOT NULL,
                         title TEXT NOT NULL DEFAULT '', summary TEXT DEFAULT '', tags TEXT DEFAULT '',
-                        published_at TEXT DEFAULT '', ext_url TEXT DEFAULT '', updated_at TEXT NOT NULL
+                        published_at TEXT DEFAULT '', ext_url TEXT DEFAULT '', category TEXT DEFAULT '',
+                        updated_at TEXT NOT NULL
                     )""").run<obj>()
             let! _ =
                 env.DB.prepare("""
@@ -38,6 +39,16 @@ module Graph =
             let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_source ON graph_edges(source_url)").run<obj>()
             let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_target ON graph_edges(target_url)").run<obj>()
             let! _ = env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_graph_edges_type ON graph_edges(edge_type)").run<obj>()
+            // Self-heal: a graph_nodes table provisioned before the category column existed
+            // needs the column added. ALTER fails if it already exists, so guard on PRAGMA.
+            let! info = env.DB.prepare("PRAGMA table_info(graph_nodes)").all<obj>()
+            let hasCategory =
+                match info.results with
+                | Some r -> r |> Seq.exists (fun row -> string row?name = "category")
+                | None -> false
+            if not hasCategory then
+                let! _ = env.DB.prepare("ALTER TABLE graph_nodes ADD COLUMN category TEXT DEFAULT ''").run<obj>()
+                ()
             return ()
         }
 
@@ -57,17 +68,17 @@ module Graph =
             let nodeSql =
                 """
                 INSERT INTO graph_nodes
-                    (page_url, content_type, layer, title, summary, tags, published_at, ext_url, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (page_url, content_type, layer, title, summary, tags, published_at, ext_url, category, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(page_url) DO UPDATE SET
                     content_type=excluded.content_type, layer=excluded.layer, title=excluded.title,
                     summary=excluded.summary, tags=excluded.tags, published_at=excluded.published_at,
-                    ext_url=excluded.ext_url, updated_at=excluded.updated_at
+                    ext_url=excluded.ext_url, category=excluded.category, updated_at=excluded.updated_at
                 """
             for n in nodes do
                 let! _ =
                     env.DB.prepare(nodeSql)
-                        .bind(n.pageUrl, n.contentType, n.layer, n.title, n.summary, n.tags, n.publishedAt, n.extUrl, now)
+                        .bind(n.pageUrl, n.contentType, n.layer, n.title, n.summary, n.tags, n.publishedAt, n.extUrl, n.category, now)
                         .run<obj>()
                 ()
 
@@ -93,7 +104,7 @@ module Graph =
     /// reflect real prose links, not synthetic tag/semantic edges).
     let read (env: WorkerEnv) : JS.Promise<obj> =
         promise {
-            let! nodeRes = env.DB.prepare("SELECT page_url, content_type, layer, title, summary, tags, published_at, ext_url FROM graph_nodes").all<obj>()
+            let! nodeRes = env.DB.prepare("SELECT page_url, content_type, layer, title, summary, tags, published_at, ext_url, category FROM graph_nodes").all<obj>()
             let! edgeRes = env.DB.prepare("SELECT source_url, target_url, edge_type, weight, label FROM graph_edges").all<obj>()
 
             let edgeRows =
@@ -124,6 +135,7 @@ module Graph =
                             "id" ==> url
                             "layer" ==> string row?layer
                             "contentType" ==> string row?content_type
+                            "category" ==> string row?category
                             "title" ==> string row?title
                             "summary" ==> string row?summary
                             "tags" ==> string row?tags
