@@ -27,15 +27,18 @@ module Graph =
 
     /// External paper labels resolved from how the prose cites them (curated).
     let private externalTitles =
-        [ "2511.01754", "Beckmann & Setzer"
+        // Consistent format across all external nodes: "Surname(s) — Brief Title".
+        // Mamba-3 has no author surnames in the corpus (cited by its model name, institutions
+        // only: Cartesia/CMU/Princeton/Together), so the model name stands as the label.
+        [ "2511.01754", "Beckmann & Setzer — Access Hoare Logic"
           "2603.15569", "Mamba-3"
           "2509.00587", "Mehta & Hsu — Symmetry Hoare Logic"
-          "2603.28627", "Cain et al. — Shor's at 10k qubits"
-          "2603.20105", "λ-RLM (Roy et al.)"
+          "2603.28627", "Cain et al. — Shor's at 10k Qubits"
+          "2603.20105", "Roy et al. — Y-Combinator for LLMs"
           "2603.01615", "Jonnalagadda et al. — Bounded Posits"
-          "2406.02528", "MatMul-free LM"
-          "1811.02209", "Better Late Than Never (HCP)"
-          "2103.14466", "Prioritise the Best Variation" ]
+          "2406.02528", "Zhu et al. — MatMul-free LM"
+          "1811.02209", "Kokke et al. — Hypersequent CP"
+          "2103.14466", "Kokke & Dardha — Priority GV" ]
         |> Map.ofList
 
     /// An external paper becomes a node only if cited by at least this many pages
