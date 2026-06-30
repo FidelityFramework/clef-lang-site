@@ -261,3 +261,8 @@ What it provides for Clef is architectural unification. The JavaScript target jo
 The result is not JavaScript you can trust. It is JavaScript that won't keep you awake at night, because the things that would keep you awake (message type mismatches, cross-substrate serialization drift, verification gaps between native and edge code) are addressed in the compiler, before any JavaScript is emitted. The rest is Cloudflare's contract, and they've been keeping that contract for millions of Workers in production.
 
 Our Composer is designed to target CPUs, GPUs, FPGAs, and spatial accelerators through MLIR. JSIR lets JavaScript join that set as one more backend, reached through the same dialect infrastructure, subject to the same pass pipeline, verified by the same middle-end. The JavaScript does not become trustworthy in the process. The compiler reaches the point where it does not have to care that the artifact isn't, because everything it can verify has already been settled upstream. That is the property we will keep building toward as the Alex backends fill in and the cross-substrate actor network takes shape.
+
+## See also
+
+- [A Runtime Revolution, sort of...]({{< ref "runtime-revolution-fidelity" >}}): the blog-layer framing of this same JSIR-on-Cloudflare story, walking through why the unified middle-end matters for Workers and how BAREWire carries the contract across the erasure boundary.
+- [Cloudflare Agents and the Boundary Map](/docs/design/javascript-targeting/cloudflare-agents-and-the-boundary-map/): the worked example of this mechanism against Cloudflare's AI-agent surface, where generated per-boundary narrowing covers the request, WebSocket, AI-inference, SQLite, state-sync, and RPC edges a Durable Object multiplies.

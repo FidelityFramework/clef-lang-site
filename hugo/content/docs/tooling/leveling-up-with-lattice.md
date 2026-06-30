@@ -186,3 +186,7 @@ Lattice isn't just an IDE plugin or a collection of tools. It's a framework for 
 - [Ionide](https://ionide.io/) (for .NET F# development)
 - [Composer Compiler](https://github.com/FidelityFramework/Composer)
 - [CCS](https://github.com/FidelityFramework/clef-lang) (Clef Compiler Services)
+
+## See also
+
+- [Bridging Clef AutoComplete To The Fidelity Ecosystem](/docs/tooling/clef-autocomplete-integration/): how CAC extends the FSAC project-loader architecture to crack `.fidproj` TOML manifests and deliver IntelliSense for native Clef projects in VSCode and nvim.

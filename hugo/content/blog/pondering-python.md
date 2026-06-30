@@ -257,3 +257,7 @@ Yet we also acknowledge the pragmatic reality: even forward-looking systems must
 The question isn't whether Python will continue to play a role in AI research and development; it clearly will. The question is how we can build new tools that work where Python faces natural limitations, adding to an ecosystem that serves the full spectrum of AI development needs.
 
 The challenges highlighted by the ONNX presentation show talented engineers building solutions within existing constraints. Choosing foundations that match the system requirements, while still keeping bridges to the work that has come before, is the direction we are pursuing. Python has a long history of adaptation through many shifts in the software industry, and it deserves credit for that. We will keep building toward static foundations that hold this information by construction as the work on Clef and the compiler continues.
+
+## See also
+
+- [Musings on Mojo: Partially Parallel Paths]({{< ref "musing-on-mojo" >}}): the connected entry this one extends or complements within the same argument family

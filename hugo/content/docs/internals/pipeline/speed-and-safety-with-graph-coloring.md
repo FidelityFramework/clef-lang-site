@@ -352,3 +352,7 @@ By applying graph coloring to our Program Semantic Graph and using bidirectional
 This approach turns the traditional compilation model on its head. Instead of developers manually identifying parallel regions, the compiler discovers them automatically through mathematical analysis. Sequential-looking async code transforms into massively parallel interaction nets, delivering dramatic performance improvements while maintaining Clef's elegant programming model.
 
 The beauty is that developers write natural Clef code, and the compiler does the hard work of finding and exploiting parallelism. Graph coloring keeps our parallel execution "on the beam" - not through formal verification, but through intelligent transformation that unlocks the full potential of modern hardware.
+
+## See also
+
+- [Collect Yourself!](/docs/design/language/collect-yourself/): how the referential transparency of `map`/`filter`/`fold` is the very purity the coloring pass reads to find parallel and SIMD regions in collection code.

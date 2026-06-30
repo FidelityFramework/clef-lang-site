@@ -439,3 +439,7 @@ This three-layer architecture (generated declarations, generated wrappers, devel
 Our Farscape design connects decades of native development with the dimensional safety the Clef language carries. By making C and C++ libraries reachable from the Clef ecosystem, Farscape lets developers keep the performance and ubiquity of native code while gaining safety the type system checks at compile time. As part of our Fidelity Framework, it is the integration layer that lets Clef reach across the computing spectrum, from embedded devices to supercomputers, without leaving the existing native ecosystem behind.
 
 We have surveyed binding generators in other ecosystems and have found none that treats the boundary between generated and developer-owned code as a type-checked contract the way the overlay model does. We will keep building toward that design as the Fidelity compilation path matures, extending the dimensional type erasure through MLIR and LLVM, and measuring how close generated bindings stay to direct C as the work continues.
+
+## See also
+
+- [Wrapping C and C++]({{< ref "wrapping-c-and-cpp" >}}): the safety-wrapper architecture these bindings enable, retrofitting memory safety onto legacy native code without a rewrite

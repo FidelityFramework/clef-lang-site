@@ -502,3 +502,9 @@ For developers familiar with traditional WPF-style frameworks and their function
 > This conceptual shift provides significant performance advantages while maintaining the familiar programming model that .NET and Fable developers expect.
 
 We want our Fidelity layout system to draw the ideas worth keeping from existing functional UI frameworks while staying a pure Clef implementation over libraries like LVGL and Skia, with process boundaries checked during compilation. That is the direction we will keep building toward as the rest of the framework comes into place.
+
+## See also
+
+- [The FidelityUI Model]({{< ref "fidelity-ui-model" >}}): the broader UI model this layout system sits within
+- [The WREN Stack]({{< ref "wren-stack" >}}): the WebView UI substrate that sits beside this native layout path
+- [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): how the native and WebView UI patterns are chosen per target

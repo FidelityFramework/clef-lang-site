@@ -138,3 +138,4 @@ This is not HCP's whole-calculus theorem, and doesn't intend to be a full theore
 - [Better Late Than Never: A Fully-Abstract Semantics for Classical Processes](https://arxiv.org/abs/1811.02209), Kokke, Montesi, Peressotti (POPL 2019) - HCP and deadlock freedom by typing
 - [Prioritise the Best Variation](https://arxiv.org/abs/2103.14466), Kokke, Dardha - Priority GV and deadlock freedom for cyclic topologies
 - [Deadlock Freedom for Asynchronous and Cyclic Process Networks](https://arxiv.org/pdf/2110.00146) - The asynchronous-and-cyclic fragment and its priority discipline
+- [The Three-Layer Actor Contract](/docs/design/concurrency/the-three-layer-actor-contract/): The protocol layer this wait-for slice projects from, with coexponential session types sitting between the BAREWire data contract and deadlock freedom

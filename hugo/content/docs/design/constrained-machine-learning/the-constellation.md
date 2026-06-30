@@ -117,3 +117,7 @@ Whether the routing the porous node performs can itself be made reliable enough,
 Whether the islands of constructed structure inside the language model extend beyond positional encoding, and whether other attention subsystems admit a compact formal specification the way positional encoding does, is a research direction the [positional-encoding analysis]({{< ref "the-constellation" >}}) opens rather than closes.
 
 Whether a typed domain model and the porous node can share more than substrate, for instance a common geometric representation at their interface, or whether the boundary must always be mediated by the deterministic layer, is the question the [reversibility article]({{< ref "reversible-cores" >}}) takes up from one specific angle.
+
+## See also
+
+- [Managing Context](/docs/design/constrained-machine-learning/managing-context/): how the sub-quadratic recurrence here defeats the context-rot problem outright, set against the token-stream compression industry working the same decay from the outside.

@@ -208,3 +208,7 @@ At SpeakEZ, we're working in this space alongside Mojo from a different starting
 As MLIR matures, I expect more approaches to language design to follow. Some will start from dynamic languages and add performance, like Mojo. Others will start from a formal foundation and add flexibility. Still others will explore points in the design space neither of us is looking at.
 
 We'll keep watching Mojo's evolution as we build Fidelity out, and we'll keep learning from the parts of the design space the Mojo team is mapping that we are not. That is the work I want to continue: carrying the Clef language through MLIR toward deterministic performance across targets, and seeing how far the unified model holds as the rest of the framework comes into place.
+
+## See also
+
+- [Pondering Python]({{< ref "pondering-python" >}}): the companion case on escaping Python and PyTorch's dynamic gravity, where the same static-foundations argument plays out against ONNX metadata loss rather than Mojo's def/fn split.

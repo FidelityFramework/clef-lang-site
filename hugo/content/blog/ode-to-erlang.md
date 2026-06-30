@@ -411,3 +411,7 @@ For over three decades, Erlang has been a reference point in distributed systems
 Our Fidelity framework builds on that work. Erlang's concepts were not only technical choices; they were positions on how distributed computing should be built, and they have held up. Where Erlang reached its design through hardware constraints of its era, we are working through a different set of constraints, with type theory, memory management, and compilation technology that were not available then.
 
 As computing keeps moving across cloud infrastructure, edge devices, large data centers, and embedded systems, the need for reliable concurrency stays central. We are continuing to develop this design and to test it against Erlang's record, and we hope to honor Erlang's pioneering spirit by extending its tradition of pragmatic innovation into the next generation of distributed systems.
+
+## See also
+
+- [Unexpected Fusion]({{< ref "unexpected-fusion" >}}): the OCaml-and-Erlang convergence behind F#'s MailboxProcessor, recast through Olivier, Prospero, and CloudEdge into an agentic actor architecture

@@ -273,3 +273,7 @@ As quantum computing, neuromorphic processors and other novel architectures emer
 This design is currently in internal development within the Fidelity Framework project, with careful attention being paid to every architectural decision. In the near future, we plan to open the project to the community, inviting contributions and feedback from the broader Clef and MLIR/LLVM communities. The combination of Clef's expressive power and ClefPak's distribution model promises to unlock new possibilities for systems programming, embedded development, and high-performance computing that were previously the exclusive domain of lower-level languages.
 
 The journey from managed code to native compilation is not just a technical transition, it's an opportunity to reimagine what's possible when a language and its tooling evolve together. ClefPak represents our commitment to making that journey not just possible, but pleasant and productive for every Clef developer ready to explore new frontiers in technology.
+
+## See also
+
+- [Source-Level Dependency Resolution](/docs/design/structure-and-performance/source-level-dependency-resolution/): How `.fidproj` dependencies resolved by ClefPak are discovered, reachability-pruned, and compiled to dependency-free native binaries through CCS and the Composer pipeline

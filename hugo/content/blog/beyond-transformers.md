@@ -868,3 +868,7 @@ At SpeakEZ, we've been building the tools and frameworks that aim to make these 
 The mathematical foundations exist. The hardware capabilities are emerging. The software frameworks are maturing. What remains is the engineering work to bring these elements together into production systems.
 
 We will keep developing these technologies along the lines this post sketches, weighing each architecture against the others as the research convergence continues and our own pipeline from Clef through MLIR to hardware takes shape.
+
+## See also
+
+- [Discriminated Unions In Post-Transformer AI]({{< ref "discriminated-unions-post-transformer-ai" >}}): how BAREWire's discriminated-union-aware memory layout represents the heterogeneous matmul-free and state-space components this post sketches, packing ternary weights and SSM parameters without forcing them through homogeneous tensors.

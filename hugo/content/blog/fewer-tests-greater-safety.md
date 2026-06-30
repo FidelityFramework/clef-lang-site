@@ -110,3 +110,8 @@ We're entering an era where software complexity exceeds our collective ability t
 Our Fidelity framework is designed to make this transition practical: embedding proofs in the compilation pipeline, making them first-class artifacts that guide optimization, and providing "free" verification through compile-time analysis. The effect we're after is not only reducing test burden but changing how a team builds reliable software.
 
 Fewer tests doesn't mean less safety. It means greater safety through stronger guarantees on the deterministic layer, with the heat shielding of narrowly scoped formal methods standing in for whole categories of treadmill testing. When the compiler becomes the theorem prover, every successful build carries a proof of the properties you annotated. That's the design we will keep building toward as the rest of the framework comes into place.
+
+## See also
+
+- [MLIR Testing with Teeth](/docs/internals/mlir/mlir-testing-with-teeth/): the same proofs-over-tests argument applied to the compiler's own verification, replacing regex-based lit and FileCheck with semantic graphs and proof-carrying hyperedges
+- [Building Proofs for the Real World]({{< ref "proofs-for-the-real-world" >}}): the connected entry this one extends or complements within the same argument family

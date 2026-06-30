@@ -405,3 +405,7 @@ The proofs follow the computation graph as far as the arithmetic is monotonic, t
 [7] J. L. Gustafson and I. T. Yonemoto, "Beating Floating Point at its Own Game: Posit Arithmetic," *Supercomputing Frontiers and Innovations*, vol. 4, no. 2, 2017.
 
 [8] J. C. Reynolds, "Types, abstraction and parametric polymorphism," in *Information Processing 83*, pp. 513-523, North-Holland, 1983.
+
+## See also
+
+- [Fewer Tests; Greater Safety]({{< ref "fewer-tests-greater-safety" >}}): the broader case that discharged proof obligations replace whole categories of tests, with the "proof over the declared operating envelope, not a test" framing made concrete here.

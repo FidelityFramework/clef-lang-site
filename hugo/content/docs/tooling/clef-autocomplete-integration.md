@@ -286,3 +286,7 @@ This is the innovation budget well spent: change what must change, preserve what
 Meeting developers in the editors they already use is one half of the approach. The other is [Atelier](/docs/tooling/atelier-the-fidelity-workshop/), the environment we are building for developers who want the framework's full design-time surface gathered into one place. The two share a philosophy: extend what is familiar, and own what direct control makes worth owning.
 
 As the Fidelity Framework matures from experimental compiler to practical platform, this tooling foundation becomes increasingly critical. By investing in seamless editor integration and native "project cracking" with the fiproj format, we're ensuring that the power of native compilation comes with the comfort of familiar tools.
+
+## See also
+
+- [Leveling Up With Lattice](/docs/tooling/leveling-up-with-lattice/): the connected entry this one extends or complements within the same argument family

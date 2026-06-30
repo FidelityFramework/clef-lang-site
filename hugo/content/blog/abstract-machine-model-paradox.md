@@ -137,3 +137,7 @@ Our framework does more than compile Clef to native code. It treats the supposed
 The article was right that AMMs matter, and Rust did push important boundaries. The author did not account for what MLIR and hypergraph compilation would make possible. With our Fidelity framework and Composer compiler, programs would have the potential to span heterogeneous processors through principled targeting in place of ad hoc workarounds. We have found no other representative implementations of this AMM-transcendent approach in the standing literature we have reviewed. Abstraction supports optimization rather than fighting it. Multiple AMMs coexist in the same program, selected based on semantic analysis and the hardware's capabilities.
 
 This direction runs through our Fidelity framework and [the Clef language](https://clef-lang.com), which descends from F# and the wider ML lineage whose OCaml branch was used to bootstrap Rust itself. The structures functional programming has carried for decades may have been waiting for the right compilation technology, and our current interest lies in building that technology out as the work continues.
+
+## See also
+
+- [Breaking the P vs NP Mystique]({{< ref "breaking-the-p-vs-np-mystique" >}}): extends the same control-flow-versus-data-flow argument to "intractable" NP-complete problems, showing that the von Neumann reflex, not algorithmic complexity, is what makes them seem hard.

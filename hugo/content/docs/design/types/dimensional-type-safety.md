@@ -428,6 +428,7 @@ This is the reason we built Clef as its own compilation path: to carry Clef's se
 - [Beyond Zero-Allocation](/docs/design/memory/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model
 - [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/) - Coeffects and their role in optimization decisions
 - [Standing Art: Clef Metaprogramming in Composer](/docs/design/language/standing-art-clef-metaprogramming/) - Computation expressions, active patterns, quotations, and units of measure
+- [Danger Close: Why Types Matter]({{< ref "danger-close-why-types-matter" >}}) - Real near-disasters (a freezer monitor's Fahrenheit/Celsius mix-up, the Mars Orbiter, microgram dosing errors) that Clef's zero-cost units of measure catch at compile time
 
 ---
 

@@ -278,4 +278,16 @@ This is near-term design rather than a distant vision. We intend the WebView bin
 
 What remains is the ordinary work of any framework: expanding the API surface, polishing the developer experience, documenting the patterns, and building the community of practice. That is where our attention turns next as we keep building the WREN Stack out toward the rest of the Fidelity ecosystem.
 
+## See also
+
+### The other UI substrate
+
+- [A Window Layout System for Fidelity]({{< ref "window-layout-with-fidelity" >}}): the native rendering path WREN's WebView pattern sits beside
+- [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): where the WRENHello (WebView) and HelloWayland (native) patterns are weighed against each other
+
+### The web backend it rests on
+
+- [JSIR: JavaScript as an MLIR Backend](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/): the compilation track that produces WREN's web surface
+- [Fidelity.Rx: Native Reactivity in Clef]({{< ref "fidelityrx-native-reactivity" >}}): the reactive substrate the UI state flows through
+
 [^webview-processes]: All modern WebView implementations use multi-process architectures for security and stability. See: [WebView2 Process Model](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/process-model) (Windows), [WKWebView Architecture](https://developer.apple.com/documentation/webkit/wkwebview) (macOS), and [WebKit2 Design](https://docs.webkit.org/Deep%20Dive/Architecture/WebKit2.html) (Linux/WebKitGTK).
