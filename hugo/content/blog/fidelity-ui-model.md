@@ -17,7 +17,7 @@ This document is how our Fidelity framework approaches rich UI experiences by bu
 
 ## Learning from Fabulous: A Functional Foundation
 
-The Windows Presentation Foundation and Avalonia shaped our design. Our long experience with WPF goes back to the advent of Silverlight, which had many implementation compromises but held some real promise in structured UI design that persists in many forms to this day. Fabulous, a functional extension of WPF, showed that capable user interface design can keep a clean developer experience. Its widget-based architecture, attribute system, and MVU integration showed us a clear path forward.
+The Windows Presentation Foundation and Avalonia shaped our design, lessons we work through in detail in [a window layout system for Fidelity]({{< ref "window-layout-with-fidelity" >}}). Our long experience with WPF goes back to the advent of Silverlight, which had many implementation compromises but held some real promise in structured UI design that persists in many forms to this day. Fabulous, a functional extension of WPF, showed that capable user interface design can keep a clean developer experience. Its widget-based architecture, attribute system, and MVU integration showed us a clear path forward.
 
 Where Fabulous operates within the managed .NET environment, our FidelityUI design aims to take these same patterns and compile them to native code with, in many cases, zero heap allocations. When heap *does* become involved it is within our actor system, Olivier and Prospero, which we cover in another blog entry.
 

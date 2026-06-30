@@ -125,7 +125,7 @@ The vision for FidelityUI is that developers keep the familiar Fabulous-style AP
 
 ## Layout Systems: From Functional to Imperative
 
-Layout is perhaps where the translation from Fabulous to LVGL would become most interesting. Fabulous uses a functional approach to layout, with panels that measure and arrange their children. LVGL provides its own layout system with flexbox and grid layouts, which would map surprisingly well to Fabulous's concepts.
+Layout is perhaps where the translation from Fabulous to LVGL would become most interesting, a problem [a window layout system for Fidelity]({{< ref "window-layout-with-fidelity" >}}) takes up in full. Fabulous uses a functional approach to layout, with panels that measure and arrange their children. LVGL provides its own layout system with flexbox and grid layouts, which would map surprisingly well to Fabulous's concepts.
 
 Let's examine how a grid layout would translate:
 
