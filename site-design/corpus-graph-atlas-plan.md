@@ -362,3 +362,22 @@ weight range), two orange shades, two adjacent radial levels between external an
 "chonky not slivers" principle — two substantial tiers, not many thin ones.
 
 GATE: decide only after seeing the full 54-node ring deployed. Owner: "depending on how layout is effected."
+
+## Deferred: mobile touch conventions + modal responsiveness
+
+The freeze feature (below) uses RIGHT-CLICK (cxttap) to freeze a node's sub-graph — desktop only.
+Mobile needs a touch equivalent: LONG-PRESS as the freeze gesture (Cytoscape 'taphold'), with normal
+tap = navigate. Also: the Atlas modal itself isn't as responsive as it should be on smaller screens
+(owner note) — the modal sizing/controls need a mobile pass. Both deferred to a later mobile-polish pass.
+
+## Built: Freeze — build a custom navigable sub-graph (desktop)
+
+- RIGHT-CLICK a node → freezes its 1-hop sub-graph (node + direct neighbors + connecting edges),
+  ADDITIVELY. Trace a frozen edge to another node, right-click → its sub-graph joins the frozen set.
+  Go 3-4 nodes out to build a custom graph.
+- Three visual states: frozen (.frznode/.frz — persistent bold-but-dimmed, gold-bordered nodes +
+  grey solid edges) < live hover (.hi — brightest, layered on top) < unrelated (.dim — faint).
+- LEFT-CLICK navigates (frozen set persists). Frozen sub-graph survives navigation via sessionStorage
+  (clefAtlasFrozen), so resuming the Atlas restores the user's custom graph — the hydrated-resume
+  feature, parallel to Smart Search's session restore.
+- CLEAR button (orange/gold-bordered, replaced the Themes toggle) wipes the frozen set; shows a count.

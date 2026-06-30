@@ -52,6 +52,30 @@
 
   var cy = null, loadingCy = null;
 
+  // The frozen sub-graph the user has built (set of node IDs), persisted across navigation
+  // so resuming the Atlas restores the custom graph they left. Lives at module scope because
+  // the modal re-renders a fresh cy instance on every open.
+  var FROZEN_KEY = "clefAtlasFrozen";
+  var frozen = loadState();
+
+  function loadState() {
+    try {
+      var raw = sessionStorage.getItem(FROZEN_KEY);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch (e) { return new Set(); }
+  }
+  function persistState() {
+    try { sessionStorage.setItem(FROZEN_KEY, JSON.stringify(Array.from(frozen))); } catch (e) {}
+  }
+  function updateFreezeUI() {
+    // reflect the frozen count on the Clear button + show/hide it
+    var btn = document.querySelector("#clef-map-modal [data-map-clear]");
+    if (btn) {
+      btn.textContent = frozen.size ? ("Clear (" + frozen.size + ")") : "Clear";
+      btn.style.opacity = frozen.size ? "1" : "0.55";
+    }
+  }
+
   function modal() { return document.getElementById("clef-map-modal"); }
   function isOpen() { var m = modal(); return m && m.style.display !== "none"; }
 
@@ -115,37 +139,81 @@
         { selector: 'edge[type="tag"]', style: { "width": 0.3, "line-color": "#bc8cff", "line-style": "dashed", "curve-style": "haystack", "opacity": 0.2 } },
         { selector: "node:selected", style: { "border-width": 2.5, "border-color": dark ? "#e6edf3" : "#1f2328" } },
         { selector: ".dim", style: { "opacity": 0.05 } },
+        // Frozen sub-graph: persistent bold-but-dimmed. Overrides .dim (frozen wins over faint),
+        // stays below .hi (live hover is brightest). Ordered before .hi so the cascade is correct.
+        { selector: "node.frznode", style: { "opacity": 1, "border-width": 2, "border-color": "#e3b341" } },
+        { selector: "edge.frz", style: { "opacity": 0.7, "width": 1.1, "line-color": dark ? "#8b949e" : "#6e7681", "line-style": "solid" } },
         { selector: ".hi", style: { "opacity": 0.95, "width": 1.4, "line-color": dark ? "#e6edf3" : "#1f2328" } }
       ],
       layout: buildLayout("concentric", indeg)
     });
 
+    // ── Freeze: persistent, accumulated sub-graphs the user builds by right-clicking ──────
+    // Three visual states: .frz (frozen, persistent bold-dimmed) < .hi (live hover, brightest)
+    // < everything else (.dim faint background). The frozen set persists across navigation
+    // (sessionStorage) so on resume the user's custom graph is still highlighted.
+    function applyFrozen() {
+      cy.batch(function () {
+        cy.elements().removeClass("frz frznode");
+        if (!frozen.size) return;
+        frozen.forEach(function (id) {
+          var n = cy.getElementById(id);
+          if (!n || n.empty()) return;
+          n.addClass("frznode");
+          // freeze edges between this node and any other frozen node (the 1-hop sub-graph)
+          n.connectedEdges().forEach(function (ed) {
+            var s = ed.data("source"), t = ed.data("target");
+            if (frozen.has(s) && frozen.has(t)) ed.addClass("frz");
+          });
+        });
+      });
+      updateFreezeUI();
+    }
+    function freezeNeighborhood(node) {
+      // 1 hop: the node, its direct neighbors, and the connecting edges.
+      frozen.add(node.id());
+      node.neighborhood("node").forEach(function (n) { frozen.add(n.id()); });
+      persistState();
+      applyFrozen();
+    }
+
     cy.on("mouseover", "node", function (e) {
       var d = e.target.data(), p = e.renderedPosition;
       tip('<div class="tt">' + (d.title || d.id) + '</div><div class="tu">' + (d.url || d.id) + '</div>'
-        + '<div class="tm">' + d.layer + " · " + (indeg[d.id] || 0) + " inbound" + (d.iso ? " · isolated" : "") + "</div>", p.x, p.y);
+        + '<div class="tm">' + d.layer + " · " + (indeg[d.id] || 0) + " inbound" + (d.iso ? " · isolated" : "")
+        + (frozen.has(d.id) ? " · frozen" : "") + "</div>", p.x, p.y);
       cy.elements().addClass("dim");
       e.target.removeClass("dim"); e.target.neighborhood().removeClass("dim");
       e.target.connectedEdges().addClass("hi").removeClass("dim");
     });
-    cy.on("mouseout", "node", function () { tip(null); cy.elements().removeClass("dim hi"); });
+    cy.on("mouseout", "node", function () {
+      tip(null);
+      // drop live-hover state but KEEP frozen highlighting
+      cy.elements().removeClass("dim hi");
+    });
+    // Left-click navigates (frozen set persists so resume restores it).
     cy.on("tap", "node", function (e) {
       var d = e.target.data(), u = d.url || d.id;
       if (!u) return;
-      // External destinations (pre-print / cited papers, http(s)) open in a new tab so the
-      // graph and the reader's context are not lost. Internal pages navigate in place.
       if (/^https?:\/\//.test(u)) {
         window.open(u, "_blank", "noopener,noreferrer");
       } else {
         window.location.href = u;
       }
     });
+    // Right-click freezes the node's 1-hop sub-graph (additive). Suppress the browser menu.
+    cy.on("cxttap", "node", function (e) { freezeNeighborhood(e.target); });
+    var cyContainer = document.getElementById("clef-map-cy");
+    if (cyContainer) cyContainer.addEventListener("contextmenu", function (ev) { ev.preventDefault(); });
 
     // layout + edge toggles
     document.querySelectorAll("#clef-map-modal [data-map-layout]").forEach(function (b) {
       b.onclick = function () {
         document.querySelectorAll("#clef-map-modal [data-map-layout]").forEach(function (x) { x.classList.remove("active"); });
-        b.classList.add("active"); cy.layout(buildLayout(b.getAttribute("data-map-layout"), indeg)).run();
+        b.classList.add("active");
+        cy.layout(buildLayout(b.getAttribute("data-map-layout"), indeg)).run();
+        // re-apply frozen styling after the layout settles (layout clears classes)
+        applyFrozen();
       };
     });
     // per-type edge toggles: each button independently shows/hides its own edge type
@@ -156,6 +224,13 @@
         cy.edges('[type="' + type + '"]').style("display", on ? "element" : "none");
       };
     });
+    // Clear button: wipe the frozen set + persisted state.
+    document.querySelectorAll("#clef-map-modal [data-map-clear]").forEach(function (b) {
+      b.onclick = function () { frozen.clear(); persistState(); applyFrozen(); };
+    });
+
+    // Restore any frozen sub-graph the user left behind, then paint it.
+    applyFrozen();
 
     var s = g.stats;
     if (s) {
