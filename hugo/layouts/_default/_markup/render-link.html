@@ -30,13 +30,23 @@
   {{- end -}}
 {{- end -}}
 
+{{- /* Bare-§ cross-references: spec source uses [§](chapter.md#anchor) where build.fsx (the
+       MkDocs spec build) fills in the section number. Hugo doesn't run build.fsx, so the link
+       renders as a meaningless naked "§". When the text is a bare § and there is an anchor,
+       derive a readable section name from the anchor (kebab → Title Case) so it reads
+       "§ Named Patterns" instead. */ -}}
+{{- $linkText := .Text -}}
+{{- if and (eq (strings.TrimSpace .Text) "§") $url.Fragment -}}
+  {{- $name := replace $url.Fragment "-" " " | strings.Title -}}
+  {{- $linkText = printf "§ %s" $name -}}
+{{- end -}}
 {{- with . -}}
 {{- $isExternal := strings.HasPrefix .Destination "http" -}}
 <a href="{{ $dest | safeURL }}"
    {{- with .Title -}}title="{{ . }}"{{- end -}}
    {{- if $isExternal -}}target="_blank" rel="noopener"{{- end -}}
 >
-  {{- .Text | safeHTML -}}
+  {{- $linkText | safeHTML -}}
   {{- if and .Page.Site.Params.externalLinkDecoration $isExternal -}}
     {{- partial "utils/icon.html" (dict "name" "arrow-up-right" "attributes" `class="hx:inline hx:rtl:rotate-270 hx:align-baseline" height="1em"`) -}}
   {{- end -}}

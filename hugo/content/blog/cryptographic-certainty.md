@@ -316,16 +316,13 @@ module HSM =
 
 The combination of FROST signatures with Clef's type safety enables several critical applications:
 
-### 1. Cryptocurrency Custody
-Multi-signature wallets become truly distributed, with no single point of failure. A 3-of-5 setup ensures funds remain secure even if two keys are compromised, while maintaining operational flexibility.
-
-### 2. Certificate Authorities
+### 1. Certificate Authorities
 Distributed certificate signing prevents rogue certificates. Multiple parties must cooperate to issue certificates, with mathematical proof of participation.
 
-### 3. Blockchain Validators
-Validators can share signing authority without sharing keys. This enables secure delegation and redundancy without increasing attack surface.
+### 2. Hardware Security Module Key Ceremonies
+Threshold signing distributes a root key across multiple custodians, so no single operator can act alone and the compromise of any one custodian does not expose the key. A 3-of-5 ceremony keeps the root usable while removing the single point of failure.
 
-### 4. Secure Multi-Party Computation
+### 3. Secure Multi-Party Computation
 FROST signatures provide the authentication layer for MPC protocols, ensuring all parties are legitimate participants.
 
 ## Performance

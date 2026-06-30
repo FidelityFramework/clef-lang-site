@@ -334,3 +334,31 @@ STAGING: the running docs→spec pass (wz2pk63l1) finds the genuine source→spe
 half). A following context-dig stage upgrades each confirmed relationship to /spec/draft/X/#section by
 matching the source's claim to the precise target section. Conservative: propose-and-approve, under-reach
 preferred.
+
+## Possible future: split the spec ring into two tiers (deferred — decide post-deploy)
+
+The draft-flag fix brings the spec ring to its full 54 nodes, making it the biggest single ring.
+Analogous to the docs 3-band split, the spec ring MAY split into two logical tiers — but ONLY if,
+once the full ring is live and visible, it reads as crowded OR has a genuine internal seam worth
+showing. Do NOT split speculatively: the spec is the KERNEL, and over-subdividing risks diluting the
+"this is the canonical core" read that the apex→kernel→exposition story depends on. Docs splitting was
+safe (exposition is naturally layered); splitting the kernel is a stronger claim and needs a real seam.
+
+Candidate seams (pick based on what the rendered ring actually shows):
+1. **Conceptual core vs. representation mechanics** (strongest candidate) — the conceptual chapters
+   (type universe, memory regions, concurrency, the inference *concepts*) as inner spec tier; the
+   mechanical "X Representation" chapters (closure/lazy/seq/list/map/set/option/DU representation) as
+   outer spec tier. The representation specs are the F#-vestige legacy layer being modernized; they
+   cluster naturally and are genuinely a different KIND of spec content.
+2. **By existing weight-layers** — the spec was already reweighted into ~6 conceptual layers this
+   session; a split could honor that rather than invent a new grouping.
+3. **Core vs. inference-machinery** — the dense, formal, self-referential inference-* cluster
+   (application-resolution, constraint-solving, name-resolution, procedures, supplementary) as its own
+   tier, distinct from the rest.
+
+Implementation would mirror the docs banding: a bandOf()-style function splitting "spec" into two
+sub-bands by a derivable property (e.g. slug suffix "-representation", or a frontmatter field, or the
+weight range), two orange shades, two adjacent radial levels between external and docs-design. Same
+"chonky not slivers" principle — two substantial tiers, not many thin ones.
+
+GATE: decide only after seeing the full 54-node ring deployed. Owner: "depending on how layout is effected."

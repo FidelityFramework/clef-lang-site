@@ -848,13 +848,18 @@ pre.mermaid svg {
 .clef-map-tip .tt { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.15rem; }
 .clef-map-tip .tu { font-size: 0.72rem; color: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness)); word-break: break-all; }
 .clef-map-tip .tm { font-size: 0.72rem; color: #9ca3af; margin-top: 0.3rem; }
-/* trigger button in navbar, beside the search box */
+/* trigger button in navbar, beside the search box.
+   The node-graph logo + button outline take the dark text color in light mode and the
+   pre-print gold (#e3b341) in dark mode — tying the button to the Atlas's apex color. */
 .clef-map-trigger {
   display: inline-flex; align-items: center; gap: 0.35rem;
-  background: rgba(0,0,0,.05); border: none; border-radius: 0.5rem;
-  padding: 0.5rem 0.7rem; font-size: 0.85rem; cursor: pointer; color: inherit; white-space: nowrap;
+  background: rgba(0,0,0,.05);
+  border: 1px solid #1f2328; border-radius: 0.5rem;
+  padding: 0.45rem 0.65rem; font-size: 0.85rem; cursor: pointer; color: inherit; white-space: nowrap;
 }
-:is(.dark) .clef-map-trigger { background: rgba(255,255,255,.08); }
+.clef-map-trigger svg { stroke: #1f2328; }
+:is(.dark) .clef-map-trigger { background: rgba(255,255,255,.08); border-color: #e3b341; }
+:is(.dark) .clef-map-trigger svg { stroke: #e3b341; }
 .clef-map-trigger:hover { background: rgba(0,0,0,.09); }
 :is(.dark) .clef-map-trigger:hover { background: rgba(255,255,255,.12); }
 @media (max-width: 640px) { .clef-map-trigger span { display: none; } }

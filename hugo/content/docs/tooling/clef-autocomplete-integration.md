@@ -259,7 +259,7 @@ farscape generate \
     --header oqs/oqs.h \
     --library oqs \
     --include-paths ~/liboqs/build/include \
-    --namespace Fidelity.Crypto.PQC
+    --namespace Fidelity.Cryptography.PQC
 ```
 
 ## The Upstream Path

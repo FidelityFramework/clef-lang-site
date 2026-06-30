@@ -217,10 +217,10 @@ output_kind = "console"    # or "freestanding", "embedded", "library"
 
 [dependencies]
 libc = { binding = "dynamic" }                    # System library — always dynamic
-crypto = { version = "1.2.0", binding = "static" } # Security — static for LTO
+signing = { version = "1.2.0", binding = "static" } # Security — static for LTO
 
 [profiles.release]
-binding.overrides = { crypto = "static" }
+binding.overrides = { signing = "static" }
 ```
 
 When compiling for a freestanding target, CCS intrinsics like `Sys.write` resolve to direct syscalls rather than libc calls. When targeting console mode, the same code links dynamically against the system's libc. The binding strategy flows from `.fidproj` configuration through PlatformBindingResolution to Alex's MLIR emission — the developer's source code never changes.
