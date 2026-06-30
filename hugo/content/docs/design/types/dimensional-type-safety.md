@@ -183,7 +183,7 @@ This means dimensional constraints can influence:
 - **MLIR dialect selection**: Tensor operations with dimensional constraints can target different dialects (linalg, vector, gpu)
 - **Hardware synthesis**: When targeting FPGAs, dimensional information can guide resource allocation and pipelining
 
-Consider how this works for memory regions:
+Consider how this works for [memory regions](/spec/draft/memory-regions/#region-typed-pointers):
 
 ```fsharp
 // In Clef, this is intrinsic to the type universe

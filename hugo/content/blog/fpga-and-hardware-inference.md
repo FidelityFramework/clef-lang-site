@@ -144,7 +144,7 @@ This feedback loop is where Clef's approach diverges most from traditional FPGA 
 
 ## Width Inference and Timing Budget
 
-Machine classification answers one question about your design: what kind of state machine did you build? There's a second question that matters just as much for FPGA: how wide does each wire need to be?
+Machine classification answers one question about your design: what kind of state machine did you build? There's a second question that matters just as much for FPGA: [how wide does each wire need to be](/spec/draft/width-inference/#1-overview)?
 
 On a CPU, this question has a trivial answer. `int` means "whatever the machine register holds," typically 64 bits on modern architectures. The width is a platform property, fixed before your program runs. On FPGA, there are no machine registers. Every wire, every flip-flop, every arithmetic unit is exactly as wide as the design requires. Width is a design property, not a platform property.
 
@@ -258,7 +258,7 @@ For FPGA targets, this principle plays out across the full pipeline:
 - **Pin assignment** maps logical ports to physical package pins via XDC constraints
 - **Synthesis** takes the generated SystemVerilog through to a bitstream
 
-Machine classification and width inference are two instances of the same principle: the compiler reads your code, derives a physical property from its structure, and acts on it before you reach the synthesis tool. One reads dependency graphs. The other reads value ranges. Both produce coeffects that downstream passes observe without re-deriving.
+[Machine classification and width inference are two instances of the same principle](/spec/draft/width-inference/#1-overview): the compiler reads your code, derives a physical property from its structure, and acts on it before you reach the synthesis tool. One reads dependency graphs. The other reads value ranges. Both produce coeffects that downstream passes observe without re-deriving.
 
 The FPGA is not just a standalone target. In the Fidelity model, it's one processor in a heterogeneous system where Clef source compiles to native binaries on CPU and `hw.module` definitions on FPGA. The same type system that carries dimensional units through CPU arithmetic carries bit widths through hardware synthesis. The same dependency analysis that classifies Moore and Mealy outputs could classify which parts of a computation benefit from spatial execution versus temporal execution on a conventional processor.
 

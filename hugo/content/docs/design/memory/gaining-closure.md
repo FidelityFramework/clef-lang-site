@@ -64,7 +64,7 @@ The problem emerges in the presence of garbage collection, or more precisely, in
 
 ### Flat Closures
 
-The alternative, developed by Appel and Shao in their 1992 work on Standard ML of New Jersey and refined in the MLKit compiler project, is the flat closure. All captured variables are copied directly into the closure structure itself.
+The alternative, developed by Appel and Shao in their 1992 work on Standard ML of New Jersey and refined in the MLKit compiler project, is the [flat closure](/spec/draft/closure-representation/). All captured variables are copied directly into the closure structure itself.
 
 ```mermaid
 flowchart LR

@@ -76,7 +76,7 @@ The native type universe begins with three foundational concepts inherited from 
 
 ### Products: Tuples and Records
 
-A tuple combines multiple values into a single compound value. In the native type universe, tuples have deterministic memory layout without runtime headers:
+A tuple combines multiple values into a single compound value. In the native type universe, [tuples have deterministic memory layout](/spec/draft/native-type-mappings/#tuples) without runtime headers:
 
 ```fsharp
 let coordinates: float * float * float = (1.0, 2.0, 3.0)
@@ -152,7 +152,7 @@ NTU takes a different approach, inspired by the F* programming language and its 
 
 ### The NTUKind System
 
-Internally, CCS categorizes numeric types using a discriminated union:
+[Internally, CCS categorizes numeric types using a discriminated union:](/spec/draft/native-type-mappings/#numeric-types)
 
 ```fsharp
 type NTUKind =
@@ -476,7 +476,7 @@ This design reflects the Windows platform heritage and optimizes for scenarios c
 
 ### The Native Model
 
-In the native type universe, `string` is a fat pointer:
+In the native type universe, [`string` is a fat pointer](/spec/draft/native-type-mappings/#strings):
 
 ```
 ┌─────────────────┬─────────────────┐
@@ -517,7 +517,7 @@ In .NET F#, `option<'T>` is a reference type. `None` is represented by `null`. `
 
 ### The Native Model
 
-In NTU, `option<'T>` has `voption` (value option) semantics:
+[In NTU, `option<'T>` has `voption` (value option) semantics](/spec/draft/option-operations-representation/#2-memory-layout-reference):
 
 ```
 ┌──────────┬────────────────────┐

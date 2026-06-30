@@ -270,3 +270,67 @@ Deferred direction (aspirational, use-driven — NOT a committed norm):
   content-type, connectivity), echoing how the search modal narrows results. This is the controls' likely
   future destination IF use validates it — recorded as a direction of interest, explicitly not asserted as a
   graph-UI requirement. Build only when the owner's interaction shows the need.
+
+## Deferred: section cross-reference pass (distinct from inline hot-links)
+
+A THIRD link mode beyond inline-phrase hot-links and spec→paper descent: directed structural
+"see also" cross-references between SECTIONS, written as their own prose, in all directions —
+spec§ ↔ spec§, spec§ ↔ docs, docs → spec§. Example: "See §6.3 of the Program Semantic Graph spec
+for the detailed accounting of node classification."
+
+Why it's more powerful than inline hot-links:
+- It does NOT require an existing linkable mention — it can be ADDED where a relationship exists but
+  isn't currently surfaced as a phrase. This is where the felt-missing connectivity actually lives.
+- Bidirectional by nature: a spec section pointing OUT to the docs that expound it, and a doc
+  pointing INTO the authoritative spec section. The docs↔spec connective tissue.
+- "See §X for Y" is the native idiom of normative specs — on-voice, not a retrofit.
+
+CALIBRATION (owner-stated — the load-bearing constraint):
+- VARY the phrasing a bit, but do NOT be too creative — these are structural connective beats, not
+  a place for prose flair. A few natural variants ("see §6.3 of X for the full accounting", "the
+  normative rule is given in §4.1 of Y", "X §2 develops this in detail") is enough; verbatim repetition
+  reads templated, flair reads wrong.
+- Cadence/density SPARSE: not one per section. Just enough to carry the links through the graph so the
+  connectivity "seems rational" — placed where a cross-ref genuinely helps a reader, spaced as natural
+  waypoints. A chapter might get 1–3 such pointers total, where the relationship is real.
+- Same posture as the inline pass: confident about genuine connections, restrained about density.
+- Needs section-level granularity (heading anchors) — the pass must read each doc's heading structure
+  to write accurate §-references.
+- Sequence: run AFTER the inline pass applies, to avoid double-editing the same files.
+
+## Cross-layer linking — conservative staging (owner posture)
+
+The spec↔doc/blog connectivity work proceeds IN STAGES, CONSERVATIVELY (owner: "start fairly
+conservatively, don't want to over-reach"). Operating rules for these stages:
+
+- **Propose-and-approve, not bulk-apply.** Cross-layer links into authoritative spec material are
+  surfaced as a reviewable changelist for owner approval, NOT auto-applied. (Contrast: the spec→spec
+  bulk-apply was aggressive and needed post-hoc bug fixes; cross-layer gets owner eyes first.)
+- **Under-reach is the PREFERRED error.** When a candidate is genuine-but-borderline, skip it. Fewer,
+  stronger links beat comprehensive coverage this round.
+- **Direction reality:** spec→docs has precedent in exactly ONE spec (rounding → rounding-on-real-hardware),
+  so per the precedent rule spec→doc is effectively deferred; the active direction is docs/blog → spec.
+- **Target the under-referenced specs** (the ~37 with zero inbound from docs/blog — the grey dots / legacy
+  F*-vestige specs) as the priority link targets.
+- **Section-xref pass** (directed "see §X" pointers, varied/sparse phrasing) remains a later stage, after
+  the inline docs→spec stage settles.
+
+## Section-anchored links — the context-dig stage (verified prerequisite)
+
+Owner refinement: cross-layer links must be SECTION-SPECIFIC (#anchor), not top-of-a-300-line-spec.
+Framed as "a context dig as well as a Cartesian product exercise" — for each candidate, read INTO both
+sides: what the source passage argues, and which target-spec SECTION authoritatively declares it, then
+land the link at that section.
+
+VERIFIED ANCHOR FORMAT (Hextra renders the id on a child <span>, not the <h2>):
+  <h2>2. The Two-Layer Model<span ... id="2-the-two-layer-model"></span>
+- Numbered heading `## N.M Title` → `#NM-title-slug` — the dot is DROPPED: `## 2.1 Portable Dialects`
+  → `#21-portable-dialects` (NOT #2-1). `## 6.3 Foo Bar` → `#63-foo-bar`.
+- Unnumbered `## Title` → `#title-slug` (lowercase, hyphenated): `## Memory Ordering` → `#memory-ordering`.
+- The dig MUST read each target spec's real headings and compute the id via this rule — never guess loosely.
+- Section links resolve correctly (confirmed: 42 stable heading ids on a sample spec page).
+
+STAGING: the running docs→spec pass (wz2pk63l1) finds the genuine source→spec RELATIONSHIPS (the Cartesian
+half). A following context-dig stage upgrades each confirmed relationship to /spec/draft/X/#section by
+matching the source's claim to the precise target section. Conservative: propose-and-approve, under-reach
+preferred.

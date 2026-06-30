@@ -174,7 +174,7 @@ let m2 = Map.add "b" 2 m1
 let m3 = Map.add "c" 3 m1
 ```
 
-How many tree nodes were allocated? Not three complete trees. The maps share structure:
+How many tree nodes were allocated? Not three complete trees. [The maps share structure](/spec/draft/map-representation/#6-structural-sharing):
 
 ```mermaid
 graph TD
@@ -265,7 +265,7 @@ When you write:
 let doubled = List.map (fun x -> x * 2) data
 ```
 
-PSGSaturation doesn't pull in the entire `List` module. It decomposes the `map` operation into its algorithmic essence:
+PSGSaturation doesn't pull in the entire `List` module. It [decomposes the `map` operation into its algorithmic essence](/spec/draft/list-operations-representation/#41-listmap):
 
 ```mermaid
 flowchart TD

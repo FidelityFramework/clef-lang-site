@@ -71,7 +71,7 @@ And then we looked at what we had already built.
 
 ## We Had Already Done It
 
-Over time our CCS (Clef Compiler Services) had come to contain most of what we were seeking. The NTUKind discriminated union already defined the native type universe:
+Over time our CCS (Clef Compiler Services) had come to contain most of what we were seeking. [The NTUKind discriminated union already defined the native type universe](/spec/draft/native-type-mappings/#primitive-types):
 
 ```fsharp
 type NTUKind =
@@ -353,7 +353,7 @@ When we started this work, we were conscious of the assumptions inherited from y
 
 It was a reasonable hypothesis: keep the architecture that fellow developers might expect, and swap out the runtime semantics underneath. For a time it worked well enough that we did not question it. The nanopass literature and MLIR dialect patterns then brought into focus ideas that were already part of our long-term direction, and we decided we were better off acting on them now rather than later.
 
-In a native type ecosystem the language doesn't consume type definitions. From our view, the language *is* type definitions plus evaluation rules. The distinction between "the compiler" and "the standard library" dissolves because there was never a principled boundary there to begin with. It's a vestige of a decision made 25+ years ago.
+[In a native type ecosystem the language doesn't consume type definitions](/spec/draft/type-definitions/). From our view, the language *is* type definitions plus evaluation rules. The distinction between "the compiler" and "the standard library" dissolves because there was never a principled boundary there to begin with. It's a vestige of a decision made 25+ years ago.
 
 This changes how we think about Fidelity's future. We are building a native-first framework, with Clef as its language. Our ML heritage gives us the abstractions we want: algebraic data types, pattern matching, quotations for metaprogramming, and statically resolved type parameters for zero-cost generics. Native compilation is the starting point of the design, not a layer bolted onto a .NET alternative.
 

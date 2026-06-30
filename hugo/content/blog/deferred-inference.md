@@ -226,7 +226,7 @@ flowchart TB
 
 The framework reads that hardware as a Mealy machine, `State × Inputs → State × Outputs`, off idiomatic functional Clef, and the inferred widths become the widths of the synthesized datapath. The shape of that machine is what makes the non-gradual discipline concrete instead of philosophical. A Mealy machine's *output* depends on state and current input, which is what lets it answer within a clock cycle. Its *representation*, the width and format of each state field, does not. The 29-bit counter does not renegotiate its width at clock-tick time depending on the value it is holding. The width is settled at synthesis and baked into the fabric, and a datapath whose representation could change while the circuit runs is not a datapath at all. It cannot be laid down in silicon. That the inferred facts survive every lowering step down to the gate is the same property the framework leans on to carry verification [from proofs to silicon](/docs/internals/verification/proofs-to-silicon/).
 
-Each state field gets the width its range requires, read off the PSG rather than taken from a host register. The integer width inference behind this ships today in HelloArty:
+[Each state field gets the width its range requires](/spec/draft/width-inference/#3-width-derivation-integers), read off the PSG rather than taken from a host register. The integer width inference behind this ships today in HelloArty:
 
 | State field | Inferred range | Width | A host would spend |
 |---|---|---|---|

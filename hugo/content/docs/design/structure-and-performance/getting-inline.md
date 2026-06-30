@@ -240,7 +240,7 @@ This is **safety inline**: without it, you get undefined behavior. The pointer e
 
 ### The Long-Term Vision: Automatic Escape Detection
 
-Currently, `inline` is required for escape analysis because CCS doesn't have automatic escape detection. The roadmap includes an EscapeAnalysis nanopass that will:
+Currently, `[inline` is required for escape analysis](/spec/draft/special-attributes-and-types/#inline-and-optimization-attributes) because CCS doesn't have automatic escape detection. The roadmap includes an EscapeAnalysis nanopass that will:
 
 - Detect which allocations escape their scope
 - Generate stack allocation for local-only variables

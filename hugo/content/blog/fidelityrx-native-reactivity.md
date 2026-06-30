@@ -39,7 +39,7 @@ Within the push-based model, a secondary but important distinction emerges: how 
 
 ### Multicast Observables: Shared Push
 
-Multicast observables implement push-based codata with shared state among all subscribers:
+[Multicast observables implement push-based codata with shared state among all subscribers](/spec/draft/observable-computation/#42-emission):
 
 ```fsharp
 // Multicast: One execution, many observers
@@ -91,7 +91,7 @@ Both dimensions matter, but push vs pull is the distinction that makes reactive 
 
 ## Push vs Pull Codata
 
-The role our Fidelity.Rx plays in the framework rests on the distinction between pull-based and push-based codata structures. This is the duality that makes reactive programming necessary. Async/await gives us pull-based codata, while many real-world scenarios require push-based codata.
+The role our Fidelity.Rx plays in the framework rests on [the distinction between pull-based and push-based codata structures](/spec/draft/observable-computation/#11-relationship-to-incremental). This is the duality that makes reactive programming necessary. Async/await gives us pull-based codata, while many real-world scenarios require push-based codata.
 
 ### Pull-Based Codata (Async/Await)
 
@@ -114,7 +114,7 @@ The consumer controls the timing. They decide when to request the next value. Th
 
 ### Push-Based Codata
 
-Push-based codata inverts the control flow. Instead of consumers pulling values, producers push updates to registered observers:
+[Push-based codata inverts the control flow. Instead of consumers pulling values, producers push updates to registered observers](/spec/draft/observable-computation/#12-relationship-to-continuations):
 
 \[\text{Observable}\langle A \rangle = \nu X. (A \to \text{Unit}) \to X\]
 \[\text{register} : (A \to \text{Unit}) \to \text{Observable}\langle A \rangle \to \text{Unit}\]

@@ -84,7 +84,7 @@ Fidelity's approach to sequences did not emerge from first principles. It compos
 
 [Lazy values](https://speakez.tech/blog/why-lazy-is-hard/) extended that foundation with memoization state: a flat closure plus a `computed` flag and a `value` slot.[^6] The thunk calling convention, where the thunk receives a pointer to its containing struct and extracts its own captures, proved essential.
 
-Sequences extend the pattern once more. A sequence is a flat closure with state machine fields and internal mutable state:
+Sequences extend the pattern once more. [A sequence is a flat closure with state machine fields and internal mutable state](/spec/draft/seq-representation/#41-seq-structure):
 
 | Seq‹T› | | | | | | |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -103,7 +103,7 @@ This compositional approach creates a positive ripple effect. Getting closures r
 
 ## Captures vs Internal State
 
-One architectural distinction required careful thought: the difference between captured variables and internal state.
+One architectural distinction required careful thought: [the difference between captured variables and internal state](/spec/draft/seq-representation/#32-captures-vs-internal-state).
 
 **Captures** are variables from the enclosing scope that the sequence references. They are computed once, at sequence creation time, and remain immutable throughout iteration. A sequence like `seq { for i in 1..n do yield i * factor }` captures `n` and `factor` from its environment.
 
@@ -136,7 +136,7 @@ This architecture answers a question that tripped us up during implementation. E
 
 ## The MoveNext State Machine
 
-The heart of sequence implementation is the `MoveNext` function. Each call advances the iterator, either producing the next value and returning `true`, or signaling completion with `false`. The state field tracks where computation should resume.
+[The heart of sequence implementation is the `MoveNext` function](/spec/draft/seq-representation/#5-movenext-calling-convention). Each call advances the iterator, either producing the next value and returning `true`, or signaling completion with `false`. The state field tracks where computation should resume.
 
 For a while-based sequence, MoveNext implements a two-state model:
 

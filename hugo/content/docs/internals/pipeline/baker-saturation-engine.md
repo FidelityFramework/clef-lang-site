@@ -51,7 +51,7 @@ flowchart TD
 
 Before Baker even wakes up, our **Elaboration** nanopasses have already run. These passes look for "intrinsic" operations, things like platform I/O calls or specific `[<FidelityExtern>]` bindings. They expand these calls into the specific system calls or library bindings required by the target architecture. This is akin to how a C compiler might expand a macro; we are making the external world visible to the graph.
 
-**Baker** takes the baton from there. Its job is not to bind to the outside world, but to explain the *internal* world of Clef. When you write a `List.map` or a recursive `match` expression, there is no single machine instruction that performs that task. Baker must "saturate" the graph with the algorithm that fully implements that feature with no user intervention.
+**Baker** takes the baton from there. Its job is not to bind to the outside world, but to explain the *internal* world of Clef. When you write a `List.map` or a recursive `match` expression, there is no single machine instruction that performs that task. [Baker must "saturate" the graph with the algorithm that fully implements that feature](/spec/draft/list-operations-representation/#32-higher-order-functions-baker-decomposes) with no user intervention.
 
 ## The Nanopass Infrastructure
 

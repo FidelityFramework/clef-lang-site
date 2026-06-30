@@ -28,7 +28,7 @@ Together they are the machinery that makes self-hosting possible.
 
 ## Quotations as Semantic Carriers
 
-Quotations (`Expr<'T>`) encode program fragments as data. In typical F# usage, this enables dynamic code generation. In our Fidelity framework, quotations serve a purpose set by the context in which they're employed: one of our first use cases is carrying memory constraints and peripheral descriptors through the compilation pipeline as first-class semantic information.
+Quotations (`Expr<'T>`) encode program fragments as data. In typical F# usage, this enables dynamic code generation. In our Fidelity framework, quotations serve a purpose set by the context in which they're employed: one of our first use cases is [carrying memory constraints and peripheral descriptors](/spec/draft/special-attributes-and-types/#memory-region-attributes) through the compilation pipeline as first-class semantic information.
 
 Consider how Farscape will generate hardware bindings:
 

@@ -125,7 +125,7 @@ For developers, this means smaller binaries with only the code actually needed, 
 
 ## Familiar APIs, Native Performance
 
-Central to the Fidelity developer experience is the native type system built into our CCS (Clef Compiler Services), which provides BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, CCS uses, among other things, *fat pointers*. These are structures that combine a raw pointer with length metadata, eliminating object headers and runtime overhead entirely.
+Central to the Fidelity developer experience is the native type system built into our CCS (Clef Compiler Services), which provides BCL-sympathetic APIs that compile to native code with deterministic memory management. Where .NET's Base Class Library relies on garbage collection and heap allocation, CCS uses, among other things, *fat pointers*. [These are structures that combine a raw pointer with length metadata](/spec/draft/native-type-mappings/#arrays), eliminating object headers and runtime overhead entirely.
 
 ```fsharp
 let hello() =

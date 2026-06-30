@@ -23,7 +23,7 @@ The Composer compiler represents a fundamental shift in how Clef code gets compi
 
 ## Beyond Assembly-Based Dependencies
 
-Traditional F# development uses a well-established pattern where `open` statements resolve to compiled assemblies in NuGet packages. When you write `open System.Collections.Generic`, the F# compiler knows exactly where to find the pre-compiled code. This works for .NET applications but breaks down completely when your goal is zero-dependency native executables.
+Traditional F# development uses a well-established pattern where [`open` statements](/spec/draft/namespaces-and-modules/#import-declarations) resolve to compiled assemblies in NuGet packages. When you write `open System.Collections.Generic`, the F# compiler knows exactly where to find the pre-compiled code. This works for .NET applications but breaks down completely when your goal is zero-dependency native executables.
 
 In the Fidelity framework ecosystem, CCS (Clef Compiler Services) provides the native type universe that replaces the BCL. When a developer writes `open Fidelity.Platform` in their Composer application, the compiler needs to discover, parse, and include the relevant source files from the library ecosystem — including any Farscape-generated binding libraries.
 
