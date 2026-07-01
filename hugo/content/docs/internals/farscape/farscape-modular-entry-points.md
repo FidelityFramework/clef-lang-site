@@ -23,7 +23,7 @@ Farscape serves two complementary modes for enhancing C/C++ code safety:
 
 **shadow-api mode** *(design vision)*: Extends the standard-lib foundation to generate complete Fidelity projects that compile to drop-in replacements for existing command-line tools, maintaining perfect external compatibility while providing comprehensive internal safety guarantees.
 
-The shadow-api mode represents the more ambitious vision: enabling organizations to enhance the safety of their critical infrastructure tools without changing a single script, build file, or operational procedure.
+Enabling organizations to enhance the safety of their critical infrastructure tools without changing a single script, build file, or operational procedure.
 
 ```mermaid
 graph TD

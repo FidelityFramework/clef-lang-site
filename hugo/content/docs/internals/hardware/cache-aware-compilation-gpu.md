@@ -95,7 +95,7 @@ let updateGPU (particles: ParticlesSOA) =
 
 The Composer compiler would recognize these patterns in Clef code and transform data structures accordingly. When it encounters an array of records being processed in parallel, it might transform this "array of structures" into a "structure of arrays," ensuring that when parallel threads access fields, they hit consecutive memory locations. This transformation, which would provide marginal benefits on a CPU, could improve GPU performance by orders of magnitude.
 
-It's worth noting that the need for such elaborate transformations is itself a symptom of the von Neumann bottleneck. In a dataflow architecture where computation moves to data rather than data to computation, coalescing becomes irrelevant. But while GPUs remain dominant, these optimizations remain necessary for achieving acceptable performance.
+The need for such elaborate transformations is itself a symptom of the von Neumann bottleneck. In a dataflow architecture where computation moves to data rather than data to computation, coalescing becomes irrelevant. But while GPUs remain dominant, these optimizations remain necessary for achieving acceptable performance.
 
 ## Shared Memory Programming Model
 

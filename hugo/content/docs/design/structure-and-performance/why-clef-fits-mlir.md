@@ -12,7 +12,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-In 1998, [Andrew Appel published a paper](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) that changed how we think about compiler design. "SSA is Functional Programming" demonstrated that Static Single-Assignment form, the intermediate representation at the heart of modern optimizing compilers, is exactly equivalent to functional programming with nested lexical scope. This observation carries weight for hardware-software co-design.
+In 1998, [Andrew Appel published a paper](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) that changed how we think about compiler design. "SSA is Functional Programming" demonstrated that Static Single-Assignment form, the intermediate representation at the heart of modern optimizing compilers, is exactly equivalent to functional programming with nested lexical scope.
 
 We read that result as support for the direction we have taken with our Fidelity framework, more than 25 years after the paper's first publication. Lowering Clef to native code through MLIR is consistent with the structure of well-principled compilation.
 

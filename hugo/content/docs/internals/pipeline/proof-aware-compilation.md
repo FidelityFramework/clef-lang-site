@@ -145,7 +145,7 @@ By the time code reaches LLVM, major optimizations are complete. LLVM performs a
 - **Scheduling**: Reorder operations within proven-safe boundaries
 - **Peephole optimization**: Apply local improvements that respect metadata constraints
 
-LLVM isn't asked to preserve high-level properties it can't understand. Instead, it receives pre-optimized code with clear boundaries marking what must not change. Any element outside of those bounds marked through lowering are fair game for LTO and other optimizations. This makes the proof-carrying quality of Fidelity framework not only opt-in on the application level but also within sections of code in an application. This optional formalism gives the developer various degrees of freedom that can be chosen and changed at design time and the compilation process handles the instrumentation "behind the scenes" while providing full transparency as needed.
+LLVM isn't asked to preserve high-level properties it can't understand. Instead, it receives pre-optimized code with clear boundaries marking what must not change. Any element outside of those bounds marked through lowering are fair game for LTO and other optimizations. This makes the proof-carrying quality of Fidelity framework not only opt-in on the application level but also within sections of code in an application. This optional formalism gives the developer various degrees of freedom that can be chosen and changed at design time. The compilation process handles the instrumentation "behind the scenes" while providing full transparency as needed.
 
 ## Composition and Deduplication of Proofs
 

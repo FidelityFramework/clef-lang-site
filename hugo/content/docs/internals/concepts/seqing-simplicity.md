@@ -377,7 +377,7 @@ The measure of success is not how much machinery exists but how little of it the
 
 > The complexity is real, but it's the compiler's complexity, not yours.
 
-This aligns with Fidelity's broader philosophy. Types flow from Clef through the entire compilation pipeline to native code. Memory is managed deterministically without runtime overhead. The API surface remains idiomatic Clef while the implementation exploits every optimization opportunity that native compilation affords.
+Types flow from Clef through the entire compilation pipeline to native code. Memory is managed deterministically without runtime overhead. The API surface remains idiomatic Clef while the implementation exploits every optimization opportunity that native compilation affords.
 
 ## What Comes Next
 

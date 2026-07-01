@@ -61,7 +61,7 @@ The real issue is that these "old school" Harvard/Von Neumann assumptions cannot
 
 ## Time-Tested Math Meets The Latest Hardware
 
-Before diving into the mathematical notation below, let's be clear: **you don't need to understand these formulas to benefit from this approach**. Just as you don't need to understand the mathematics of B-trees to use a database, or the intricacies of TCP/IP to build web applications, these mathematical foundations work quietly behind the scenes. The formulas represent well-established algorithms - some dating back to the 1960s and 70s - that have been waiting decades for the right systems and compilation frameworks to unleash their full potential.
+Just as you don't need to understand the mathematics of B-trees to use a database, or the intricacies of TCP/IP to build web applications, these mathematical foundations work quietly behind the scenes. The formulas represent well-established algorithms - some dating back to the 1960s and 70s - that have been waiting decades for the right systems and compilation frameworks to unleash their full potential.
 
 Think of these equations as the "engine specifications" of our compiler. Most drivers never read their car's technical manual, yet they benefit from centuries of accumulated automotive engineering every time they turn the key. Similarly, these algorithmic frameworks have natural affinities that have existed for decades - we're simply bringing them together in a way that modern hardware can finally fully utilize to benefit the speed and efficiency that the emerging business landscape demands.
 
@@ -484,7 +484,7 @@ let evolveOptimization (hyperedge: PHGHyperedge) (history: CompilationHistory) =
 
 ## The Evolving Compiler
 
-Our future plans to evolve from Program Semantic Graph to temporal Program Hypergraph represents more than an architectural upgrade - it's a fundamental reimagining of what a compiler can be. Instead of a static transformation engine, we envision a learning system that improves with every compilation. This is an ambitious vision that will require a great deal of disciplined engineering, but the foundations are in place to make this vision a reality.
+We plan to evolve from Program Semantic Graph to temporal Program Hypergraph. Instead of a static transformation engine, we envision a learning system that improves with every compilation. This is an ambitious vision that will require a great deal of disciplined engineering, but the foundations are in place to make this vision a reality.
 
 By combining:
 
@@ -498,4 +498,4 @@ We create a compiler that doesn't just preserve semantics - it learns them. It d
 
 As processors become more diverse and specialized, as the gap between Von Neumann and post-Von Neumann architectures widens, this learning capability becomes essential. The compiler that can adapt, learn, and evolve will be the one that bridges these architectural divides. The Program Hypergraph isn't just a data structure - it's a growing, learning representation of computational patterns. Each compilation makes it smarter. Each optimization teaches it something new. Each architecture it targets expands its knowledge.
 
-This is the future of compilation: not just transforming code, but learning how to transform it better with every iteration. The temporal Program Hypergraph makes this future possible, turning the compiler from a tool into an intelligent partner in the development process. Yes, we're hyping hypergraphs - but for good reason. They're not just the next step in compiler design; they're the bridge between where computing has been and where it's boldly going.
+This is the future of compilation: not just transforming code, but learning how to transform it better with every iteration. The temporal Program Hypergraph makes this future possible, turning the compiler from a tool into an intelligent partner in the development process. They're not just the next step in compiler design; they're the bridge between where computing has been and where it's boldly going.

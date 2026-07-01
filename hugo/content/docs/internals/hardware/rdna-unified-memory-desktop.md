@@ -106,7 +106,7 @@ The "pointer handoff" eliminates explicit copy operations from application code.
 
 ## BAREWire.HSA: The Abstraction Layer
 
-Building on the patterns established in our [CXL integration](/docs/internals/hardware/next-generation-memory-coherence), we have designs for a BAREWire.HSA module provides [Clef](https://clef-lang.com) abstractions for unified memory allocation and cross-agent buffer sharing.
+Building on the patterns established in our [CXL integration](/docs/internals/hardware/next-generation-memory-coherence), our planned BAREWire.HSA module provides [Clef](https://clef-lang.com) abstractions for unified memory allocation and cross-agent buffer sharing.
 
 ```fsharp
 module BAREWire.HSA
@@ -162,7 +162,7 @@ let signalCompletion (buffer: UnifiedBuffer<'T>) : unit =
     HSARuntime.memoryFence buffer.Address
 ```
 
-Note the contrast with the discrete GPU model. There would be no `copyToDevice` or `copyFromDevice` operation. The buffer exists in a single location that all agents can address. The `signalCompletion` function issues a memory fence to ensure writes are visible, but no data movement occurs. This API design represents our target abstraction for HSA platforms.
+Note the contrast with the discrete GPU model. There would be no `copyToDevice` or `copyFromDevice` operation. The buffer exists in a single location that all agents can address. The `signalCompletion` function issues a memory fence to ensure writes are visible, but no data movement occurs.
 
 The type signature tells a story that C++ HSA headers cannot express. In C++, the memory hint is a runtime parameter passed to `hsa_memory_allocate`; nothing prevents passing a CPU-optimal buffer to a GPU kernel and wondering why performance degraded. Rust's type system could theoretically encode residency through phantom types, but the existing HSA crates follow C++ conventions. Fidelity's `UnifiedBuffer<'T>` carries residency information at the type level, enabling the compiler to warn when access patterns contradict allocation hints. The actor model reinforces this further: each compute agent maps naturally to an actor with its own memory region, and cross-agent communication follows the capability-based ownership patterns that make violations impossible to express.
 
@@ -370,7 +370,7 @@ let processVoiceInput
     extractResponse pipeline.ResponseOutput
 ```
 
-The pipeline would flow naturally from NPU to GPU to CPU. Each step accesses buffers allocated in unified memory. The `signalCompletion` calls issue memory fences to ensure visibility, but no data copies occur.
+Each step accesses buffers in unified memory through pointer handoff; `signalCompletion` issues memory fences without copying data.
 
 > On hardware with proper HSA support, this pipeline design should achieve latencies significantly lower than equivalent discrete-GPU implementations.
 
@@ -471,8 +471,6 @@ let applyTernaryFFN
 
 The CPU handles trit unpacking using the [base-3 encoding scheme](/blog/unified-vision-ternary-models/) that packs 5 ternary values into 8 bits. AVX-512's bit manipulation instructions can unpack these efficiently, preparing weight vectors for GPU dispatch or handling smaller layers directly.
 
-What makes this architecture distinctive is the absence of copies between stages.
-
 > Without BAREWire.HSA, distributing a single inference pass across three processors would require staging buffers and explicit transfers at each boundary.
 
 The latency overhead would overwhelm any computational savings. With unified memory and memory fences instead of copies, the three-way split becomes viable.
@@ -527,11 +525,7 @@ The synthesis is what we believe could finally deliver on the promise of "hyper-
 
 Whether this approach proves practical remains an open research question. The NPU's int8 TOPS rating may not translate directly to MLA projection efficiency. The GPU's advantage for ternary operations may narrow as model sizes grow. The coordination overhead of three-way dispatch may dominate for smaller models. These are empirical questions that require hardware access and careful measurement.
 
-What we can state with confidence: 
-
-> BAREWire.HSA provides the substrate that uniquely makes this experiment feasible. 
-
-Without unified memory abstractions, the staging and transfer overhead would eliminate any benefit before measurement could begin. This is an exciting time to be involved with hardware-software co-design, and we're excited to be exploring an avenue with so much rich potential.
+What we can state with confidence: without BAREWire.HSA's unified memory abstractions, the staging and transfer overhead would eliminate any benefit before measurement could begin. This is an exciting time to be involved with hardware-software co-design, and we're excited to be exploring an avenue with so much rich potential.
 
 ## Growing Pains and the Technology Super-Cycle
 
@@ -547,9 +541,9 @@ Fidelity's architecture is being designed to meet these drivers when they arrive
 
 While specific software stacks remain in flux, certain architectural truths anchor our design.
 
-**The hardware coherence exists.** HSA is real silicon, not vaporware. The memory controllers in Strix Halo provide cache coherence across CPU, GPU, and NPU. This is not a software simulation or a driver abstraction. It is hardware. This is very exciting to see this in mass-produced hardware. It will only grow more common over time.
+**The hardware coherence exists.** Hardware coherence in HSA is real silicon. The memory controllers in Strix Halo provide cache coherence across CPU, GPU, and NPU. This is not a software simulation or a driver abstraction. It is hardware. This is very exciting to see this in mass-produced hardware. It will only grow more common over time.
 
-**The address space is unified.** All compute agents can reference the same virtual addresses through HSA's coherence layer. The BIOS still allocates dedicated GPU memory regions for optimal access patterns, and cross-domain access may involve coherence traffic, but there is no PCIe barrier or physically separate VRAM. When an NPU writes to address X, the GPU can read from address X through the coherence fabric without explicit programmer-managed copies. It's a tantalizing glimpse into a high-performance future.
+**The address space is unified.** All compute agents can reference the same virtual addresses through HSA's coherence layer. The BIOS still allocates dedicated GPU memory regions for optimal access patterns, and cross-domain access may involve coherence traffic, but there is no PCIe barrier or physically separate VRAM. When an NPU writes to address X, the GPU can read from address X through the coherence fabric without explicit programmer-managed copies.
 
 **The abstractions we build today simplify adoption tomorrow.** By designing Fidelity's HSA support around unified memory semantics rather than over-indexing on the limitations of legacy toolchains, we ensure that applications can progressively leverage hardware capabilities as the underlying structures mature. An application using BAREWire.HSA today, with appropriate allocation hints for optimal placement, will automatically benefit from improved coherence performance as the underlying stack advances.
 

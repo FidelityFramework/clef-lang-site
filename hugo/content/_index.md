@@ -50,7 +50,7 @@ toc: false
     class="clef-atlas-card hextra-feature-card not-prose hx:block hx:relative hx:overflow-hidden hx:rounded-3xl hx:border hx:cursor-pointer hx:before:pointer-events-none hx:before:absolute hx:before:inset-0 hx:before:bg-glass-gradient">
     <div class="hx:relative hx:w-full hx:p-6">
       <h3 class="hx:text-2xl hx:font-medium hx:leading-6 hx:mb-2 hx:flex hx:items-center"><span>Try Atlas</span></h3>
-      <p class="hx:text-gray-500 hx:dark:text-gray-400 hx:text-sm hx:leading-6">Explore the whole corpus as a navigable graph. Trace how the specification, docs, blog, and pre-prints connect, and build your own reading path across the body of work.</p>
+      <p class="hx:text-gray-500 hx:dark:text-gray-400 hx:text-sm hx:leading-6">Explore the full corpus as a navigable graph. Trace how the specification, docs, blog, and pre-prints connect, and build your own reading path across the body of work.</p>
     </div>
   </a>
 </div>

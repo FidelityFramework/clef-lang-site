@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because choosing the right parallel execution strategy requires understanding not just what your code does, but what it needs from its environment. This is where coeffects transform compilation.
+Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because choosing the right parallel execution strategy requires understanding not just what your code does, but what it needs from its environment. Coeffects transform compilation.
 
 ## The Parallelism Predicament
 
@@ -101,7 +101,7 @@ The choice between interaction nets and delimited continuations fundamentally de
 
 ## Coeffects
 
-This is where coeffects revolutionize compilation. By tracking what code needs from its environment, coeffects provide exactly the information needed to choose between parallel execution strategies:
+Coeffects revolutionize compilation. By tracking what code needs from its environment, coeffects provide exactly the information needed to choose between parallel execution strategies:
 
 ```fsharp
 // Coeffect inference discovers the nature of computation
@@ -349,7 +349,7 @@ let selectBackend (node: PSGNode) (coeffects: CoeffectAnalysis) =
 
 ## Academic Rigor Yields Real World Performance
 
-Coeffects aren't just theoretical elegance - they deliver measurable performance wins:
+Coeffects deliver measurable performance wins:
 
 - **10-100x speedups** by choosing the right parallel execution model
 - **Near-linear scaling** on multi-core systems through intelligent work distribution
@@ -358,7 +358,7 @@ Coeffects aren't just theoretical elegance - they deliver measurable performance
 
 The choice between interaction nets and delimited continuations isn't arbitrary - it's determined by what your code needs to accomplish for a given server architecture. By making this choice automatically based on coeffect analysis, Fidelity targets the right workload for a given chipset every time.
 
-As we enter an era of increasingly heterogeneous hardware - CPUs, GPUs, TPUs, DPUs, and exotic accelerators - this context-aware compilation becomes essential. Your code expresses intent, this approach to intelligent analysis discovers requirements, and the compiler generates optimal execution strategies. That's the power of coeffects: turning academic insight into real-world performance.
+As we enter an era of increasingly heterogeneous hardware (CPUs, GPUs, TPUs, DPUs, and exotic accelerators), this context-aware compilation becomes essential. Your code expresses intent, this approach to intelligent analysis discovers requirements, and the compiler generates optimal execution strategies. That's the power of coeffects: turning academic insight into real-world performance.
 
 ## Advanced Implementation: Hybrid BitNet with Compressed KV Cache
 
@@ -502,4 +502,4 @@ This hybrid BitNet + compressed KV architecture represents a glimpse into the fu
 
 The Fidelity framework, with its coeffect analysis and BAREWire technology, makes this future achievable. By understanding what each component needs from its environment, the compiler will be able to automatically generate code that puts the right computation on the right processor - achieving performance that would be impossible with traditional approaches.
 
-This is the power of context-aware compilation: not just choosing between interaction nets and delimited continuations, but orchestrating entire heterogeneous systems where CPUs handle ternary operations, GPUs accelerate parallel decompression, and zero-copy memory enables them to work in perfect harmony. The academic rigor of coeffects doesn't just yield performance - it enables entirely new architectures that were previously unimaginable.
+Context-aware compilation enables not just choosing between interaction nets and delimited continuations, but orchestrating entire heterogeneous systems where CPUs handle ternary operations, GPUs accelerate parallel decompression, and zero-copy memory enables them to work in perfect harmony. The academic rigor of coeffects doesn't just yield performance - it enables entirely new architectures that were previously unimaginable.

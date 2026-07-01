@@ -40,7 +40,7 @@ The analogy is to regular expressions and context-free grammars. Regular express
 
 ## Design-Time Verification
 
-Integrating Z3 directly into CCS to handle decidable SMT proof obligations is what makes transparent verification possible. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke Z3 in the background. The NTU simultaneously acts as the proof apparatus for Z3, deriving proof obligations from the PSG's structure. Every arithmetic operation in the PSG produces a Z3 assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
+Transparent verification is achieved by integrating Z3 directly into CCS to discharge decidable SMT obligations. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke Z3 in the background. The NTU simultaneously acts as the proof apparatus for Z3, deriving proof obligations from the PSG's structure. Every arithmetic operation in the PSG produces a Z3 assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
 
 ### The Gravitational Force Example
 

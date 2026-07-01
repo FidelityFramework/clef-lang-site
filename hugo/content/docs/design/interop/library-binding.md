@@ -127,8 +127,6 @@ flowchart TB
     DynamicLib -.-> AppCode
 ```
 
-Each component in this pipeline has a specific purpose beyond ordinary compilation choices.
-
 ### The Role of Farscape CLI
 
 Our Farscape generates bindings for native libraries. Where conventional tools produce mechanical translations, Farscape generates idiomatic Clef interfaces that read naturally to Clef developers while keeping fidelity with the underlying C/C++ APIs.
@@ -191,7 +189,7 @@ let witnessExternCall (node: PSGNode) : MLIR<Val> = mlir {
 }
 ```
 
-This separation matters for the design. The PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration. It emits what the resolved extern node tells it to emit. Witnesses stay pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
+The PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration. It emits what the resolved extern node tells it to emit. Witnesses stay pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
 
 Alex's witnessing extends beyond binding strategies to the full range of Clef features, from closures to pattern matching to computation expressions. Each translates into MLIR that preserves its semantic intent while enabling native code generation.
 
@@ -502,7 +500,7 @@ We intend this integration to need no special tooling or workflow changes. Bindi
 
 ### Embedded Security Example
 
-The hybrid binding architecture shows its value in scenarios where different components have different requirements. Consider an embedded security application targeting a constrained microcontroller, where memory efficiency, performance, and security are critical concerns.
+Consider an embedded security application targeting a constrained microcontroller, where memory efficiency, performance, and security are critical concerns.
 
 ```fsharp
 open SigningLib
@@ -658,7 +656,7 @@ This integration aims to provide several capabilities:
 
 3. **Memory Layout Control**: Explicit control over memory layout keeps compatibility with native libraries that expect specific struct layouts.
 
-This integration matters most for performance-critical applications that process large amounts of data, where it enables efficient communication between components regardless of their binding strategy.
+For performance-critical applications that process large amounts of data, this integration enables efficient communication between components regardless of their binding strategy.
 
 ### Platform-Specific Binding Strategies
 
@@ -752,7 +750,7 @@ Our approach separates development-time from build-time binding decisions. This 
 
 - **CI/CD Pipeline**: In continuous integration environments, different binding strategies can be applied for different build targets, dynamic for debugging builds, static for release builds, and specific combinations for particular deployment environments.
 
-This separation makes development more productive while still allowing optimized production builds. Developers stay focused on application logic during development, and the binding mechanics adapt to the appropriate strategy at build time.
+Developers stay focused on application logic during development, and the binding mechanics adapt to the appropriate strategy at build time, enabling optimized production builds.
 
 ## Performance Considerations
 

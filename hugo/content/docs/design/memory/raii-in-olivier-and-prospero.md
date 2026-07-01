@@ -270,7 +270,7 @@ This example illustrates how different actors have different memory patterns, al
 
 ## Implications and Future Directions
 
-The integration of RAII principles with Olivier and Prospero represents more than a technical exercise; it suggests a new paradigm for systems programming where resource management is both sophisticated and predictable. Our research indicates several promising directions:
+This integration points toward a new paradigm for systems programming where resource management is both sophisticated and predictable. Our research indicates several promising directions:
 
 **Compile-Time Optimization**: By analyzing actor topologies at compile time, the Composer compiler can generate specialized allocation code for each application, eliminating the overhead of runtime memory management decisions.
 

@@ -214,7 +214,7 @@ Creating Fidelity project...
 
 ## Multi-Pane Development with nvim
 
-For compiler development work, nvim offers a particularly powerful set of options: multiple synchronized windows showing different stages of the compilation pipeline. A typical Fidelity development session might display Clef source, MLIR intermediate representation, and LLVM IR side by side, each with appropriate language intelligence:
+For compiler development work, nvim offers multiple synchronized windows showing different stages of the compilation pipeline. A typical Fidelity development session might display Clef source, MLIR intermediate representation, and LLVM IR side by side, each with appropriate language intelligence:
 
 ```mermaid
 graph LR

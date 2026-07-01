@@ -48,7 +48,7 @@ The key innovation is the *regime field*. Rather than a fixed-width exponent, th
 
 This encoding gives more bits to the fraction when values are near 1.0 (small regime, quickly terminated) and fewer bits when values are extreme (large regime, consuming most of the bit width).
 
-The result: tapered precision that matches how values actually distribute in most computations.
+Tapered precision matches how values actually distribute in most computations.
 
 ## Posits in Clef
 
@@ -165,7 +165,7 @@ module MixedPrecision =
 
 This pattern (small storage types, exact accumulation, explicit conversions) emerges naturally from posit arithmetic. The quire eliminates the need for Kahan summation or other error-compensation tricks. The type system ensures precision transitions are intentional.
 
-The mixed-precision story is worth dwelling on because it reveals a structural advantage over existing posit implementations. Consider a more complete inference pipeline:
+The mixed-precision story reveals a structural advantage over existing posit implementations. Consider a more complete inference pipeline:
 
 ```fsharp
 module Inference =
@@ -347,7 +347,7 @@ flowchart LR
     MLIR --> LLVM
 ```
 
-This diagram, however, dramatically understates the complexity. Posit arithmetic is not simple bit manipulation. A single `Posit32.add` operation requires:
+This diagram oversimplifies the implementation. Posit arithmetic is not simple bit manipulation. A single `Posit32.add` operation requires:
 
 1. **Decode both operands**: Extract sign, regime (variable-length), exponent, and fraction from each
 2. **Align fractions**: Compute combined scale from regime and exponent, shift fractions to align
@@ -451,7 +451,7 @@ This question led to an interesting exploration. Consider AMD's Strix Halo archi
 
 Not all AVX-512 implementations are equal. AMD's Zen 5 family includes variations: desktop and server parts feature full-width 512-bit datapaths with 4x512-bit execution, while some mobile variants use 4x256-bit execution. Even the narrower implementation provides meaningful acceleration over scalar code, and the unified memory architecture remains valuable regardless. A mobile platform capable of useful posit acceleration opens development possibilities that dedicated server hardware would not: rapid iteration, power-efficient experimentation, and accessibility to labs that lack data center resources.
 
-The reality is more nuanced than "whiteboard math", and working through the details reveals something important about what acceleration actually requires.
+The reality differs from whiteboard math. Working through the details shows what acceleration actually requires.
 
 The GPU and NPU turn out to be less immediately applicable than they appear. Their fixed-function units expect IEEE float or integer formats. You cannot feed them posit-encoded bits and expect correct results. The decode/compute/encode overhead would likely eliminate any acceleration benefit. The unified memory architecture helps with data movement in heterogeneous pipelines, but that's efficiency, not acceleration.
 
@@ -560,7 +560,7 @@ flowchart TB
     LLVM --> OUT
 ```
 
-No external compilation step. No dynamic linking for the kernels themselves. The optimized code would be generated from Clef source and embedded directly in the output binary. This aligns with Fidelity's philosophy: Clef expressions, compiled through a principled pipeline, producing native code indistinguishable from hand-optimized implementations.
+No external compilation step. No dynamic linking for the kernels themselves. The optimized code would be generated from Clef source and embedded directly in the output binary. This approach reflects Fidelity's design principle: Clef expressions, compiled through a principled pipeline, producing native code indistinguishable from hand-optimized implementations.
 
 Dynamic linking would still have a role for runtime architecture detection (selecting AVX2 vs AVX-512 vs ARM NEON based on the executing hardware) or for swapping debug and release kernel variants. But the kernels themselves could be generated artifacts, not external dependencies.
 

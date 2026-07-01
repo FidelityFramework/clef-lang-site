@@ -76,7 +76,7 @@ The Hăvărneanu correspondence would make this composition principled. The adjo
 
 ## Implications for the Baker Component
 
-The Baker component of the Clef Compiler Service is responsible for elaborating syntactic Clef code into the saturated PSG that downstream components consume. The PSG that Baker produces carries dimensional annotations, lifetime coeffects, and the joint constraint structure that flat closures and region inference generate. This is the elaboration that makes transparent verification possible.
+The Baker component of the Clef Compiler Service is responsible for elaborating syntactic Clef code into the saturated PSG that downstream components consume. The PSG that Baker produces carries dimensional annotations, lifetime coeffects, and the joint constraint structure that flat closures and region inference generate.
 
 Adding mode shifts to the PHG would extend Baker's responsibilities in specific ways. The elaboration would need to identify points where verification tier transitions are required, mark them with explicit mode shift hyperedges, and ensure the shifts respect the joint constraint structure they cross. This is delicate work because the tier transitions would need to be identified at principled, low levels in the compute graph rather than imposed retroactively by analysis decisions.
 

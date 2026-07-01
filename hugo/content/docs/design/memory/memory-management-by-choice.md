@@ -15,7 +15,7 @@ Our Fidelity framework reconsiders how developers interact with memory managemen
 
 ## Mandatory vs. Optional Memory Management
 
-Rust's borrow checker statically prevents memory safety issues, and it does so at a cost: *every* line of code must consider ownership and borrowing. This mandatory engagement with memory concerns creates a constant cognitive overhead that permeates even the simplest business logic.
+Rust's borrow checker statically prevents memory safety issues, and it does so at a cost: *every* line of code must consider ownership and borrowing. This mandatory engagement with memory concerns adds cognitive overhead to business logic.
 
 ```rust
 // In Rust, memory concerns permeate your entire API design
@@ -453,7 +453,7 @@ We have found no other representative implementations of this approach in the st
 
 ## A Matter of Attention
 
-Developer attention is a finite resource, and it should be focused where it matters most. Rust demands attention to memory everywhere. Traditional managed languages abstract it away, which leaves gaps that can lead to errors and critical failures. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
+Developer attention is a finite resource, and it should be focused where it matters most. Rust requires explicit attention to memory management throughout code. Traditional managed languages abstract it away, which leaves gaps that can lead to errors and critical failures. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
 
 Our BAREWire offers a path between these, resolving non-critical memory concerns in the compiler using sensible defaults, while letting developers pull these concerns "up" into their explicit control when beneficial. The ByRef resolution approach described in [ByRef Resolved]({{< relref "byref-resolved" >}}) complements this by eliminating unnecessary copies at the compiler level, and [Inferring Memory Lifetimes]({{< relref "inferring-memory-lifetimes" >}}) extends the approach to lifetime management itself.
 

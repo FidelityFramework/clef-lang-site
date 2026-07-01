@@ -25,7 +25,7 @@ In ML-family languages this is the computational model, not syntax sugar. Partia
 
 Currying carries an implementation burden. When functions are truly curried, every partial application produces a new function value. In a theoretical lambda calculus, this is immaterial. In a compiler targeting real hardware, it raises immediate questions about representation, allocation, and lifetime.
 
-In .NET, currying is essentially ignored. The CLR sees `add` as a method with two parameters. Partial application creates a closure object on the managed heap. The garbage collector handles the rest. Simple, if you have a garbage collector.
+In .NET, partial application creates a closure object on the managed heap; the garbage collector handles memory.
 
 > Fidelity doesn't need or want a managed runtime or garbage collector.
 

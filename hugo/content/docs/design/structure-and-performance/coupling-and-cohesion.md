@@ -18,8 +18,6 @@ Our Composer compiler is designed to use one aspect of that structure through co
 
 ## Coupling and Cohesion in Software
 
-Before diving into compilation implications, let's establish what coupling and cohesion mean in the context of software architecture. These concepts, borrowed from traditional software engineering, take on new significance when viewed through the lens of compiler optimization.
-
 **Cohesion** measures how closely related the responsibilities within a single module or component are to each other. High cohesion means that everything in a module works together toward a common purpose. In functional programming, this often manifests as functions that operate on the same data types or participate in the same data transformation pipeline.
 
 **Coupling** measures how much one module depends on another. Low coupling means that modules can be understood and modified independently. High coupling means that changes in one module frequently require changes in another.

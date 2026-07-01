@@ -74,7 +74,7 @@ flowchart LR
     end
 ```
 
-The reading labelled ideal is the interaction-net potential the PSG exposes. The reading labelled serial is the instruction sequence Alex produces for a CPU. Flow loss is the gap between them, and on this region the gap is the whole width of the array.
+The reading labelled ideal is the interaction-net potential the PSG exposes. The reading labelled serial is the instruction sequence Alex produces for a CPU. Flow loss is the gap between them.
 
 ## Where the Inputs Come From
 

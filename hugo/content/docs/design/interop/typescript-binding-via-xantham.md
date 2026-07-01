@@ -21,7 +21,7 @@ Xantham is a schema-driven TypeScript analyzer. It separates concerns into three
 
 Xantham stops short of generation. The author has been explicit on this point: *"the generators are supposed to be the consumer libraries... I want to just give a reference generator. The encoder and decoder are what I want to try and maintain myself. Anyone can use the information how they want."* The reference generator (`Xantham.Generator`) exists as an example consumer; it produces F# bindings via Fabulous.AST. Other consumers can produce other targets.
 
-This separation is the load-bearing architectural commitment. Xantham's encoder and decoder are designed to serve multiple consumer generators that all consume the same JSON schema and decoder API. Today's consumer is the F# binding pipeline. Tomorrow's consumer is the Clef binding pipeline ([described in From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/)). Both consume the same upstream.
+Xantham's encoder and decoder are designed to serve multiple consumer generators that all consume the same JSON schema and decoder API. Today's consumer is the F# binding pipeline. Tomorrow's consumer is the Clef binding pipeline ([described in From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/)). Both consume the same upstream.
 
 ## The Analysis Schema as Stable Contract
 
@@ -93,7 +93,7 @@ Xantham's analysis output is what those rules are characterized *from*. The enco
 
 As more libraries are bound via the Clef-via-JSIR pipeline, the Library of Alexandria matures: D3's chained-method-builder pattern, SolidJS's reactive primitives, TanStack's hook-with-options pattern. The patterns recur across libraries; the Library accumulates them. Xantham provides the source material; the consumer maps source to pattern; the rule library grows with each new library characterized.
 
-This is also why every binding shipped today via the F# pipeline has compounding value beyond shipping. The deterministic Fable output produced from a Xantham-analyzed TypeScript surface is the **executable specification** for what the JSIR pipeline must produce when that surface is bound through the Clef path. Each binding fix today characterizes a pattern that enters the Library tomorrow.
+Every binding shipped via the F# pipeline carries compounding value beyond shipping. The deterministic Fable output produced from a Xantham-analyzed TypeScript surface is the **executable specification** for what the JSIR pipeline must produce when that surface is bound through the Clef path. Each binding fix today characterizes a pattern that enters the Library tomorrow.
 
 ## Practical Considerations
 

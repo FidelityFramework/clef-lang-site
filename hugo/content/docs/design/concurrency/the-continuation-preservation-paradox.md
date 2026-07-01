@@ -257,7 +257,7 @@ ssawasm.suspend $i2c_read
 ssawasm.resume %continuation (result)
 ```
 
-The continuation structure carries through this whole path. The host environment handles the hardware interaction while the functional structure stays intact.
+The continuation structure carries through this path. The host environment handles the hardware interaction while the functional structure stays intact.
 
 ### Selective Compilation
 

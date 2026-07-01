@@ -13,7 +13,7 @@ params:
 
 SpeakEZ's Fidelity framework with its innovative BAREWire technology is uniquely positioned to take advantage of emerging memory coherence and interconnect technologies like CXL, NUMA, and recent PCIe enhancements. By combining BAREWire's zero-copy architecture with these hardware innovations, Fidelity can put the developer in unprecedented control over heterogeneous computing environments with the elegant semantics of [the Clef language](https://clef-lang.com).
 
-This innovation represents a fundamental shift in how distributed memory systems interact and the cognitive demands it places on the software engineering process. This breakthrough stands to revolutionize distributed model training by eliminating the traditional boundaries in memory management that have constrained AI workloads and the teams that build them.
+BAREWire and CXL enable distributed model training by eliminating traditional memory management boundaries that have constrained AI workloads.
 
 The challenge with CXL lies not in the hardware but in the software abstractions available to leverage it. C++ CXL libraries expose raw pointers and require manual tracking of which memory regions reside in which pools; the programmer maintains a mental model of coherence domains that the type system cannot verify. Rust improves memory safety but its ownership model assumes a single coherent address space; CXL's multiple memory pools with different latency characteristics fall outside what the borrow checker can express. Fidelity's type system encodes memory pool residency directly, making pool-aware allocation verifiable at compile time rather than debuggable at runtime.
 

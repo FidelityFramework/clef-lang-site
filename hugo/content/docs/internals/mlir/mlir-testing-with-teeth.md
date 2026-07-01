@@ -481,7 +481,7 @@ Let's compare approaches directly:
 
 ## The Semantic Refinement Capability
 
-The most powerful capability is semantic refinement verification. This checks that a transformation is a valid refinement, that the low-level code preserves the semantics of the high-level code.
+The central capability is semantic refinement verification. This checks that a transformation is a valid refinement, that the low-level code preserves the semantics of the high-level code.
 
 ```fsharp
 /// Verify semantic refinement through transformation
@@ -835,7 +835,7 @@ The ultimate goal is self-hosting: compile the test harness itself with Composer
 
 This isn't circular reasoning, it's Self Hosting. The initial test harness (compiled with .NET) verifies Composer. Once verified, Composer compiles its own test harness. The .NET-compiled version and Composer-compiled version must agree, providing cross-validation.
 
-This is the essence of compiler correctness: a system that can verify its own compilation process while remaining grounded in external validation.
+Compiler correctness requires a system that can verify its own compilation process while remaining grounded in external validation.
 
 ## Testing with Teeth
 

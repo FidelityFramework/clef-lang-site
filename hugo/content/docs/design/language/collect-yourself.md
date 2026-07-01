@@ -166,7 +166,7 @@ The difference shows in what the analysis is for. Where Rust's borrow checker tr
 
 "But wait," says the skeptical .NET developer, "immutable collections are slow! All that copying!"
 
-This is where Clef's collection design answers the objection. Consider:
+Clef's collection design answers this objection. Consider:
 
 ```fsharp
 let m1 = Map.add "a" 1 Map.empty

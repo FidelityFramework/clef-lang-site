@@ -12,7 +12,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-The `inline` keyword occupies a peculiar space in the programmer's toolkit. It began life as a compiler hint in C, suggesting that a function might benefit from inline expansion. Over decades, it evolved into `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each incarnation reflects a different philosophy about who should make optimization decisions: the programmer or the compiler.
+The `inline` keyword began life as a compiler hint in C, suggesting that a function might benefit from inline expansion. Over decades, it evolved into `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each incarnation reflects a different philosophy about who should make optimization decisions: the programmer or the compiler.
 
 For Clef developers working with the Fidelity Framework, `inline` serves dual masters. It's mandatory for Statically Resolved Type Parameters (SRTP), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
 
@@ -392,7 +392,7 @@ The delta in decision quality grows logarithmically with additional information:
 
 $$\Delta Q = Q(I_{late}) - Q(I_{early}) = \log(1 + I_{late})$$
 
-This formalizes the intuition: **optimization decisions improve dramatically when you defer them until more information is available**.
+Optimization decisions improve when you defer them until more information is available.
 
 ## The Policy in Practice: Diagnostic Codes
 
@@ -457,7 +457,7 @@ Real functions in MLIR preserve **optimization flexibility** across targets. Ear
 
 The journey to this policy involved extensive research into .NET patterns, Fable's challenges, OCaml's arity handling, and MLIR's optimization architecture.
 
-> ***Getting*** inline - truly understanding ***when*** and ***why*** to use the keyword - requires recognizing what the Fidelity Framework and its compiler are optimizing for.
+To use `inline` correctly, understand what the Fidelity Framework and its compiler are optimizing for.
 
 It's not .NET's managed heap and JIT compilation. It's not JavaScript's dynamic runtime. It's MLIR's multi-target compilation with block arguments and deferred optimization.
 

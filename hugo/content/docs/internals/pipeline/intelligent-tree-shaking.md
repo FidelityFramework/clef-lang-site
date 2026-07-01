@@ -67,8 +67,6 @@ Traditional tree shaking might struggle to determine which processor implementat
 
 This precision stands in contrast to the challenges facing .NET's Native AOT compilation. While Microsoft has made significant progress with ahead-of-time compilation in .NET 8 through 10, their approach must contend with the runtime's historical reliance on reflection and dynamic code generation. Generic type instantiation presents particular difficulties - the AOT compiler cannot always determine which `ILogger<T>` instantiations an application will request through dependency injection, leading to either over-inclusion of code or runtime failures. Attributes like `RequiresDynamicCodeAttribute` and `DynamicallyAccessedMembers` help developers annotate their code for trimming compatibility, but these are fundamentally workarounds for a system not designed with static analysis as a fundamental tenet.
 
-> The Fidelity framework will never have to contend with these legacy challenges.
-
 By building on Clef's type system and its deterministic foundations, the compiler constructs a complete dependency graph at compile time. There's no reflection to defeat tree shaking, no dynamic instantiation to second-guess. The analysis is correct by construction.
 
 Consider a typical Clef utility library with generic functions and type specializations:
@@ -123,7 +121,7 @@ The practical impact extends beyond binary size. .NET applications targeting Nat
 
 Composer's approach eliminates this entire category of problems. Since tree shaking operates on the semantic graph before any information is discarded, there are no trimming warnings to suppress, no runtime directive files to maintain, no surprising `MissingMethodException` errors in production.
 
-> The analysis is complete because it operates on complete information, leading to a common phrase in the lab "correct by construction."
+> The analysis is complete because it operates on complete information: "correct by construction," as we put it in the lab.
 
 ## Soft-Delete Reachability: The Nanopass Approach
 

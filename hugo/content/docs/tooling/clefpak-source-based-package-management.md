@@ -28,7 +28,7 @@ Pre-compiled binaries optimized for one of these targets would be not just subop
 
 ## Lessons from Cargo
 
-The Rust community faced similar challenges when designing Cargo. Their solution is elegant: instead of distributing compiled binaries, distribute source code. In many ways it's an "originalist" notion drawing from C. Let the compiler see the entire program, including all dependencies, and optimize holistically for the specific target platform. This approach enables optimizations that would be impossible with pre-compiled binaries, such as cross-package inlining, whole-program optimization, and platform-specific memory layouts.
+The Rust community faced similar challenges when designing Cargo. Instead of distributing compiled binaries, Cargo distributes source code. In many ways it's an "originalist" notion drawing from C. Let the compiler see the entire program, including all dependencies, and optimize holistically for the specific target platform. This approach enables optimizations that would be impossible with pre-compiled binaries, such as cross-package inlining, whole-program optimization, and platform-specific memory layouts.
 
 ClefPak adopts this philosophy while carefully preserving the Clef development experience. The system maintains familiar conventions and idioms that Clef developers expect while fundamentally reimagining the underlying distribution mechanism. This balance between innovation and familiarity guides every design decision in the ClefPak architecture.
 
@@ -135,7 +135,7 @@ This is a topic of some debate, and we expect the command set and discussion aro
 
 ### Platform-Specific Compilation
 
-One of ClefPak's most powerful features will be its ability to target radically different platforms from the same source code. The `--target` flag would be used to enable developers to bring package components into projects for everything from microcontrollers to GPUs:
+ClefPak will be able to target radically different platforms from the same source code. The `--target` flag would be used to enable developers to bring package components into projects for everything from microcontrollers to GPUs:
 
 ```powershell
 # Target x86-64 with advanced vector extensions

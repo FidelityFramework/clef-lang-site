@@ -57,7 +57,7 @@ module SensorApplication =
         monitorLoop()
 ```
 
-This separation aims to create a development experience where embedded systems programming feels as natural as web or desktop application development, while still maintaining the performance characteristics of hand-crafted C code. The complexity of hardware abstraction becomes a solved problem, shared across the community.
+Developers work with clean Clef code while the framework maintains the performance of hand-crafted C. The complexity of hardware abstraction becomes a solved problem, shared across the community.
 
 ## Understanding the STM32 Compilation Challenge
 

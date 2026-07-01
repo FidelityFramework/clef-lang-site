@@ -17,7 +17,7 @@ For the .NET developer, the "floor" of abstraction is often the Intermediate Lan
 
 Composer seeks to lower that floor while keeping the ceiling high. SpeakEZ Technologies has take a view to bring the rich, expressive syntax of [the Clef language](https://clef-lang.com), with its pattern matching, higher-order functions (HOFs), and discriminated unions, and translate it into a representation that is not just "executable," but semantically complete. The Fidelity framework is the embodiment of the belief that the future of computing is not just 'full stack', but ***multi-stack***.
 
-And the development of the Baker component within the Composer compiler exemplifies a progression tied to our vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the Clef abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**; it applies semantic meaning using a model of Recipes and Ingredients.
+Baker's development within the Composer compiler tracks that vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the Clef abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**; it applies semantic meaning using a model of Recipes and Ingredients.
 
 ## The Landscape: Elaboration and Saturation
 
@@ -64,7 +64,7 @@ Baker executes within the PSGSaturation stage using a **Fan-Out / Fold-In** patt
 
 This separation of discovery and application versus 'folding in' is crucial. It means our "Recipes" don't need to know about the global state of the compiler; they just need to know, in keeping with the metaphor, how to cook ***that*** specific dish.
 
-> This is one of the many affordances that a nanopass compilation strategy offers; the potential for embarassingly parallel compilation stages.
+> A nanopass compilation strategy opens the potential for embarrassingly parallel compilation stages.
 
 ## A Functional Kitchen
 

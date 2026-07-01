@@ -15,7 +15,7 @@ In the landscape of modern compiler design, a fundamental tension exists between
 
 At the heart of our Clef native compiler lies the Program Hypergraph (PHG), which analyzes code to identify any referentially transparent regions. This analysis drives a sophisticated compilation strategy that chooses between two powerful computational models: interaction nets for pure, concurrent computations and delimited continuations for effectful, sequential operations. This isn't merely an optimization technique - it's a fundamental rethinking of how functional programs should be compiled for modern heterogeneous hardware.
 
-By automatically selecting the appropriate compilation strategy based on mathematical properties rather than heuristics, Composer achieves something remarkable: it preserves the high-level intent of Clef code while generating executables that rival hand-optimized implementations. This document explores how these two paradigms work together to create a compilation framework that respects both the functional programmer's intent and the realities of modern hardware architectures.
+By automatically selecting the appropriate compilation strategy based on mathematical properties rather than heuristics, Composer preserves the high-level intent of Clef code while generating executables that rival hand-optimized implementations. This document explores how these two paradigms work together to create a compilation framework that respects both the functional programmer's intent and the realities of modern hardware architectures.
 
 ## Core Architecture
 

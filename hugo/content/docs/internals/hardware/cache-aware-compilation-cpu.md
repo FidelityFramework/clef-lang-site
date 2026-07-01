@@ -17,7 +17,7 @@ The Fidelity framework's Prospero orchestration layer is designed to address thi
 
 ## Developer Spectrum of Control
 
-Before delving into the technical depths of cache management, it's important to acknowledge that the Fidelity framework embraces a philosophy of progressive disclosure in developer experience. As explored in our previous article on [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
+The Fidelity framework embraces progressive disclosure in developer experience. As explored in our previous article on [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
 
 The detailed memory layout annotations and cache-specific optimizations presented in this document represent the full spectrum of control available to developers who need maximum performance. However, these represent the exception rather than the rule. Most Clef code written for Fidelity will use standard Clef syntax, with the Composer compiler inferring appropriate memory layouts and cache strategies. Library authors may leverage explicit annotations to provide optimized implementations that application developers consume through clean, idiomatic APIs. This layered approach ensures that complexity appears only where performance demands it, maintaining Clef's elegance for the vast majority of application code.
 
@@ -51,7 +51,7 @@ This determinism transforms cache analysis from speculation to calculation. When
 
 ## Prospero's Hierarchical Memory Architecture
 
-Building on BAREWire's deterministic foundation, our vision for Prospero transcends simple memory awareness to embrace cache consciousness as a first-class architectural concern. This design recognizes three fundamental principles that guide our implementation approach:
+Building on BAREWire's deterministic foundation, our vision for Prospero transcends simple memory awareness to embrace cache consciousness as a first-class architectural concern.
 
 First, actors exhibit predictable memory access patterns that remain stable across message processing cycles. A high-frequency trading actor consistently accesses price data and order books, while a logging actor sequentially writes to buffers. These patterns, discoverable through static analysis, inform optimal cache tier placement.
 
@@ -69,7 +69,7 @@ The contrast with C++ is starker still. C++ developers face false sharing as a p
 
 This architectural choice reflects a broader principle: the right abstractions eliminate entire categories of bugs rather than detecting them. The actor model, combined with capability-based ownership, eliminates false sharing between actors. It eliminates data races. It eliminates use-after-free across actor boundaries. These guarantees hold at compile time; no runtime checking is required.
 
-These principles manifest in Prospero's three-tier approach to cache management: compile-time analysis, arena configuration, and runtime placement.
+Prospero's cache management operates through three channels: compile-time analysis of access patterns, arena configuration for spatial optimization, and runtime placement based on load.
 
 ### Compile-Time Cache Behavior Analysis
 

@@ -227,7 +227,7 @@ The goal throughout was native compilation without obscure syntax. Absorbing All
 
 ## A View With Gratitude
 
-Looking back at [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), the thinking was reasonable for its time. We were coming from a .NET perspective where the BCL/runtime separation shapes the whole developer experience. With our new direction we sought opportunities to preserve a familiar pattern for users coming from a .NET background.
+Looking back at [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), the thinking was reasonable for its time. We were coming from a .NET perspective where the BCL/runtime separation shapes the developer experience. With our new direction we sought opportunities to preserve a familiar pattern for users coming from a .NET background.
 
 More importantly, Alloy served as a discovery mechanism. By implementing `NativeStr`, `Console`, and `Memory` as library code, we confirmed many of our expectations for native primitives:
 

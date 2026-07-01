@@ -29,7 +29,7 @@ Here `frame` escapes to `parent`. The default keeps `frame` in the worker's own 
 
 The default is to guard, not to hoist. The escaped reference stays in the worker's arena and the sentinel validates it at the access boundary, returning `Valid` or `ActorTerminated`. A developer who never opens the suggestion ships a correct program. Nothing about the default is unsafe, and nothing about it is hidden: the guard is a property of the graph, and Lattice surfaces it the same way it surfaces an escape promotion, as a navigable annotation with a plain-language reason.
 
-This is the pit-of-success posture. The compiler does the safe thing on its own and tells the developer it did, which is the same discipline the [deadlock-freedom design](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) applies to liveness: the unprovable case gets a guard by default, and the developer is offered a way to convert the guard into a proof rather than being forced to.
+This default makes the safe choice the automatic one. The compiler does the safe thing on its own and tells the developer it did, which is the same discipline the [deadlock-freedom design](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) applies to liveness: the unprovable case gets a guard by default, and the developer is offered a way to convert the guard into a proof rather than being forced to.
 
 ## The suggestion trades a guard for a placement
 
