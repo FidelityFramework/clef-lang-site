@@ -62,7 +62,7 @@ The bug is not caught by a check. A check is what failed in FreeBSD. The bug is 
 
 That representation choice, once made, is not discarded on the way to the machine. It is carried through lowering as a fact the later stages hold, the same discipline that keeps [a closure's lifetime](/docs/design/memory/gaining-closure/) and a [value's dimensions](/docs/design/types/dimensional-type-safety/) intact from source to native code. A safety property established at design time is only worth having if it survives to the target, and [information the compiler establishes is not discarded in lowering](/docs/design/structure-and-performance/information-is-not-discarded/).
 
-## A Vestige of the Past
+## The Curse of Systems Archaeology
 
 The video that opens this post is worth the watch in full; it takes a bug that hides behind a correct-looking check and makes every step of it legible. Bugs of this shape are not rare. They sit in production code everywhere, in the quiet gap between what a procedure intends and what the code assumes, and they reside in plain sight for decades precisely because the language makes them so hard to see. What is changing is that they are getting easier to surface. "AI" large language models are increasingly good at parsing details from code the way this video does, tracing a value across a boundary and noticing the assumption, and they will keep turning up anomalies wherever they lurk.
 
