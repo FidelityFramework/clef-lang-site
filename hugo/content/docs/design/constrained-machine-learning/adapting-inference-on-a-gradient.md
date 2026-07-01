@@ -53,7 +53,7 @@ let rec satisfy (node: LanguageNode) (registry: DomainActor list) (goal: Goal) =
     }
 ```
 
-The contract at the boundary is what makes this surface stable. The grammar-constrained decoder holds the node's proposal to syntactically valid Clef regardless of which model proposes it. Across the boundary the request reaches the Olivier domain actors over BAREWire, a fixed-layout contract both ends were built to read, carrying its meaning in the layout itself. Structured binary records have moved between programs this way since long before machine learning, and BAREWire carries that settled discipline to the inter-actor boundary, with the domain's dimensional annotations in the contract, so a mismatch surfaces at the message fabric. The language model may be a rented black box or one you built; the contract around it holds either way, and that is the whole reason the substitution strategy works.
+A contract at the boundary holds this surface stable. The grammar-constrained decoder holds the node's proposal to syntactically valid Clef regardless of which model proposes it. Across the boundary the request reaches the Olivier domain actors over BAREWire, a fixed-layout contract both ends were built to read, carrying its meaning in the layout itself. Structured binary records have moved between programs this way since long before machine learning, and BAREWire carries that settled discipline to the inter-actor boundary, with the domain's dimensional annotations in the contract, so a mismatch surfaces at the message fabric. The language model may be a rented black box or one you built; the contract around it holds either way, so the substitution strategy works.
 
 ## Rung one: adapt what exists now
 
@@ -146,7 +146,7 @@ let goal = Goal.ofText "Price this FX-denominated option book and flag any \
 let result = satisfy node registry goal |> Async.RunSynchronously
 ```
 
-This is the rung that establishes the data-sovereignty position, and the two variants are precisely the two sovereignty postures. The API variant is the weakest: your prompts, and whatever context they carry, transit a third party, and even with a gateway in front the data has left the building. The local variant keeps everything in-house from the first day. Both satisfy the same interface, so an organization can begin on e API variant to validate the constellation and move to local without touching the routing, the tool surface, or the domain models. The migration that matters most for sovereignty is available at the very first rung, and it is a one-line substitution.
+This rung sets the data-sovereignty position, and its two variants are the two sovereignty postures. The API variant is the weakest: your prompts, and whatever context they carry, transit a third party, and even with a gateway in front the data has left the building. The local variant keeps everything in-house from the first day. Both satisfy the same interface, so an organization can begin on the API variant to validate the constellation and move to local without touching the routing, the tool surface, or the domain models. The migration that matters most for sovereignty is available at the very first rung, and it is a one-line substitution.
 
 ## Rung two: fine-tune a standing model
 
@@ -182,7 +182,7 @@ The four rungs are not alternatives; they are stages of one substitution, the sa
 
 A fully closed flywheel is the unit Ma calls closed-loop transcription: a model that goes on revising its own representation against feedback instead of freezing when a training run ends. Closing it is what the ladder has been climbing toward, with the same forward-mode loop and verifiable signal driving every revolution.
 
-An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and climbs as far as the value warrants, with each step a substitution behind the interface rather than a rebuild. That is the practical claim the whole section rests on: the constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model is a graded migration, not a cliff.
+An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and climbs as far as the value warrants, with each step a substitution behind the interface rather than a rebuild. That is the practical claim the section rests on: the constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model is a graded migration, not a cliff.
 
 ## Open questions
 
