@@ -264,8 +264,11 @@
         if (fb) fb.addEventListener("click", function (ev) {
           ev.stopPropagation(); ev.preventDefault(); freezeNeighborhood(e.target);
         });
+        // Set the "you were here" anchor before the link navigates, mirroring desktop's
+        // navigate(). The link's own href does the navigation; we only record the breadcrumb
+        // so re-opening the Atlas restores this node's selected-border + link highlight.
         var gl = t && t.querySelector(".clef-map-go");
-        if (gl) gl.addEventListener("click", function (ev) { ev.stopPropagation(); });
+        if (gl) gl.addEventListener("click", function (ev) { ev.stopPropagation(); setAnchor(d.id); });
       });
       // long-press = freeze (the right-click equivalent)
       cy.on("taphold", "node", function (e) { freezeNeighborhood(e.target); });
