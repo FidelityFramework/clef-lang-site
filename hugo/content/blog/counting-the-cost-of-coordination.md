@@ -17,11 +17,8 @@ Performance is the other problem, and it is this post's subject. The cost of coo
 
 A recent talk states that performance problem as well as anyone, so we will start there. Jon Gjengset gave it this spring, "The Cost of Concurrency Coordination," and it walks the cost of multi-threaded coordination all the way down to the CPU cache line. The slide framing is "Are Mutexes Slow?", and the answer he builds toward is that the question was never really about mutexes. It is worth watching in full, because the reasoning is careful and the conclusion lands somewhere more interesting than the title suggests.
 
----
-
 {{< youtube tND-wBBZ8RY >}}
 
----
 
 The talk is not about Rust, and Gjengset says so at the top: the material maps to whatever language you work in. That is the frame we take as well. The thing being measured is hardware, not a language, and the structural response we take to it is a property of how a program is organized, not of any one syntax.
 

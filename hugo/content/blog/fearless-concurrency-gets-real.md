@@ -11,11 +11,7 @@ params:
 
 A recent Pragmatic Engineer episode with Alice Ryhl talks through how the Rust team at Google and the Tokio side of their work. She's about as deep in production Rust as anyone. And the practical advice she keeps circling back to, when someone is stuck fighting the borrow checker, is to change the data structure. She says it more than once. When that doesn't get you out, the escape hatch she names is `Rc`, the reference-counted pointer you clone when the analyzer can't see far enough to keep a plain reference alive.
 
----
-
 {{< youtube q9xD36NCtZ8 >}}
-
----
 
 I've written about Rust before (see [the prior post](/blog/rust-revisited/)), and I want to be careful here, because none of this is Rust doing something silly or wrong. It's Rust being honest about a real limit. Ryhl [puts the limit plainly](https://www.youtube.com/watch?v=q9xD36NCtZ8&t=1566s) (26:06): "Rust kind of assumes that it can check the scope of that reference by just looking at a single function. But if you have your struct and you're passing it over functions, it might not be possible to make that analysis and so you just get a compiler error." The check is function-local. Once a value's lifetime crosses a function boundary in a way the local view can't follow, you either restructure your data so the analyzer can see it, or fall back to a counted pointer and pay per clone.
 

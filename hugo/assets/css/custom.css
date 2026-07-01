@@ -35,6 +35,22 @@ code, pre, kbd {
   padding-left: 1rem;
 }
 
+/* ── YouTube embeds ────────────────────────────────────────────
+   Hugo's built-in youtube shortcode emits a class-less responsive
+   wrapper (position:relative; padding-bottom:56.25%; height:0).
+   Give it breathing room above and below, and cap its width on
+   large screens so it does not span the full measure of the text. */
+.content div[style*="padding-bottom: 56.25%"] {
+  margin: 2.5rem auto;
+  max-width: 46rem;
+}
+@media (min-width: 768px) {
+  .content div[style*="padding-bottom: 56.25%"] {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+  }
+}
+
 /* ── Provenance block ──────────────────────────────────────── */
 .provenance {
   border-left: 3px solid #888;
