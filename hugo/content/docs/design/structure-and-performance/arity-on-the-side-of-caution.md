@@ -149,6 +149,8 @@ App(greet, [prefix; readln()])     // Direct 2-arg call
 
 ### Closure Representation When Needed
 
+When arity analysis cannot prove a call saturated, the partial application becomes a closure, and from that point the [flat closure representation](/docs/design/memory/gaining-closure/) governs what it is and why it is safe: a code pointer paired with a settled environment, [null-free by construction](/docs/design/language/null-free-by-construction/), placed on the stack or in a region by escape analysis. Arity decides *whether* a closure exists; the flat closure decides *what* it is once it does.
+
 For genuinely escaping partial applications, the design carries an explicit closure node.
 
 ```fsharp
@@ -184,7 +186,7 @@ List.map (fun x -> x + 1) items  // map has arity 2, fully applied
 
 ### 2. Stack-Allocated Closures
 
-When partial application does occur, our closures are stack-allocated by default. There is no heap allocation and no GC pressure.
+When partial application does occur and the closure does not escape, it lives on the stack, reclaimed when the frame exits. When it escapes, its environment is hoisted into a region whose lifetime covers it. Neither path touches a garbage-collected heap.
 
 ```fsharp
 let addFive = add 5  // Closure on stack, lives in this frame
@@ -196,9 +198,13 @@ items |> List.map addFive  // Closure doesn't escape
 
 In .NET, closure allocation is implicit and its cost is hard to predict. Our Fidelity framework makes that cost visible: the PSG represents `PartialApplication` nodes directly, so developers can see exactly where closures are created.
 
-### 4. SSA ≅ Functional
+### 4. Information Preserved, Not Discarded
 
-MLIR's SSA form is already functional in shape: values are immutable and scope follows dominance. Clef's computational model maps directly to SSA without reconstruction. Explicit arity tracking preserves this alignment:
+There is a deeper reason to track arity conservatively, and it reaches past this one decision. A curried function carries information the source makes explicit: how many arguments it expects. The naive move is to erase that early, treat every function value as an opaque arity-one thing, and let a later stage guess whether a call is saturated. That guess is often impossible to recover once the information is gone, which is the "arity curtain" above.
+
+Clef declines to make that erasure. Arity is recorded in the PSG and carried forward, so the decision "is this call saturated" is answered from a fact the compiler still holds rather than reconstructed from one it threw away. This is the first appearance, in the life of a function value, of a principle the framework applies everywhere: the [Information Accrual Principle](/docs/design/categorical-foundations/target-architectures-compilation-strategy/), that each stage of lowering holds strictly more information than the last and never less. Arity is preserved here for the same reason [dimensional constraints](/docs/design/types/dimensional-type-safety/) are preserved through MLIR generation and a discharged proof is carried through the middle end rather than re-derived from the binary: a design-time fact, once established, is not surrendered to a lower stratum that would have to guess it back.
+
+MLIR carries this discipline the rest of the way. Its SSA form is already functional in shape, values immutable and scope following dominance, so Clef's computational model maps to it without reconstruction; and its attribute system lets a fact ride down through the dialect conversions rather than dissolving at each boundary. Explicit arity tracking preserves this alignment:
 
 ```mermaid
 flowchart TD
@@ -237,10 +243,10 @@ result |> Option.map processValue
 
 The next steps involve:
 - **Arity propagation through higher-order functions**: When possible, infer arity through abstractions
-- **Closure escape analysis**: Warn when closures escape their stack frame
+- **Closure escape analysis**: When a partial application escapes its stack frame, [escape analysis](/docs/design/types/byref-resolved/) hoists its environment into a region whose lifetime covers it, rather than rejecting the program
 - **Defunctionalization for closed sets**: When all uses of a higher-order function are known, eliminate closures entirely
 
-Explicit arity tracking is what lets currying reach native code without an obstacle in its path: saturated calls become direct function calls, partial application gets a principled stack-allocated representation, and Clef's computational model stays aligned with MLIR's SSA form. Carrying Clef's semantics faithfully through the pipeline is what our Fidelity framework is named for, and tracking arity on the side of caution is one of the places that commitment shows. We will keep refining the arity propagation and escape analysis as the compiler work continues.
+Tracking arity conservatively lets currying reach native code without an obstacle in its path: saturated calls become direct function calls, and partial application gets a principled representation instead of a heap allocation the runtime would have to manage. It is also the first step in a chain we hold to for every function value. Arity decides whether a value is a closure at all; when it is, the [flat closure](/docs/design/memory/gaining-closure/) makes that value safe by construction, its lifetime and inhabitance resolved at the moment it is built; and because the framework does not discard what it has resolved, that safety is carried through lowering rather than reconstructed at the bottom. Each link holds because the one before it does, and none of them surrenders a design-time fact to a lower stratum. That refusal to throw information away is what our Fidelity framework is named for. We will keep refining the arity propagation and escape analysis as the compiler work continues.
 
 ---
 
