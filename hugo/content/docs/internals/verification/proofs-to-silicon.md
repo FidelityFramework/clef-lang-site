@@ -184,7 +184,7 @@ The Fidelity Framework's integrated approach to verification is designed to coll
 
 The PSG is designed to persist as a long-lived data structure maintained by the language server. The elaborated, saturated graph would serve as the data source for all design-time services: hover information, resolution panels, diagnostic overlays, and restructuring suggestions. These feedback categories are all properties of the PSG that the compiler computes as part of normal compilation. Lattice will read the PSG; the design-time tooling is a view over the compilation graph.
 
-The information accrual principle formalizes why preservation matters. Each compilation stage has strictly more information than its predecessor:
+The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) formalizes why preservation matters. Each compilation stage has strictly more information than its predecessor:
 
 \[I_{\text{source}} \subset I_{\text{PSG}} \subset I_{\text{MLIR}} \subset I_{\text{MLIR-opt}} \subset I_{\text{LLVM}} \subset I_{\text{native}}\]
 

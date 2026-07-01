@@ -208,7 +208,7 @@ let localBuffer : Ptr<float32, Stack, ReadWrite> = ...
  
 ```
 
-The critical point is **when** these constraints are erased. In .NET, phantom types disappear before code generation - they exist only for type checking. In Clef, dimensional constraints are preserved through the Program Semantic Graph (PSG), carried through MLIR generation, and available for target-specific optimization. They're only erased at the final lowering stage, **after** all compilation decisions that can benefit from them have been made. This is what we mean by "intrinsic" - the dimensional information is woven into the compiler's representation at every level where it can inform code generation. It's ***also*** among the reasons why we gave our framework the name "Fidelity".
+The critical point is **when** these constraints are erased. In .NET, phantom types disappear before code generation - they exist only for type checking. In Clef, dimensional constraints are preserved through the Program Semantic Graph (PSG), carried through MLIR generation, and available for target-specific optimization. They're only erased at the final lowering stage, **after** all compilation decisions that can benefit from them have been made. This is one instance of a discipline the compiler holds to everywhere, that [information it establishes is not discarded in lowering](/docs/design/structure-and-performance/information-is-not-discarded/); dimensions are carried for the same reason arity and closure lifetimes are. This is what we mean by "intrinsic" - the dimensional information is woven into the compiler's representation at every level where it can inform code generation. It's ***also*** among the reasons why we gave our framework the name "Fidelity".
 
 ## The SSA Bridge
 
