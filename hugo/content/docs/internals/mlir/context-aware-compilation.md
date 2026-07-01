@@ -387,7 +387,7 @@ type HybridDeepSeekBitNet = {
         Operations: Add/Subtract only
         MemoryPattern: Sequential streaming
         Coeffect: Pure, LowArithmeticIntensity
-        → Target: CPU with AVX-512
+        -> Target: CPU with AVX-512
     }
 
     // GPU-optimized components (parallel decompression)
@@ -395,7 +395,7 @@ type HybridDeepSeekBitNet = {
         Operations: Parallel decompression
         MemoryPattern: Random access
         Coeffect: HighParallelism, MemoryIntensive
-        → Target: GPU with warp-level primitives
+        -> Target: GPU with warp-level primitives
     }
 }
 ```
@@ -490,13 +490,13 @@ let adaptiveHybridInference (model: HybridModel) (stream: TokenStream) =
 
         // Coeffects guide dynamic rebalancing
         match workloadPattern with
-        | LongContext →
+        | LongContext ->
             // Shift more KV processing to GPU
             CompileStrategy.IncreaseGPUDecompression
-        | RapidTokenGeneration →
+        | RapidTokenGeneration ->
             // Maximize CPU ternary throughput
             CompileStrategy.OptimizeCPUPipeline
-        | Interactive →
+        | Interactive ->
             // Balance for low latency
             CompileStrategy.MinimizeHandoffs
     }

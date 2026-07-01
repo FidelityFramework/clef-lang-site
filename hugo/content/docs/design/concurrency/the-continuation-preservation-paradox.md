@@ -249,10 +249,10 @@ On the WAMI path, these effects map onto host functions:
 ```fsharp
 // the effect suspends the continuation
 HardwareEffect(I2CRead count, continuation)
-    ↓
+    // ↓
 // preserved on the WAMI path
 ssawasm.suspend $i2c_read
-    ↓
+    // ↓
 // host performs I/O and resumes with the result
 ssawasm.resume %continuation (result)
 ```
