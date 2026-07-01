@@ -13,7 +13,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-There are only two hard things in computer science: cache invalidation and naming things. Phil Karlton's quip has aged well, but the functional programming community might add a corollary: sometimes the name we pick makes things harder than they need to be.
+There are only two hard things in computer science: cache invalidation and naming things. Phil Karlton's quip has aged well, but the functional programming community might add a corollary: sometimes the name we pick makes things harder than they need to be. "Lazy" is one of those names, and underneath it sits something concrete: a thunk is a flat closure, [null-free by construction](/docs/design/language/null-free-by-construction/) and settled before it is forced.
 
 Consider "lazy evaluation." Henderson and Morris coined the term in their [1976 POPL paper](https://dl.acm.org/citation.cfm?id=811543), and it stuck. But "lazy" may be the least apt term in computing. A lazy evaluator isn't lounging around avoiding work; it's *poised*, ready to spring into action the instant a value is demanded. "Call-by-need" captures this better: computation happens precisely when needed, not before, not after. The lazy evaluator is the most *attentive* mechanism imaginable, tracking exactly which expressions remain unevaluated and responding immediately when circumstances change. That we named this disciplined, demand-driven approach after a vice rather than a virtue tells you something about how we think about work.
 
