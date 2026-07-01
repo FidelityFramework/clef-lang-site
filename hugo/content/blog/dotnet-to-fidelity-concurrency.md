@@ -12,7 +12,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-We have been working on the Fidelity framework for a while, and it's been a journey to find the right balance of familiar conventions with new capabilities. Nowhere is that more apparent than in the async/task/actor models for concurrent programming.
+Clef's concurrency reads like the async, task, and actor models a .NET developer already knows, and compiles to something quite different underneath. The surface conventions carry over; what happens beneath them does not.
 
 ## The Iceberg Model: Familiar on the Surface, Different Underneath
 

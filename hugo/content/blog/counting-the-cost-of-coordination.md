@@ -11,11 +11,9 @@ params:
 
 Concurrency has been the through-line of our work from the start. We describe Clef as a concurrent programming language that happens to use ML-family semantics inside our Native Type Universe, and the ordering in that sentence is deliberate. The functional core, the immutability, the parametric types, the computation expressions, is the material we build with. What we are building is a language whose first concern is how programs run alongside one another safely and efficiently.
 
-That concern has two faces, and we have written about both. The first is correctness: whether a concurrent program stays safe and makes progress. We took that up in [Fearless Concurrency Gets Real](/blog/fearless-concurrency-gets-real/), prompted by an interview where a Rust maintainer described that language's borrow checker fighting the developer, and in that entry we argued that our compiler should carry that burden, not the person at the keyboard. 
+Running alongside safely is one problem; running alongside efficiently is another. Correctness, whether a concurrent program stays safe and makes progress, is the one [Fearless Concurrency Gets Real](/blog/fearless-concurrency-gets-real/) took up, prompted by an interview where a Rust maintainer described that language's borrow checker fighting the developer. The argument there was that the compiler should carry that burden, not the person at the keyboard.
 
-> This post addresses the second face: **performance**. 
-
-Concurrency is a wider domain than correctness alone, and the cost of coordinating concurrent work is its own structural problem. We have addressed it the same way, by building the answer into how a program is organized, so that the cost is not left for a developer to tune away by hand.
+Performance is the other problem, and it is this post's subject. The cost of coordinating concurrent work is its own structural problem, and we approach it the same way: build the answer into how a program is organized, so the cost is not left for a developer to tune away by hand.
 
 A recent talk states that performance problem as well as anyone, so we will start there. Jon Gjengset gave it this spring, "The Cost of Concurrency Coordination," and it walks the cost of multi-threaded coordination all the way down to the CPU cache line. The slide framing is "Are Mutexes Slow?", and the answer he builds toward is that the question was never really about mutexes. It is worth watching in full, because the reasoning is careful and the conclusion lands somewhere more interesting than the title suggests.
 
