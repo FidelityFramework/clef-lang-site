@@ -121,7 +121,7 @@ The native representation uses a tag byte followed by the payload:
 └──────────┴─────────┴────────────────────────────────────┘
 ```
 
-This follows the algebraic data type tradition from ML and OCaml, with one significant refinement: tag values are deterministic based on declaration order (0, 1, 2, ...), enabling predictable serialization and cross-process communication.
+This follows the algebraic data type tradition from ML and OCaml, with one refinement of our own: the tag is a compile-time case index assigned in declaration order (0, 1, 2, ...). Under the BCL a union case is a managed object whose type the runtime resolves on access; here the case is settled in the layout before the program runs, so the generated code reads a known position rather than asking what it is holding. That index is what BAREWire carries across a process or hardware boundary as a typed contract both endpoints are built to read, so a value arrives as the same native union it started as. The native layout is specified in [Discriminated Union Representation](/spec/draft/discriminated-union-representation/); the boundary contract is §7 of that document.
 
 ### Functions
 

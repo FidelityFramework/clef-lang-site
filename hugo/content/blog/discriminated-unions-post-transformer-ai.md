@@ -15,7 +15,7 @@ The AI industry stands at an inflection point. As detailed in our ["Beyond Trans
 
 > Current tensor-only representations may not optimally capture the heterogeneous computational patterns these models require.
 
-This insight emerged from our practical work on [CNN to Topological Object Classification (TopOC) transfer learning](/blog/cnn-to-topoc-transfer-learning/), where we recently discovered that heterogeneous representations were essential for maintaining dimensional integrity across different mathematical domains. This article explores our early investigation into how BAREWire's discriminated union-aware memory layout could address this gap more broadly, though we emphasize this remains a theoretical direction requiring substantial research to verify.
+This insight emerged from our practical work on [CNN to Topological Object Classification (TopOC) transfer learning](/blog/cnn-to-topoc-transfer-learning/), where we recently discovered that heterogeneous representations were essential for maintaining dimensional integrity across different mathematical domains. This article explores our early investigation into how BAREWire's discriminated union-aware memory layout could address this gap more broadly, though we emphasize this remains a theoretical direction requiring substantial research to verify. If you know discriminated unions only from .NET, where a case is a tagged object on the managed heap, the "memory layout" framing here is the right starting intuition, but it had to mature: a native representation cannot lean on a runtime that discriminates cases for it. That need pushed the idea into the typed-contract model BAREWire carries today, worked out in [the discriminated-union specification](/spec/draft/discriminated-union-representation/) and anchoring [the constellation]({{< ref "/docs/design/constrained-machine-learning/the-constellation" >}}).
 
 ## The Post-Transformer Memory Challenge
 
@@ -98,7 +98,7 @@ We see these representations may serve to match the mathematical structure of po
 
 ## BAREWire's Key: Zero-Copy Operations
 
-Our work in developing BAREWire for general use suggests it might serve well to transform these type representations into efficient memory layouts using the BARE protocol's ability to natively handle discriminated unions. This could be particularly interesting for the mixed computational patterns in post-transformer architectures:
+Our work in developing BAREWire for general use suggests it might serve well to carry these type representations across a boundary as efficient, zero-copy layouts. Because a discriminated union's case structure is fixed in the type at compile time, BAREWire can transport it as a typed contract both endpoints are built to read, rather than a value the receiver has to discriminate at runtime. This could be particularly interesting for the mixed computational patterns in post-transformer architectures:
 
 ### Theoretical Matmul-Free Memory Layout
 
@@ -139,7 +139,8 @@ type MambaLayer =
 
 // Conceptual zero-copy state updates
 let processSequence (layer: Region<MambaLayer, 'r>) (input: Tensor) =
-    match BAREWire.readVariant layer with
+    // the case is fixed in the type; this reconstructs the native union, it does not discover the case at runtime
+    match BAREWire.reconstruct layer with
     | StateUpdate(A, B, state) ->
         // Potential in-place state update without allocation
         for t in 0 .. seqLength - 1 do

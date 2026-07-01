@@ -383,7 +383,7 @@ The opaque handle enables location transparency (sending messages without knowin
 
 ### 2. Message Pattern Clarity
 
-Discriminated unions give a type-level representation of message protocols, and pattern matching handles those messages directly. The alignment between the two is why the actor model fits functional programming so well. Our Fidelity design uses discriminated unions as the primary way to define actor message protocols, backed by BAREWire's data layout. The type system checks that all message variants are handled, which keeps message handling readable and maintainable.
+Discriminated unions give a type-level representation of message protocols, and pattern matching handles those messages directly. The alignment between the two is why the actor model fits functional programming so well. Our Fidelity design uses discriminated unions as the primary way to define actor message protocols, backed by BAREWire's data layout. Where a .NET actor would ship a tagged heap object and trust the runtime to sort the case out, that data-layout framing needed to mature into a typed message [contract](/spec/draft/discriminated-union-representation/) both endpoints read by construction, so the case is settled before a message ever crosses the boundary. The type system checks that all message variants are handled, which keeps message handling readable and maintainable.
 
 ### 3. Minimalist API Surface
 

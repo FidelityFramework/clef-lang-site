@@ -549,7 +549,7 @@ The restart limits (maxRestarts within a time window) prevent infinite restart l
 
 ## BAREWire as the Universal Protocol
 
-Regardless of transport mechanism, all actor messages use BAREWire encoding. BAREWire is a binary serialization protocol derived from the BARE specification, designed for minimal overhead and zero-copy potential. A BAREWire message is compact, deterministic, and self-describing through schema.
+Regardless of transport mechanism, all actor messages use BAREWire. BAREWire is our binary interchange contract, built on the external BARE encoding. Both endpoints derive their read and write code from the same message types at compile time, so a frame is compact and deterministic and neither side inspects a self-describing tag at runtime to discover what it received.
 
 The message envelope wraps every actor-to-actor communication. It contains routing information (source and target actor IDs), optional correlation ID for request-response matching, message type discriminator, the payload itself, and a timestamp for debugging and ordering purposes.
 

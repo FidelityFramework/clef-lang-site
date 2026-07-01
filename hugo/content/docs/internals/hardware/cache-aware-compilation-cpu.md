@@ -560,7 +560,7 @@ These hints guide the compiler's optimization strategies while maintaining sourc
 The most significant challenge in migration is library dependencies, where language features present far less friction. Projects heavily dependent on .NET-specific libraries like Entity Framework, ASP.NET Core, or Windows Forms would require more substantial rework. However, for domains where Fidelity excels - high-performance computing, embedded systems, real-time processing - many .NET dependencies could be replaced with Fidelity-native alternatives that provide better performance characteristics.
 
 We're particularly focused on ensuring that core F# idioms and patterns translate cleanly:
-- Discriminated unions map to efficient tagged unions in BAREWire
+- Discriminated unions compile to Clef's native sum-type representation, which BAREWire carries across a boundary as a typed contract
 - Record types maintain their immutable semantics with copy-on-write optimizations
 - Computational expressions preserve their monadic structure while compiling to efficient state machines
 - Active patterns continue to work with optimized pattern matching
