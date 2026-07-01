@@ -1,0 +1,22 @@
+{{- /*
+  Project override of Hugo's built-in youtube shortcode.
+  Wraps the standard responsive embed in a classed container so spacing
+  and width can be controlled from custom.css, rather than hooking the
+  inline style (which HTML minification strips of spaces and quotes,
+  defeating [style*="..."] attribute selectors in production).
+  Accepts the same first positional arg (the video id) as the built-in.
+*/ -}}
+{{- $id := .Get 0 -}}
+{{- with $id -}}
+<div class="yt-embed">
+  <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden">
+    <iframe
+      src="https://www.youtube.com/embed/{{ . }}"
+      loading="eager"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+      title="YouTube video"></iframe>
+  </div>
+</div>
+{{- end -}}

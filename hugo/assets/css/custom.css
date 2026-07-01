@@ -36,18 +36,17 @@ code, pre, kbd {
 }
 
 /* ── YouTube embeds ────────────────────────────────────────────
-   Hugo's built-in youtube shortcode emits a class-less responsive
-   wrapper (position:relative; padding-bottom:56.25%; height:0).
-   Match on the bare "56.25%" so the selector holds whether or not
-   the inline style is minified (prod drops the space after the colon).
+   Targets the .yt-embed wrapper from our youtube shortcode override
+   (layouts/shortcodes/youtube.html) — a stable class rather than the
+   inline style, which HTML minification mangles in production.
    Give it breathing room above and below, and cap its width on
    large screens so it does not span the full measure of the text. */
-.content div[style*="56.25%"] {
+.yt-embed {
   margin: 2.5rem auto;
   max-width: 46rem;
 }
 @media (min-width: 768px) {
-  .content div[style*="56.25%"] {
+  .yt-embed {
     margin-top: 3rem;
     margin-bottom: 3rem;
   }
