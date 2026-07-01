@@ -64,9 +64,9 @@ That representation choice, once made, is not discarded on the way to the machin
 
 ## A Vestige of the Past
 
-The video that opens this post is worth the watch in full; it takes a bug that hides behind a correct-looking check and makes every step of it legible. Bugs of this shape are not rare. They sit in production code everywhere, in the quiet gap between what a procedure intends and what the code assumes, and they reside in plain site for decades precisely because they are so hard to see. What is changing is that they are getting easier to surface. Language models are increasingly good at reading code the way this video does, tracing a value across a boundary and noticing the assumption that no line states, and they will keep turning up anomalies this deep.
+The video that opens this post is worth the watch in full; it takes a bug that hides behind a correct-looking check and makes every step of it legible. Bugs of this shape are not rare. They sit in production code everywhere, in the quiet gap between what a procedure intends and what the code assumes, and they reside in plain sight for decades precisely because the language makes them so hard to see. What is changing is that they are getting easier to surface. "AI" large language models are increasingly good at parsing details from code the way this video does, tracing a value across a boundary and noticing the assumption, and they will keep turning up anomalies wherever they lurk.
 
-We would rather these bugs have nowhere to live than be found one at a time. That is much of why we are building full memory safety into the Fidelity Framework: not to catch this class of failure after the fact, but to make the state it depends on unrepresentable, so the invisible coupling that produces it is written into the type from the start. The goal is that a bug like this one reads, someday, as a vestige of the past.
+We would rather these bugs have nowhere to live than be found one at a time. That is much of why we are building full memory safety into the Fidelity Framework: not to catch this class of failure after the fact, but to make the semantic it depends on unrepresentable. Our goal is that a bug like this, someday, will be a forgotten vestige of the past.
 
 ## Reading Further
 
