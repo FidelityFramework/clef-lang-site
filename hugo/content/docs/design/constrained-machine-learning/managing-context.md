@@ -65,6 +65,7 @@ let porousStep (mlgru: MLGRU) (adm: DomainActor) (h: RecurrentState) : Recurrent
                                                 // surfaces at the message fabric
         mlgru.IntegrateAndResume (h, fact)      // grounded state re-enters under
                                                 // dimensional and coeffect constraints
+ 
 ```
 
 The integration of a StructuredFact is independently supported by what the lineage already measures. The [λ-RLM framework](https://arxiv.org/abs/2603.20105) of Roy et al., titled for solving long-context rot with the lambda calculus, ties the recursion of an LLM externally with a fixed-point combinator and invokes the neural oracle only on bounded subproblems. It outperforms standard recursive LLM approaches in 29 of 36 model-task comparisons, with accuracy gains up to 21.9 points and latency reductions up to 4.1x, which establishes that structural control around neural inference produces measurable gains. Its combinators decompose problems by size, by Split, Map, and Reduce, and the work it leaves open is the one our porous loop is designed for: a query decomposed by domain semantics, answered by a domain-specialized posterior, integrated as structured state. Our consultation fills the gap where structural decomposition has no mechanism for domain-specific posterior distributions.

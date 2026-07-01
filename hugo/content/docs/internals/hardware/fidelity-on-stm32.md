@@ -233,6 +233,7 @@ module internal PlatformOptimization =
             structDef |> alignFields 8 |> padForCache
         | _ ->
             structDef // Use default layout
+ 
 ```
 
 This platform-aware optimization happens when the library is generated, producing memory layouts tailored to the specific target device. Application developers benefit from these optimizations automatically when they reference the library.

@@ -57,6 +57,7 @@ let inline isNonZero x =
 let result1 = isNonZero 42
 let result2 = isNonZero 3.14
 let result3 = isNonZero 0I  // BigInteger
+ 
 ```
 
 Clef doesn't privilege any particular syntax. Operations can be functions, methods, operators, or properties. The polymorphism emerges from the structure of the types themselves, rather than from explicit trait implementations. This reflects Clef's functional-first philosophy, where functions and values are treated uniformly.
@@ -101,6 +102,7 @@ impl Mul for Complex {
 
 // With procedural macros from external crates:
 // #[derive(Add, Mul)]  // Could auto-generate the above implementations
+ 
 ```
 
 The orphan rule ensures coherence but means you must implement traits for every type combination. Rust's macro ecosystem, including procedural macros that can inspect type structure and generate implementations, reduces boilerplate in practice. The implementations must still exist somewhere in the compiled code, even if generated.
@@ -177,6 +179,7 @@ let inline scale scalar vector =
     Array.map ((*) scalar) vector
 
 let scaled = scale 2.5 [|1; 2; 3|]  // float * int array, if supported
+ 
 ```
 
 Clef infers that `sum` needs addition and a zero, that `map2` needs multiplication. The constraints emerge from the operations themselves.
@@ -236,6 +239,7 @@ let inline pythagoras a b =
 let sumInts = genericSum [1; 2; 3; 4]
 let sumFloats = genericSum [1.0; 2.0; 3.0]
 let productMatrices = genericProduct [m1; m2; m3]  // If matrices define (*)
+ 
 ```
 
 The compiler tracks which operations are used and ensures they're available at each call site. The polymorphism emerges from the code's structure.
@@ -367,6 +371,7 @@ let total = totalLength containers  // 5
 
 // Also works with strings, arrays, lists
 let stringTotal = totalLength [| "hello"; "world" |]  // 10
+ 
 ```
 
 Clef's resolution is based purely on structure: if the type has the member, it works. This is possible because Clef doesn't need to track ownership and lifetimes in the same way. The tradeoff is that standard F# relies on the .NET runtime's garbage collector for memory management, while our Fidelity framework is designed to provide different memory management strategies.
@@ -403,6 +408,7 @@ let inline fastSum (arr: ^T[]) =
 // Compiles to tight loops with no abstraction overhead
 let sumInts = fastSum [|1..1000000|]      // Integer addition loop
 let sumFloats = fastSum [|1.0..1000000.0|] // Floating-point loop
+ 
 ```
 
 For our Fidelity framework's compilation through MLIR, SRTP's preservation of type relationships is designed to enable domain-specific optimizations that can target specific hardware accelerators, which we see as an advantage for heterogeneous computing scenarios.

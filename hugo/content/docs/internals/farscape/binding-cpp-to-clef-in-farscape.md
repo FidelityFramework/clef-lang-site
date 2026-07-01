@@ -246,6 +246,7 @@ type Data =
     val mutable _pad3: byte // offset 10
     val mutable _pad4: byte // offset 11
     // Total size: 12 bytes -- matches C layout exactly
+ 
 ```
 
 The layout analysis considers:

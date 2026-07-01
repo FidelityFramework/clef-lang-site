@@ -119,6 +119,7 @@ let bitnetLayer (input: Tensor) (weights: PackedBitArray) (scale: float32) =
     }
 
 // Compiles to highly efficient SPIR-V with no tensor cores needed!
+ 
 ```
 
 ### State Space Models (Mamba, RWKV)
@@ -244,6 +245,7 @@ let matMulFreeLayer (input: Tensor<float32>) (weights: TernaryTensor) =
 // - Keeps weights in shared memory (2 bits each!)
 // - Accumulates in registers (no memory bandwidth issues)
 // - Achieves near-theoretical ALU utilization
+ 
 ```
 
 ### Hybrid CPU-GPU Execution

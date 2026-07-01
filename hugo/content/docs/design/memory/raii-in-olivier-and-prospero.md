@@ -133,6 +133,7 @@ type DataProcessor() =
 // delimited continuations and scope analysis. The developer
 // never writes cleanup code - it's inserted during IR lowering
 // based on actor lifecycle boundaries and continuation points.
+ 
 ```
 
 This transformation illustrates how compile-time analysis replaces runtime introspection. The Composer compiler — through CCS (Clef Compiler Services) and the nanopass enrichment pipeline — identifies actor state, determines allocation patterns, and generates appropriate RAII semantics in the MLIR, all without runtime overhead or developer intervention.
@@ -264,6 +265,7 @@ type AggregationActor() =
     
     // No disposal code needed - cleanup occurs when
     // the actor terminates based on lifecycle analysis
+ 
 ```
 
 This example illustrates how different actors have different memory patterns, all managed through RAII principles implemented in the compilation process. The ingestion actor uses scoped allocations for temporary data, while the aggregation actor maintains long-lived state, both with automatic deterministic cleanup.

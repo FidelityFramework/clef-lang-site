@@ -98,6 +98,7 @@ MLIR's block arguments preserve function call structure:
 ^bb1(%x: i32, %y: i32):
   // Clean parameter passing
   // Optimizer sees the function structure clearly
+ 
 ```
 
 Parameters flow through blocks naturally, maintaining the function abstraction. This means:
@@ -216,6 +217,7 @@ This is non-negotiable. Without `inline`, the compiler cannot generalize statica
 ```fsharp
 // REQUIRED: inline for SRTP
 let inline add x y = x + y  // ^a -> ^b -> ^c with (+) constraint
+ 
 ```
 
 The type system needs to see the concrete types at each call site to resolve which `(+)` operator to invoke. This is **semantic inline**: the keyword changes the meaning of the program, not just its performance characteristics.
@@ -234,6 +236,7 @@ let inline readln () : string =
     NativeStr.fromPointer buffer len
     // Without inline: buffer is deallocated, pointer dangles
     // With inline: allocation lifted to caller's frame, pointer valid
+ 
 ```
 
 This is **safety inline**: without it, you get undefined behavior. The pointer escapes the stack frame, creating a use-after-free vulnerability.
@@ -309,6 +312,7 @@ let inline add x y = x + y  // ^a -> ^b -> ^c
 
 // REQUIRED: inline for generalization
 // DOWNSIDE: Code duplication at every call site
+ 
 ```
 
 ### New Pattern (Static Abstract Members)
@@ -322,6 +326,7 @@ let add<'T when 'T :> IAddable<'T>> (x: 'T) (y: 'T) =
 
 // NO inline required!
 // BENEFIT: Real function, MLIR can inline with context
+ 
 ```
 
 ### Comparison
@@ -449,6 +454,7 @@ func.func @process(%data: memref<?xf32>) {
 // CPU backend: might preserve function call
 // GPU backend: likely inlines into kernel
 // μC backend: decides based on code size constraints
+ 
 ```
 
 Real functions in MLIR preserve **optimization flexibility** across targets. Early inlining in Clef source **commits** to a single strategy for all platforms.

@@ -159,6 +159,7 @@ let greetAlice = makeGreeter "Alice"
 let greetBob = makeGreeter "Bob"
 Console.writeln (greetAlice "Hello, ")   // "Hello, Alice"
 Console.writeln (greetBob "Welcome, ")   // "Welcome, Bob"
+ 
 ```
 
 The syntax is unchanged. The semantics are unchanged. What differs is the underlying representation: stack-allocated flat closures instead of heap-allocated reference types, explicit lifetime management instead of garbage collection, zero runtime overhead instead of GC pause potential.

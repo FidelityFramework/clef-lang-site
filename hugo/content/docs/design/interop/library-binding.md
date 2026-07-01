@@ -530,6 +530,7 @@ stm32l4_hal = { version = "2.1.5", binding = "dynamic" }
 
 [binding]
 default = "static"  # Default to static for embedded
+ 
 ```
 
 This configuration reflects the different requirements of each component:

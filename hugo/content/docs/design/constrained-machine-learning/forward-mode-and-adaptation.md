@@ -31,6 +31,7 @@ let forwardGradient
     tangents
     |> propagateAlongside model input   // primal and all tangents in one pass
     |> assembleGradient                  // gradient over the structured subspace
+ 
 ```
 
 Multiple tangents are what make this competitive. A multi-tangent forward pass carries a batch of directional derivatives at once, and if that batch spans the derived structure's rank, a single structured forward pass would yield the gradient over the directions that matter, with no tape. Our architecture supplies the low rank that makes the tangent set small; the forward pass supplies the gradient without the reverse-mode storage. Each rescues the other from its worst case, and neither rescue is available to a black-box model, which has no principled small set of directions, or to a floating-point model, whose accumulated tangents would be too noisy to trust at the bit-widths in play.
@@ -57,6 +58,7 @@ let stepDual (u: GradedSubspaceBasis<Bivector>) (z: Dual<1>[]) : Dual<1>[] =
             |> Array.map Quire.round
         { Primal = p; Tangents = dt })
 // The gradient over the r directions is read off the Tangents fields.
+ 
 ```
 
 ## Precise arithmetic and trustworthy tangents
@@ -80,6 +82,7 @@ type LoraAdapter<[<Measure>] 'Dim, 'Rank> =
 let tangentBasis (adapter: LoraAdapter<'Dim, 'Rank>) : TangentBasis =
     TangentBasis.spanning [ Param.columns adapter.Down
                             Param.columns adapter.Up ]   // |basis| = 2·r
+ 
 ```
 
 Distillation has the same shape. Distilling from a teacher into a student adapter, or refreshing the Clef adapter against an evolved grammar, is a low-rank fine-tuning operation, the one performed most often in practice. These are the regimes where a few storage-free forward passes cost less than a full reverse-mode pass with its tape, and they are the regimes the constellation lives in, because a constellation of domain models plus a language component is rebuilt and re-adapted far more often than it is trained from scratch.

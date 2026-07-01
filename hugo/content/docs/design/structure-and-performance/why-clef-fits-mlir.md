@@ -219,6 +219,7 @@ let processReadings (readings: SensorReading array) =
 
 // This functional pipeline maps directly to SSA form:
 // Each operation becomes a basic block with clear data flow
+ 
 ```
 
 In our intended lowering, this maps to efficient MLIR because the structure already expresses what SSA represents:

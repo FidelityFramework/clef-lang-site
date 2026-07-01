@@ -41,6 +41,7 @@ let exponential (g: BlockGenerator) : BlockTransform =
     g.blocks
     |> Array.map expBlock                       // block-diagonal in, block-diagonal out
     |> BlockTransform.assemble                  // off-block zeros never enter the sum
+ 
 ```
 
 **The obligations are tiered and discharged, not asserted.** Structure that is decidable is discharged automatically at the appropriate tier; structure that is not is carried as an explicit obligation to a relational backend, with the faithfulness of each result recorded rather than assumed. The model does not merely claim its invariants; it carries the evidence that they hold, into the running artifact.

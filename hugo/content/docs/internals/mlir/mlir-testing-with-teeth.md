@@ -65,6 +65,7 @@ But `lit` + `FileCheck`'s strengths reveal their limitations. The very features 
 
 ```mlir
 // CHECK: %{{[0-9]+}} = func.call @__mlir_math_ctlz_i32(%{{[0-9]+}}) : (i32) -> i32
+ 
 ```
 
 This pattern has multiple failure modes:
@@ -89,6 +90,7 @@ Because `lit` extracts directives from comments via regex, there's no compile-ti
 ```mlir
 // RUN: mlir-opt %s --some-typo-pass | FileCheck %s
 // CHECK: some.nonexistent.operation
+ 
 ```
 
 This test won't fail until runtime. If the pass name is wrong, you discover it in CI, or worse, when the test silently stops testing what you thought it tested. There's no type safety, no autocomplete, no refactoring support.
@@ -446,6 +448,7 @@ Let's compare approaches directly:
 // RUN: mlir-opt %s --convert-math-to-funcs | FileCheck %s
 // CHECK: %{{[0-9]+}} = func.call @__mlir_math_ctlz_i32(%{{[0-9]+}}) : (i32) -> i32
 // CHECK-NOT: math.ctlz
+ 
 ```
 
 **Problems:**
@@ -688,6 +691,7 @@ match testNeeds with
         }
     ]
     // NO tests for safeGet itself - already proven
+ 
 ```
 
 The SMT solver validates that our boundary check (`lines.Length > 0`) actually satisfies `safeGet`'s precondition. If it doesn't, compilation fails, no test needed. Tests focus on **external I/O behavior** and **unproven composition logic**, not on proven primitives.

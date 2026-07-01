@@ -92,6 +92,7 @@ let stepFromGenerator (g: GradedGenerator<Bivector>) : ReversibleStep<HeadState>
     { forward   = applyExp g                 // exp(+g): advance one position
       backward  = applyExp (Generator.negate g)   // exp(-g): retreat one position
       roundTrip = Verifier.dischargeRoundTrip g }  // exp(-g) ∘ exp(+g) = id
+ 
 ```
 
 The runtime traversal is where this becomes a mechanism rather than a guarantee. An attention head carrying a reversible recurrence holds its current state and can run the backward step to reach an earlier one, on demand, during inference. The traversal is the forward recurrence's mirror, and it is the same arithmetic substrate that makes it exact rather than approximately reversible:

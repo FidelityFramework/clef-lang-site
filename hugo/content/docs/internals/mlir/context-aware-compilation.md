@@ -53,6 +53,7 @@ let matrixMultiply (a: Matrix) (b: Matrix) =
 // - Every element computation is independent
 // - Maps directly to GPU thread blocks
 // - No synchronization needed until final result
+ 
 ```
 
 ```mermaid
@@ -95,6 +96,7 @@ let enrichDataPoints (points: DataPoint[]) = async {
 // - Must maintain order for external service calls
 // - Can optimize service call batching
 // - Handles failure/retry gracefully
+ 
 ```
 
 The choice between interaction nets and delimited continuations fundamentally determines what optimizations are possible and which hardware can efficiently execute the code.
@@ -110,6 +112,7 @@ type ContextRequirement =
     | MemoryAccess of AccessPattern  // Data access pattern → Guides parallelization
     | ResourceAccess of Resource Set // External resources → Delimited continuations
     | Temporal of HistoryDepth       // Needs past values → Streaming architecture
+ 
 ```
 
 The Fidelity compiler will be designed to automatically infer these requirements:
@@ -132,6 +135,7 @@ let runSimulation (grid: float[,]) =
 // - Regular memory access pattern (stencil)
 // - Recursive structure (iterative refinement)
 // → Compile to interaction nets on GPU
+ 
 ```
 
 ## Real Hardware, Real Decisions
@@ -160,6 +164,7 @@ let analyzeTimeSeries (data: TimePoint[]) =
 // - Use CPU SIMD for statistics
 // - Parallelize across cores with cache-aware chunking
 // - No GPU transfer overhead worth it
+ 
 ```
 
 ### GPU: Massive Data Parallelism
@@ -183,6 +188,7 @@ let processImages (images: Image[]) =
 // - Interaction nets mapping to GPU warps
 // - Texture memory for convolution kernels
 // - Fused kernel execution
+ 
 ```
 
 ### Custom Accelerators: Adaptive Execution
@@ -218,6 +224,7 @@ let runInference (model: Model) (input: Tensor) =
 // - Convolution → Spatial → Configure as 2D mesh
 //
 // Maverick reconfigures between layers!
+ 
 ```
 
 ## The Coeffect Advantage
@@ -264,6 +271,7 @@ let monteCarloSimulation (initialState: MarketState) (scenarios: int) =
 
 // Pure computation with independent scenarios
 // → Interaction nets on GPU for massive parallelism
+ 
 ```
 
 ### Real-Time Signal Processing
@@ -278,6 +286,7 @@ let processAudioStream (stream: AudioSample seq) =
 
 // Temporal coeffects with real-time constraints
 // → CPU SIMD with predictable latency
+ 
 ```
 
 ### Bioinformatics
@@ -290,6 +299,7 @@ let alignSequences (reference: DNA) (samples: DNA[]) =
 
 // Memory-intensive pure computation
 // → NUMA-aware CPU parallelism
+ 
 ```
 
 ## The Telemetry Bonus
@@ -311,6 +321,7 @@ let processOrder order =
 // - createShipment calls external API → Record API metrics
 //
 // Telemetry inserted at natural boundaries with zero overhead
+ 
 ```
 
 This telemetry falls out of the same analysis that drives optimization, rather than being bolted on after the fact. Fidelity's Program Semantic Graph the static resolution of interaction nets and delimited continuations mean that all code paths are known and fully traceable. There are no opaque allocations or "object downcasts" of convenience that obscure data and control flow. Establishing determinism and tracking it through the compute graph is the secret superpower of this approach.

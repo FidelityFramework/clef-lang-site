@@ -43,6 +43,7 @@ type ReverseCurrent = -float<A>          // dimension A, reverse direction
 // Fractional types invert the dimension through the abelian-group inverse.
 type Compliance  = Recip<float<N>>       // dimension N⁻¹, a constraint
 type Conductance = 1/float<ohm>          // dimension ohm⁻¹, a constraint
+ 
 ```
 
 The `η` and `ε` morphisms that establish the compact closed structure appear as primitive operations, `eta_plus` introducing a `('T + Neg<'T>)` pair and `epsilon_plus` annihilating it, with multiplicative variants `eta_times` and `epsilon_times` for the fractional case. These are not function calls. They are type-level structural transitions that Baker recognizes during elaboration and settles on the Program Semantic Graph as codata, which the middle end later witnesses and elides into the corresponding MLIR constructs, the same mechanism the dimensional and lifetime annotations already use.

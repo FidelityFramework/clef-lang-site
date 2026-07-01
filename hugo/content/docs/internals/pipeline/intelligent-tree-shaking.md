@@ -211,6 +211,7 @@ type Command =
 // - Pause, Resume, Restart can be eliminated entirely
 // - Status needs constructor but not pattern match code
 // - Only Start and Stop need full support
+ 
 ```
 
 The memory layout analyzer integrates with tree shaking to optimize union storage based on actual usage patterns. If certain cases are eliminated, the union's memory layout can be optimized accordingly.
@@ -233,6 +234,7 @@ let floatSum = sumBy (fun x -> x * 2.0) [1.0; 2.0; 3.0]
 // Analysis generates exactly two specializations:
 // sumBy<int[], int> and sumBy<float list, float>
 // No generic version is retained
+ 
 ```
 
 ### Library Boundary Classification
@@ -245,6 +247,7 @@ type LibraryCategory =
     | CCSIntrinsics   // Fidelity native type system
     | FSharpCore      // F# runtime support
     | Other of string // Third-party libraries
+ 
 ```
 
 This classification enables targeted optimization strategies. User code receives the most aggressive pruning since we have complete visibility. CCS intrinsic functions can be eliminated with confidence because we understand their semantic contracts. FSharp.Core functions require more conservative analysis due to their foundational role in Clef semantics.
@@ -278,6 +281,7 @@ type LargeRecord = {
 // After integrated analysis
 // Memory layout optimized from 64 bytes to 16 bytes
 // Only Field1 and Field4 remain, optimally packed
+ 
 ```
 
 This integration enables sophisticated optimizations:
@@ -314,6 +318,7 @@ module Graphics =
 
     [<All>]
     let renderText(text: string) = // ... kept on all platforms
+ 
 ```
 
 When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed.
@@ -383,6 +388,7 @@ func.call @IProcessor.Process(%obj_ref, %arg) : (memref<1x!processor.interface>,
 // After tree-shaking analysis determines single implementation:
 // LLVM backend generates direct call (no vtable lookup)
 // call void @IntProcessor.Process(ptr %obj, i32 %arg)
+ 
 ```
 
 ### Memory Layout Specialization
@@ -398,6 +404,7 @@ type Option<'T> =
 // After analysis: Option<int> used only in non-null contexts
 // Optimized to unwrapped int with sentinel value for None
 // Reduces memory usage and eliminates pointer indirection
+ 
 ```
 
 ## The Road Ahead

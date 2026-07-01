@@ -137,6 +137,7 @@ let processFile() = async {
 // - Stack frame for continuation state (0 heap bytes)
 // - Automatic resource cleanup at scope boundaries
 // - Platform-specific I/O (IOCP on Windows, io_uring on Linux)
+ 
 ```
 
 The types themselves encode CPS structure. Frosty's async primitives make continuation capture explicit in their signatures, and the Composer compiler recognizes these patterns during type resolution, recording them in the Program Semantic Graph for code generation.

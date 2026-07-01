@@ -129,6 +129,7 @@ clefpak package [--verify]                   # Create .fidpkg archive
 clefpak publish [--registry <url>]           # Publish to registry
 clefpak search <query>                       # Search available packages
 clefpak yank <package> <version>             # Mark version as yanked
+ 
 ```
 
 This is a topic of some debate, and we expect the command set and discussion around its extension to continue as the system reaches more contributors in the community.

@@ -258,6 +258,7 @@ let write (fd: int) (buffer: nativeptr<byte>) (count: int) : int =
 // Resolved at compile time via platform descriptor
 // Linux x86_64: syscall 1, args in rdi/rsi/rdx
 // ARM64: svc 0x40, args in x0/x1/x2
+ 
 ```
 
 **Active Patterns for Type Matching**

@@ -129,6 +129,7 @@ module PSGZipper =
     let moveUp: PSGZipper -> PSGZipper option
     let followDataFlow: PSGZipper -> PSGZipper option      // Forward flow
     let followDemandFlow: PSGZipper -> PSGZipper option    // Backward flow
+ 
 ```
 
 The zipper tracks accumulated coeffects along the path, determining whether a computation is pure, requires async machinery, or accesses external resources. This feeds directly into the compilation strategy selection that Alex uses for hardware-aware code generation.
@@ -180,6 +181,7 @@ When control flow merges from multiple paths (like an if/else expression that re
 ^merge(%final: memref<?xi8>):
     // %final is the SSA value from whichever branch was taken
     // This is similar to the phi nodes in LLVM IR that .NET JIT generates
+ 
 ```
 
 For .NET developers: this is analogous to how the JIT compiler handles branching with PHI nodes, but MLIR keeps it explicit and type-safe at the intermediate representation level.
@@ -191,6 +193,7 @@ The `stackBuffer<byte> 256` expression in Clef generates stack allocation using 
 ```mlir
 %buffer = memref.alloca() : memref<256xi8>
 // Allocates 256 bytes on the stack, similar to stackalloc in C#
+ 
 ```
 
 This is directly analogous to C#'s `stackalloc byte[256]` or using `Span<byte>` backed by stack memory. The memref type tracks both the element type (`i8` for byte) and the size (256 elements).

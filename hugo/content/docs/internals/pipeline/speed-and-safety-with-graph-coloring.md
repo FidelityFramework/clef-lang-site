@@ -237,6 +237,7 @@ let runSimulation() = async {
 
 // Graph coloring reveals: each scenario is independent!
 // Transforms to interaction net with 10,000 parallel nodes
+ 
 ```
 
 ### Image Processing Pipeline
@@ -252,6 +253,7 @@ let pipeline image = async {
 
 // Zipper analysis finds: operations are pixel-independent
 // Each stage becomes a parallel interaction net
+ 
 ```
 
 ### Scientific Stencil Computation
@@ -268,6 +270,7 @@ let simulate grid steps = async {
 
 // Graph coloring of updateGrid reveals stencil pattern
 // Transforms to geometric interaction net
+ 
 ```
 
 ## The Transformation Pipeline

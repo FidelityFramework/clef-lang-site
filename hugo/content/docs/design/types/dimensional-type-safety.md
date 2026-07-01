@@ -142,6 +142,7 @@ F# has supported units of measure since 2008, based on Andrew Kennedy's academic
 let distance : float<meters> = 100.0<meters>
 let time : float<seconds> = 9.58<seconds>
 let velocity = distance / time  // float<meters/seconds>
+ 
 ```
 
 This works but is limited to numeric types (`float`, `decimal`, `int`, etc.). FSharp.UMX extended this through the `[<MeasureAnnotatedAbbreviation>]` attribute:
@@ -204,6 +205,7 @@ let localBuffer : Ptr<float32, Stack, ReadWrite> = ...
 // - Peripheral access uses appropriate memory barriers
 // - Flash reads don't attempt writes
 // - Stack allocations have appropriate lifetime
+ 
 ```
 
 The critical point is **when** these constraints are erased. In .NET, phantom types disappear before code generation - they exist only for type checking. In Clef, dimensional constraints are preserved through the Program Semantic Graph (PSG), carried through MLIR generation, and available for target-specific optimization. They're only erased at the final lowering stage, **after** all compilation decisions that can benefit from them have been made. This is what we mean by "intrinsic" - the dimensional information is woven into the compiler's representation at every level where it can inform code generation. It's ***also*** among the reasons why we gave our framework the name "Fidelity".
@@ -272,6 +274,7 @@ void vector_add(float* a, float* b, float* c, int n) {
 // - Streaming interfaces for a, b, c
 // - Fully pipelined loop body
 // - Concurrent read/compute/write stages
+ 
 ```
 
 The DATAFLOW pragma instructs the synthesizer to convert control dependencies into data dependencies. Operations that don't have true data dependencies can execute concurrently.

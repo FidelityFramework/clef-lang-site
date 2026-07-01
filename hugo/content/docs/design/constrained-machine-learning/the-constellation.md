@@ -32,6 +32,7 @@ type RelativityStep = { frame: Even<Sta>; event: Vector<Sta> }   // Lorentz (1,3
 [<Measure>] type yr
 type OptionQuote<[<Measure>] 'ccy> =
     { spot: float<'ccy>; vol: float<'ccy^0 / yr^(1/2)> }   // volatility carries yr^-(1/2)
+ 
 ```
 
 
@@ -67,6 +68,7 @@ let rotor (b: BlockDiagonal<Bivector<Pga>>) : Even<Pga> =
 // The defective case PGA carries natively: a null bivector.
 let translate (n: NullBivector<Pga>) : Motor<Pga> =
     Motor.one + n                            // n*n = 0, so exp(n) = 1 + n exactly
+ 
 ```
 
 

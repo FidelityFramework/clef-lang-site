@@ -57,6 +57,7 @@ let mssaStep (heads: GradedSubspaceBasis<Bivector>[]) (z: TokenField) : TokenFie
     |> SubspaceAggregation.byGrade        // head aggregation, structure-preserving
     |> skipConnection z                   // the "+ ln1(x)" of the published step
 
+ 
 ```
 
 The published operator and the reframed example above descend from the same objective, but the published one trains then drifts. The reframing is designed to carry something the original sample cannot: a subspace structure that survives training and lowering while maintaining precision of its bound. It does so by reading §4 (the rate-reduction principle) and §5 (the unrolled derivation) as a specification the type system enforces rather than a behavior the optimizer approximates. Four of our framework's constructs each make one of the book's descriptive claims constructive in this way:
@@ -78,6 +79,7 @@ let istaStep (d: Dictionary<BPosit>) (lambda: BPosit) (step: BPosit) (x: TokenFi
     let dtx  = Dictionary.adjoint d * x       // Dᵀ x
     let grad = step * (dtx - dtdx) - step * lambda    // negative-gradient update, in the quire
     x + grad |> TokenField.map (max BPosit.zero)      // ReLU: soft-threshold toward sparsity
+ 
 ```
 
 
@@ -100,6 +102,7 @@ let logDetThroughQuire (cov: Matrix<BPosit>) : BPosit =
     |> choleskyDiagonal          // the diagonal whose log-sum is the log-det
     |> Quire.sumOfLogs           // accumulated without intermediate rounding
     |> Quire.round               // a single rounding, at the end
+ 
 ```
 
 The contrast with the common reading is the same operation built two ways. The dense-substrate reading computes the rate term as a dense floating-point reduction, correct in expectation and quietly lossy in practice; the Fidelity reading computes it as a quire accumulation over grade-carrying quantities whose grade structure is known before the reduction runs:

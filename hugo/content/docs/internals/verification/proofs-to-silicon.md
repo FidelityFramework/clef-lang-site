@@ -119,6 +119,7 @@ let work (forces: Span<float<newtons>>) (distances: Span<float<meters>>) : float
     for i in 0 .. forces.Length - 1 do
         q <- Quire.fma q forces.[i] distances.[i]  // dimension: newtons * meters = joules
     Quire.toPosit q  // single rounding, dimension preserved
+ 
 ```
 
 From the DTS perspective, the quire is a numeric container whose dimensional semantics are determined by the posit values it accumulates. DTS would infer that `q` carries dimension `joules` and that the final conversion preserves this dimension. The source code carries no dimensional annotations beyond the parameter types.

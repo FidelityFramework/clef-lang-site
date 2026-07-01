@@ -85,6 +85,7 @@ let decode (model: Model) (grammar: ClefGrammar) (prompt: Tokens) : ClefSource =
     |> function
        | Ok program  -> program
        | Error diags -> reviseAgainst diags   // propose, check, revise
+ 
 ```
 
 The grammar guarantees syntax. The model's tuning shapes idiom. And Composer, the Clef compiler itself, becomes the final acceptance test: a generated program that does not elaborate is rejected, and its diagnostics feed a revision step. The compiler is the verifier the weights cannot be. This is the same posture the rest of Clef takes, where correctness is a property the toolchain establishes rather than a property the source is trusted to have, applied now to source the model wrote instead of source a person wrote.

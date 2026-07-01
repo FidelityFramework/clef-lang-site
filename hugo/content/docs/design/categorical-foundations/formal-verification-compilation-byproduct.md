@@ -70,6 +70,7 @@ When the engineer needs assurance beyond what inference provides, lightweight at
 [<Bounds("0.0 < temperature && temperature < 1000.0<celsius>")>]
 let updateState (state: SimulationState) : SimulationState =
     // ...
+ 
 ```
 
 These attributes are *mid-computation Hoare assertions*. Each one names a precondition or postcondition that must hold at a specific program point, and the compiler discharges the implication using Z3 over QF_LIA. The intended verification mechanism depends on the property:

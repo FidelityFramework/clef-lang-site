@@ -109,6 +109,7 @@ Lowering emits the verification condition for that scope into the SMT dialect, a
 %edges = collect rpc.wait_edge in @order_system
 smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
 smt.check   // sat: acyclic. unsat: the core is the cycle, reported as CCS8031.
+ 
 ```
 
 The unsat core is the wait-for path the front-end diagnostic names. The solver returns it as the minimal set of edges that cannot be jointly ranked, which is precisely the cycle, so the proof failure and the developer-facing message are the same object.

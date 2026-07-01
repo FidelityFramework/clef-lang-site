@@ -78,6 +78,7 @@ let processReadings [<Target: x86_64 | xilinx>]
                     (sensors: Span<float<celsius>>)
                     : ProcessedData =
     // ...
+ 
 ```
 
 **Bounded model (scoped inference).** The engineer provides scope boundaries; the compiler infers within those bounds.
@@ -119,6 +120,7 @@ let processReadings (sensors: Span<float<celsius>>) =
     let readings = sensors |> Span.map (fun s -> s * calibrationFactor)
     let summary = summarize readings
     (readings, summary) // ← readings escapes via return path
+ 
 ```
 
 The `readings` span is allocated within `processReadings`, but it appears in the return tuple. This is a `ReturnEscape` classification: the value's lifetime must extend beyond the creating function's scope, which means it cannot live on the stack. The compiler promotes it to arena allocation. Lattice plans to report the promotion with a diagnostic like: "readings escapes via return path; promoted from stack to arena."

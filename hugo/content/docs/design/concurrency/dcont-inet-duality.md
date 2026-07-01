@@ -39,6 +39,7 @@ let divideNumbers init x y z =
             match c with
             | None -> None
             | Some c' -> Some c'  // Finally!
+ 
 ```
 
 The actual logic - dividing numbers in sequence - is buried under error-handling boilerplate. Computation expressions let us avoid this pattern:
@@ -188,6 +189,7 @@ let rec eval expr =
     | Lit n        -> n
     | Add (a, b)   -> eval a + eval b      // both subtrees reduce independently
     | Let (x, e, b) -> eval (subst x (eval e) b)   // sharing through subst
+ 
 ```
 
 This lowers to an interaction net, the model where computation is local graph rewriting and the agents make copying and discarding explicit. Lafont's symmetric interaction combinators give the vocabulary: a constructor agent builds structure, a duplicator agent copies it, and an eraser agent discards it. Coll's Inet dialect carries these agents and their rewrite rules in MLIR:
@@ -265,6 +267,7 @@ let traditional() = async {
 //           Task per operation (~128 bytes each)
 //           Closure per continuation (~48 bytes each)
 // Total: ~350+ bytes of heap allocation
+ 
 ```
 
 Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/memory/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
@@ -281,6 +284,7 @@ let optimized() = async {
 // - Direct function calls (no indirection)
 // - Inline continuation code (no closures)
 // Total: 0 bytes of heap allocation
+ 
 ```
 
 The DCont dialect is meant to preserve the continuation structure in MLIR, which leaves room for optimization while keeping execution stack-based with no heap allocations.
@@ -299,6 +303,7 @@ let traditional = query {
 // Executes: One element at a time
 //          Iterator objects allocated
 //          Delegate allocations for predicates
+ 
 ```
 
 The dense, rectangular query is the tensor-path case, and the design aims to compile it to independent lanes:
@@ -315,6 +320,7 @@ let optimized = query {
 // - tensor/linalg algebra, vector/scf loop structure
 // - GPU dialect to NVVM or AMDGPU; MLIR-AIE for NPU
 // - Zero intermediate allocations
+ 
 ```
 
 On a GPU, the target is thousands of elements processed in a single cycle. On a CPU, it is full SIMD utilization. The irregular reductions that need interaction nets are a separate lane, covered above.
@@ -449,6 +455,7 @@ type QueryBuilder() =
 type AsyncBuilder() =
     member _.Bind(m, f) = ...            // Will compile to DCont
     member _.Return(x) = ...             // Continuation reset
+ 
 ```
 
 The compiler is designed to respect these hints and to check that they match the actual computation patterns.

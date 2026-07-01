@@ -167,6 +167,7 @@ type PaymentProcessor () =
             transactionCache.[payment.Id] <- validated
 
     // No disposal code: the compiler emits region cleanup at actor termination
+ 
 ```
 
 The cleanup is deterministic but not free. A large region with many allocations takes measurable time to reclaim, and that work happens at actor termination. The framework's commitment is predictability rather than zero cost: actor termination latency includes the region reclamation work, and developers building latency-sensitive systems can plan for that deterministic cost. The qualitative difference from garbage collection is that the cost is bounded, predictable, and tied to a specific event in the program's structure rather than distributed across program execution at unpredictable intervals.

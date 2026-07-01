@@ -19,6 +19,7 @@ Clef inherits this tradition from its F# lineage. Every multi-parameter function
 ```fsharp
 let add x y = x + y
 // Desugars to: let add = fun x -> fun y -> x + y
+ 
 ```
 
 In ML-family languages this is the computational model, not syntax sugar. Partial application falls out naturally: `add 5` returns a function waiting for one more argument. Higher-order functions compose, pipelines read left-to-right, and function signatures become self-documenting contracts.
@@ -96,6 +97,7 @@ OCaml developers speak of the "arity curtain," the phenomenon where abstractions
 let apply_to_three f = f 3    (* Compiler sees f as arity 1 *)
 
 let result = apply_to_three (add 5)  (* But add has arity 2! *)
+ 
 ```
 
 When a function passes through an abstraction boundary, its arity becomes opaque. The compiler can no longer optimize saturated calls because it doesn't know how many arguments the function ultimately expects.
@@ -125,6 +127,7 @@ When CCS (Clef Compiler Services) encounters a function definition, it records t
 ```fsharp
 // let greet prefix name = ...
 // Arity = Some 2
+ 
 ```
 
 ### Saturation Detection
@@ -139,6 +142,7 @@ App(App(greet, prefix), readln())  // Alex doesn't know how to emit this
 
 // With arity tracking: flattened when saturated
 App(greet, [prefix; readln()])     // Direct 2-arg call
+ 
 ```
 
 `greet` has arity 2. We provide 2 arguments (prefix and the readln result). This is a saturated call that should compile to a direct function call rather than closure creation.
@@ -175,6 +179,7 @@ Most Clef code uses saturated calls. With explicit arity tracking, these compile
 
 ```fsharp
 List.map (fun x -> x + 1) items  // map has arity 2, fully applied
+ 
 ```
 
 ### 2. Stack-Allocated Closures
@@ -184,6 +189,7 @@ When partial application does occur, our closures are stack-allocated by default
 ```fsharp
 let addFive = add 5  // Closure on stack, lives in this frame
 items |> List.map addFive  // Closure doesn't escape
+ 
 ```
 
 ### 3. Predictable Performance

@@ -235,6 +235,7 @@ Mutable variables that stay in scope compile correctly:
 let mutable pos = 0      // Function-scoped
 while not isDone do
     pos <- pos + 1       // Modified within scope
+ 
 ```
 
 Generated MLIR shows clean stack allocation:
@@ -244,6 +245,7 @@ Generated MLIR shows clean stack allocation:
 memref.store %c0, %posRef[%c0] : memref<1xindex>
 // ... mutations ...
 // Stack frame destroyed on return - but pos never escapes!
+ 
 ```
 
 This works because `pos` never outlives its lexical scope. Stack allocation is safe, fast, and deterministic.
@@ -283,6 +285,7 @@ let makeAdder x =
 
 let greeter name =
     fun () -> $"Hello, {name}!"  // 'name' captured
+ 
 ```
 
 This **is** escape analysis, just for immutable closures. The machinery exists. What's missing is integration with mutable allocation strategy. Consider three cases:
@@ -305,6 +308,7 @@ let makeAdder() =
 // Case 3: Return/byref escape (DETECTION NEEDED)
 let modifyExternal (ref: byref<int>) =
     ref <- ref + 1  // Reference escapes function boundary
+ 
 ```
 
 Escape analysis answers a single question: does this mutable outlive its lexical scope? For byref parameters specifically, the challenge involves tracking whether references to local mutables escape through function boundaries. Our [ByRef Resolved](/docs/design/types/byref-resolved/) work established the foundation for handling these scenarios in native compilation. If yes, arena allocation (heap-like, but with region-based lifetime). If no, stack allocation (memref.alloca, fast and deterministic).
@@ -388,6 +392,7 @@ let analyzeEscape (psg: PSG) (closureAnalysis: ClosureAnalysis) : EscapeAnalysis
     // 2. Filter for mutable bindings (isMutable=true)
     // 3. Add return/byref escape detection
     // 4. Annotate PSG nodes with StackScoped | EscapesVia*
+ 
 ```
 
 In this implementation, our Alex "MiddleEnd" layered process would 'elide' to arena allocation for escaping mutables and stack for locals. Closure capture "just works" because detection already exists.
@@ -408,6 +413,7 @@ let createCounter() =
     let mutable count = Arena.alloc arena 0  // Arena allocation
     fun () -> count <- count + 1; count
     // Arena cleanup on scope exit
+ 
 ```
 
 This transformation happens automatically during compilation. Developers still write `let mutable count = 0` and the compiler infers the escape behavior and generates appropriate allocation code. The explicit arena management shown here leverages existing arena infrastructure (from our F-02 PRD) but would primarily appear in targeted library implementations or compiler-generated code.
@@ -425,6 +431,7 @@ let processData() =
         buffer.[i] <- compute i
     extractResult buffer  // buffer escapes? Compiler infers: NO
     // Compiler generates stack allocation, no arena needed
+ 
 ```
 
 For simple cases like this, the compiler infers stack allocation. But when a mutable escapes into a message sent to another actor, the compiler infers actor-arena allocation with sentinel-validated lifetime. No manual annotations. No runtime tracking. The same deterministic RAII cleanup that governs actor lifecycles governs every mutable binding within them. Inspiration comes from Rust's borrow checker, but with region-based memory management aligned to actor boundaries instead of lexical ownership.

@@ -32,6 +32,7 @@ type InferenceResponse =
     | Token of text: string * index: int     // tag 0
     | StreamEnd of totalTokens: int          // tag 1
     | StreamError of message: string         // tag 2
+ 
 ```
 
 The Clef compiler verifies this type at design time. The BAREWire schema is derived from it: [three cases, three tags, each with a fixed payload layout](/spec/draft/discriminated-union-representation/). Each token becomes a single frame:
@@ -152,6 +153,7 @@ type InferenceResponse =
     | StreamError of message: string             // error in either mode
     | Classification of label: string * confidence: float   // single response
     | Embedding of values: float array           // single response
+ 
 ```
 
 The compiler verifies all cases. The BAREWire schema covers all tags. The Worker relays whatever frames arrive. The distinction between streaming and single-response is a property of which tags the container actually sends, not a property of the frame format or the transport layer.

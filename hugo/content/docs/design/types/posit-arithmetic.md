@@ -226,6 +226,7 @@ posit<8, 0> weight;
 posit<16, 1> activation;
 // No implicit widening; manual conversion required
 activation = posit<16,1>(static_cast<double>(weight));  // round-trip through double
+ 
 ```
 
 The template approach achieves generality but pays for it in several ways that Clef's design avoids:
@@ -264,6 +265,7 @@ type BasicOps =
     static member inline Multiply(a: Posit32, b: Posit32) = Posit32.mul a b
     static member inline Multiply(a: Posit64, b: Posit64) = Posit64.mul a b
     // ... other operations for each type
+ 
 ```
 
 Generic numeric code would work across the entire posit family:
@@ -402,6 +404,7 @@ A more ambitious optimization: the compiler could recognize accumulation pattern
 ```fsharp
 xs |> Array.fold (fun acc (a, b) -> acc + a * b) zero
 // → fused quire multiply-accumulate, single final rounding
+ 
 ```
 
 This transforms individual posit roundtrips into exact quire arithmetic, capturing the full benefit of the quire abstraction automatically.
@@ -470,6 +473,7 @@ vpslld   zmm2, zmm0, 1           ; shift out sign bits
 vplzcntd zmm3, zmm2              ; leading zeros per lane (regime length)
 vpsrlvd  zmm4, zmm0, zmm_positions  ; variable shift to extract exponent
 ; ... alignment, addition, normalization, encoding
+ 
 ```
 
 The critical insight emerges when estimating actual speedup. Scalar posit32 addition requires roughly 60-100 cycles of bit manipulation. An AVX-512 implementation processing 16 values might take 150-250 cycles total. That's 4-8x speedup, not the theoretical 16x. The variable-width regime extraction serializes part of the work despite SIMD parallelism. Half the theoretical throughput is lost to data-dependent field positions.
@@ -494,6 +498,7 @@ module Posit32x16 =
         let regimeLengths = Vector512.LeadingZeroCount(a.Bits <<< 1)
         let exponents = Vector512.ShiftRightLogicalVariable(a.Bits, expPositions)
         // ... vectorized algorithm expressed in Clef
+ 
 ```
 
 If Clef supported `Vector512<'T>` as a primitive type that lowers to MLIR's vector dialect, the same compilation pipeline that handles `Posit32` would handle `Posit32x16`. No special cases for posits. No separate code generation paths. The struct contains a vector instead of a scalar; operations use vector intrinsics instead of scalar arithmetic; MLIR generation emits vector operations; LLVM selects AVX-512 instructions.

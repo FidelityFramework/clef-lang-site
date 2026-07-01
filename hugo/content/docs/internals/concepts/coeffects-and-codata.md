@@ -110,6 +110,7 @@ type ContextRequirement =
     | ResourceAccess of Set<Resource>  // Files, network, memory-mapped regions
     | MemoryPattern of AccessPattern   // Sequential, random, streaming
     | HardwareFeature of Feature      // SIMD, GPU, specialized instructions
+ 
 ```
 
 These annotations will be derived from and flow through the Program Hypergraph (PHG), enabling sophisticated analysis. Consider a case showing how this may work in practice:
@@ -251,6 +252,7 @@ let analyzeTimeSeriesCodata (readings: float[]) =
     |> Seq.windowed 10               // Sliding window, constant memory
     |> Seq.map calculateMovingAvg
     |> Seq.toList                    // Only allocates final result
+ 
 ```
 
 The codata version maintains the same idiomatic Clef pipeline style but with fundamentally different execution semantics. Each element flows through the entire pipeline before the next begins, maintaining a constant memory footprint. This of course opens opportunities for parallelism and other features to take advantage of targeted hardware, and is a source of research as we work to bring these algorithms into practice.
@@ -289,6 +291,7 @@ let processData (data: float[]) =
     |> Array.map (fun x -> x * 2.0)      // 💡 Fidelity: "3 intermediate arrays allocated"
     |> Array.filter (fun x -> x > 100.0)  // Suggestion: "Consider Seq for single-pass"
     |> Array.map sqrt                     // Quick Fix: "Convert to Seq pipeline"
+ 
 ```
 
 The analyzer would provide contextual hints:
@@ -302,6 +305,7 @@ With coeffect annotations, the analyzer could even show memory impact:
 ```fsharp
 // Analyzer overlay: "Memory: ~24MB intermediate, ~8MB final"
 // Coeffects: DataDriven @ Eager @ MemoryPressure(High)
+ 
 ```
 
 This design-time feedback would help developers internalize the data/codata distinction naturally, making efficient patterns second nature over time.
@@ -475,6 +479,7 @@ let processRemoteData =
     |> AsyncSeq.map validate      // Could run locally
     |> AsyncSeq.map transform     // Or remotely
     |> AsyncSeq.filter predicate  // Or split across nodes
+ 
 ```
 
 Parametricity guarantees that these transformations can be safely relocated across network boundaries. The Inet dialect will leverage this to:

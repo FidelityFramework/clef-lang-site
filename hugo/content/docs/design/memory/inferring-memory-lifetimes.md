@@ -220,6 +220,7 @@ let readln () =
     let buffer = NativePtr.stackalloc<byte> 256
     let len = readLineInto buffer 256
     NativeStr.fromPointer buffer len  // Returns reference to stack!
+ 
 ```
 
 The compiler must recognize that the returned string contains a pointer to `buffer`, which lives on `readln`'s stack. This value "escapes" its creating scope.
@@ -232,6 +233,7 @@ let processInput () =
     let greeting = $"Hello, {name}!"  // Used here
     Console.writeln greeting  // Last use
     // Lifetime: processInput's scope
+ 
 ```
 
 The string must live from creation until last use. The compiler infers this scope.

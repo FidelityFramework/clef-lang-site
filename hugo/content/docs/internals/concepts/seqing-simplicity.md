@@ -330,6 +330,7 @@ cf.br ^loop
 
 ^done:
     // Continue after loop
+ 
 ```
 
 The pattern is familiar to anyone who has implemented iterators manually. The compiler generates what you would write by hand, but does so from the high-level `for x in s do` syntax.

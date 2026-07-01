@@ -90,6 +90,7 @@ let processTickBatch (ticks: BAREArray<MarketTick>) =
         updatePrice tick.Symbol tick.Price  // Compiler knows: touches bytes 0-11
         if tick.Volume > threshold then      // Adds bytes 12-15 to working set
             recordHighVolume tick            // Full structure access
+ 
 ```
 
 Composer's semantic graph captures this precisely: the common path touches 12 bytes per tick (partial cache line), while high-volume events access all 24 bytes. This deterministic analysis will enable three categories of optimization:
@@ -139,6 +140,7 @@ type WorkerCounter = {
     mutable value: int64
 }
 // Compiler pads to 64 bytes (or 128 on Apple Silicon)
+ 
 ```
 
 Note that cache line sizes vary by architecture: x86-64 and most ARM64 processors use 64-byte lines, while Apple Silicon uses 128-byte lines. BAREWire resolves this from the target triple at compile time, ensuring correct padding without manual adjustment.
@@ -213,6 +215,7 @@ AMD processors, identified through triples like `x86_64-amd-linux-gnu`, employ a
 %data = memref.alloca() : memref<1024xf32>
 %value = memref.load %data[%index] : memref<1024xf32>
 // mlir-opt applies non-temporal hints for streaming data
+ 
 ```
 
 The mlir-opt tool and LLVM backend handle architecture-specific decisions. For AMD targets, non-temporal load hints can be applied for data that will not be reused, minimizing cache pollution.
@@ -231,6 +234,7 @@ Non-temporal moves (`movnti`, `movntq`) bypass cache hierarchy entirely, writing
 %src = memref.alloca() : memref<?xi8>
 memref.copy %src, %dest : memref<?xi8> to memref<?xi8>
 // mlir-opt applies non-temporal hints for streaming data
+ 
 ```
 
 Cache line management operations (such as `clzero` on AMD or `cldemote` on Intel) occur during final code generation. Composer represents memory allocation and access using memref operations. The backend selects cache management instructions based on access patterns and target architecture.
@@ -397,6 +401,7 @@ let forwardMessage (msg: Message) (dest: ActorRef) =
     if msg.Header.Priority = High then
         // BAREWire zero-copy preserves alignment
         BAREWire.zeroCopyTransfer msg dest  // No cache line splits
+ 
 ```
 
 ### NUMA-Aware Zero-Copy

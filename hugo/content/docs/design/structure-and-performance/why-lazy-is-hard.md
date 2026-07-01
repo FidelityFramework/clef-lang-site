@@ -221,6 +221,7 @@ let expensive = lazy (
 
 let v1 = Lazy.force expensive  // side effect runs
 let v2 = Lazy.force expensive  // side effect runs again, no memoization yet
+ 
 ```
 
 True memoization, where the result is computed once and cached, requires mutation of the lazy struct. The `computed` flag must transition from false to true; the `value` slot must store the result. In a single-threaded context, this is straightforward. With concurrency, it requires synchronization.
@@ -261,6 +262,7 @@ let v2 = Lazy.force sum  // 30
 let lazyAdd a b = lazy (a + b)
 let result = lazyAdd 15 25
 let v3 = Lazy.force result  // 40
+ 
 ```
 
 The syntax is substantially similar to F#. The semantics match expectations. What differs is entirely beneath the surface: stack-allocated flat closures, explicit capture analysis, deterministic memory layout, no runtime dependencies.

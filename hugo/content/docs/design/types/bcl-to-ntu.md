@@ -370,6 +370,7 @@ let writeToFlash (p: Ptr<byte, Flash, ReadOnly>) =
 let processBuffer (p: Ptr<int, Stack, ReadWrite>) = ...
 let gpioReg: Ptr<uint32, Peripheral, ReadWrite> = ...
 processBuffer gpioReg  // Error: region mismatch
+ 
 ```
 
 For software engineers with low-level or systems programming experience, this provides familiar hardware register semantics with compile-time verification. For those accustomed to managed environments, it introduces explicit memory reasoning in a controlled way, guided by the type system.
@@ -396,6 +397,7 @@ The NTU architecture operates at multiple levels of abstraction. CCS uses the `N
 type platformint = int    // CCS interprets as NTUint
 type platformuint = uint  // CCS interprets as NTUuint
 type platformsize = unativeint  // CCS interprets as NTUsize
+ 
 ```
 
 This created three levels of developer experience:

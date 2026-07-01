@@ -32,6 +32,7 @@ type JsExampleRole =
     | KeepAndRedirect   // reading JS/TS to bind it; recognizing emitted output
     | Damp              // authoring imperative/dynamic JS as source logic
     | Instill           // routing a JS need to Clef-under-grammar or a typed extern
+ 
 ```
 
 *Keep and redirect* is the comprehension class: reading JavaScript and TypeScript to bind them, understanding what well-formed emitted JavaScript looks like, and the tagged-object heritage that underwrites schema-directed narrowing. The binding pipeline and the JavaScript backend both consume this competence, and it must survive.
@@ -54,6 +55,7 @@ let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Progr
     match Composer.elaborate attempt with
     | Ok program  -> program                                             // accepted
     | Error diags -> trainAuthoring model goal (model.revise goal attempt diags)   // revise on the diagnostics
+ 
 ```
 
 The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
