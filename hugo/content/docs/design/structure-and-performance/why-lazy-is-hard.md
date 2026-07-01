@@ -35,7 +35,7 @@ Before examining implementation strategies, we should be precise about what lazy
 
 This description reveals three distinct concerns:
 
-**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly.
+**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly. Because that closure is settled at construction, a thunk carries no null state even before it is forced, which is [null-free by construction](/docs/design/language/null-free-by-construction/) rather than null-checked, and the same settledness is what lets the value cross substrates unchanged.
 
 **Deferred execution**: Unlike an ordinary closure that executes when called, a thunk execution is controlled by a forcing operation. The thunk must know whether it has been evaluated.
 

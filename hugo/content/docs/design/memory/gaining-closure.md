@@ -117,7 +117,7 @@ The answer lies in how our compiler handles closure lifetimes. When a mutable ca
 
 ## Null Avoidance in MLIR Lowering
 
-Our commitment to null-free computation in Fidelity extends through the entire compilation pipeline, including closure representation. This is not a surface-level API decision; it is a structural property of the generated code.
+Our commitment to null-free computation in Fidelity extends through the entire compilation pipeline, including closure representation. This is not a surface-level API decision; it is a structural property of the generated code, and the reasoning behind it is stated in full under [Null-Free by Construction](/docs/design/language/null-free-by-construction/).
 
 Consider the MLIR generated for a flat closure:
 

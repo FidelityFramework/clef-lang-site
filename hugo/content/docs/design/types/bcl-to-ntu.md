@@ -498,7 +498,7 @@ The UTF-8 encoding aligns with web standards, Unix conventions, and interoperabi
 
 ### API Consequences
 
-The null-free philosophy extends to string operations:
+The null-free philosophy, stated in full under [Null-Free by Construction](/docs/design/language/null-free-by-construction/), extends to string operations:
 
 | BCL Pattern | Native Pattern |
 |-------------|----------------|
