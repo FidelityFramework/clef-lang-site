@@ -32,7 +32,7 @@ The Composer repository includes a [progression of "Hello World" samples](https:
 | **03_HalfCurried** | `Console.readln() \|> greet` | Pipe desugaring, forward references |
 | **04_FullCurried** | Function returning function | Closures, capture analysis, escape analysis |
 
-The first sample compiles in about 20 lines of MLIR. The fourth requires over 100. The user sees only "Hello, World!" or "Hello, `[name]`!" as the interaction model progresses in the examples.
+The first sample compiles in about 20 lines of MLIR. The fourth requires over 100. The user sees only "Hello, World!" or "Hello, `[name]`!" as the interaction model progresses in the examples. Much of that gap is arity: a saturated call lowers to a direct function call, while the curried and half-curried samples force the compiler to decide whether a partial application becomes a closure, the decision worked out in [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/).
 
 ## The Four Orders
 

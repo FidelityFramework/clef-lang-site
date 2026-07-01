@@ -22,7 +22,7 @@ The rest of this document describes the architectural commitments that produce t
 
 Our approach rests on commitments that interact rather than layer. They are presented separately below for clarity, but each depends on the others to produce our framework's value.
 
-**Flat closures with explicit capture.** Every closure in Clef carries its captured environment as a structurally-visible value rather than as an opaque heap allocation. The capture relationships are part of the program's compile-time structure, available to the analysis that places the closure in a region and that determines its lifetime.
+**Flat closures with explicit capture.** Every closure in Clef carries its captured environment as a structurally-visible value rather than as an opaque heap allocation. The capture relationships are part of the program's compile-time structure, available to the analysis that places the closure in a region and that determines its lifetime. A closure exists here in the first place because [arity analysis](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) could not prove the call saturated; the escaping partial application it produces is exactly the case this article resolves.
 
 **Region-based memory management informed by escape classification.** Allocations are placed in regions whose lifetimes are determined by where the allocated values escape to. A value that does not escape its creating scope lives in the scope's region and is reclaimed at scope exit. A value that escapes to a longer-lived region lives there. The escape classification is performed at compile time and produces concrete region placement decisions in the lowered code.
 

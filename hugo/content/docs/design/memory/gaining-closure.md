@@ -29,6 +29,8 @@ let makeCounter (start: int) : (unit -> int) =
 
 This function returns a lambda that captures `count`, a mutable variable. Each call to `makeCounter` should produce an independent counter with its own state. When invoked, each counter should increment its own captured value.
 
+Whether a value becomes a closure at all is decided upstream, by arity analysis: a saturated call compiles to a direct function call and needs no closure, while a partial application or a returned lambda like this one does. [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) covers that decision; this chapter picks up once it has been made and a closure is what we have.
+
 In .NET, this works transparently. The runtime allocates a heap object to hold captured variables, and garbage collection ensures that object lives as long as any closure references it. The developer writes the code; the runtime handles memory.
 
 Native compilation has no such luxury. Without garbage collection, the compiler must decide at compile time where captured variables live, how closures reference them, and how memory is reclaimed. This is not merely an implementation detail; it is an architectural decision that affects correctness, performance, and memory safety.

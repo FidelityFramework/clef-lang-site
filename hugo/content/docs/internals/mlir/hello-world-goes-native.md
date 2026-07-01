@@ -15,7 +15,7 @@ Compiler development differs fundamentally from application development. Where a
 
 ## The Sample Under Test
 
-The `03_HelloWorldHalfCurried` sample represents a middle ground in our progressive complexity series. It exercises Clef's pipe operators, string interpolation, pattern matching on Result types, and console I/O through compiler intrinsics:
+The `03_HelloWorldHalfCurried` sample represents a middle ground in our progressive complexity series. Its name is an arity distinction: the call is partially applied, so the compiler must decide whether that partial application resolves to a direct call or becomes a closure, a decision covered in [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/). It exercises Clef's pipe operators, string interpolation, pattern matching on Result types, and console I/O through compiler intrinsics:
 
 ```fsharp
 module Examples.HelloWorldHalfCurried
