@@ -58,6 +58,11 @@
   var FROZEN_KEY = "clefAtlasFrozen";
   var frozen = loadState();
 
+  // The last node the user clicked through to (the "you were here" anchor). Persisted separately
+  // from the frozen set — a single-node breadcrumb, independent of the custom frozen sub-graph.
+  var ANCHOR_KEY = "clefAtlasAnchor";
+  var anchorId = loadAnchor();
+
   function loadState() {
     try {
       var raw = sessionStorage.getItem(FROZEN_KEY);
@@ -66,6 +71,13 @@
   }
   function persistState() {
     try { sessionStorage.setItem(FROZEN_KEY, JSON.stringify(Array.from(frozen))); } catch (e) {}
+  }
+  function loadAnchor() {
+    try { return sessionStorage.getItem(ANCHOR_KEY) || null; } catch (e) { return null; }
+  }
+  function setAnchor(id) {
+    anchorId = id;
+    try { if (id) sessionStorage.setItem(ANCHOR_KEY, id); else sessionStorage.removeItem(ANCHOR_KEY); } catch (e) {}
   }
   function updateFreezeUI() {
     // reflect the frozen count on the Clear button + show/hide it
@@ -200,6 +212,9 @@
 
     function navigate(d) {
       var u = d.url || d.id; if (!u) return;
+      // Remember this node as the "you were here" anchor before leaving, so re-opening the Atlas
+      // restores its selected-border + link highlight as a visual breadcrumb.
+      setAnchor(d.id);
       if (/^https?:\/\//.test(u)) window.open(u, "_blank", "noopener,noreferrer");
       else window.location.href = u;
     }
@@ -323,6 +338,29 @@
 
     // Restore any frozen sub-graph the user left behind, then paint it.
     applyFrozen();
+
+    // Restore the "you were here" anchor: the last node the user clicked through to gets its
+    // selected-border (white) back, and its links re-highlight — a visual breadcrumb layered on
+    // top of the frozen resting state. If the anchor sits at the boundary of a frozen sub-graph,
+    // the user sees both their custom graph AND exactly where they stepped out of it.
+    if (anchorId) {
+      var an = cy.getElementById(anchorId);
+      if (an && !an.empty()) {
+        // select() gives the white anchor border; the neighborhood highlight layers on top of
+        // whatever resting state applyFrozen() already painted (transient .dim/.hi over .restdim).
+        an.select();
+        cy.elements().addClass("dim");
+        an.removeClass("dim"); an.neighborhood().removeClass("dim");
+        an.connectedEdges().addClass("hi").removeClass("dim");
+        // re-lift the frozen set so it stays visibly lit under the anchor's transient dim
+        if (frozen.size) frozen.forEach(function (id) {
+          var fn = cy.getElementById(id);
+          if (fn && !fn.empty()) fn.removeClass("dim");
+        });
+      } else {
+        setAnchor(null);  // anchored node no longer in the graph — drop the stale breadcrumb
+      }
+    }
 
     var s = g.stats;
     if (s) {
