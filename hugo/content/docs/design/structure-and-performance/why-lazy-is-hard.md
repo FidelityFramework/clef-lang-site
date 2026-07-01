@@ -17,6 +17,8 @@ There are only two hard things in computer science: cache invalidation and namin
 
 Consider "lazy evaluation." Henderson and Morris coined the term in their [1976 POPL paper](https://dl.acm.org/citation.cfm?id=811543), and it stuck. But "lazy" may be the least apt term in computing. A lazy evaluator isn't lounging around avoiding work; it's *poised*, ready to spring into action the instant a value is demanded. "Call-by-need" captures this better: computation happens precisely when needed, not before, not after. The lazy evaluator is the most *attentive* mechanism imaginable, tracking exactly which expressions remain unevaluated and responding immediately when circumstances change. That we named this disciplined, demand-driven approach after a vice rather than a virtue tells you something about how we think about work.
 
+Call-by-need sits in a family of evaluation strategies, and a thunk is a shared value before it is a deferred one. Barbara Liskov's CLU staked out call-by-sharing in the 1970s: an argument is a reference passed by value, so mutation is visible to the caller but rebinding is not.[^clu] Memoization is that discipline read forward in time. A thunk, once forced, presents the same value to every holder of the reference, which is call-by-sharing applied to a computation rather than a datum. The sharing semantics a lazy runtime depends on descend from the position CLU named decades before native compilation raised the problems this article takes up.
+
 The irony deepens when you consider that Haskell, the language that made laziness famous, is named after Haskell Curry, a mathematician whose prodigious output in combinatory logic was anything but lazy. The [History of Haskell](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/history.pdf) paper is even titled "Being Lazy with Class," a pun that works on multiple levels.
 
 But this isn't mere wordplay. How you choose to be lazy has profound implications for the work you can get done with a computer. Lazy evaluation enables infinite data structures, separates the *description* of computation from its *execution*, and lets you express algorithms that would otherwise require careful manual orchestration. Get it right, and your code becomes more expressive, more composable, more amenable to optimization. Get it wrong, and you're debugging space leaks at 2 AM wondering why your "efficient" program just consumed all available memory.
@@ -314,6 +316,8 @@ Lazy evaluation in Fidelity is not a checkbox feature added for completeness. It
 When sequences arrive, they will build on this foundation. When async workflows arrive, they will build on this foundation. The patterns established here, capture analysis, layout computation, uniform calling conventions, repeat throughout our Fidelity framework.
 
 Composing lazy evaluation with everything else our compiler does is the part we have kept in view from the start, and it is where our work continues as sequences and async workflows come into place.
+
+[^clu]: Liskov, Barbara, Alan Snyder, Russell Atkinson, and Craig Schaffert. "Abstraction Mechanisms in CLU." *Communications of the ACM* 20.8 (1977): 564-576. <!-- DOI: add https://doi.org/10.1145/… --> CLU introduced call-by-sharing as its argument-passing discipline, the reference-by-value semantics later named as a distinct point in the call-by-value/name/need family.
 
 ## Related Reading
 
