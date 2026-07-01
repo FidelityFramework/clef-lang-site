@@ -840,6 +840,11 @@ pre.mermaid svg {
 .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; margin-left: 0.4rem; }
 :is(.dark) .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; }
 .clef-map-btn-clear:hover { background: #e3b34122; }
+/* Homepage "Try Atlas" feature card: gold-bordered to echo the Atlas nav button and draw the eye */
+.clef-atlas-card { border-color: rgba(227,179,65,0.45); }
+.clef-atlas-card:hover { border-color: #e3b341; }
+:is(.dark) .clef-atlas-card { border-color: rgba(227,179,65,0.45); }
+:is(.dark) .clef-atlas-card:hover { border-color: #e3b341; }
 /* Touch callout actions: tap pins the tooltip, navigation is a deliberate "Go →", plus an
    in-callout Freeze (the long-press alternative). On touch the tip must accept taps (the
    desktop tip stays pointer-events:none so it never blocks the canvas under the mouse). */
