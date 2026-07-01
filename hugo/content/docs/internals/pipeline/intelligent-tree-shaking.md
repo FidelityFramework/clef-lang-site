@@ -102,7 +102,7 @@ let myTree = Node(Leaf 1, 2, Leaf 3)
 let doubled = map ((*) 2) myTree
 ```
 
-With Composer's type-aware tree shaking, we analyze not just function calls but type instantiations. We determine that:
+Composer's type-aware tree shaking analyzes function calls and type instantiations together. We determine that:
 - Only `Tree<int>` is used, not `Tree<'T>` for other types
 - Only `map` is called on trees; `fold`, `filter`, `balance`, etc. are eliminated
 - The generic `sort` function is never instantiated, so all specializations are removed
@@ -196,7 +196,7 @@ This sophisticated analysis handles Clef's advanced type system features:
 
 ### Discriminated Union Optimization
 
-When analyzing discriminated unions, we track not just type usage but individual case usage:
+When analyzing discriminated unions, we track usage down to the individual case, one level finer than whole-type tracking:
 
 ```fsharp
 type Command =
@@ -409,7 +409,7 @@ Tree shaking in the restructured Composer compiler represents a fundamental shif
 3. **Profile-Guided Type Specialization**: Runtime profiling informs which generic instantiations to optimize
 4. **Formal Verification Integration**: Eliminated code paths reduce the verification burden
 
-The integration with our broader tooling ecosystem leverages this type information. The Fidelity VS Code extension will show not just which functions are included, but which types, which generic instantiations, and which pattern match cases made it into your binary. This visibility transforms tree shaking from a black-box optimization into a transparent, predictable process.
+The integration with our broader tooling ecosystem leverages this type information. The Fidelity VS Code extension will show which functions are included, and then go finer: which types, which generic instantiations, and which pattern match cases made it into your binary. This visibility transforms tree shaking from a black-box optimization into a transparent, predictable process.
 
 ## A New Paradigm for Concurrent Functional Compilation
 
@@ -430,7 +430,7 @@ Looking ahead, type-aware tree shaking is just the beginning of what's possible 
 
 As we continue developing these capabilities, we're guided by a simple principle: a language's type system should be its greatest optimization asset, not a compile-time burden to be discarded. The Fidelity Framework, with Composer at its heart, demonstrates that Clef's expressive types can drive unprecedented optimization while maintaining the safety and clarity that make concurrent functional programming so powerful.
 
-The future we're building is one where choosing Clef means choosing both elegance and efficiency. Tree shaking exemplifies this vision - leveraging every bit of type information to produce binaries that are not just functional, but optimal. As we realize this vision of type-preserving compilation, we're proving that functional programming's abstractions can be truly zero-cost. The Fidelity Framework represents more than a new compiler; it's a demonstration that type safety and raw performance are not opposing forces, but complementary aspects of a modern compilation strategy.
+The future we're building is one where choosing Clef means choosing both elegance and efficiency. Tree shaking exemplifies this vision, leveraging every bit of type information to produce binaries that stay correct while running at the optimum. As we realize this vision of type-preserving compilation, we're proving that functional programming's abstractions can be truly zero-cost. The Fidelity Framework represents more than a new compiler; it's a demonstration that type safety and raw performance reinforce each other within a modern compilation strategy, each strengthening what the other can deliver.
 
 ---
 

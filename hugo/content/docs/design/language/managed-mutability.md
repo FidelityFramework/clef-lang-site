@@ -162,7 +162,7 @@ The binary compiled without errors. The loop condition evaluated correctly. The 
 
 > This is where a nanopass compiler earns its complexity budget.
 
-When code compiles successfully but behaves incorrectly, you need visibility into exactly what instructions the compiler generated. Not what it *should* generate, but what it *actually* generated. The generated MLIR, a product of nanopass layered processing, showed the issue immediately:
+When code compiles successfully but behaves incorrectly, you need visibility into the instructions the compiler *actually* generated, set against what it *should* have generated. The generated MLIR, a product of nanopass layered processing, showed the issue immediately:
 
 ```mlir
 %v7 = memref.alloca() : memref<1xindex>    // pos is TMemRef
@@ -316,7 +316,7 @@ The complete system requires four components:
 3. **Return/byref escape detection** - Identifies variables that escape via return values or byref parameters. Status: *Planned*.
 4. **Lifetime inference** - Determines maximum lifetime bounds for each mutable variable. Status: *Future work*.
 
-We have the detection machinery. We need the integration and inference. The failing samples reflect this gap - not missing escape analysis entirely, but incomplete unification of closure detection with mutable allocation decisions.
+We have the detection machinery. We need the integration and inference. The failing samples reflect exactly that gap: escape analysis is present, but its closure detection has yet to be unified with mutable allocation decisions.
 
 ## The Trust-the-Optimizer Parallel
 

@@ -424,7 +424,7 @@ This mathematical view reveals why codata will compile efficiently:
 - Memory requirements are predictable (one element at a time)
 - Composition preserves the coalgebraic structure
 
-This mathematical guarantee of single-element observation creates natural synchronization points with Fidelity's broader memory architecture. Each yield in a codata structure represents not just a suspension point but a resource lifetime boundary - precisely where RAII principles ensure deterministic cleanup. When combined with BAREWire's memory-mapped I/O, these yield points become optimal locations for resource acquisition and release, enabling zero-copy streaming between processes while maintaining memory safety through hardware protection rather than runtime checks.
+This mathematical guarantee of single-element observation creates natural synchronization points with Fidelity's broader memory architecture. Each yield in a codata structure is a suspension point that doubles as a resource lifetime boundary, precisely where RAII principles ensure deterministic cleanup. When combined with BAREWire's memory-mapped I/O, these yield points become optimal locations for resource acquisition and release, enabling zero-copy streaming between processes while maintaining memory safety through hardware protection rather than runtime checks.
 
 ### Delimited Continuations and Stack Calculus
 
@@ -510,7 +510,7 @@ The mathematical guarantee means Composer can automatically:
 - Partition work across heterogeneous accelerators
 - All while preserving exact Clef semantics
 
-This isn't speculative optimization - it's mathematically sound transformation, enabling a single Clef expression to compile to efficient code whether targeting a CPU, GPU cluster, or custom silicon.
+These transformations rest on mathematical soundness rather than heuristic guesswork, which lets a single Clef expression compile to efficient code whether targeting a CPU, GPU cluster, or custom silicon.
 
 ## Hardware-Aware Code Generation
 
@@ -701,7 +701,7 @@ This isn't just notation - it's exactly what the `suspend` instruction does:
 - shift k.e is the suspend point
 - λx.⟨E[x]⟩ is the captured continuation
 
-The theoretical and practical have converged: mathematical abstractions compile to efficient machine operations without semantic loss. This is the promise of WAMI - not just better performance, but faithful preservation of our functional programming abstractions all the way to the "machine" level.
+The theoretical and practical have converged: mathematical abstractions compile to efficient machine operations without semantic loss. This is the promise of WAMI: better performance that arrives together with faithful preservation of our functional programming abstractions all the way to the "machine" level.
 
 ### Optimization Decision Transparency
 

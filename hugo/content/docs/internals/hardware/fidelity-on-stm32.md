@@ -179,7 +179,7 @@ The magic enabling this zero-cost abstraction is BAREWire's pre-optimization app
 
 The process begins with Farscape, which parses vendor-provided hardware headers. For ARM-based microcontrollers, these are typically CMSIS (Cortex Microcontroller Software Interface Standard) headers containing comprehensive descriptions of every register, bit field, and memory map in the microcontroller.
 
-Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to parse these headers directly in pure Clef. This approach eliminates dependencies on external C/C++ tooling and enables type-safe parsing with excellent error messages. The output is not raw P/Invoke bindings but quotation-based hardware descriptors that integrate with the Clef compilation pipeline.
+Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to parse these headers directly in pure Clef. This approach eliminates dependencies on external C/C++ tooling and enables type-safe parsing with excellent error messages. Rather than raw P/Invoke bindings, the output is quotation-based hardware descriptors that integrate with the Clef compilation pipeline.
 
 When a contributor runs Farscape on a new microcontroller's headers, it generates a complete Clef hardware abstraction library with three components: quotations encoding memory layout, active patterns for PSG recognition, and a MemoryModel record for Clef integration.
 
@@ -350,7 +350,7 @@ The memory management strategy is determined when the library is generated based
 
 The Fidelity Framework with its BAREWire pre-optimization approach represents a fundamental reimagining of how high-level languages can target constrained devices. The combination of Clef's expressive type system, BAREWire's pre-optimized memory mapping, Farscape's quotation-based binding generation, and MLIR/LLVM's code generation capabilities aims to create a hardware/software co-design methodology where safety and performance coexist. Developers need not choose between abstraction and control, or between productivity and efficiency.
 
-With the right approach and community collaboration, embedded development could become as accessible and productive as any other domain of software development. The Fidelity Framework envisions embedded development in Clef that is not just possible, but productive, safe, and accessible.
+With the right approach and community collaboration, embedded development could become as accessible and productive as any other domain of software development. The Fidelity Framework envisions embedded development in Clef that clears a higher bar than mere feasibility, reaching for productivity, safety, and accessibility.
 
 ## See also
 

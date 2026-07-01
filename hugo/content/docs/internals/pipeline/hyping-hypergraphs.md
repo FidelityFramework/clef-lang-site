@@ -11,9 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-The industry is witnessing an unprecedented \$4 billion investment to finally set aside the 80-year-old Harvard/Von Neumann computer design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building novel, alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Yet compiler architectures remain trapped in antiquated patterns - forcing stilted relationships into artificial constructions, obscuring the natural alignment with the emerging dominance of dataflow patterns. What if targeting both traditional and revolutionary architectures lies not in choosing sides, but in recognizing that programs are "hypergraphs" by nature? The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) isn't just nomenclature - it's the architectural insight that will enable Fidelity to produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors that promise to revolutionize throughput and efficiency.
+The industry is witnessing an unprecedented \$4 billion investment to finally set aside the 80-year-old Harvard/Von Neumann computer design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building novel, alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Yet compiler architectures remain trapped in antiquated patterns - forcing stilted relationships into artificial constructions, obscuring the natural alignment with the emerging dominance of dataflow patterns. What if the choice between traditional and revolutionary architectures dissolves once we recognize that programs are "hypergraphs" by nature, and both fall out of the same representation? The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) carries an architectural insight underneath the rename, one that will enable Fidelity to produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors that promise to revolutionize throughput and efficiency.
 
-But there's a deeper vision: what if this hypergraph could transform into a learning system? The future design of a full-fledged temporal graph could improve design and efficiency with each application, or even with each iteration. This isn't speculative - it's the natural evolution of combining recursion schemes, bidirectional zippers, and event-sourced compilation telemetry. These are all well-established algorithmic tools that are finally meeting their moment with today's new Cambrian explosion of modern compute hardware. Within the Fidelity framework we can revolutionize efficiency and safety in the "old guard" architectures while seamlessly profiling and targeting new architectures from the same principled framework.
+But there's a deeper vision: what if this hypergraph could transform into a learning system? The future design of a full-fledged temporal graph could improve design and efficiency with each application, or even with each iteration. Far from speculative, this follows naturally once recursion schemes, bidirectional zippers, and event-sourced compilation telemetry are combined. These are all well-established algorithmic tools that are finally meeting their moment with today's new Cambrian explosion of modern compute hardware. Within the Fidelity framework we can revolutionize efficiency and safety in the "old guard" architectures while seamlessly profiling and targeting new architectures from the same principled framework.
 
 ## The Unified Compilation Vision
 
@@ -73,7 +73,7 @@ Here we show how the partitioning problem becomes "adaptive". This formula, root
 \text{cut}_t(P) = \sum_{e \in E} w_t(e) \cdot |\{V_i : V_i \cap e \neq \emptyset\}|
 \]
 
-In plain English: the subscript \(t\) represents time - meaning the compiler gets smarter with each compilation. The \(w_t(e)\) represents learned weights - think of these as the compiler saying "last time I compiled similar code, this strategy worked well, so let's favor it again." This isn't new math - it's the same partitioning problem computer scientists have studied since the dawn of parallel computing. We're just adding a learning component that remembers what worked before.
+In plain English: the subscript \(t\) represents time - meaning the compiler gets smarter with each compilation. The \(w_t(e)\) represents learned weights - think of these as the compiler saying "last time I compiled similar code, this strategy worked well, so let's favor it again." This is the same partitioning problem computer scientists have studied since the dawn of parallel computing, with a learning component added on top that remembers what worked before.
 
 ### Temporal Coeffect Propagation
 
@@ -107,7 +107,7 @@ These mathematical frameworks aren't empty exercises - they're tested axioms tha
 - **Coeffect systems** emerged from decades of research in context-aware computing
 - **Free theorems** have been a cornerstone of functional programming optimization since the 1980s
 
-What's new isn't the math - it's that modern hardware architectures finally have the architectures that these algorithms were designed to exploit. And with MLIR providing a common compilation framework, we can finally bring these time-tested approaches together in a practical system.
+The math is decades old; what has changed is the hardware, which finally embodies the structure these algorithms were designed to exploit. And with MLIR providing a common compilation framework, we can finally bring these time-tested approaches together in a practical system.
 
 **The bottom line for developers**: You write normal Clef code. The compiler uses these mathematical frameworks - refined over decades by some of the brightest minds in computer science - to transform your code into highly optimized executables. You don't need to understand the math any more than you need to understand semiconductor physics to use a computer. But knowing that these foundations exist, and that they're based on decades of proven research rather than trendy new ideas, should give you confidence that this approach is both principled and practical.
 
@@ -115,7 +115,7 @@ Now let's see how these mathematical foundations enable something truly exciting
 
 ## The PHG as a Learning System
 
-Here's where our vision extends beyond older styles of compilation: the Program Hypergraph doesn't just represent a single compilation - it evolves across compilations, learning from each pass in the compilation process. This transforms the PHG from a data structure into a temporal graph that not only improves with experience but can serve to create optimization patterns for mapping application structure to new architectures.
+Here's where our vision extends beyond older styles of compilation. Rather than representing one compilation in isolation, the Program Hypergraph evolves across compilations, learning from each pass in the compilation process. This transforms the PHG from a data structure into a temporal graph that not only improves with experience but can serve to create optimization patterns for mapping application structure to new architectures.
 
 ### Temporal Hypergraph Architecture
 
@@ -143,11 +143,11 @@ and CompilationKnowledge = {
 }
 ```
 
-Compilation patterns repeat - not just within a single program, but across compilation iterations as code evolves. A temporal graph would over time serve to recognize and optimize these patterns.
+Compilation patterns repeat within a single program and, as code evolves, across compilation iterations. A temporal graph would over time serve to recognize and optimize these patterns.
 
 ## Recursion and Bidirectional Zippers
 
-The foundation for navigating this temporal hypergraph comes from recursion schemes combined with bidirectional zippers. This isn't just about traversing the current graph for a given compilation pass - it's about learning optimal traversal patterns over time.
+The foundation for navigating this temporal hypergraph comes from recursion schemes combined with bidirectional zippers. Beyond traversing the current graph for a given compilation pass, they let the compiler learn optimal traversal patterns over time.
 
 ### Recursion Schemes for Hypergraph Transformation
 
@@ -496,6 +496,6 @@ By combining:
 
 We create a compiler that doesn't just preserve semantics - it learns them. It doesn't just optimize code - it learns how to improve outcomes. It doesn't just target architectures - it learns which patterns work best for each class of processor. The foundations exist today: MLIR provides the infrastructure, Clef provides the semantic richness, and the mathematical frameworks provide the rigor. What we're adding is the temporal dimension - the ability for the compiler to learn from its own experience.
 
-As processors become more diverse and specialized, as the gap between Von Neumann and post-Von Neumann architectures widens, this learning capability becomes essential. The compiler that can adapt, learn, and evolve will be the one that bridges these architectural divides. The Program Hypergraph isn't just a data structure - it's a growing, learning representation of computational patterns. Each compilation makes it smarter. Each optimization teaches it something new. Each architecture it targets expands its knowledge.
+As processors become more diverse and specialized, as the gap between Von Neumann and post-Von Neumann architectures widens, this learning capability becomes essential. The compiler that can adapt, learn, and evolve will be the one that bridges these architectural divides. As a growing, learning representation of computational patterns, the Program Hypergraph reaches well past what a static data structure could hold. Each compilation makes it smarter. Each optimization teaches it something new. Each architecture it targets expands its knowledge.
 
-This is the future of compilation: not just transforming code, but learning how to transform it better with every iteration. The temporal Program Hypergraph makes this future possible, turning the compiler from a tool into an intelligent partner in the development process. They're not just the next step in compiler design; they're the bridge between where computing has been and where it's boldly going.
+This is the future of compilation: code that gets transformed better with every iteration as the compiler learns from its own output. The temporal Program Hypergraph makes this future possible, turning the compiler from a tool into an intelligent partner in the development process. More than the next step in compiler design, it is the bridge between where computing has been and where it's boldly going.

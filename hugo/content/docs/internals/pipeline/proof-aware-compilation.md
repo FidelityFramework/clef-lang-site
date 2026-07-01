@@ -14,7 +14,7 @@ params:
 
 Software verification has always forced a cruel choice: accept runtime overhead for safety checks, or trust that your optimizing compiler won't break critical invariants. Traditional compilers treat proofs as obstacles to optimization, while proof assistants have a reputation (earned or not) that they generate code too conservative for production use. But what if verification and optimization weren't opposing forces but complementary dimensions of the same compilation process? The Fidelity Framework's hypergraph architecture makes this vision real by treating proof obligations as first-class hyperedges that guide, not hinder, aggressive optimization.
 
-What's more, there's a feed-forward effect to this approach which allows developers to take advantage of verification "for free" along with application development while keeping the process close to a "standard" [Clef language](https://clef-lang.com) design-time experience. The process and tooling will be fully opt-in, and much of the instrumentation is designed with low-overhead automation built into the compiler internals. So this not only makes formalism restrained and approachable, but it also means that developers don't have to become experts with proofs in order to leverage their advantages.
+What's more, there's a feed-forward effect to this approach which allows developers to take advantage of verification "for free" along with application development while keeping the process close to a "standard" [Clef language](https://clef-lang.com) design-time experience. The process and tooling will be fully opt-in, and much of the instrumentation is designed with low-overhead automation built into the compiler internals. So this keeps formalism restrained and approachable, and by the same design developers can leverage the advantages of proofs without becoming experts in them.
 
 This isn't about some false binary choice of safety versus speed. It's about recognizing that proofs contain valuable information that can enable MORE aggressive optimization. When your compiler understands what properties must be preserved, it can transform everything else with confidence. And the proofs *themselves* can point the way to certain classes of optimization. The hypergraph makes this understanding explicit and actionable.
 
@@ -46,7 +46,7 @@ In the hypergraph, proof obligations aren't annotations attached to code; they'r
 
 Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must choose between preserving every check (safe but slow) or eliminating them through fragile heuristics (fast but risky). The hypergraph enables a third way: proof-guided ***optimization that is both safe and fast***.
 
-When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler gains crucial information. It knows not just that a check exists, but WHY it exists, WHAT it protects, and WHEN it can be safely transformed. This knowledge enables sophisticated optimizations:
+When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler gains crucial information. Past the bare fact that a check exists, it knows WHY it exists, WHAT it protects, and WHEN it can be safely transformed. This knowledge enables sophisticated optimizations:
 
 - **Check hoisting**: Move a single check outside a loop when the proof hyperedge shows all accesses use the same index pattern
 - **Check fusion**: Combine multiple checks into one when proof hyperedges share the same preconditions

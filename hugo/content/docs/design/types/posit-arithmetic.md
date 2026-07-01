@@ -240,7 +240,7 @@ The template approach achieves generality but pays for it in several ways that C
 
 **Quire integration.** The relationship between a posit type and its quire is implicit in Stillwater Universal; the programmer must know that `quire<32,2>` matches `posit<32,2>`. In Clef, `Quire32.fma` takes `Posit32` arguments by definition. The types enforce the correspondence.
 
-Stillwater Universal proved that posit arithmetic works in practice, and the algorithms it published informed the field. The comparison here is not about capability but about *expression*. Clef's type system makes mixed-precision posit workflows readable, safe, and self-documenting in ways that C++ template metaprogramming structurally cannot. More importantly, the compilation model differs fundamentally: Stillwater is a library linked into applications; Fidelity compiles posit operations through the same MLIR pipeline as every other type, targeting CPU, GPU, NPU, and FPGA from a single source.
+Stillwater Universal proved that posit arithmetic works in practice, and the algorithms it published informed the field. The comparison here concerns *expression* rather than capability. Clef's type system makes mixed-precision posit workflows readable, safe, and self-documenting in ways that C++ template metaprogramming structurally disagrees. More importantly, the compilation model differs fundamentally: Stillwater is a library linked into applications; Fidelity compiles posit operations through the same MLIR pipeline as every other type, targeting CPU, GPU, NPU, and FPGA from a single source.
 
 ## SRTP Integration
 
@@ -623,7 +623,7 @@ The DSP48E1 slices available on Xilinx 7-series FPGAs (like the Artix-7 in the A
 
 This is where the posit story becomes qualitatively different from IEEE 754. You cannot build a *better* IEEE FPU on an FPGA than what exists in a modern CPU; the CPU's floating-point unit has decades of optimization in dedicated silicon. But you *can* build a posit arithmetic unit that has no CPU equivalent at all. The FPGA isn't competing with existing hardware; it's providing arithmetic that doesn't exist anywhere else.
 
-A demonstration is planned that will exercise this pipeline end-to-end: Clef posit arithmetic compiled through CIRCT to run on the Arty A7-100T, with the CPU handling orchestration and the FPGA handling the precision-critical computation. The intent is to make the case for FPGA-accelerated posit arithmetic not through benchmarks alone but through a workload where quire-exact accumulation produces qualitatively better results than any IEEE 754 path could.
+A demonstration is planned that will exercise this pipeline end-to-end: Clef posit arithmetic compiled through CIRCT to run on the Arty A7-100T, with the CPU handling orchestration and the FPGA handling the precision-critical computation. The intent is to make the case for FPGA-accelerated posit arithmetic through a workload where quire-exact accumulation produces qualitatively better results than any IEEE 754 path could, with benchmarks as secondary confirmation.
 
 The compilation pipeline for this FPGA path requires no changes to FCS, PSG, nanopasses, or the zipper traversal. Alex's target-aware Bindings select the appropriate MLIR dialect emission, and the CIRCT toolchain handles the transposition from control flow to hardware. The design carries one Clef function through the same compiler to four targets: CPU (sequential), GPU (SIMT parallel), NPU (spatial dataflow), and FPGA (custom arithmetic pipeline). That is the "same compiler, four targets" story we are building toward. Posit arithmetic is the use case that makes the FPGA target necessary rather than optional.
 
@@ -641,7 +641,7 @@ Setting aside the acceleration possibilities, the practical question remains: wh
 
 ## Integration with Fidelity's Memory Model
 
-These application domains share common characteristics: constrained memory, deterministic timing requirements, and computations where numerical accuracy directly affects outcomes. The Fidelity framework and Clef were designed precisely for these environments. Native compilation without runtime overhead, deterministic memory management, and cache-aware data layout are not afterthoughts but foundational principles. Posits fit naturally into this architecture.
+These application domains share common characteristics: constrained memory, deterministic timing requirements, and computations where numerical accuracy directly affects outcomes. The Fidelity framework and Clef were designed precisely for these environments. Native compilation without runtime overhead, deterministic memory management, and cache-aware data layout are foundational principles of that design, present from the first architectural decisions. Posits fit naturally into this architecture.
 
 Posits are value types with deterministic layout. A Posit32 is 4 bytes, identical in size to an IEEE float. Arrays of posits pack contiguously with no hidden headers or alignment padding beyond what the element size requires. The [cache-aware compilation](https://speakez.tech/blog/cache-aware-compilation-cpu/) that Fidelity applies to other data structures works identically for posit arrays.
 

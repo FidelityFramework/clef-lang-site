@@ -24,7 +24,7 @@ Native compilation pivots away from this limited exchange of convenience for mon
 - An NVIDIA GPU demands SIMT (Single Instruction, Multiple Thread) execution models with specialized memory hierarchies
 - An x86-64 processor with AVX-512 extensions offers complex vector operations and sophisticated caching systems
 
-Pre-compiled binaries optimized for one of these targets would be not just suboptimal but completely unusable on another. Targeting these platforms directly is something that the .NET ecosystem cannot contemplate without significant re-engineering - and in effect - compromise. This realization led us to a radical rethinking of package distribution, drawing inspiration from an unexpected source: Rust's Cargo system. It led us to the realization that we could in effect provide the fulfillment of what Bjarne Stroustrup refers to as "only pay for what you use".
+A binary optimized for one of these targets will not run on another at all, and the gap is not a matter of leaving performance on the table. Targeting these platforms directly is something that the .NET ecosystem cannot contemplate without significant re-engineering - and in effect - compromise. This realization led us to a radical rethinking of package distribution, drawing inspiration from an unexpected source: Rust's Cargo system. It led us to the realization that we could in effect provide the fulfillment of what Bjarne Stroustrup refers to as "only pay for what you use".
 
 ## Lessons from Cargo
 
@@ -100,7 +100,7 @@ robot_controller-1.2.0.fidpkg/
 └── SIGNATURE.asc               # Optional cryptographic signature
 ```
 
-This source-first approach will enable the Composer compiler to perform whole-program optimization, seeing not just your code but all dependencies together. The compiler will be able to inline functions across package boundaries, eliminate dead code paths completely, and generate platform-specific memory layouts that would be impossible with pre-compiled binaries.
+This source-first approach will enable the Composer compiler to perform whole-program optimization, with your code and every dependency in view at the same time. The compiler will be able to inline functions across package boundaries, eliminate dead code paths completely, and generate platform-specific memory layouts that would be impossible with pre-compiled binaries.
 
 ## Command-Line Interface
 
@@ -272,7 +272,7 @@ As quantum computing, neuromorphic processors and other novel architectures emer
 
 This design is currently in internal development within the Fidelity Framework project, with careful attention being paid to every architectural decision. In the near future, we plan to open the project to the community, inviting contributions and feedback from the broader Clef and MLIR/LLVM communities. The combination of Clef's expressive power and ClefPak's distribution model promises to unlock new possibilities for systems programming, embedded development, and high-performance computing that were previously the exclusive domain of lower-level languages.
 
-The journey from managed code to native compilation is not just a technical transition, it's an opportunity to reimagine what's possible when a language and its tooling evolve together. ClefPak represents our commitment to making that journey not just possible, but pleasant and productive for every Clef developer ready to explore new frontiers in technology.
+The journey from managed code to native compilation carries an opportunity along with it: to reimagine what's possible when a language and its tooling evolve together. ClefPak represents our commitment to making that journey not just possible, but pleasant and productive for every Clef developer ready to explore new frontiers in technology.
 
 ## See also
 

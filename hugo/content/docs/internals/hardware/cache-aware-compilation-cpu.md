@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern computing systems present a fundamental paradox: while processor speeds have increased exponentially, memory latency improvements have been modest, creating an ever-widening performance gap. This disparity manifests most acutely in the cache hierarchy, where the difference between an L1 cache hit (approximately 4 cycles) and main memory access (200+ cycles) represents a fifty-fold performance penalty. For systems pursuing native performance without runtime overhead, understanding and exploiting cache behavior becomes not merely an optimization, but an architectural imperative.
+Modern computing systems present a fundamental paradox: while processor speeds have increased exponentially, memory latency improvements have been modest, creating an ever-widening performance gap. This disparity manifests most acutely in the cache hierarchy, where the difference between an L1 cache hit (approximately 4 cycles) and main memory access (200+ cycles) represents a fifty-fold performance penalty. For systems pursuing native performance without runtime overhead, understanding and exploiting cache behavior rises past the level of a discretionary optimization to become an architectural imperative.
 
 The Fidelity framework's Prospero orchestration layer is designed to address this challenge through what we term "cache-conscious memory management," a systematic approach that extends beyond traditional memory awareness to encompass the full memory hierarchy from L1 cache through main memory. This design philosophy recognizes that effective cache utilization cannot be achieved through OS-level allocation alone, but requires coordinated effort across compilation, memory management, and actor placement strategies.
 
@@ -47,7 +47,7 @@ type OrderBook = {
 }
 ```
 
-This determinism transforms cache analysis from speculation to calculation. When the Composer compiler encounters an actor processing OrderBook messages, it will know precisely which cache lines each field access will touch. The semantic graph we're developing captures not merely data types but exact access patterns over deterministic layouts, enabling the cache-aware optimizations that follow.
+This determinism transforms cache analysis from speculation to calculation. When the Composer compiler encounters an actor processing OrderBook messages, it will know precisely which cache lines each field access will touch. The semantic graph we're developing records exact access patterns over deterministic layouts, carrying more than the data types alone and enabling the cache-aware optimizations that follow.
 
 ## Prospero's Hierarchical Memory Architecture
 
@@ -401,7 +401,7 @@ let forwardMessage (msg: Message) (dest: ActorRef) =
 
 ### NUMA-Aware Zero-Copy
 
-In NUMA systems, zero-copy operations must consider not just cache topology but also memory controller topology. BAREWire's deterministic layouts will enable Prospero to predict exactly which cache lines will be accessed during a zero-copy transfer, optimizing the operation based on this knowledge:
+In NUMA systems, zero-copy operations weigh cache topology and memory controller topology together. BAREWire's deterministic layouts will enable Prospero to predict exactly which cache lines will be accessed during a zero-copy transfer, optimizing the operation based on this knowledge:
 
 ```fsharp
 let optimizeZeroCopy (source: ActorRef) (dest: ActorRef) (msg: BAREMessage) =
@@ -552,7 +552,7 @@ These hints guide the compiler's optimization strategies while maintaining sourc
 
 ### Library Ecosystem Considerations
 
-The most significant challenge in migration lies not in language features but in library dependencies. Projects heavily dependent on .NET-specific libraries like Entity Framework, ASP.NET Core, or Windows Forms would require more substantial rework. However, for domains where Fidelity excels - high-performance computing, embedded systems, real-time processing - many .NET dependencies could be replaced with Fidelity-native alternatives that provide better performance characteristics.
+The most significant challenge in migration is library dependencies, where language features present far less friction. Projects heavily dependent on .NET-specific libraries like Entity Framework, ASP.NET Core, or Windows Forms would require more substantial rework. However, for domains where Fidelity excels - high-performance computing, embedded systems, real-time processing - many .NET dependencies could be replaced with Fidelity-native alternatives that provide better performance characteristics.
 
 We're particularly focused on ensuring that core F# idioms and patterns translate cleanly:
 - Discriminated unions map to efficient tagged unions in BAREWire
@@ -603,6 +603,6 @@ This approach acknowledges that modern system performance depends more on cache 
 
 The planned integration of cache awareness with actor-based concurrency and zero-copy communication creates a synergistic system where each component reinforces the others. Actors provide natural boundaries for cache optimization, BAREWire's deterministic layouts make cache behavior predictable, and zero-copy operations preserve cache locality. The result is a system design where memory placement decisions made at compile time translate directly into runtime performance benefits.
 
-As processor architectures continue evolving with deeper cache hierarchies, novel coherency protocols, and heterogeneous memory systems, the combination of BAREWire's determinism and Prospero's orchestration is designed to provide the flexibility to adapt. The semantic graph maintained by the Composer compiler will capture not just program logic but the exact memory access patterns that determine cache behavior, enabling optimizations that would be impossible in systems with dynamic memory layouts.
+As processor architectures continue evolving with deeper cache hierarchies, novel coherency protocols, and heterogeneous memory systems, the combination of BAREWire's determinism and Prospero's orchestration is designed to provide the flexibility to adapt. The semantic graph maintained by the Composer compiler will capture program logic alongside the exact memory access patterns that determine cache behavior, enabling optimizations that would be impossible in systems with dynamic memory layouts.
 
 This cache-conscious design philosophy, combined with RAII-based deterministic memory management and the BAREWire zero-copy protocol, positions Fidelity to deliver the promise of concurrent programming with the performance of hand-tuned systems code. Composer's optimization repository - our "Library of Alexandria" of architectural knowledge - ensures that processor-specific optimizations remain manageable and extensible as new architectures emerge. Predictable memory layouts enable predictable performance - and BAREWire's compile-time guarantees, combined with Composer's architectural knowledge, provide exactly the predictability needed for true cache consciousness.

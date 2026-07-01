@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because choosing the right parallel execution strategy requires understanding not just what your code does, but what it needs from its environment. Coeffects transform compilation.
+Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because the right parallel execution strategy follows from what your code does together with what it needs from its environment, and a traditional compiler only sees the first half. Coeffects transform compilation.
 
 ## The Parallelism Predicament
 
@@ -313,7 +313,7 @@ let processOrder order =
 // Telemetry inserted at natural boundaries with zero overhead
 ```
 
-This isn't instrumentation bolted on after the fact - it's derived from the same analysis that drives optimization. Fidelity's Program Semantic Graph the static resolution of interaction nets and delimited continuations mean that all code paths are known and fully traceable. There are no opaque allocations or "object downcasts" of convenience that obscure data and control flow. Establishing determinism and tracking it through the compute graph is the secret superpower of this approach.
+This telemetry falls out of the same analysis that drives optimization, rather than being bolted on after the fact. Fidelity's Program Semantic Graph the static resolution of interaction nets and delimited continuations mean that all code paths are known and fully traceable. There are no opaque allocations or "object downcasts" of convenience that obscure data and control flow. Establishing determinism and tracking it through the compute graph is the secret superpower of this approach.
 
 Engineering in this system not only saves money at runtime, but it also saves on the "fixed costs" of day-over-day development cycles. REducing the time from inspiration to deployment for use by business is this framework's most potent advantage. And the immediate transparency that these designs enjoy also makes production monitoring and maintenance less of an ongoing business cost. This approach is efficient in the lab and at the data center.
 
@@ -356,7 +356,7 @@ Coeffects deliver measurable performance wins:
 - **Optimal hardware utilization** by matching computation patterns to processor strengths
 - **Zero abstraction penalty** with optimal decisions are made at compile time
 
-The choice between interaction nets and delimited continuations isn't arbitrary - it's determined by what your code needs to accomplish for a given server architecture. By making this choice automatically based on coeffect analysis, Fidelity targets the right workload for a given chipset every time.
+The choice between interaction nets and delimited continuations follows a clear rule: what your code needs to accomplish on a given server architecture settles it. By making this choice automatically based on coeffect analysis, Fidelity targets the right workload for a given chipset every time.
 
 As we enter an era of increasingly heterogeneous hardware (CPUs, GPUs, TPUs, DPUs, and exotic accelerators), this context-aware compilation becomes essential. Your code expresses intent, this approach to intelligent analysis discovers requirements, and the compiler generates optimal execution strategies. That's the power of coeffects: turning academic insight into real-world performance.
 

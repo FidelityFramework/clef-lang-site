@@ -426,7 +426,7 @@ Clef developers already know the power of inference. Type inference transformed 
 
 The explicit form isn't going away; it's the foundation everything else builds on. But it should be the escape hatch, not the default. Developers should write Clef that looks like Clef, and trust the compiler to handle the memory concerns that can be determined from context.
 
-That's what "Memory Management by Choice" means in its fullest form: choosing not just when to optimize, but when to even think about memory at all.
+That's what "Memory Management by Choice" means in its fullest form: the choice covers both when to optimize and, one level up, when memory has to enter the developer's thinking at all.
 
 ---
 *This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/types/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/concurrency/delimited-continuations/) for the connection between continuation boundaries and memory management.*
