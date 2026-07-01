@@ -28,7 +28,7 @@ toc: false
 {{< hextra/hero-button text="Follow the Work" link="docs/guides" style="alt" >}}
 </div>
 
-<div class="hextra-feature-grid hx:grid hx:mb-8 hx:gap-4 hx:grid-cols-1 hx:sm:max-lg:grid-cols-2 hx:lg:grid-cols-3">
+<div class="hextra-feature-grid hx:grid hx:sm:max-lg:grid-cols-2 hx:max-sm:grid-cols-1 hx:gap-4 hx:w-full not-prose" style="--hextra-feature-grid-cols: 3;">
   <a href="{{< relref "/spec" >}}"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(70,156,149,0.15),hsla(0,0%,100%,0));"
     class="hextra-feature-card not-prose hx:block hx:relative hx:overflow-hidden hx:rounded-3xl hx:border hx:border-gray-200 hx:hover:border-gray-300 hx:dark:border-neutral-800 hx:dark:hover:border-neutral-700 hx:before:pointer-events-none hx:before:absolute hx:before:inset-0 hx:before:bg-glass-gradient">

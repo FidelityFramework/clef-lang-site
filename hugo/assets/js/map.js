@@ -243,9 +243,14 @@
           + '>Go →</a>';
         tip(tipFor(d) + '<div class="clef-map-tipactions">' + go
           + '<button type="button" class="clef-map-freezebtn">Freeze</button></div>', p.x, p.y);
-        // wire the in-callout Freeze button (touch alternative to long-press)
+        // Wire the in-callout actions. stopPropagation on the buttons so the tap does NOT bubble to
+        // the empty-space dismiss handler (which would close the callout before the action fires).
         var fb = t && t.querySelector(".clef-map-freezebtn");
-        if (fb) fb.onclick = function (ev) { ev.stopPropagation(); freezeNeighborhood(e.target); };
+        if (fb) fb.addEventListener("click", function (ev) {
+          ev.stopPropagation(); ev.preventDefault(); freezeNeighborhood(e.target);
+        });
+        var gl = t && t.querySelector(".clef-map-go");
+        if (gl) gl.addEventListener("click", function (ev) { ev.stopPropagation(); });
       });
       // long-press = freeze (the right-click equivalent)
       cy.on("taphold", "node", function (e) { freezeNeighborhood(e.target); });
