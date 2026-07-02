@@ -20,7 +20,7 @@ The field has a shelf of terms for the portion of computation that 'comes apart'
 
 Each names a mechanic whose elements do not depend on others, so an application can run them separately with no coordination. The question that figurative 'shelf' leaves open is a matter of *assembly*. 
 
-> Now ask for the word that covers the *adjacent* case...
+> Now consider terms that cover the *adjacent* case...
 
 ...a program that spawns work from inside a sequential process, waits for the results, and uses them to decide what happens next. That has a 'shelf' of its own:
 
