@@ -212,3 +212,4 @@ We'll keep watching Mojo's evolution as we build Fidelity out, and we'll keep le
 ## See also
 
 - [Pondering Python]({{< ref "pondering-python" >}}): the companion case on escaping Python and PyTorch's dynamic gravity, where the same static-foundations argument plays out against ONNX metadata loss rather than Mojo's def/fn split.
+- [Weaving the Braid]({{< ref "weaving-the-braid" >}}): where the unified-model argument sketched here is developed in full. The def/fn split puts control and performance on either side of a function boundary; the braid piece is the account of a single functional core whose strands the compiler parts and rejoins, so one loom carries both.

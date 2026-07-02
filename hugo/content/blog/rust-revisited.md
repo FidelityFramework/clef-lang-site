@@ -275,3 +275,4 @@ For deeper exploration of specific topics:
 - [Abstract Machine Models and heterogeneous computing](/blog/abstract-machine-model-paradox/)
 - [Structural Polymorphism](/docs/design/types/structural-polymorphism/)
 - [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/)
+- [Weaving the Braid](/blog/weaving-the-braid/): the multiple-models-and-strategies theme carried to its structural conclusion. Where Rust hands the lifetime question back to the developer at its single-function view, that piece is the account of a compiler that holds the woven complexity itself, so the developer writes the strands and the loom does the crossing.
