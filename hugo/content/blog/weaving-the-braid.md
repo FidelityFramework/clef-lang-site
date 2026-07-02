@@ -18,7 +18,7 @@ The field has a shelf of terms for the portion of computation that 'comes apart'
 - referentially transparent
 - Embarrassingly parallel
 
-Each names a mechanic whose elements do not depend on others, so an application can run them separately with no coordination. The question that figurative 'shelf' leaves open is a matter of *assembly*. 
+Each names a mechanic whose elements do not depend on others, so an application can run them separately with no coordination.
 
 > Now consider terms that cover the *adjacent* case...
 
@@ -32,7 +32,7 @@ Each names a mechanic whose elements do not depend on others, so an application 
 - async/await
 - continuations
 
-Each of these names the control act or its bookkeeping: the repetition, the spawn and its join, the pending handle, the suspension and its resumption. However, a cohesive term for the full construction, the interleave of control and width carried as one object with its crossings intact, is the slot that is nearly bare. Pull the parallel portion out of a program like that and what remains is a different program.
+Each of these names the control act or its bookkeeping: the repetition, the spawn and its join, the pending handle, the suspension and its resumption. However, a cohesive term for the full construction, the interleave of control and width carried as one object with its crossings intact, is the slot that is nearly bare. The question that figurative 'shelf' leaves open is a matter of *assembly*. 
 
 The nearest name on record for the conjunction is [braided parallelism](https://ieeexplore.ieee.org/document/6272260/), coined in the GPGPU era for a single-source model that interleaves task and data parallelism, with the game engine as the standing example. We are going to take the word and run with it, as they say, with one property doing the work: a braid comes apart if a strand is cut. The structure is *the crossing*. The parallel part cannot be lifted out, run as embarrassingly parallel, and stapled back on afterward, because the places where the strands cross are where the work resides. 
 
