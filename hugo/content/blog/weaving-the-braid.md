@@ -9,7 +9,7 @@ params:
   originally_published: 2026-07-01
 ---
 
-The field has a long shelf of words for the part of computation that comes apart cleanly. 
+The field has a shelf of terms for the portion of computation that 'comes apart' cleanly. 
 
 - map
 - SIMD/SIMT
@@ -18,9 +18,22 @@ The field has a long shelf of words for the part of computation that comes apart
 - referentially transparent
 - Embarrassingly parallel
 
-Each names a computation whose pieces do not depend on each other, so a machine can run them separately with no coordination. These are parts, and good ones; the question the shelf leaves open is the assembly. Now ask for the word that covers the opposite case: a program that spawns parallel work from inside a sequential loop, waits for the results, and uses them to decide what happens next. That rhetorical shelf is nearly bare. Pull the parallel part out of a program like that and what remains is a different program.
+Each names a mechanic whose elements do not depend on others, so an application can run them separately with no coordination. The question that figurative 'shelf' leaves open is a matter of *assembly*. 
 
-The nearest name on record is [braided parallelism](https://ieeexplore.ieee.org/document/6272260/), coined in the GPGPU era for a single-source model that interleaves task and data parallelism, with the game engine as the standing example. We are going to take the word and run with it, as they say, with one property doing the work: a braid comes apart if a strand is cut. The structure is *the crossing*. The parallel part cannot be lifted out, run as embarrassingly parallel, and stapled back on afterward, because the places where the strands cross are where the work resides. Real programs are braided in exactly this sense. They spawn parallel work out of sequential control, and the act of spawning is a control act with a return point, a place the computation comes back to and threads the result through what comes next. That return point is ***the crossing***. A substrate that gives it no first-class place cannot hold the braid, however well it holds the strand. And that capacity varies across processor types: not every processor can take every form of braided parallelism, and even the GPU, the hardware the word was coined for, is surprisingly narrow relative to the variety of cases that garden-variety code expresses as a matter of course. Spanning CPU and other accelerators with a coherent language surface is part of the reason we're building the Fidelity Framework.
+> Now ask for the word that covers the *adjacent* case...
+
+...a program that spawns work from inside a sequential process, waits for the results, and uses them to decide what happens next. That has a 'shelf' of its own:
+
+- continuations, and their delimited form
+- fork-join
+- async/await
+- futures and promises
+
+Each of these names the control act or its bookkeeping: the suspension and its resumption, the spawn and its join, the pending handle. A term for the woven whole, the interleave of control and width carried as one object with its crossings intact, is the slot that stays nearly bare. Pull the parallel portion out of a program like that and what remains is a different program.
+
+The nearest name on record for the conjunction is [braided parallelism](https://ieeexplore.ieee.org/document/6272260/), coined in the GPGPU era for a single-source model that interleaves task and data parallelism, with the game engine as the standing example. We are going to take the word and run with it, as they say, with one property doing the work: a braid comes apart if a strand is cut. The structure is *the crossing*. The parallel part cannot be lifted out, run as embarrassingly parallel, and stapled back on afterward, because the places where the strands cross are where the work resides. 
+
+Real programs are braided in exactly this sense. They spawn parallel work out of sequential control, and the act of spawning is a control act with a return point, a place the computation comes back to and threads the result through what comes next. That return point is ***the crossing***. A substrate that gives it no first-class place cannot hold the braid, however well it holds the strand. And that capacity varies across processor types: not every processor can take every form of braided parallelism, and even the GPU, the hardware the word was coined for, is surprisingly narrow relative to the variety of cases that garden-variety code expresses as a matter of course. Spanning CPU and other accelerators with a coherent language surface is part of the reason we're building the Fidelity Framework.
 
 ## A workload that will not unweave
 
@@ -82,7 +95,7 @@ The taxonomy, consolidated:
 
 This is where a "runtime hat" is worn to think through the scenarios clearly. Run the resolver against the first and last rows. A grid needs its iteration space fixed before launch, and the resolver's round n+1 frontier does not exist until round n returns. So a grid executes it as one kernel launch per round with the loop living on the host, and the host loop is precisely the control the model excludes. The program's structure lands in the seam between launches, past the edge of what the grid carries. A net runs each round's width beautifully. The round boundary is a sequencing act: gather every result, merge against `resolved`, choose the next frontier. Encoding that into the net is scheduling by hand-built encoding, the bookkeeping HVM pays a runtime host to do dynamically. Both substrates hold the strand. The *crossing* lands **outside** of them.
 
-Every term on the opening 'shelf' carries weight, in some cases a technology in service, and each is valuable inside its remit. So a fair reader can ask: with all of this standing art, does Clef have anything to bring to this area? As it turns out, bringing many of these elements together is the crux of what we do. The regions have to be found in ordinary code, each region has to be matched to what the processor at hand can actually take, and the crossings between them have to be carried as checked structure to the backend handoff. Each term names a part. Clef and Composer are being built to do the assembling, and in many cases that can lead to multi-processor solutions that are greater than the sum of their parts.
+Every term on those opening 'shelves' carries weight, in some cases a technology in service, and each is valuable inside its remit. So a fair reader can ask: with all of this standing art, does Clef have anything to bring to this area? As it turns out, bringing many of these elements together is the crux of what we do. The regions have to be found in ordinary code, each region has to be matched to what the processor at hand can actually take, and the crossings between them have to be carried as checked structure to the backend handoff. Each term names a part. Clef and Composer are being built to do the assembling, and in many cases that can lead to multi-processor solutions that are greater than the sum of their parts.
 
 ## Polarity
 
