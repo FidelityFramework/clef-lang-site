@@ -114,7 +114,17 @@ module Search =
             let request = createObj [
                 "text" ==> [| truncated |]
             ]
-            let! result = ai.run("@cf/baai/bge-base-en-v1.5", request)
+            // The embedding model can stall the same way inference does: accept the
+            // request and never resolve, hanging every /search/hybrid and
+            // /synthesize-stream request until the client aborts. Race it against a
+            // timeout so a stalled embedder throws fast and the handler's top-level
+            // catch returns a clean 500 instead of holding the socket open. 8s sits
+            // well above a healthy embedding (sub-second in practice) and far below
+            // the client's cap. bge is a light model, so a genuine call never nears it.
+            let embedCall = ai.run("@cf/baai/bge-base-en-v1.5", request)
+            let timeout : JS.Promise<obj> =
+                emitJsExpr () "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('EMBED_TIMEOUT')); }, 8000); })"
+            let! result = Promise.race [ embedCall; timeout ]
             let data: obj array = result?data |> unbox
             return data.[0] |> unbox<float array>
         }

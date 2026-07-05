@@ -208,6 +208,13 @@ module Handlers =
             let answerMode = Search.isQuestionOrRequest rawQuery
             let prompt = Search.buildSynthesisPromptFull rawQuery answerMode sections
 
+            // glm-4.7-flash is a reasoning model and emits chain-of-thought by
+            // default, which adds latency and risks leaking the <think> scratchpad
+            // when generation is cut off mid-thought. A search-result summary needs
+            // no deliberation, so disable thinking at the source. Verified against
+            // the Cloudflare model input schema (chat_template_kwargs.enable_thinking).
+            // Gemma is not a reasoning model and ignores the flag harmlessly, so the
+            // same request body serves both. max_tokens/temperature apply to both.
             let aiRequest = createObj [
                 "messages" ==> [|
                     createObj [
@@ -218,40 +225,21 @@ module Handlers =
                 |]
                 "max_tokens" ==> 2048
                 "temperature" ==> 0.3
-                // glm-4.7-flash is a reasoning model and emits chain-of-thought by
-                // default, which adds latency and risks leaking the <think> scratchpad
-                // when generation is cut off mid-thought. A search-result summary needs
-                // no deliberation, so disable thinking at the source. Verified against
-                // the Cloudflare model input schema (chat_template_kwargs.enable_thinking).
                 "chat_template_kwargs" ==> createObj [ "enable_thinking" ==> false ]
             ]
 
-            // Workers AI inference intermittently stalls and never resolves. Without a
-            // bound here the whole request hangs until the client aborts. Race the call
-            // against a timeout so a stalled inference fails fast with a clean error
-            // instead of holding the connection open. The threshold sits above a slow
-            // but genuine response (observed up to ~26s) so it only trips on real
-            // stalls, and below the client's 30s cap so the client gets a clean body.
-            let aiCall = env.AI.run("@cf/zai-org/glm-4.7-flash", aiRequest)
-            let timeout : JS.Promise<obj> =
-                emitJsExpr () "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('AI_TIMEOUT')); }, 28000); })"
-            let! aiResult =
-                Promise.race [ aiCall; timeout ]
-                |> Promise.catch (fun (e: exn) ->
-                    if e.Message.Contains("AI_TIMEOUT") then null
-                    else raise e)
-
-            // GLM-4.7-Flash returns OpenAI chat completion format:
-            //   { choices: [{ message: { content, reasoning_content? } }] }
-            // GLM models may emit chain-of-thought as <think>...</think> blocks
-            // inline within `content`, or as a separate `reasoning_content` field.
-            // The extractor below handles both shapes:
+            // Extract the summary text from a Workers AI chat response. Both models
+            // return OpenAI chat completion format { choices: [{ message: {...} }] }.
+            // GLM (a reasoning model) may emit chain-of-thought as <think>...</think>
+            // blocks inline within `content` or as a separate `reasoning_content`
+            // field; Gemma emits neither, so its plain content passes straight
+            // through. The extractor handles both:
             //   1. Strip any <think>...</think> blocks from content
             //   2. If the stripped content is non-empty, return it
             //   3. Otherwise fall back to reasoning_content (some flash modes
             //      put the entire answer there when content is empty)
             //   4. Final fallbacks: legacy `response` field and raw string
-            let responseText: string =
+            let extractText (aiResult: obj) : string =
                 if isNullOrUndefined aiResult then ""
                 else
                     let content: string =
@@ -277,6 +265,39 @@ module Handlers =
                             })($0)"""
                     if not (isNullOrUndefined content) then content
                     else ""
+
+            // Workers AI inference intermittently stalls and never resolves, and a
+            // single model can go fully dark for days (a real Cloudflare incident
+            // took glm-4.7-flash offline). Without a bound the whole request hangs
+            // until the client aborts; with only one model, one outage kills every
+            // summary. Race each call against a timeout so a stalled model fails fast,
+            // and fall through to a second model so a single-model outage still yields
+            // a summary. The timeout sits above a slow but genuine response (observed
+            // up to ~26s) and below the client's 30s cap so the client gets a clean
+            // body. Timeouts are budgeted so GLM + Gemma both fit under the client cap.
+            let runModel (model: string) (timeoutMs: int) : JS.Promise<string> =
+                promise {
+                    let aiCall = env.AI.run(model, aiRequest)
+                    let timeout : JS.Promise<obj> =
+                        emitJsExpr timeoutMs "new Promise(function(_, reject){ setTimeout(function(){ reject(new Error('AI_TIMEOUT')); }, $0); })"
+                    let! aiResult =
+                        Promise.race [ aiCall; timeout ]
+                        |> Promise.catch (fun (e: exn) ->
+                            // Swallow a timeout OR a per-model error so the fallback
+                            // gets its turn — a model that 500s should not abort the
+                            // whole request when a second model might still answer.
+                            ignore e
+                            null)
+                    return extractText aiResult
+                }
+
+            // Primary: GLM. On empty (timeout or empty body), fall back to Gemma,
+            // Cloudflare's recommended alternate and outside the current incident.
+            // 18s + 10s keeps the worst case under the client's 30s cap.
+            let! glmText = runModel "@cf/zai-org/glm-4.7-flash" 18000
+            let! responseText =
+                if glmText <> "" then Promise.lift glmText
+                else runModel "@cf/google/gemma-4-26b-a4b-it" 10000
 
             if responseText = "" then
                 return jsonResponse {|
