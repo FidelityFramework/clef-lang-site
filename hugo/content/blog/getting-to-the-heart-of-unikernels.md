@@ -7,6 +7,8 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
+## Hidden Hierarchy in Plain Sight
+
 ```mermaid
 graph LR
     ROOT["Sealed artifact<br/>one image, self-contained"]
@@ -80,11 +82,11 @@ Most toolchains can already produce a freestanding artifact; that half of the pr
 
 ## Flexing Without 'musl'
 
-The sealed-image diagram shows a C library statically linked into the image, and musl is the usual choice there: it is small, static-link-friendly, and already the libc behind most scratch-container and unikernel builds. 
+The sealed-image diagram above shows a C library statically linked into the image, and musl is the usual choice there: it is small, static-link-friendly, and already the libc behind most scratch-container and unikernel builds. 
 
-Fidelity aims to provide two choices: 1) the C binding path we've written about extensively and built with our Farscape binding application, and 2) direct compilation of Clef to native code with no C ABI in the path. The spec draws this as a third tier past hosted-dynamic and freestanding-static: [a bare target with no C runtime at all](/spec/draft/ffi-boundary/), where no libc is linked, there is no foreign-function boundary, and interior memory follows the compiler's own lifetime lattice rather than `malloc` and `free`. On such a target the arena and static-storage discipline aims to be the memory model; there would be no allocator to call because none would be linked.
+Fidelity aims to provide three choices, one for each linkage tier the spec draws. The first is hosted: the C binding path we've written about extensively and built with our Farscape binding application, resolved against the system's shared libraries like any ordinary Linux process. The second is freestanding with a static libc: the same Farscape bindings coupled at build time, musl sealed into the image, the recipe in the diagram above. The third is the tier this entry is about: [a bare target with no C runtime at all](/spec/draft/ffi-boundary/), reached by compiling Clef to native code with no C ABI in the path. On the bare tier no libc is linked, there is no foreign-function boundary, and interior memory follows the compiler's own lifetime lattice rather than `malloc` and `free`. The arena and static-storage discipline aims to be the memory model on that tier; there would be no allocator to call because none would be linked.
 
-## Prior Art and What Survived It
+## Prior Art
 
 [MirageOS](https://mirage.io) is the most prominent prior-art waypoint. The 2013 paper [*Unikernels: Library Operating Systems for the Cloud*](https://anil.recoil.org/papers/2013-asplos-mirage.pdf) made a compelling argument: specialize the build to the application, link only what the application uses, and boot the result directly as a virtual guest. The part of that project which demonstrably survived into the wild is the networking. Docker Desktop ships [VPNKit](https://github.com/moby/vpnkit), a service assembled from Mirage networking libraries, and it has routed container traffic on developer machines for a decade. The ecosystem that followed broadened the substrate choices: [Unikraft](https://unikraft.org) reports millisecond-scale boots for specialized images, and the [unikernels-as-processes](https://dl.acm.org/doi/10.1145/3267809.3267845) line of research showed the artifact running as an ordinary process behind a narrow syscall filter, no hypervisor required.
 
