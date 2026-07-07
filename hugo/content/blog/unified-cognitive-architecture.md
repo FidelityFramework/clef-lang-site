@@ -86,7 +86,7 @@ let processQuery query library =
 
 The economics shift with this structure: instead of training massive models, organizations build and trade specialized hypergraphs. A Bloomberg financial relationships graph. A PubMed molecular interactions graph. A proprietary manufacturing process graph. Knowledge becomes a modular, composable asset that can be loaded and exchanged.
 
-We have since worked this vision into a concrete research program. The specialized models sketched here are developed as [Adaptive Domain Models](/docs/design/constrained-machine-learning/why-adaptive-domain-models/), and the arrangement in which many of them compose alongside a general model is [the constellation](/docs/design/constrained-machine-learning/the-constellation/).
+We have since worked this vision into a concrete research program. The specialized models sketched here are developed as [Adaptive Domain Models](/docs/design/constrained-machine-learning/adaptive-domain-models/), and the arrangement in which many of them compose alongside a general model is [the constellation](/docs/design/constrained-machine-learning/the-constellation/).
 
 ## Fractal Reasoning
 

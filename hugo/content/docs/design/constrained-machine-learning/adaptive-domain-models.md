@@ -1,20 +1,22 @@
 ---
-title: "How Adaptive Domain Models Could Change the Game"
+title: "The Utility of Adaptive Domain Models"
 linkTitle: "Utility of Adaptive Domain Models"
-description: "Typed domain models that hold their domain's structure as a verified, type-level invariant"
+description: "Domain models correct by construction, holding their domain's structure as a verified invariant"
 date: 2026-06-08T00:00:00+00:00
 weight: 1
 authors:
   - SpeakEZ
 tags: ["machine-learning", "adaptive-domain-models", "formal-verification", "architecture"]
 draft: false
+aliases:
+  - /docs/design/constrained-machine-learning/why-adaptive-domain-models/
 ---
 
 In a [talk on how intelligence evolved](https://www.youtube.com/watch?v=Az9sfy3jWNU), Yi Ma articulates two kinds that are essentially distinct based on transferred and learned bases. In the framing he presents, *Phylogenetic* intelligence belongs to the species: it is evolved under selection and written into an inheritance, and the individual that carries it only reacts based on that provided frame. ***Ontogenetic*** intelligence belongs to the individual that builds its own memory after birth, through perception, feedback, and the correction of error. By extension, he asserts that a "monolithic model" (his exact turn of phrase) is phylogenetic. Its training run is the evolution and its benchmark is the selection pressure, and the weights it ships are an inheritance it spends the rest of its existence in a reactive form. 
 
 Following his example, we see our Adaptive Domain Model as emerging with an ontogenetic form, and the advanced version of that illustrative characterization rather than the bare one. Ma notes that the most capable life pairs a rich inherited structure with a long life of learning, and the ADM is meant to do both. It is a learned model whose weights carry the domain's structure as a type-level invariant, a conserved grade, a physical dimension, an equivariance under a known group, expressed in the type system before any training example arrives, enforced during training, and discharged by a verifier, so the model holds that structure exactly rather than approximately. That is the inherited prior. The adaptation is the other half: the model goes on learning inside the prior, revising its own domain memory as the distribution shifts instead of freezing when training ends. The inherited structure is what most of this article treats; the lifelong adaptation is the "Adaptive" in the name. This is the contribution the section rests on, argued in full in our ADM pre-print on arXiv.
 
-The contrast that defines our ADM shows up against the dominant paradigm, the same contrast we first drew in essay form in [A Vision For Unified Cognitive Architecture]({{< ref "/blog/unified-cognitive-architecture" >}}). A monolithic transformer learns whatever structure it acquires from data alone, as a statistical regularity with no formal status, true on average over the training distribution and subject to drift everywhere else. An Adaptive Domain Model does not form an emergent structure from over-parameterized data; it is informed within the shape of its provided domain, and learns only within that established bound. What's more, our [Resonant Recurrent Model]({{< ref "/docs/design/categorical-foundations/typed-recurrence-categorical-control" >}}) design lets these models be constrained at runtime, providing a scaffold for continuous learning.
+The contrast that defines our ADM shows up against the dominant paradigm, the same contrast we first drew in essay form in [A Vision For Unified Cognitive Architecture]({{< ref "/blog/unified-cognitive-architecture" >}}). A monolithic transformer learns whatever structure it acquires from data alone, as a statistical regularity with no formal status, true on average over the training distribution and subject to drift everywhere else. An Adaptive Domain Model does not form an emergent structure from over-parameterized data; it is informed within the shape of its provided domain, and learns only within that established bound. What's more, our [Resonant Recurrent Model]({{< ref "/docs/design/categorical-foundations/structured-recurrence" >}}) design lets these models be constrained at runtime, providing a scaffold for continuous learning.
 
 ## The highlight reel
 

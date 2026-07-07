@@ -1,7 +1,7 @@
 ---
-title: "Building the Constrained Language Model"
-linkTitle: "Building the Model"
-description: "How a language model is tuned to write Clef, with valid output enforced outside its weights"
+title: "Building a Constrained Language Model"
+linkTitle: "Building a Constrained Language Model"
+description: "An concept for a language model that could be efficiently tuned to write Clef"
 date: 2026-06-08T00:02:00+00:00
 weight: 3
 authors:
@@ -10,20 +10,20 @@ tags: ["machine-learning", "language-model", "formal-verification", "compilation
 draft: false
 ---
 
-From our design perspective, we see that most of a language node's work is ordinary language: it reads natural-language intent, reasons in a domain's own vocabulary, a clinician's terminology, a statute's clauses, an analyst's terms of art, and answers in prose a person reads. One path through it is different. When the node hands work to a typed domain model, it has to produce structured Clef, and that Clef has to be well-formed. Teaching a model to emit Clef cleanly, while the rest of what it does stays conversation, is the subject here.
+From our design perspective, we see that most of a language node's work is ordinary language: it reads natural-language intent, reasons in a domain's own vocabulary, and answers in prose a person reads. That vocabulary might be a clinician's terminology, a statute's clauses, or an analyst's terms of art. One path through it is different. When the node hands work to a typed domain model, it has to produce structured Clef, and that Clef has to be well-formed. Teaching a model to emit Clef cleanly, while the rest of what it does stays conversation, is the subject here.
 
-On that path the model is constrained in three senses. Its idiom, writing Clef the way a fluent practitioner would. Its accent, the imperative and dynamically-typed reflexes of its training corpus, suppressed. And its output, held to syntactically valid Clef by a grammar derived from Clef's own, a static artifact that stands at the boundary on its own. The first two are shaped by tuning, inside the model. The third is imposed by that grammar, which the build produces and the runtime carries forward.
+On that path the model is constrained in three senses. Its idiom, writing Clef the way a fluent practitioner would. Its accent, the imperative and dynamically-typed reflexes of its training corpus, suppressed. And its output, held to syntactically valid Clef by a grammar derived from Clef's own, a static artifact that stands at the boundary on its own. The first two are shaped by tuning, inside the model. The third is imposed by that grammar, a static artifact the build would produce once and the runtime then carries forward.
 
 ## Instilling and Damping
 
-Instilling Clef and removing the inherited accent are different problems, and conflating them defeats both. Instilling is supervised learning: show the model idiomatic Clef and it learns the distribution. Removing the accent is a preference problem, because the base model already holds high probability mass on imperative loops, dynamic typing, exceptions as control flow, null, and class hierarchies, and adding Clef examples competes with that mass without removing it. A single combined objective makes the two gradients work against each other, the instilling gradient pushing toward Clef while the preference gradient pulls away from the accent, and they partially cancel. They belong in distinct passes.
+Instilling Clef and removing the inherited accent are different problems, and conflating them defeats both. Instilling is supervised learning: show the model idiomatic Clef and it learns the distribution. Removing the accent is a preference problem, because the base model already holds high probability mass on imperative loops, dynamic typing, exceptions as control flow, null, and class hierarchies, and adding Clef examples competes with that mass without removing it. A single combined objective can put the two updates in tension: where the imperative accent and idiomatic Clef share surface forms, the instilling term pulls one way and the preference term the other, and the net update is muddied. Separating the passes keeps each signal clean.
 
-The order is the subtle part. The conventional sequence is competence first, preference last, but that ordering lets the final preference pass re-import the accent it was meant to remove, because the pass that runs last shapes the final distribution. Running damping first introduces its own tension: a preference method suppresses a direction relative to a positive target, and a model with no Clef competence yet has no positive side to point at.
+The ordering is where the design turns. The conventional sequence is competence first, preference last, but that ordering lets the final preference pass re-import the accent it was meant to remove, because the pass that runs last shapes the final distribution. Running damping first introduces its own tension: a preference method learns by preferring a chosen response over a rejected one, and if the response we want it to prefer is idiomatic Clef, there is no such exemplar to point at before competence exists.
 
 
 ## The damping taxonomy
 
-JavaScript is the case that forces precision, and it is where a naive damping scheme does real harm. Clef emits JavaScript: it lowers through Alex to a JavaScript intermediate representation and produces JavaScript whose verification lives in the shared middle-end. A separate path reads TypeScript surfaces to produce Clef externs with witnessing rules. So JavaScript competence is load-bearing in two roles our framework depends on, reading it to bind it, and recognizing well-formed emitted output, and a damping pass that simply suppressed JavaScript would corrupt both.
+JavaScript is the case that forces precision, and it is where a naive damping scheme does real harm. Clef emits JavaScript: it lowers through Alex to a JavaScript intermediate representation and produces JavaScript whose verification lives in the shared middle-end. A separate path reads TypeScript surfaces to produce Clef externs with witnessing rules. So JavaScript competence does two jobs our framework depends on: reading JavaScript to bind it, and recognizing well-formed emitted output. A damping pass that simply suppressed JavaScript would corrupt both.
 
 The landscape therefore has to be stratified into three classes, and every JavaScript example in the contrastive catalog carries one of three labels set by the role it plays:
 
@@ -41,13 +41,13 @@ type JsExampleRole =
 
 *Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and structured handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
 
-The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs, which is the opposite of the goal.
+The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs.
 
 ## What Constrains the Output
 
-Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node deploys on the grammar alone.
+Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node would deploy on the grammar alone.
 
-Semantic correctness is a separate matter, and the build settles it. During tuning, Composer is the teacher: the model proposes Clef, the compiler elaborates it or hands back diagnostics, the model revises, and producing elaborable Clef becomes a trained reflex the model carries into deployment.
+Semantic correctness is a separate matter, and the build settles it. During tuning, Composer would serve as the teacher: the model proposes Clef, the compiler elaborates it or hands back diagnostics, the model revises, and producing elaborable Clef becomes a trained reflex it carries into deployment.
 
 ```fsharp
 // Build-time only: revise until Composer elaborates the attempt.
@@ -58,7 +58,7 @@ let rec trainAuthoring (model: Model) (goal: Spec) (attempt: ClefSource) : Progr
  
 ```
 
-The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What deploys is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
+The loop runs during tuning, on trajectories where the grammar already guarantees a syntactically valid proposal, so the compiler's verdict is purely about meaning, and it lands on a model whose imperative accent is already gone, so the revisions are already in the right idiom. What would deploy is the trained model and the static grammar. The [constellation article]({{< ref "the-constellation" >}}) takes up how the domain models around the node bound it at runtime, with the grammar the only constraint the compiler leaves behind.
 
 ## Where the Model Runs
 
@@ -70,7 +70,7 @@ The scaffold article committed the architecture to precise arithmetic, and that 
 
 Both passes run as low-rank adaptation, which keeps the trainable dimension small, keeps tuning CPU-feasible, and keeps the forward-mode path of the [efficiency article]({{< ref "forward-mode-and-adaptation" >}}) tractable. Pass one is merged into the weights to produce a stable functional base, a model that thinks in ML-family terms and changes rarely. Pass two stays a swappable adapter carrying Clef idiom, grammar awareness, and the tool reflexes, and it is the artifact that iterates and warm-rotates as the language evolves. That boundary keeps the two passes from conflating across time, not merely within a single run.
 
-The version-record discipline from [ADM](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), carries over even though the language model holds no grade certificate. A signed record of base-checkpoint hash, adapter provenance, tuning recipe, and data provenance, with warm rotation swapping adapters, makes the tuned model a well-behaved citizen of the constellation and a clean prior source for distillation. It wears no ADM type, but it observes the same provenance discipline as everything that does, which is the first concrete sense in which it is adjacent to the constellation rather than foreign to it.
+The version-record discipline from [ADM](https://arxiv.org/abs/2603.18104), collected in [A Deeper Dive]({{< ref "/docs/guides/_index.md" >}}), carries over even though the language model holds no grade certificate. A signed record of base-checkpoint hash, adapter provenance, tuning recipe, and data provenance, with warm rotation swapping adapters, would make the tuned model a well-behaved citizen of the constellation and a clean prior source for distillation. It wears no ADM type, but it observes the same provenance discipline as everything that does, which is the first concrete sense in which it is adjacent to the constellation rather than foreign to it.
 
 ## Open questions
 

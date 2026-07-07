@@ -1,11 +1,13 @@
 ---
-title: "Typed Recurrence and Categorical Control of Inference"
-linkTitle: "Typed Recurrence"
-description: "From Fixed-Point Combinators to Porous Recurrent Loops: Typed Structure Around Neural Computation"
+title: "Structured Recurrence"
+linkTitle: "Structured Recurrence"
+description: "From fixed-point combinators to porous recurrent loops, the typed control structure that wraps neural computation"
 date: 2026-03-23T00:00:00-04:00
 weight: 09
 authors: ["Houston Haynes"]
 tags: ["AI", "Architecture", "Innovation"]
+aliases:
+  - /docs/design/categorical-foundations/typed-recurrence-categorical-control/
 params:
   originally_published: 2026-03-23
   original_url: "https://speakez.tech/research/typed-structural-control-of-neural-inference/"
