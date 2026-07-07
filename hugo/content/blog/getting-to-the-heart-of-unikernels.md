@@ -30,10 +30,14 @@ graph LR
 
     classDef root fill:#2a2a2a,stroke:#888,color:#ddd;
     classDef model fill:#2a2a2a,stroke:#888,color:#ddd;
+    classDef highlight fill:#4a2a2a,stroke:#F88,color:#ddd;
     classDef target fill:#1a2a3a,stroke:#48a,color:#cdf;
+    classDef hightarget fill:#1a2a5a,stroke:#48F,color:#cdf;
     class ROOT root;
-    class SEQ,SIMT,DF,FIX model;
-    class MCU,UVM,CON,GPU,NPU,CGRA,FPGA,ASIC target;
+    class SEQ highlight;
+    class SIMT,DF,FIX model; 
+    class MCU,UVM,CON hightarget;
+    class GPU,NPU,CGRA,FPGA,ASIC target;
 ```
 
 A standard application sometimes runs on top of [a runtime host]({{< ref "seeing-beyond-assemblies" >}}), and always an operating system. The OS has its own layers 'down the stack': a kernel, a variety of drivers, package managers, and support tools and a shell. Most of that stack sits idle for the workload's life on that device. It still ships on the platform, still gets patched on a staggered schedule, and still presents all of the capability and risk that comes with it. That is the ordinary, realistic shape of most software today. It is just what "runs on an operating system" has meant for decades.
