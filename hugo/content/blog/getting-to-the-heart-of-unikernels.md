@@ -1,29 +1,40 @@
 ---
 title: "Getting to the Heart of Unikernels"
 linkTitle: "Getting to the Heart of Unikernels"
-description: "One self-contained image from microcontroller to microVM to the edge, and why that posture is a new normal for systems programming"
+description: "A toolchain that makes kernels first class citizens, from server workloads to microcontrollers."
 date: 2026-07-06
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
 ```mermaid
-flowchart LR
-    A0["reset vector,<br/>registers beneath"] --> A1["hypervisor<br/>virtual devices"] --> A2["host kernel<br/>syscall surface"] --> A3["command queue,<br/>compiled graph"] --> A4["reconfigurable<br/>fabric"]
+graph LR
+    ROOT["Sealed artifact<br/>one image, everything it needs"]
 
-    A0 -.- MCU["Microcontroller"]
-    A1 -.- UVM["MicroVM"]
-    A2 -.- CON["Container"]
-    A3 -.- ACC["GPU / NPU / CGRA"]
-    A4 -.- FAB["FPGA / ASIC"]
+    ROOT --> SEQ["Sequential (CPU)<br/>instruction stream"]
+    ROOT --> SIMT["SIMT<br/>lockstep thread groups"]
+    ROOT --> DF["Dataflow<br/>compiled graph"]
+    ROOT --> FIX["Fixed fabric<br/>synthesized logic"]
 
-    classDef axis fill:#2a2a2a,stroke:#888,color:#ddd;
+    SEQ --> MCU["Microcontroller<br/>reset vector,<br/>register direct"]
+    SEQ --> UVM["MicroVM<br/>hypervisor<br/>virtual devices"]
+    SEQ --> CON["Container<br/>host kernel<br/>syscall surface"]
+
+    SIMT --> GPU["GPU<br/>kernels in warps"]
+
+    DF --> NPU["NPU<br/>compiled graph"]
+    DF --> CGRA["CGRA<br/>array configuration"]
+
+    FIX --> FPGA["FPGA<br/>bitstream"]
+    FIX --> ASIC["ASIC<br/>fixed function"]
+
+    classDef root fill:#2a2a2a,stroke:#888,color:#ddd;
+    classDef model fill:#2a2a2a,stroke:#888,color:#ddd;
     classDef target fill:#1a2a3a,stroke:#48a,color:#cdf;
-    class A0,A1,A2,A3,A4 axis;
-    class MCU,UVM,CON,ACC,FAB target;
+    class ROOT root;
+    class SEQ,SIMT,DF,FIX model;
+    class MCU,UVM,CON,GPU,NPU,CGRA,FPGA,ASIC target;
 ```
-
-*Left to right is the platform, from a bare reset vector to a full hardware fabric. The sealed-artifact posture stays constant across the line; only the grant and the app label changes. "Unikernel" is the CPU, microVM, and container word for the sealed image with no resident software host beneath it. The spatial end keeps its own vocabulary (a GPU kernel dispatched in warps, an FPGA bitstream, a CGRA configuration). The word is also distinct from the freestanding compilation, detailed in the entry below.*
 
 A typical workload runs on top of a general-purpose operating system: a kernel, a driver stack from whichever vendors supplied the hardware, a package manager, a shell, and a userland context that aims to simplify some things about the landscape while complicating others. Most of that stack sits idle for the workload's entire life. It still ships in the image, still gets patched on its own schedule, and still represents code that's available. That is the ordinary, realistic shape of most software today, not a hypothetical worst case; a dynamic linker resolving a shared library at start time, a driver with its own update cadence, a shell reachable if anything goes wrong upstream. None of it is exotic risk. It is just what "runs on an operating system" has meant for decades.
 
