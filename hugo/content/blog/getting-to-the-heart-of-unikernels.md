@@ -7,7 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
-## Hidden Hierarchy in Plain Sight
+## 'Hidden' Hierarchy
 
 ```mermaid
 graph LR
