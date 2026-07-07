@@ -150,7 +150,7 @@ We preserve the original MIT License with Ionide copyright holders. We maintain 
 
 If you're building web apps with Giraffe, microservices with Saturn, or data pipelines with .NET, **use Ionide**. That role will not change.
 
-If you're building operating system kernels, embedded unikernels, high-performance native applications, or related tooling, **use Lattice**.
+If you're building operating system kernels, [embedded unikernels](/blog/getting-to-the-heart-of-unikernels/), high-performance native applications, or related tooling, **use Lattice**.
 
 ---
 

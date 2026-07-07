@@ -168,7 +168,7 @@ module Supervisor =
             state
 ```
 
-An edge-to-native path also runs between our Fidelity framework and CloudEdge design through Cloudflare's Container support. As explored in our vision for [distributed intelligence](https://speakez.tech/proposals/distributed-intelligence/), our future design for Fidelity-compiled unikernels would run within Cloudflare's Container infrastructure, bringing native performance to edge computing. This forms a hybrid: CloudEdge actors for coordination and integration, Fidelity unikernels for compute-intensive operations. A distributed global deployment that runs without Kubernetes is a direction we intend to explore with our customers.
+An edge-to-native path also runs between our Fidelity framework and CloudEdge design through Cloudflare's Container support. As explored in our vision for [distributed intelligence](https://speakez.tech/proposals/distributed-intelligence/), our future design for [Fidelity-compiled unikernels]({{< ref "getting-to-the-heart-of-unikernels" >}}) would run within Cloudflare's Container infrastructure, bringing native performance to edge computing. This forms a hybrid: CloudEdge actors for coordination and integration, Fidelity unikernels for compute-intensive operations. A distributed global deployment that runs without Kubernetes is a direction we intend to explore with our customers.
 
 ## The F* Connection: Proofs Through Shared Heritage
 
