@@ -9,9 +9,9 @@ tags: ["Architecture", "Design", "Innovation"]
 
 ```mermaid
 graph LR
-    ROOT["Sealed artifact<br/>one image, everything it needs"]
+    ROOT["Sealed artifact<br/>one image, self-contained"]
 
-    ROOT --> SEQ["Sequential (CPU)<br/>instruction stream"]
+    ROOT --> SEQ["Braided (CPU)<br/>instruction stream"]
     ROOT --> SIMT["SIMT<br/>lockstep thread groups"]
     ROOT --> DF["Dataflow<br/>compiled graph"]
     ROOT --> FIX["Fixed fabric<br/>synthesized logic"]
