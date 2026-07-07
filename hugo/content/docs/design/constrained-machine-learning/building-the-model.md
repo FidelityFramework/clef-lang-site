@@ -39,13 +39,13 @@ type JsExampleRole =
 
 *Damp* is the authoring-reflex class: writing imperative or dynamic JavaScript and Python as source logic, reaching for null and in-place mutation and exceptions as control flow, hand-rolling ad-hoc JSON shapes, and the supply-chain reflex of reaching for a package. These are the accents.
 
-*Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and structured handles, with the closed type system holding inside Clef proper, and wire interchange going through BAREWire.
+*Instill* is the routing class: the model learns that a JavaScript need is answered by authoring Clef under the grammar and letting the backend emit, or by binding a TypeScript surface into Clef externs. At interop boundaries it reaches for schema-directed narrowing returning Result, Option for absence, and structured handles, with the closed type system holding inside Clef proper, and wire interchange going through [BAREWire](/spec/draft/discriminated-union-representation/#70-the-contract-model-barewire-and-bare).
 
 The discriminating question for every example is whether the JavaScript is authored as logic, emitted as a target, or read as a surface to bind. Labeling target-side or boundary-side JavaScript as an accent would teach the model to distrust its own compiler's output and its own binding inputs.
 
 ## What Constrains the Output
 
-Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by an EBNF grammar derived from Clef's own, holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node would deploy on the grammar alone.
+Tuning shapes what the model prefers; the grammar guarantees the form it emits. In the runtime we envision, the grammar carries that guarantee: a grammar-constrained decoder, driven by a grammar derived from [Clef's own grammar](/spec/draft/basic-grammar-elements/), holds the sampler to syntactically valid Clef regardless of the model's habits. That grammar is a static artifact, built once and carried at the boundary on its own, so the node would deploy on the grammar alone.
 
 Semantic correctness is a separate matter, and the build settles it. During tuning, Composer would serve as the teacher: the model proposes Clef, the compiler elaborates it or hands back diagnostics, the model revises, and producing elaborable Clef becomes a trained reflex it carries into deployment.
 

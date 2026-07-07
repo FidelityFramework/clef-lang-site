@@ -53,7 +53,7 @@ let rec satisfy (node: LanguageNode) (registry: DomainActor list) (goal: Goal) =
     }
 ```
 
-A contract at the boundary holds this surface stable. The grammar-constrained decoder holds the node's proposal to syntactically valid Clef regardless of which model proposes it. Across the boundary the request reaches the Olivier domain actors over BAREWire, a fixed-layout contract both ends were built to read, carrying its meaning in the layout itself. Structured binary records have moved between programs this way since long before machine learning, and BAREWire carries that settled discipline to the inter-actor boundary, with the domain's dimensional annotations in the contract, so a mismatch surfaces at the message fabric. The language model may be a rented black box or one you built; the contract around it holds either way, so the substitution strategy works.
+A contract at the boundary holds this surface stable. The grammar-constrained decoder holds the node's proposal to syntactically valid Clef regardless of which model proposes it. Across the boundary the request reaches the Olivier domain actors over [BAREWire, a fixed-layout contract](/spec/draft/discriminated-union-representation/#70-the-contract-model-barewire-and-bare) both ends were built to read, carrying its meaning in the layout itself. Structured binary records have moved between programs this way since long before machine learning, and BAREWire carries that settled discipline to the inter-actor boundary, with the domain's dimensional annotations in the contract, so a mismatch surfaces at the message fabric. The language model may be a rented black box or one you built; the contract around it holds either way, so the substitution strategy works.
 
 ## Rung one: adapt what exists now
 
