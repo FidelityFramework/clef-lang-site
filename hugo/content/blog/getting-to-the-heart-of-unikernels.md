@@ -11,14 +11,14 @@ tags: ["Architecture", "Design", "Innovation"]
 graph LR
     ROOT["Sealed artifact<br/>one image, self-contained"]
 
-    ROOT --> SEQ["Braided Parallelism<br/>instruction stream (CPU)"]
+    ROOT --> SEQ["Braided Parallelism<br/>instruction stream"]
     ROOT --> SIMT["SIMT<br/>lockstep thread groups"]
     ROOT --> DF["Dataflow<br/>compiled graph"]
     ROOT --> FIX["Fixed fabric<br/>synthesized logic"]
 
-    SEQ --> MCU["Microcontroller<br/>reset vector,<br/>register direct"]
-    SEQ --> UVM["MicroVM<br/>hypervisor<br/>virtual devices"]
-    SEQ --> CON["Container<br/>host kernel<br/>syscall surface"]
+    SEQ --> MCU["SoC/MCU<br/>reset vector,<br/>register direct"]
+    SEQ --> UVM["CPU MicroVM<br/>hypervisor<br/>virtual devices"]
+    SEQ --> CON["CPU Container<br/>host kernel<br/>syscall surface"]
 
     SIMT --> GPU["GPU<br/>kernels in warps"]
 
