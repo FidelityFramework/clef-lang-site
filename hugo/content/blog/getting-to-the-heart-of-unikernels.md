@@ -11,7 +11,7 @@ tags: ["Architecture", "Design", "Innovation"]
 graph LR
     ROOT["Sealed artifact<br/>one image, self-contained"]
 
-    ROOT --> SEQ["Braided (CPU)<br/>instruction stream"]
+    ROOT --> SEQ["Braided Parallelism<br/>instruction stream (CPU)"]
     ROOT --> SIMT["SIMT<br/>lockstep thread groups"]
     ROOT --> DF["Dataflow<br/>compiled graph"]
     ROOT --> FIX["Fixed fabric<br/>synthesized logic"]
