@@ -11,37 +11,37 @@ params:
   migration_date: 2026-02-15
 ---
 
-Most Clef developers take type inference for granted. You write `let x = 5` and the compiler knows it's an integer. You don't annotate every binding; you let the compiler figure out what it can from context. This small convenience accumulates into something significant: code that expresses intent without drowning in declarations.
+Type inference is routine in Clef. Writing `let x = 5` lets the compiler determine the integer type from context, with no annotation on every binding. The compiler resolves what it can from usage, and code expresses intent without carrying redundant declarations.
 
-From early days we held a vision of bringing this notion to Fidelity framework's memory management story. Early explicit arena-passing code we'd written was correct, but it felt like a poor fit compared to what we knew of the idiomatic Clef design-time experience. Our early experiments had too much overhead that existed only to satisfy the compiler.
+From early on we intended to extend this treatment to the Fidelity framework's memory management. The explicit arena-passing code we first wrote was correct, but it sat poorly against the idiomatic Clef design-time experience. Those early experiments carried overhead that existed only to satisfy the compiler.
 
-Our previous discussions, from the foundational ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) to the technical depth of ["ByRef Resolved"](/docs/design/types/byref-resolved/), established a clear architectural vision. Developers should be able to engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit. What we haven't fully articulated until now is the **unifying principle** that makes this vision coherent.
+Our earlier discussions, from the foundational ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) to the technical treatment in ["ByRef Resolved"](/docs/design/types/byref-resolved/), established the architectural direction. Developers engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit. The unifying principle behind this direction is one we set out here.
 
 That principle emerged while implementing Arena allocation for the Fidelity framework: **lifetime management should work like type inference**.
 
-## Learning From Those Who Came Before
+## Prior Art
 
-Fidelity doesn't exist in a vacuum. We've studied OCaml's representation strategies, Rust's ownership model, and even the hard-won lessons from decades of C/C++ systems programming. Each offers wisdom about what to do and what *not* to do.
+We have studied OCaml's representation strategies, Rust's ownership model, and the lessons from decades of C/C++ systems programming. Each informs both what to do and what to avoid.
 
-**From OCaml**, we learned that types can carry runtime representation information without sacrificing expressiveness. The ML family demonstrated that a rich type system doesn't have to mean verbose annotations.
+**From OCaml**, we take that types can carry runtime representation information without sacrificing expressiveness. The ML family showed that a rich type system need not mean verbose annotations.
 
-**From Rust**, we learned that lifetimes can be tracked statically, eliminating entire classes of memory bugs. But we also observed the cognitive cost: Rust's explicit lifetime annotations, while powerful, demand attention at every function boundary. For systems code this is often appropriate; for application code it can feel like ceremony.
+**From Rust**, we take that lifetimes can be tracked statically, eliminating classes of memory bugs. The approach carries a cognitive cost: Rust's explicit lifetime annotations demand attention at every function boundary. For systems code this is often appropriate; for application code it reads as ceremony.
 
-**From C/C++**, we learned what happens when memory layout decisions are deferred to "lower in the compiler" or left implicit. Subtle bugs emerge: use-after-free, buffer overflows, iterator invalidation. The type system doesn't encode enough information about memory behavior.
+**From C/C++**, we take the consequences of deferring memory layout decisions to "lower in the compiler" or leaving them implicit. Use-after-free, buffer overflows, and iterator invalidation emerge because the type system does not encode enough information about memory behavior.
 
-The insight that emerged: memory layout should be a **type-level concern**, not something resolved in lower compiler strata where it becomes invisible to analysis and tooling.
+The direction we draw from this: memory layout should be a **type-level concern**, not something resolved in lower compiler strata where it becomes invisible to analysis and tooling.
 
 ## The Innovation Budget
 
-Every language feature consumes what might be called an "innovation budget," the cognitive cost developers must pay to use it effectively. Rust's lifetime annotations are powerful but expensive; they demand significant mental investment. Garbage-collected languages like C# and Java spend their budget differently, hiding memory entirely but paying with unpredictable pauses and bloated memory footprints.
+Every language feature consumes an "innovation budget," the cognitive cost developers pay to use it effectively. Rust's lifetime annotations are expressive but expensive; they demand mental investment at each boundary. Garbage-collected languages like C# and Java spend their budget differently, hiding memory entirely and paying with unpredictable pauses and larger memory footprints.
 
-Fidelity's approach is to minimize the innovation budget for the common case while preserving full power for those who need it. Type inference already proved this is possible: most developers write Clef without thinking about types, yet the type system is there when precision matters.
+Fidelity minimizes the innovation budget for the common case while preserving full control for those who need it. Type inference already demonstrates that this is possible: most developers write Clef without reasoning about types, and the type system is available when precision matters.
 
 Memory management can follow the same pattern.
 
 ## The Design Problem
 
-Our sample applications presented an instructive challenge. The simplest "Hello World" worked fine; static strings live forever. But the moment we added user input:
+Our sample applications surfaced the core problem. A "Hello World" with only static strings poses no lifetime question; static strings live for the duration of the program. Adding user input changes that:
 
 ```fsharp
 let hello () =
@@ -50,7 +50,7 @@ let hello () =
     Console.writeln $"Hello, {name}!"
 ```
 
-We encountered the byref problem head-on. The `readln` function allocates a buffer on its stack frame, reads input, and returns a string. But that string contains a pointer to stack memory that becomes invalid the moment `readln` returns.
+This is the byref problem directly. The `readln` function allocates a buffer on its stack frame, reads input, and returns a string. That string contains a pointer to stack memory that becomes invalid the moment `readln` returns.
 
 Our initial solution was architecturally sound but syntactically heavy:
 
@@ -70,15 +70,15 @@ let main argv =
 
 This works correctly. The arena is created on `main`'s stack, passed by reference to `hello`, and `readlnFrom` allocates from that arena. The string survives because the arena survives. The lifetime parameter `'lifetime` tracks this at the type level.
 
-But looking at this code, something felt wrong. This is Clef, a concurrent language built for expressiveness. Why does memory management demand such ceremony?
+The cost is in the surface syntax. Clef is a concurrent language built for expressiveness, and this level of memory-management ceremony works against that. Reducing it is the design problem this document addresses.
 
-## Putting the Machine Back in CAML
+## Reclaiming the Machine in CAML
 
-The "ML" in OCaml and F# stands for "Meta Language," but the "CAM" (Categorical Abstract Machine) is often forgotten. The original vision included the *machine*, the concrete representation of computation. Over time, managed runtimes abstracted this away entirely.
+The "ML" in OCaml and F# stands for "Meta Language," and the "CAM" (Categorical Abstract Machine) is often overlooked. The original design included the *machine*, the concrete representation of computation. Managed runtimes abstracted this away over time.
 
-Our Fidelity framework reclaims the machine. Memory layout can be a type-carrying quotation: the type system itself encodes how values are represented in memory. This buys mechanical efficiency.
+Our Fidelity framework reclaims the machine. Memory layout is a type-carrying quotation: the type system encodes how values are represented in memory. This gives the compiler mechanical efficiency to work with.
 
-Consider what happens when memory layout decisions are pushed to lower compiler strata:
+When memory layout decisions are pushed to lower compiler strata, several consequences follow:
 
 - The type system can't reason about representation
 - Optimizations become heuristics rather than guarantees
@@ -92,11 +92,11 @@ By making memory layout a type-level concern, Fidelity ensures that:
 - Tools can introspect representation through types
 - Errors surface early, as type errors, not runtime crashes
 
-The Arena type exemplifies this. Its layout is `NTUCompound(3)` - three platform words containing Base pointer, Capacity, and Position. This isn't an implementation detail hidden in code generation; it's declared in the type system where it can be verified, optimized, and inspected.
+The Arena type is one example. Its layout is `NTUCompound(3)`: three platform words holding Base pointer, Capacity, and Position. This is not an implementation detail hidden in code generation; it is declared in the type system where it can be verified, optimized, and inspected.
 
-## The Moment of Recognition
+## Recognizing the Parallel
 
-The insight came from a simple observation. Consider how Clef handles types:
+The design followed from one observation about how Clef handles types:
 
 ```fsharp
 // You CAN write this
@@ -112,9 +112,9 @@ let processDocument doc =
     { WordCount = count; Keywords = extractKeywords words }
 ```
 
-Both versions compile to identical code. The second is idiomatic: types are there when you need precision, inferred when you don't. The compiler does the bookkeeping.
+Both versions compile to identical code. The second is idiomatic: types are stated where precision matters and inferred otherwise. The compiler does the bookkeeping.
 
-Now look at our memory management code again:
+The same distinction appears in the memory management code:
 
 ```fsharp
 // What we're writing (explicit)
@@ -128,13 +128,13 @@ let hello () =
     ...
 ```
 
-The parallel is exact. In both cases, we're annotating something the compiler could determine from context. Type annotations state what the compiler can infer from usage. Lifetime annotations state what the compiler can infer from data flow.
+The parallel is exact. In both cases, the annotation states something the compiler could determine from context. Type annotations state what the compiler can infer from usage. Lifetime annotations state what the compiler can infer from data flow.
 
-**The same principle that made Clef pleasant to use for types should apply to lifetimes.**
+**The principle that governs type inference in Clef should extend to lifetimes.**
 
-## From Insight to Architecture
+## Mapping the Principle to the Three Levels
 
-This realization reframes our entire three-level memory management design (see "Memory Management by Choice"). We originally described the levels as:
+This reframes our three-level memory management design (see "Memory Management by Choice"). We originally described the levels as:
 
 - **Level 1**: Default (compiler-generated layouts)
 - **Level 2**: Hints (developer guidance)
@@ -148,7 +148,7 @@ But with the lifetime inference lens, these levels correspond directly to how Cl
 | Level 2 | `let x: int = ...` (guided) | `arena { let! name = ... }` (scoped) |
 | Level 3 | `[<Struct>] type X = ...` (explicit) | `Arena<'lifetime> byref` (declared) |
 
-The levels aren't just about how much control developers have; they're about **where inference stops and declaration begins**.
+The levels mark **where inference stops and declaration begins**, not only how much control the developer holds.
 
 ## What Each Level Requires
 
@@ -256,7 +256,7 @@ Call sites are similarly transformed to provide arenas.
 
 ## The IDE Experience
 
-Crucially, inference doesn't mean invisible. Just as Clef IDEs show inferred types in tooltips, Fidelity IDEs would show inferred lifetimes:
+Inference does not mean the information is hidden. Just as Clef IDEs show inferred types in tooltips, Fidelity IDEs are planned to show inferred lifetimes:
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -269,9 +269,9 @@ Crucially, inference doesn't mean invisible. Just as Clef IDEs show inferred typ
 └─────────────────────────────────────────────┘
 ```
 
-The information exists. It's queryable. It's just not required in source code.
+The information exists and is queryable; it is not required in source code.
 
-This follows the Clef philosophy: the compiler knows things the source doesn't state. Good tooling surfaces that knowledge without demanding it be written down.
+This follows the Clef design: the compiler holds facts the source does not state, and tooling surfaces those facts without requiring them to be written down.
 
 ## Contrast With Alternatives
 
@@ -283,7 +283,7 @@ This follows the Clef philosophy: the compiler knows things the source doesn't s
 | **Fidelity L3** | All declared | Deterministic | Moderate | Ceremony |
 | **Fidelity L1** | Inferred | Deterministic | Low | None (verified) |
 
-### Rust: Everything Explicit
+### Rust
 
 Rust requires lifetime annotations:
 
@@ -294,9 +294,9 @@ fn process_input<'a>(arena: &'a Arena) -> &'a str {
 }
 ```
 
-Every function that handles references must declare lifetimes. This forces developers to think about memory at every boundary. The approach is valuable for systems code but burdensome for application code.
+Every function that handles references must declare lifetimes, which forces developers to reason about memory at every boundary. The approach suits systems code and burdens application code.
 
-### Managed Runtimes: Everything Hidden
+### Managed Runtimes
 
 C# and Java hide all memory management:
 
@@ -307,9 +307,9 @@ string ProcessInput() {
 }
 ```
 
-Simple to write, but the abstraction leaks under pressure. GC pauses, memory bloat, and unpredictable performance plague systems that need determinism.
+Simple to write, and the abstraction leaks under load. GC pauses, memory bloat, and unpredictable performance affect systems that require determinism.
 
-### C/C++: Trust the Programmer
+### C and C++
 
 ```c
 char* read_input() {
@@ -319,11 +319,11 @@ char* read_input() {
 }
 ```
 
-The type system doesn't prevent this. The bug might not manifest until production, under specific conditions. This is what happens when memory layout is handled "below" the type system.
+The type system does not prevent this. The bug may not manifest until production, under specific conditions. This is the result of handling memory layout "below" the type system.
 
-### Fidelity: Inference With Escape Hatches
+### Fidelity
 
-Fidelity aims for inference as the default with explicit control available:
+Fidelity is designed for inference as the default with explicit control available:
 
 ```fsharp
 // Level 1: Inferred (default)
@@ -337,19 +337,19 @@ let processInput (arena: byref<Arena<'lifetime>>) =
     name
 ```
 
-The same semantics, different levels of visibility. Developers choose based on need.
+Both forms carry the same semantics at different levels of visibility, and the developer chooses based on need.
 
 ## Implementation Status
 
 We've completed Level 3. The Arena intrinsic is fully functional:
 
 - Type constructor with measure parameter for lifetime tracking
-- Layout specification: `NTUCompound(3)` - Base pointer, Capacity, Position
+- Layout specification: `NTUCompound(3)`, holding Base pointer, Capacity, Position
 - Full operation set: `fromPointer`, `alloc`, `allocAligned`, `remaining`, `reset`
 - Correct handling of byref parameter passing
 - Integration with CCS type system
 
-The Arena type was originally designed in BAREWire for binary serialization scenarios but was elevated to a CCS intrinsic when we recognized its broader applicability. This is the standing art pattern in action: a well-designed capability finding new application.
+The Arena type was originally designed in BAREWire for binary serialization and was elevated to a CCS intrinsic once its broader applicability became clear, an existing capability applied in a new context.
 
 The path to Level 2 is clear:
 
@@ -367,7 +367,7 @@ But the architecture supports this evolution. Each level builds on the previous,
 
 ## The Broader Principle
 
-This isn't just about Arena. The lifetime inference principle applies throughout Fidelity:
+The lifetime inference principle extends beyond Arena, throughout Fidelity:
 
 **Capabilities**: Must developers declare read/write permissions, or can the compiler infer them from usage patterns?
 
@@ -381,7 +381,7 @@ Each follows the same design question: what can the compiler determine that deve
 
 This lifetime inference principle connects directly to our RAII-based actor architecture (see [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/)). In that design, each actor owns an arena that lives exactly as long as the actor does. The actor boundary provides a natural lifetime scope.
 
-With lifetime inference, this becomes even more powerful. Consider:
+Lifetime inference extends this further:
 
 ```fsharp
 // Actor code - what the developer writes
@@ -414,21 +414,21 @@ This also connects to delimited continuations in Prospero (see [Delimited Contin
 
 The capabilities we're describing aren't novel in isolation. Type inference has existed for decades. Escape analysis is well-studied. Arena allocation is a known pattern. Even lifetime tracking at the type level isn't new; Rust proved it viable.
 
-What's novel is the *combination* and *application*: bringing these techniques together in a way that preserves Clef's expressiveness while providing the memory determinism that native compilation demands. The innovation isn't in any single piece, but in recognizing how standing art from different traditions can compose into something greater.
+What is novel is the *combination* and *application*: bringing these techniques together in a way that preserves Clef's expressiveness while providing the memory determinism native compilation requires. The contribution is in composing standing art from different traditions, not in any single piece.
 
 This is the Fidelity philosophy: respect what works, learn from what doesn't, and invest the innovation budget where it creates genuine new capability rather than reinventing established patterns.
 
 ## Conclusion
 
-The process we embarked on from the first realizations that led to "ByRef Resolved" to this concrete implementation in Composer has been one of pattern recognition. We solved the byref problem with explicit arena management. We built the type system infrastructure for lifetime tracking. We implemented the intrinsics and operations.
+The path from the first realizations behind "ByRef Resolved" to the current implementation in Composer has been one of pattern recognition. We solved the byref problem with explicit arena management, built the type system infrastructure for lifetime tracking, and implemented the intrinsics and operations.
 
-But the deeper insight, that lifetime management should work like type inference, is a reframing we thought worth sharing here. It is a design principle that unifies our three-level memory management model.
+The reframing this document sets out is that lifetime management should work like type inference. That principle unifies our three-level memory management model.
 
-Clef developers already know the power of inference. Type inference transformed programming from ceremony to expression. We believe lifetime inference can do the same for systems programming, maintaining the mechanical efficiency and memory safety that native compilation requires while preserving the expressiveness that makes Clef a joy to use.
+Type inference is already familiar to Clef developers, and it reduces the annotation cost of working with types. We are designing lifetime inference to do the same for systems programming, maintaining the mechanical efficiency and memory safety native compilation requires while preserving Clef's expressiveness.
 
-The explicit form isn't going away; it's the foundation everything else builds on. But it should be the escape hatch, not the default. Developers should write Clef that looks like Clef, and trust the compiler to handle the memory concerns that can be determined from context.
+The explicit form remains the foundation everything else builds on. It is the escape hatch rather than the default. Developers write Clef that looks like Clef, and the compiler handles the memory concerns that can be determined from context.
 
-That's what "Memory Management by Choice" means in its fullest form: the choice covers both when to optimize and, one level up, when memory has to enter the developer's thinking at all.
+This is the fuller sense of "Memory Management by Choice": the choice covers both when to optimize and, one level up, whether memory enters the developer's thinking at all.
 
 ---
 *This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/types/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/concurrency/delimited-continuations/) for the connection between continuation boundaries and memory management.*

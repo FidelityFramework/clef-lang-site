@@ -11,17 +11,17 @@ params:
   migration_date: 2026-02-15
 ---
 
-In the coming waves of "AI" innovation, the computing landscape will continue to fragment into an increasingly divergent array of hardware choices. From embedded microcontrollers to mobile devices, workstations, and accelerated compute clusters, developers will face a challenging decision: build with distinctly different "stacks" for each target or accept the deep compromises of existing cross-platform frameworks. Meanwhile, Python continues its paradoxical ascent, simultaneously becoming the lingua franca of modern computing while quietly imposing a steep tax on engineering resources. What began as a scripting language has grown into a sprawling ecosystem where performance optimizations resemble engineering triage rather than sustained architecture.
+As AI workloads proliferate, the computing landscape continues to fragment into a divergent array of hardware choices. From embedded microcontrollers to mobile devices, workstations, and accelerated compute clusters, developers face a decision: build with distinct stacks for each target, or accept the compromises of existing cross-platform frameworks. Python has become the lingua franca of much of this work while imposing a steep tax on engineering resources. What began as a scripting language has grown into a sprawling ecosystem where performance optimization resembles engineering triage rather than sustained architecture.
 
-## A Multi-Targeted Challenge is an Opportunity Rich Environment
+## The Multi-Target Landscape
 
-Python's architectural constraints limit optimization paths for modern computational demands, and technical debt compounds as organizations work around design limitations that were never intended to support these workloads. Its architecture reflects design decisions from earlier eras. As such, Python lumbers forward, too entrenched to abandon, too unwieldy to evolve, and too inefficient to sustain the next generation of computing challenges.
+Python's architectural constraints limit optimization paths for modern computational demands, and technical debt compounds as organizations work around design limitations that were never intended to support these workloads. Its architecture reflects design decisions from earlier eras, and it now carries the weight of being too entrenched to abandon and too unwieldy to evolve toward the next generation of computing challenges.
 
-Beyond the current Python hype bubble, many cross-platform approaches force artificial trade-offs between performance, portability, and the application management experience. On one hand, platform-specific development delivers optimal performance at the cost of maintaining multiple codebases, with resulting staffing models triggering runaway maintenance costs. On the other hand, cross-platform frameworks often sacrifice native capabilities for convenience features and create a losing battle of technical debt that can mount faster than working groups can overcome.
+Many cross-platform approaches force trade-offs between performance, portability, and the application management experience. Platform-specific development delivers strong performance at the cost of maintaining multiple codebases, and the resulting staffing models drive up maintenance costs. Cross-platform frameworks sacrifice native capabilities for convenience and accumulate technical debt faster than working groups can overcome it.
 
-The tension between optionality, performance and safety has led to an engineering quagmire. But what if we could re-balance these factors to maximize our advantages in each situation supported from a well-designed nexus. This solution would need the familiarity of a high-level Python-like syntax, a 20-year enterprise pedigree, and offer a unique independent streak to boot. SpeakEZ envisions a relatable technology stack that will meet this challenge and embrace the coming Cambrian Explosion of technology choices "where they live"...
+We are designing toward a technology stack that re-balances optionality, performance, and safety rather than trading one against the others. The requirements are the familiarity of a high-level, Python-like syntax, a two-decade enterprise pedigree, and native compilation that meets the diversifying array of hardware targets where they run.
 
-## SpeakEZ's Fidelity Framework Vision
+## The Fidelity Framework Approach
 
 Our Fidelity Framework takes a different approach to system development at all levels. Our Clef language descends from F#, which has a two decade history and has grown to embrace two distinct compiler paths. The first is .NET from Microsoft, which itself started more than 20 years ago and has embraced open-source and multi-platform support of its own accord for nearly ten years. The other is the community-led Fable compiler, which uses F#'s meta-programming to target the sprawl of web technologies and aspires to reach other language ecosystems. Our Fidelity Framework is a third, distinct path, designed for native compilation and high performance systems operation. The architecture will span nearly the entire computing spectrum, with the option of producing formal correctness guarantees at near "zero-cost" to the developer. We intend to accomplish this through several design choices:
 
@@ -31,16 +31,16 @@ Our Fidelity Framework takes a different approach to system development at all l
 * **Our BAREWire Protocol**: A patent-pending implementation of the BARE (Binary Application Record Encoding) standard, allowing both type-safe communication "over the wire" and zero-copy memory operations for speed and security
 * **Safety and Speed Under Constraints**: Developer-facing immutability with efficient memory implementation "under the covers" for resource constrained environments
 * **Our Olivier Actor/Agent Model**: Erlang-inspired concurrency with per-process heap management that scales based on available resources. Akka.NET-inspired orchestration and supervision supports reactive process management and managed interop with .NET based clusters
-* **A Unique Formal Methods Option**: The "Fidelity" name stems from the ability to ensure adherence to semantic and safety features of Clef as application code moves through the compilation pipeline. Complementing this foundation is F* (F-star), a related but distinct verification-oriented language that brings its own distinguished pedigree to the ecosystem. F* enhances Fidelity with formal verification that further strengthens the framework's security guarantees. As SpeakEZ has pending patents in integrating these technologies, more detailed information will be forthcoming under separate cover.
+* **A Unique Formal Methods Option**: The "Fidelity" name stems from the ability to ensure adherence to semantic and safety features of Clef as application code moves through the compilation pipeline. Complementing this foundation is F* (F-star), a related but distinct verification-oriented language with its own research pedigree. F* adds formal verification that strengthens the framework's security guarantees. As SpeakEZ has pending patents in integrating these technologies, more detailed information will be forthcoming under separate cover.
 
 Unlike frameworks that only offer performance for a single platform, or promise cross-platform capability with unwieldy compromises, our Fidelity Framework is designed for native execution across the computing spectrum without requiring separate software skill sets for each targeted platform.
 
 
-## MLIR/LLVM Compilation as a Cornerstone
+## The MLIR/LLVM Compilation Pipeline
 
-We will leverage Multi-Level Intermediate Representation (MLIR) and LLVM build infrastructure for native compilation across computing targets. This approach aligns with the emerging industry consensus that MLIR provides the optimal funnel for targeting a variety of systems and platforms. Companies from Apple to AMD, Qualcomm, OpenAI and Tenstorrent are all investing in similar approaches for their AI accelerators and specialized hardware, underscoring the viability of this strategy.
+We will leverage Multi-Level Intermediate Representation (MLIR) and LLVM build infrastructure for native compilation across computing targets. This approach aligns with the industry consensus that MLIR provides an effective funnel for targeting a variety of systems and platforms. Companies from Apple to AMD, Qualcomm, OpenAI, and Tenstorrent are investing in similar approaches for their AI accelerators and specialized hardware.
 
-What will distinguish Fidelity is its further embrace of delivering general-purpose systems, not just AI and machine learning workloads. Whether it's sensor fusion "at the edge" or complex business process management in the cloud, Fidelity will deliver a compact, efficient and verifiably safe operating environment for nearly any use case.
+Fidelity is designed to extend this compilation path to general-purpose systems, not only AI and machine learning workloads. For sensor fusion at the edge or business process management in the cloud, the target is a compact, efficient, and verifiably safe operating environment across a wide range of use cases.
 
 
 ## Memory Management Across the Spectrum
@@ -65,15 +65,15 @@ This unified approach is designed to let teams share more code, context, and kno
 
 Inspired by Erlang's concurrency model, our Olivier model will provide parallelism with dedicated process-based memory spaces that scale from moderately-resourced embedded systems to high-performance clusters. Each process will maintain its own "heap", preventing the pauses that can plague the performance of monolithic garbage collection systems. Communication between processes will occur through our BAREWire patent-pending message passing and zero-copy exchanges, supporting safe inter-process communication without unnecessary memory overhead.
 
-Olivier's process model is designed to adapt to the available resources rather than requiring a specific configuration. A tablet with multiple processor cores and gigabytes of RAM will take advantage of Olivier, with a narrowed scope, despite being classified in traditional terms as a "handheld" device. And when deployed in the data center across CPU and GPU clusters, Olivier and Prospero will take center stage.
+Olivier's process model is designed to adapt to the available resources rather than requiring a specific configuration. A tablet with multiple processor cores and gigabytes of RAM will run Olivier with a narrowed scope despite being classified in traditional terms as a handheld device. When deployed in the data center across CPU and GPU clusters, Olivier and Prospero operate at full scope.
 
 
-## Prospero: Orchestrating the Process Ecosystem
+## Prospero and Process Orchestration
 
-While our Olivier model defines the actor/agent layer, our Prospero plane will handle orchestration, supervision, and actor lifecycles. Inspired by Akka.NET's actor supervision strategies, Prospero will enable patterns like clustering and sharding across multi-node environments. And due to its mechanical sympathy with Akka.NET, we will have designs to coordinate with and even "hand over the reins" to a .NET based Akka cluster when desired.
+While our Olivier model defines the actor/agent layer, our Prospero plane will handle orchestration, supervision, and actor lifecycles. Inspired by Akka.NET's actor supervision strategies, Prospero will enable patterns like clustering and sharding across multi-node environments. Its mechanical sympathy with Akka.NET is intended to let a Fidelity deployment coordinate with, and delegate supervision to, a .NET-based Akka cluster when desired.
 
 
-## Multi-Targeting in Action
+## Deployment Targets
 
 Our Fidelity Framework is designed to target diverse platforms from a unified design. It is meant to offer direct deployment capabilities across the following targets:
 
@@ -105,9 +105,9 @@ Our Fidelity approach is designed with this diversification in mind. By embracin
 This architecture is designed so that investments in Fidelity applications are insulated against hard pivots in hardware, letting developers focus on application logic rather than shifts in data center provisioning. Teams should be able to re-deploy to new architectures as needed, with less exposure to vendor lock-in.
 
 
-## A Clear Path Forward
+## The Developer Path
 
-For developers grappling with the increasing sprawl of computing platforms, our Fidelity Framework will offer a curated path with familiar coding conventions:
+For developers working across the increasing sprawl of computing platforms, our Fidelity Framework will offer a curated path with familiar coding conventions:
 
 
 
@@ -120,7 +120,7 @@ Our Fidelity Framework is designed to enable native development across servers, 
 
 For general-purpose applications .NET remains a solid option for F#. Fidelity will distinguish itself by offering a solution for scenarios where performance, resource utilization, hardware acceleration, and formal verification make a difference for fast, trusted, secure-by-default, and highly resilient computing environments.
 
-For all of its apparent success, Python has become a victim of its own popularity. What began as a focused solution has grown into a patchwork of compromises, with each new bolted-on feature and runtime library further straining its aging foundation. Companies across the AI landscape are recognizing the technical debt and computational cost accumulating within Python-centric infrastructures.
+Python's reach has outpaced its foundations. What began as a focused solution has grown into a patchwork of compromises, with each added feature and runtime library straining an aging base. Companies across the AI landscape are recognizing the technical debt and computational cost accumulating within Python-centric infrastructures.
 
 Our Clef implementation in the Fidelity Framework is designed as an alternative built on established computer science principles with high performance at its foundations. It is meant to provide the familiar experience developers value while carrying precision, safety, and speed across computing boundaries that have traditionally been incompatible. The approach is intended to let software teams reach targets that conventional frameworks treat as separate, reducing the forced trade-offs that have become an assumed burden of cross-platform development.
 

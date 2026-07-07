@@ -52,17 +52,14 @@ graph LR
     end
 ```
 
-###
 
-Our Fidelity approach inverts the standard relationship by providing complete program knowledge at compile time, which lets memory management decisions fit each specific application. Whether the chosen strategy involves stack-only allocation, arena allocation, or distributed coordination depends on the problem domain. The approach stays consistent across those cases:
-
-> Static analysis across the whole program drives the code we generate.
+Our Fidelity approach inverts the standard relationship by providing complete program knowledge at compile time, which lets memory management decisions fit each specific application. Whether the chosen strategy involves stack-only allocation, arena allocation, or distributed coordination depends on the problem domain. The approach stays consistent across those cases: whole-program static analysis drives the code we generate.
 
 ## The Static Resolution Foundation
 
 This progression rests on a point about SRTPs and static resolution: they are about compile-time knowledge and the optimizations it permits, not about any single allocation strategy. When we set SRTPs as our baseline with stack-only allocation, we show that static resolution carries the compilation regardless of what that compilation needs to accomplish.
 
-Consider how our platform abstraction pattern scales across complexity levels. Here is how the same memory operation looks when targeting different platforms, starting with Clef code:
+Our platform abstraction pattern scales across complexity levels. The same memory operation targets different platforms from a single piece of Clef code:
 
 ```fsharp
 // stack-based data processing
@@ -101,11 +98,11 @@ let allocaImport = {
 #endif
 ```
 
-This difference might seem small, but it shows how compile-time platform selection works. The same high-level operation, stack allocation, maps to different low-level implementations matched to each platform's conventions and available system services.
+This difference is small in the source but shows how compile-time platform selection works. The same high-level operation, stack allocation, maps to different low-level implementations matched to each platform's conventions and available system services.
 
 This matters from a systems programming perspective. On Windows, the Microsoft C runtime has optimizations and memory alignment requirements that differ from the GNU C library used on most Linux distributions. The calling conventions affect how parameters are passed and how the stack is managed.
 
-When you write `use buffer = stackBuffer<byte> 256` in Clef code, the static resolution we are building reads the target platform and is designed to generate native code for that environment. You would get Windows-specific code when targeting Windows and Linux-specific code when targeting Linux, without having to track these differences as a developer.
+Given `use buffer = stackBuffer<byte> 256` in Clef code, the static resolution we are building reads the target platform and is designed to generate native code for that environment: Windows-specific code when targeting Windows, Linux-specific code when targeting Linux, without the developer tracking these differences by hand.
 
 The work happens during compilation, in our Composer compiler navigating platform conventions, handling closure environments, and generating the platform-specific code, so developers neither manage platform differences by hand nor accept lowest-common-denominator performance across all hosts.
 
@@ -113,7 +110,7 @@ The work happens during compilation, in our Composer compiler navigating platfor
 
 The async capabilities we are building for our Fidelity framework show how control flow patterns can emerge from the same static resolution that drives deterministic memory management. When developers write idiomatic Clef async code, they work with computation expressions and standard async patterns. The underlying implementation is designed to use compile-time analysis to generate continuations.
 
-Here is how async coordination looks with ordinary Clef patterns:
+Async coordination uses ordinary Clef patterns:
 
 ```fsharp
 // async code coordinating through continuations
@@ -149,7 +146,6 @@ sequenceDiagram
     MLIR->>OS: Optimal OS allocation<br>& LLVM Compilation
 ```
 
-###
 
 This is meant to hold the developer experience Clef programmers expect while providing the performance characteristics systems programming demands. The async operations are designed to compile to native code with no runtime dependencies, coordinating execution patterns through OS-level mechanisms when the problem domain requires it.
 
@@ -228,7 +224,7 @@ The path from stack-only allocation to coordination patterns shows how the same 
 
 Our design treats performance and expressiveness as compatible rather than opposed. Compile-time analysis carries both the systems programming capabilities high-performance applications need and the functional programming abstractions that keep larger software manageable.
 
-The memory model we have outlined prioritizes compile-time analysis over runtime services, static resolution over dynamic coordination, and application-specific optimization over general-purpose abstractions. That set of choices is what lets the platform fit each application's requirements under one set of principles and one developer experience.
+The memory model we have outlined prioritizes compile-time analysis over runtime services, static resolution over dynamic coordination, and application-specific optimization over general-purpose abstractions. These choices let the platform fit each application's requirements under one set of principles and one developer experience.
 
 Across the work we have surveyed, we have found no other representative implementation that integrates these memory strategies at the compiler level rather than as opt-in libraries. The reach we are aiming for runs from embedded devices to distributed systems, on a single approach to memory management that adapts to each environment while keeping the safety and expressiveness developers expect.
 

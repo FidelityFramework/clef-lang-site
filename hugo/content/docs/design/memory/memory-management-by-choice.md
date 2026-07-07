@@ -90,7 +90,7 @@ let processDocumentBatch documents =
     |> List.groupBy (fun doc -> doc.Metadata.Author)
 ```
 
-## Honoring Functional Structures
+## Functional Structures and Memory Layout
 
 We have noted, as many others have, that functional programming structures have natural affinities with efficient memory patterns. Immutable records map to contiguous memory blocks, [discriminated unions correspond to tagged memory layouts](/spec/draft/discriminated-union-representation/), and higher-order functions often resolve statically.
 
@@ -152,7 +152,7 @@ let pool = MemoryPool.create 1024<KB>
 let node = pool.allocate<ListNode<int>>()
 ```
 
-This provides immediate performance benefits while "raising" memory layout awareness as part of the application.
+This provides immediate performance benefits while making memory layout an explicit part of the application.
 
 ### Intermediate Phase: Analysis-Driven Assistance
 
@@ -433,7 +433,7 @@ let processDocuments (documents: BARESpan<Document>) (stringPool: StringPool) (r
 
 At this level, the developer takes full control over memory layout, specifying precise field arrangements, alignments, and allocation strategies. Custom memory pools serve different processing stages, and operations are designed to minimize allocations and copies. Clef's concurrent processing model is designed to compose with explicit memory management, keeping batch-level memory regions isolated across concurrent execution contexts.
 
-This spectrum allows developers to start simple and only invest time in memory optimization where it delivers meaningful performance benefits, rather than making it a constant concern throughout the codebase.
+This spectrum allows developers to begin with compiler-generated layouts and invest time in memory optimization only where it delivers meaningful performance benefits, rather than treating it as a constant concern throughout the codebase.
 
 ## Intellectual Property
 
@@ -451,19 +451,19 @@ Our BAREWire applies one approach to memory layout and communication across diff
 
 We have found no other representative implementations of this approach in the standing literature we have reviewed.
 
-## A Matter of Attention
+## Developer Attention as a Resource
 
-Developer attention is a finite resource, and it should be focused where it matters most. Rust requires explicit attention to memory management throughout code. Traditional managed languages abstract it away, which leaves gaps that can lead to errors and critical failures. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
+Developer attention is a finite resource, and focusing it where it matters most affects both code quality and delivery. Rust requires explicit attention to memory management throughout code. Traditional managed languages abstract it away, which leaves gaps that can lead to errors and critical failures. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
 
-Our BAREWire offers a path between these, resolving non-critical memory concerns in the compiler using sensible defaults, while letting developers pull these concerns "up" into their explicit control when beneficial. The ByRef resolution approach described in [ByRef Resolved]({{< relref "byref-resolved" >}}) complements this by eliminating unnecessary copies at the compiler level, and [Inferring Memory Lifetimes]({{< relref "inferring-memory-lifetimes" >}}) extends the approach to lifetime management itself.
+Our BAREWire offers a path between these, resolving non-critical memory concerns in the compiler using sensible defaults, while letting developers take these concerns into explicit control when beneficial. The ByRef resolution approach described in [ByRef Resolved]({{< relref "byref-resolved" >}}) complements this by eliminating unnecessary copies at the compiler level, and [Inferring Memory Lifetimes]({{< relref "inferring-memory-lifetimes" >}}) extends the approach to lifetime management itself.
 
-The difference is as much about working method as it is technical. We hold that developers should be able to choose when and where to think about memory, spending their attention on the small fraction of code where memory layout affects performance.
+This difference is one of working method as much as implementation. From our design perspective, developers should be able to choose when and where to think about memory, spending their attention on the small fraction of code where memory layout affects performance.
 
 ## Memory Management by Choice
 
 We want memory management to be an effective choice rather than a constant obligation, which means giving developers the abstractions and tools to engage with memory when it matters and to leave it to the compiler when it does not.
 
-Our Fidelity framework aims to respect both the performance demands of systems programming and the attention budget of the developers writing against it. Our BAREWire is where we are putting that approach into practice: sensible by default, with explicit control available where it earns its keep. We will keep building toward that balance as the rest of the framework comes into place.
+Our Fidelity framework aims to respect both the performance demands of systems programming and the attention budget of the developers writing against it. Our BAREWire is where we are putting that approach into practice: sensible by default, with explicit control available where it yields a measurable performance benefit. We will keep building toward that balance as the rest of the framework comes into place.
 
 ---
 *This article is part of our ongoing series on the Composer compiler, Fidelity Framework and native compilation techniques with the Clef language.*

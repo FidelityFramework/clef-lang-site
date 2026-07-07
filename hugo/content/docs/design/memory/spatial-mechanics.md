@@ -12,13 +12,13 @@ params:
   migration_date: 2026-02-15
 ---
 
-The streaming question sits at the heart of systems programming. When data flows through a computation, the compiler must decide: should this materialize in memory, stream through a spatial pipeline, or remain suspended as a demand-driven thunk? Each choice carries implications for performance, memory pressure, and hardware utilization.
+Streaming is a central decision in systems programming. When data flows through a computation, the compiler must decide whether it should materialize in memory, stream through a spatial pipeline, or remain deferred as a demand-driven thunk. Each choice carries implications for performance, memory pressure, and hardware utilization.
 
-Rust made its choice early: ownership and borrowing, enforced at compile time, with a single memory model baked into the language. This decision has served millions of developers well. It has also created constraints that become visible when targeting the heterogeneous compute landscape emerging in 2026 and beyond.
+Rust made its choice early: ownership and borrowing, enforced at compile time, with a single memory model fixed in the language. This decision has served millions of developers well. It has also created constraints that become visible when targeting the heterogeneous compute landscape emerging in 2026 and beyond.
 
 {{< youtube 1iPWt1gvT_w >}}
 
-James Faure's analysis of Rust's architectural decisions raises questions worth examining. His critique of the borrow checker's complexity is well-founded, though his proposed solutions remain speculative. What interests us here is the underlying problem: how should a systems language handle streaming when the hardware landscape includes not just CPUs, but CGRAs, NPUs, FPGAs, and spatial dataflow accelerators?
+James Faure's analysis of Rust's architectural decisions bears on this question. His critique of the borrow checker's complexity is well-founded, though his proposed solutions remain speculative. The underlying problem this document addresses is how a systems language should handle streaming when the hardware landscape includes not just CPUs, but CGRAs, NPUs, FPGAs, and spatial dataflow accelerators.
 
 ## Three Models of Streaming
 
@@ -36,7 +36,7 @@ This model works well for data that fits comfortably in cache hierarchies. It en
 
 ### Demand-Driven: The Lazy Thunk
 
-When data remains suspended, computation happens only when results are needed. A sequence of a million elements might process one at a time, never materializing the full collection. The tradeoff is abstraction overhead: each suspended computation requires closure capture and indirect dispatch.
+When data remains deferred, computation happens only when results are needed. A sequence of a million elements might process one at a time, never materializing the full collection. The tradeoff is abstraction overhead: each deferred computation requires closure capture and indirect dispatch.
 
 \[
 \text{Memory}_{demand} = O(1) + \text{closure\_overhead} \times \text{active\_thunks}
@@ -52,7 +52,7 @@ The third model treats streaming as physical data movement through processing st
 \text{Memory}_{spatial} = \sum_{i=1}^{n} \text{buffer}(stage_i) \ll |D| \times \text{sizeof}(T)
 \]
 
-This model maps directly to spatial compute architectures: systolic arrays, CGRAs, dataflow accelerators. The compiler doesn't just generate instructions; it synthesizes hardware topology.
+This model maps directly to spatial compute architectures: systolic arrays, CGRAs, dataflow accelerators. Here the compiler synthesizes hardware topology rather than generating an instruction stream.
 
 ## Why Rust's Early Decisions Constrain This Space
 
@@ -145,9 +145,9 @@ let processData (input: Span<float>) (output: Span<float>) =
 
 Most code operates at the coeffect and dimensional layers, with refinement reserved for safety-critical paths.
 
-## The Control-Flow to Dataflow Pivot
+## Control-Flow and Dataflow From One Source
 
-Andrew Appel's 1998 observation that **SSA is functional programming**[^1] enables a crucial capability: the same source code can lower to either control-flow (CPU) or dataflow (FPGA/CGRA) representations.
+Andrew Appel's 1998 observation that **SSA is functional programming**[^1] enables a specific capability: the same source code can lower to either control-flow (CPU) or dataflow (FPGA/CGRA) representations.
 
 ```mermaid
 flowchart TD
@@ -276,7 +276,7 @@ The streaming architecture decisions we make today determine what hardware we ca
 
 A language that erases streaming semantics before code generation cannot target these architectures efficiently. This is not a criticism of Rust's choices; it is a recognition that those choices were made for a different hardware landscape.
 
-## Closing Thoughts
+## The Three Models in Concert
 
 The three streaming models (materialized, spatial, demand-driven) are not competitors. They are complementary representations appropriate for different computational patterns and hardware targets. A systems language designed for the heterogeneous future must support all three, with compiler analysis determining the best mapping for each computation.
 
@@ -287,27 +287,27 @@ Our tiered approach provides this capability:
 
 The result is a compilation pathway where streaming semantics survive from source to silicon.
 
-### The Foundations We're Building
+### Current Foundations
 
 This is not yet a finished implementation. What exists today is foundational work: the architectural decisions and compiler infrastructure that make spatial mechanics tractable. Our Composer compiler implements coeffect analysis for sequence expressions and closure capture. Dimensional types flow through the Program Semantic Graph. The MLIR lowering infrastructure supports multiple dialects. These are working compiler passes rather than theoretical constructs.
 
 What remains unfinished is the full integration: the analysis passes that automatically select between materialized, spatial, and demand-driven representations; the CIRCT backend that generates synthesizable hardware descriptions; the runtime support for bounded channels between spatial stages; the verification infrastructure that proves safety properties across heterogeneous boundaries.
 
-This gap between foundation and completion is intentional. We are building for a hardware landscape that is still emerging. The architectures described in this essay, Groq's LPU, Tenstorrent's mesh NoC, Intel's configurable dataflow, represent the leading edge of commercially available spatial compute. The generation after them will likely introduce new constraints and opportunities we cannot yet anticipate.
+This gap between foundation and completion is intentional. We are building for a hardware landscape that is still emerging. The architectures described here (Groq's LPU, Tenstorrent's mesh NoC, Intel's configurable dataflow) represent the leading edge of commercially available spatial compute. The generation after them will likely introduce new constraints and opportunities we cannot yet anticipate.
 
-By establishing the mechanisms now, the type system extensions, the IR representations, the analysis frameworks, we create the capacity to adapt as hardware evolves. Our dimensional type system does not hard-code assumptions about specific architectures. The coeffect analysis does not privilege CPU execution models. The MLIR dialect selection remains extensible to new targets. Retargeting to systems other than MLIR remains open to us.
+By establishing the mechanisms now (the type system extensions, the IR representations, the analysis frameworks) we create the capacity to adapt as hardware evolves. Our dimensional type system does not hard-code assumptions about specific architectures. The coeffect analysis does not privilege CPU execution models. The MLIR dialect selection remains extensible to new targets. Retargeting to systems other than MLIR remains open to us.
 
 ### Spatial Mechanics as System Architecture
 
-The phrase "spatial mechanics" carries deliberate meaning. This is not merely about optimizing sequential code for parallel execution. It is about treating data movement through processing stages as a first-class concern, equivalent to computation itself.
+The term "spatial mechanics" names more than optimizing sequential code for parallel execution. It treats data movement through processing stages as a first-class concern, equivalent to computation itself.
 
-In traditional compilation, data movement is incidental. The compiler focuses on operations, additions, multiplications, comparisons, and data simply "appears" in registers as needed. Memory hierarchies are implicit. Cache effects are emergent. This model worked well when CPUs were monolithic and memory was uniform.
+In traditional compilation, data movement is incidental. The compiler focuses on operations such as additions, multiplications, and comparisons, and data arrives in registers as needed. Memory hierarchies are implicit. Cache effects are emergent. This model worked well when CPUs were monolithic and memory was uniform.
 
-The heterogeneous compute landscape inverts this assumption. On an FPGA, wiring between processing elements is as significant as the processing elements themselves. On a CGRA, the reconfigurable routing fabric determines what computations are even expressible. On a spatial accelerator, the data movement pattern *is* the program.
+The heterogeneous compute landscape inverts this assumption. On an FPGA, wiring between processing elements is as significant as the processing elements themselves. On a CGRA, the reconfigurable routing fabric determines what computations are even expressible. On a spatial accelerator, the data movement pattern is the program.
 
 Our approach acknowledges this reality through its type system. When a dimensional type annotation specifies `array<float<samples>, 48000>`, it declares not just element type and count, but the semantic structure of the data. The compiler reads this as time-series audio data sampled at 48kHz. This information determines buffering strategies, influences hardware mapping, and enables verification that transformations preserve signal properties.
 
-This is why spatial mechanics belongs in the framework's core rather than in a bolt-on optimization pass. The streaming model a computation requires emerges from the interaction between:
+We place spatial mechanics in the framework's core rather than in a bolt-on optimization pass because the streaming model a computation requires emerges from the interaction between:
 - The data's dimensional structure (arrays, sequences, tensors)
 - The operation's semantics (map, fold, filter, scan)
 - The target's capabilities (sequential, parallel, spatial)
@@ -315,13 +315,13 @@ This is why spatial mechanics belongs in the framework's core rather than in a b
 
 No single compiler pass can resolve these interactions in isolation. They must be woven through every layer: from source-level type checking, through semantic graph construction, into dialect selection and hardware lowering.
 
-### The Path Forward
+### Open Work
 
 The work continues along several parallel tracks. On the analysis front, we are refining our coeffect system to handle increasingly complex streaming patterns: nested sequences, coroutines that yield to multiple consumers, dataflow graphs with cycles and feedback. On the lowering front, we are expanding MLIR dialect coverage and beginning experimental work with CIRCT for FPGA targeting. On the verification front, we are developing the integration points between SMT specifications and spatial pipeline generation.
 
-None of these paths is fully paved. Each represents a direction we believe is necessary based on the constraints we observe in current approaches and the requirements we anticipate from emerging hardware. Some will prove more tractable than others. Some will reveal unexpected complications. Some may point toward entirely new abstractions we have not yet imagined.
+None of these paths is fully paved. Each represents a direction we believe is necessary based on the constraints we observe in current approaches and the requirements we anticipate from emerging hardware. Their tractability varies: some paths are more direct than others, some will surface complications we do not yet foresee, and some may require abstractions that do not yet exist.
 
-This is the nature of foundational work in a rapidly evolving space. We are not building toward a fixed specification. We are building the *capacity* to handle a diverse and expanding set of targets, guided by principles that we believe will remain relevant:
+We are not building toward a fixed specification. We are building the capacity to handle a diverse and expanding set of targets, guided by principles that we believe will remain relevant:
 
 - **Preserve semantics through lowering**: Streaming properties visible in source code should survive to hardware generation
 - **Enable progressive disclosure**: Heavier annotations remain opt-in; standard Clef code should "just work"

@@ -7,9 +7,27 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
+```mermaid
+flowchart LR
+    A0["reset vector,<br/>registers beneath"] --> A1["hypervisor<br/>virtual devices"] --> A2["host kernel<br/>syscall surface"] --> A3["command queue,<br/>compiled graph"] --> A4["reconfigurable<br/>fabric"]
+
+    A0 -.- MCU["Microcontroller"]
+    A1 -.- UVM["MicroVM"]
+    A2 -.- CON["Container"]
+    A3 -.- ACC["GPU / NPU / CGRA"]
+    A4 -.- FAB["FPGA / ASIC"]
+
+    classDef axis fill:#2a2a2a,stroke:#888,color:#ddd;
+    classDef target fill:#1a2a3a,stroke:#48a,color:#cdf;
+    class A0,A1,A2,A3,A4 axis;
+    class MCU,UVM,CON,ACC,FAB target;
+```
+
+*Left to right is the platform, from a bare reset vector to a full hardware fabric. The sealed-artifact posture stays constant across the line; only the grant and the app label changes. "Unikernel" is the CPU, microVM, and container word for the sealed image with no resident software host beneath it. The spatial end keeps its own vocabulary (a GPU kernel dispatched in warps, an FPGA bitstream, a CGRA configuration). The word is also distinct from the freestanding compilation, detailed in the entry below.*
+
 A typical workload runs on top of a general-purpose operating system: a kernel, a driver stack from whichever vendors supplied the hardware, a package manager, a shell, and a userland context that aims to simplify some things about the landscape while complicating others. Most of that stack sits idle for the workload's entire life. It still ships in the image, still gets patched on its own schedule, and still represents code that's available. That is the ordinary, realistic shape of most software today, not a hypothetical worst case; a dynamic linker resolving a shared library at start time, a driver with its own update cadence, a shell reachable if anything goes wrong upstream. None of it is exotic risk. It is just what "runs on an operating system" has meant for decades.
 
-The unikernel concept is one answer to that shape. Seal the computation graph down to exactly what a workload needs, statically coupled at build time, with no host stack resident beneath it, and most of that idle surface simply is not there to patch, exploit, or wait on. The image has inherent advantages such as faster cold start times because it skips the layers that ordinary boot traverses, and it is smaller because nothing unused was ever linked in. That combination, less to attack and less to boot, is why the concept keeps resurfacing across a wide range of deployment shapes, from containers and microVMs down to workloads built for a single piece of hardware. Our framework treats the artifact class as [a category with normative language of its own in the spec](/spec/draft/backend-lowering-architecture/#5-entry-point-example), and we are designing the deployment story to span that same range end to end.
+The unikernel concept is one answer to that shape. Seal the computation graph down to exactly what a workload needs, statically coupled at build time, with no software host stack resident beneath it, and most of that idle surface simply is not there to patch, exploit, or wait on. The image has inherent advantages such as faster cold start times because it skips the layers that ordinary boot traverses, and it is smaller because nothing unused was ever linked in. That combination, less to attack and less to boot, is why the concept keeps resurfacing across a wide range of deployment shapes, from containers and microVMs down to workloads built for a single piece of hardware. Our framework treats the artifact class as [a category with normative language of its own in the spec](/spec/draft/backend-lowering-architecture/#5-entry-point-example), and we are designing the deployment story to span that same range end to end.
 
 The word itself carries baggage the definition does not support. When unikernels come up in conversation, the mental image tends toward the hair shirt: one core, one thread, no allocator, a workload squeezed onto hardware that leaves no other choice. That impression mistakes the first demonstration hardware for the class. A unikernel is a single, self-contained artifact, sealed at build time, with no software stack resident beneath it inside its own boundary. Core count is a property of the target it lands on. So are thread count, memory strategy, and whether a C library is linked. None of them belong to the term.
 
@@ -17,7 +35,39 @@ The word itself carries baggage the definition does not support. When unikernels
 
 The "uni" names the artifact, not its capability. In the library-OS lineage the unikernel descends from, the services an operating system would provide become libraries the application links against, and the build emits one object that contains the application together with everything it needs to run. One sealed unit, fixed at build time, with no software stack resident beneath it. That is the whole definition. It says nothing about how many cores the artifact may use, how many threads it may run, or what its memory discipline looks like once control arrives; those are properties of the target it lands on, not of the class. [Our spec draws the same line](/spec/draft/backend-lowering-architecture/#5-entry-point-example) between the freestanding compilation a unikernel requires and everything else a specific target may or may not grant.
 
+```mermaid
+flowchart TB
+
+    subgraph SEAL["Sealed image"]
+        direction TB
+        SA["Application"] --> SL["C library (musl / glibc), statically coupled, only what is used"]
+        SL --> SK["kernel / bare hardware"]
+    end
+    subgraph GEN["General-purpose OS"]
+        direction TB
+        GA["Application"] --> GL["C library, dynamically linked"]
+        GL --> GU["shell, package manager, userland"]
+        GU --> GD["vendor driver stack"]
+        GD --> GK["kernel"]
+    end
+
+    classDef idle fill:#2a2a2a,stroke:#888,color:#bbb,stroke-dasharray:4 3;
+    classDef present fill:#1a2a3a,stroke:#48a,color:#cdf;
+    class GU,GD idle;
+    class GA,GL,GK,SA,SL,SK present;
+```
+
+*The dashed layers on the left ship, get patched, and hold privilege for the workload's whole life while sitting idle. The sealed image links only what the application uses, so those layers are not present to patch, exploit, or wait on.*
+
 Most toolchains can already produce a freestanding artifact; that half of the problem was solved a long time ago. What has kept unikernels a specialist's tool is everything past that: hand-written service layers standing in for the OS pieces a workload still needs, one hypervisor's guest format at a time, and no path back to the ordinary developer workflow once a team commits. Fidelity approaches this from the compiler down rather than the binary up. The same Clef source that targets a hosted Linux process today would target a sealed artifact by changing what the [Platform Descriptor](/spec/draft/platform-bindings/) declares, not by rewriting the program. Static coupling, the discipline that removes the dynamic-linking seam described above, falls out of that same freestanding compilation as one build path. And the actor-and-arena memory discipline we are designing for every target, [deterministic lifetimes tied to actor scope]({{< ref "raii-in-olivier-and-prospero" >}}) rather than a garbage collector, is exactly the discipline a sealed build needs to run without a runtime underneath it. A unikernel is difficult to reach when the compiler was designed around a hosted assumption and the sealed form has to be bolted on after the fact. It is a natural target when the compiler is being built to make no such assumption in the first place.
+
+## Flexing Without musl
+
+The sealed-image diagram shows a C library statically linked into the image, and musl is the usual choice there: it is small, static-link-friendly, and already the libc behind most scratch-container and unikernel builds. But a statically linked libc is a convenience, not a floor. It is one more thing the image *can* carry, not something the artifact class requires.
+
+Fidelity compiles Clef to native code directly rather than through a C ABI, so a sealed image can drop the C runtime entirely. The spec draws this as a third linkage tier past hosted-dynamic and freestanding-static: [a bare target with no C runtime at all](/spec/draft/ffi-boundary/), where no libc is linked, there is no foreign-function boundary, and interior memory follows the compiler's own lifetime lattice rather than `malloc` and `free`. On such a target the arena and static-storage discipline is the whole memory model; there is no allocator to call because none was linked.
+
+This is not a corner case for us. Our first prototype is already there. The bare-metal M33 credential build links no libc, has no heap region, and enters at the reset vector with no C startup code between the silicon and the credential logic. Where a conventional unikernel toolchain still assumes *some* libc underneath the application, a Clef image treats the C library as one optional layer among several the platform declaration may or may not include. Dropping it removes the last general-purpose runtime component from the image, and with it the last piece of attack surface and startup cost that the application never asked for.
 
 ## Prior Art and What Survived It
 
@@ -50,6 +100,26 @@ Deployment substrates for a sealed image span three forms today, and the useful 
 Purists sometimes reserve the word for the middle row, where the image brings its own kernel-role code as a guest. We read the class by its properties instead: one sealed artifact with an empty userland and no resident stack inside its boundary. The process form carries those properties intact, which is the argument the unikernels-as-processes research made formally, and it is the form that matters most for where deployment platforms are heading.
 
 Cold start is where the arithmetic turns visible. A conventional container cold start does work a sealed artifact never generates: it pulls layered filesystems, starts an init process, walks the dynamic linker across shared objects, and then warms whatever runtime the application may require. A Clef-compiled unikernel would skip nearly all of that. There is always hardware bring-up, but that cost is bounded by what the unikernel actually needs, not the full menu of a general-purpose operating system: one small static binary, nothing in it needing interpretation or JIT warmup, no linker pass at entry, and arena-based memory that skips garbage-collector initialization. Entry is a jump. [AWS built Firecracker](https://firecracker-microvm.github.io/) to boot minimal microVMs in roughly a hundred milliseconds, and it runs underneath Lambda; boots measured in single-digit milliseconds inside that same harness appear throughout the unikernel literature. The floor keeps dropping as the artifact approaches the application and nothing else.
+
+```mermaid
+flowchart LR
+    subgraph CONV["Conventional container cold start"]
+        direction LR
+        C1["pull layered<br/>filesystem"] --> C2["start init<br/>process"] --> C3["walk dynamic<br/>linker"] --> C4["warm runtime<br/>(JIT / GC)"] --> C5["run"]
+    end
+
+    subgraph SEAL["Sealed image cold start"]
+        direction LR
+        S1["hardware<br/>bring-up"] --> S2["jump to entry"] --> S3["run"]
+    end
+
+    classDef paid fill:#2a2a2a,stroke:#888,color:#bbb,stroke-dasharray:4 3;
+    classDef fast fill:#1a2a3a,stroke:#48a,color:#cdf;
+    class C1,C2,C3,C4 paid;
+    class C5,S1,S2,S3 fast;
+```
+
+*Each dashed step on the top row is work a sealed image never generates. Bring-up on the bottom row is bounded by what the workload declares it needs, not the full menu of a general-purpose boot.*
 
 That arithmetic drew us to [Cloudflare's Container infrastructure](https://developers.cloudflare.com/containers/) and shaped the hybrid we sketched in [Unexpected Fusion]({{< ref "unexpected-fusion" >}}): CloudEdge actors for coordination, Fidelity-compiled unikernels for compute-dense work. Near-instant cold starts would make scale-to-zero the default posture rather than a compromise, and dense deployment of minimal-overhead images points at a cost model that recasts applications the current economics rule out. Fan-out across instances would ride on BAREWire-framed messages, [the coordination model our JavaScript-targeting design lays out](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) for compute that outgrows one instance. Firecracker and LXC-style substrates would take the same build with different isolation trade-offs, which is the practical benefit of an artifact class defined by self-containment: the substrate becomes a deployment decision instead of a build decision.
 
