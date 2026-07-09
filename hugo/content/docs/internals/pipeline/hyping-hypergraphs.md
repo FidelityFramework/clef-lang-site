@@ -11,13 +11,13 @@ params:
   migration_date: 2026-02-15
 ---
 
-The industry is witnessing an unprecedented \$4 billion investment to finally set aside the 80-year-old Harvard/Von Neumann computer design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building novel, alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Yet compiler architectures remain trapped in antiquated patterns - forcing stilted relationships into artificial constructions, obscuring the natural alignment with the emerging dominance of dataflow patterns. What if the choice between traditional and revolutionary architectures dissolves once we recognize that programs are "hypergraphs" by nature, and both fall out of the same representation? The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) carries an architectural insight underneath the rename, one that will enable Fidelity to produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors that promise to revolutionize throughput and efficiency.
+The industry is investing on the order of \$4 billion to move past the 80-year-old Harvard/Von Neumann design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Compiler intermediate representations, by contrast, still force multi-way relationships into artificial constructions, obscuring the alignment with dataflow patterns those architectures depend on. Recognizing that programs are hypergraphs by nature lets traditional and dataflow targets fall out of the same representation. The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) carries an architectural insight underneath the rename, one designed to let Fidelity produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors.
 
-But there's a deeper vision: what if this hypergraph could transform into a learning system? The future design of a full-fledged temporal graph could improve design and efficiency with each application, or even with each iteration. Far from speculative, this follows naturally once recursion schemes, bidirectional zippers, and event-sourced compilation telemetry are combined. These are all well-established algorithmic tools that are finally meeting their moment with today's new Cambrian explosion of modern compute hardware. Within the Fidelity framework we can revolutionize efficiency and safety in the "old guard" architectures while seamlessly profiling and targeting new architectures from the same principled framework.
+Our design also treats the hypergraph as a candidate learning system. The future design of a temporal graph could refine its own compilation strategies across applications, or across iterations of the same application. This follows from combining recursion schemes, bidirectional zippers, and event-sourced compilation telemetry, all well-established algorithmic tools that map onto the current diversification of compute hardware. Within the Fidelity framework the same principled representation addresses efficiency and safety on the older architectures while profiling and targeting the newer ones.
 
 ## The Unified Compilation Vision
 
-In its final future representation, the PHG design would enable a unified compilation strategy that adapts seamlessly across the traditional and new processor spectrum:
+The mechanisms in this document describe the designed pipeline. In its future representation, the PHG design would support a unified compilation strategy that adapts across the traditional and new processor spectrum:
 
 ```mermaid
 graph TD
@@ -47,45 +47,45 @@ graph TD
 
 ## The Decomposition Challenge
 
-Traditional compiler intermediate representations don't create cruft because of inherent complexity - they falter because they **decompose multi-way relationships into artificially disconnected operations**. Consider how async code with delimited continuations naturally creates rich, multi-way dependencies that current IRs must awkwardly represent through opaque state machines. This isn't computational convenience. It's a gravitational well of cruft, inefficiency, and increasing surface area for potential vulnerabilities and errors from which it can be a nightmare to recover.
+Traditional compiler intermediate representations create cruft not because of inherent complexity but because they **decompose multi-way relationships into artificially disconnected operations**. Consider how async code with delimited continuations creates rich, multi-way dependencies that current IRs represent awkwardly through opaque state machines. That is not a matter of computational convenience: it accumulates cruft, inefficiency, and surface area for vulnerabilities and errors that is difficult to recover from.
 
-Traditional graphs force us to create:
+Traditional graphs force the compiler to create:
 
 - Auxiliary "join" nodes to merge multiple inputs
 - Artificial "split" nodes to distribute outputs
 - Property lists and metadata to track what should be intrinsic relationships
 
-This stilted decomposition doesn't just lose semantic information - it **obscures the fundamental shift from control-flow to data-flow** that defines the continuum from "Modified Harvard" or "Von Neumann" to next generation processor architectures. Traditional compiler representations emphasize control flow (sequential instruction execution, branching, state machines and memory-compute separation) which aligns perfectly with the Modified Harvard/Von Neumann architectural assumptions. But as we've seen with the advent of AI and high performance computing taking center stage, new processors will process in terms of data flow - their natural representation - where computation is spatially adjacent to data, multiple operations proceed simultaneously with fewer processor wait cycles and less heat dissipation burden. Because the PHG preserves the data-flow reading alongside the control-flow lowering, the cost of the shift is something the graph can report directly: [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) measures how much of a program's data-flow parallelism a control-flow target serializes.
+Beyond losing semantic information, this stilted decomposition **obscures the shift from control-flow to data-flow** that defines the continuum from "Modified Harvard" or "Von Neumann" to next generation processor architectures. Traditional compiler representations emphasize control flow (sequential instruction execution, branching, state machines and memory-compute separation), which aligns with the Modified Harvard/Von Neumann architectural assumptions. With AI and high performance computing taking center stage, newer processors compute in terms of data flow, their natural representation, where computation is spatially adjacent to data and multiple operations proceed simultaneously with fewer processor wait cycles and less heat dissipation burden. Because the PHG preserves the data-flow reading alongside the control-flow lowering, the cost of the shift is something the graph can report directly: [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) measures how much of a program's data-flow parallelism a control-flow target serializes.
 
-The real issue is that these "old school" Harvard/Von Neumann assumptions cannot capture the simultaneity and spatial locality that these new architectures exploit. When we force multi-way data flow relationships into standard control flow, we lose the semantic richness needed to generate truly efficient code. The beauty of this future-forward posture of the PHG within the Composer compiler is that it can take ***the same application code*** and articulate it for traditional control flow (CFG) instructions to all of the standard targets people have known for decades. And what's more, when new hybrid systems emerge, the Fidelity framework would be able to address each type of processor in the most efficient way using the same code base. No duplicate staffing plans. No new languages or APIs for teams to learn. No expensive or risky technical hoops to jump through.
+The underlying issue is that the older Harvard/Von Neumann assumptions cannot capture the simultaneity and spatial locality that these newer architectures exploit. Forcing multi-way data flow relationships into standard control flow loses the semantic richness needed to generate efficient code. The PHG within the Composer compiler is designed to take ***the same application code*** and articulate it as traditional control flow (CFG) instructions for the standard targets developers have used for decades. As hybrid systems emerge, the Fidelity framework would address each type of processor from the same code base, where the common practice is a separate toolchain or a per-architecture rewrite for each.
 
-## Time-Tested Math Meets The Latest Hardware
+## Decades-Old Math on Current Hardware
 
-Just as you don't need to understand the mathematics of B-trees to use a database, or the intricacies of TCP/IP to build web applications, these mathematical foundations work quietly behind the scenes. The formulas represent well-established algorithms - some dating back to the 1960s and 70s - that have been waiting decades for the right systems and compilation frameworks to unleash their full potential.
+The formulas below represent well-established algorithms, some dating back to the 1960s and 70s, that map onto systems and compilation frameworks only now becoming practical. A developer no more needs to read them to use Clef than a database user needs the mathematics of B-trees. They are the specifications behind the compiler's behavior rather than something the surface language exposes.
 
-Think of these equations as the "engine specifications" of our compiler. Most drivers never read their car's technical manual, yet they benefit from centuries of accumulated automotive engineering every time they turn the key. Similarly, these algorithmic frameworks have natural affinities that have existed for decades - we're simply bringing them together in a way that modern hardware can finally fully utilize to benefit the speed and efficiency that the emerging business landscape demands.
+Each of these algorithmic frameworks has natural affinities that have existed for decades. The work here brings them together in a form that current hardware can exploit.
 
 ### Hypergraph Partitioning with Learning
 
-Here we show how the partitioning problem becomes "adaptive". This formula, rooted in graph theory work from the 1970s, essentially asks: "How do we split up a complex program into chunks that different processors can handle efficiently?"
+This section shows how the partitioning problem becomes adaptive. The formula, rooted in graph theory work from the 1970s, asks how to split a complex program into chunks that different processors can handle efficiently.
 
 \[
 \text{cut}_t(P) = \sum_{e \in E} w_t(e) \cdot |\{V_i : V_i \cap e \neq \emptyset\}|
 \]
 
-In plain English: the subscript \(t\) represents time - meaning the compiler gets smarter with each compilation. The \(w_t(e)\) represents learned weights - think of these as the compiler saying "last time I compiled similar code, this strategy worked well, so let's favor it again." This is the same partitioning problem computer scientists have studied since the dawn of parallel computing, with a learning component added on top that remembers what worked before.
+The subscript \(t\) represents time: the compiler refines its choices with each compilation. The \(w_t(e)\) represents learned weights, favoring a strategy that worked well on similar code in a prior compilation. This is the same partitioning problem studied since the early days of parallel computing, with a learning component that carries forward what worked before.
 
 ### Temporal Coeffect Propagation
 
-This notation, based on type theory from the 1980s, tracks what your code needs from its environment over time:
+This notation, based on type theory from the 1980s, tracks what a program needs from its environment over time:
 
 \[
 \Gamma @ R_t \vdash e : \tau
 \]
 
-Don't let the symbols intimidate you - this simply means: "Given some context (\(\Gamma\)) and requirements that evolve over time (\(R_t\)), we can prove that expression \(e\) has type \(\tau\)."
+The symbols read: given some context (\(\Gamma\)) and requirements that evolve over time (\(R_t\)), the expression \(e\) has type \(\tau\).
 
-In practical terms, it's the compiler keeping track of questions like: "Does this function need network access? Does it require specific hardware features? Have we seen similar patterns before?" The mathematical notation just makes these informal questions precise and verifiable. The \(@\) symbol (pronounced "at") has been used in coeffect systems to indicate "in the context of" - it's not exotic, just specialized notation that's become standard in this field.
+In practical terms, the compiler tracks questions like whether a function needs network access, whether it requires specific hardware features, and whether similar patterns have appeared before. The notation makes these informal questions precise and verifiable. The \(@\) symbol (pronounced "at") indicates "in the context of," standard notation in coeffect systems.
 
 ### Parametric Learning
 
@@ -95,9 +95,9 @@ Free theorems, discovered in the 1980s by Philip Wadler, tell us that certain pr
 \forall \alpha, \beta. \forall g : \alpha \to \beta. \text{map}\,g \circ f_\alpha = f_\beta \circ \text{map}\,g + \epsilon_t
 \]
 
-The symbols translate to something quite intuitive: "For any types \(\alpha\) and \(\beta\), and any function \(g\) that converts between them, we can rearrange our operations (the map compositions) and the result will be the same, with learned adjustments (\(\epsilon_t\))."
+The symbols read: for any types \(\alpha\) and \(\beta\), and any function \(g\) that converts between them, the map compositions can be rearranged and the result stays the same, with learned adjustments (\(\epsilon_t\)).
 
-This is like saying that whether you translate a document then format it, or format it then translate it, you should get the same result - and over time, the compiler learns which order is faster for different types of documents. The \(\epsilon_t\) represents those learned optimizations - small adjustments based on real-world performance data.
+Translating a document and then formatting it yields the same result as formatting and then translating, and over successive compilations the compiler favors whichever order runs faster for a given shape of data. The \(\epsilon_t\) represents those learned optimizations, small adjustments based on measured performance.
 
 ### Why These Tested Concepts Matter Now
 
@@ -484,18 +484,4 @@ let evolveOptimization (hyperedge: PHGHyperedge) (history: CompilationHistory) =
 
 ## The Evolving Compiler
 
-We plan to evolve from Program Semantic Graph to temporal Program Hypergraph. Instead of a static transformation engine, we envision a learning system that improves with every compilation. This is an ambitious vision that will require a great deal of disciplined engineering, but the foundations are in place to make this vision a reality.
-
-By combining:
-
-- **Hypergraphs** for natural multi-way relationships
-- **Recursion schemes** for principled transformation
-- **Bidirectional zippers** for intelligent traversal
-- **Temporal learning** for continuous improvement
-- **Graph heuristic networks** for pattern recognition
-
-We create a compiler that doesn't just preserve semantics - it learns them. It doesn't just optimize code - it learns how to improve outcomes. It doesn't just target architectures - it learns which patterns work best for each class of processor. The foundations exist today: MLIR provides the infrastructure, Clef provides the semantic richness, and the mathematical frameworks provide the rigor. What we're adding is the temporal dimension - the ability for the compiler to learn from its own experience.
-
-As processors become more diverse and specialized, as the gap between Von Neumann and post-Von Neumann architectures widens, this learning capability becomes essential. The compiler that can adapt, learn, and evolve will be the one that bridges these architectural divides. As a growing, learning representation of computational patterns, the Program Hypergraph reaches well past what a static data structure could hold. Each compilation makes it smarter. Each optimization teaches it something new. Each architecture it targets expands its knowledge.
-
-This is the future of compilation: code that gets transformed better with every iteration as the compiler learns from its own output. The temporal Program Hypergraph makes this future possible, turning the compiler from a tool into an intelligent partner in the development process. More than the next step in compiler design, it is the bridge between where computing has been and where it's boldly going.
+The temporal Program Hypergraph is the direction we are building toward now. It rests on the pieces this document has walked through: hypergraphs for the multi-way relationships, recursion schemes and bidirectional zippers for the traversal, event-sourced telemetry for the temporal record, and graph heuristic networks for pattern recognition. What it adds to the static PSG is the temporal dimension, a compiler that reads its own compilation history and carries what it learns into the next pass. As the gap between Von Neumann and post-Von Neumann targets widens, that history is where a per-target parallelization strategy accrues: each compilation sharpens the next, so the strategy is carried forward instead of recomputed from scratch.

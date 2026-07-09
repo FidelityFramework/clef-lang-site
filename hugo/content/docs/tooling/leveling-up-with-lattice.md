@@ -12,17 +12,15 @@ params:
   migration_date: 2026-03-12
 ---
 
-In chemistry, ions are individual charged particles, independent, reactive, fundamental. When these ions bond together in organized three-dimensional structures, they form **crystal lattices**. The lattice isn't just a collection of ions; it's a new phase of matter with emergent properties: conductivity, strength, characteristics that no individual ion possesses.
+In chemistry, ions are individual charged particles, independent and reactive. When these ions bond together in organized three-dimensional structures, they form **crystal lattices**: a new phase of matter with emergent properties like conductivity and strength that no individual ion possesses. That progression frames our toolchain evolution from Ionide to **Lattice**.
 
-> This metaphor perfectly captures our toolchain evolution from Ionide to **Lattice**.
-
-[Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community, provides exceptional F# development tooling for .NET. It's one of the finest IDE experiences in the functional programming ecosystem, comprehensive and polished. But like ions that combine to form something greater, we needed to extend beyond .NET's boundaries into native, freestanding systems programming. This is not to replace Ionide, but to support a new, extended structure and the elements *it* must embrace in order to serve its remit.
+[Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community, provides comprehensive F# development tooling for .NET, a polished IDE experience in the functional programming ecosystem. Like ions that combine to form something greater, we needed to reach beyond .NET's boundaries into native, freestanding systems programming. Ionide is a stalwar tool for .NET F# development. We will springboard from that to create Lattice to support Clef's toolchain needs and provide features extending well past of that foundation.
 
 ---
 
 ## The Genesis: Why Fork?
 
-Clef isn't just another compile target. It's a fundamental reconception of F#'s type semantics and execution model:
+Clef reconceives F#'s type semantics and execution model rather than serving as one more compile target:
 
 ### Native Type Semantics
 
@@ -33,7 +31,7 @@ Clef isn't just another compile target. It's a fundamental reconception of F#'s 
 - Everything inherits from `System.Object`
 
 **Clef** operates in a freestanding environment:
-- `string` is UTF-8, stack-or-heap at your discretion
+- `string` is UTF-8, stack-or-heap at the developer's discretion
 - `option<'T>` is a value type (like Rust's `Option<T>`)
 - Platform words (`nativeint`) are first-class citizens
 - No .NET runtime, no garbage collector, no BCL
@@ -44,7 +42,7 @@ These aren't superficial differences. They're architectural. An IDE that underst
 
 ### Extensive Tooling Coverage
 
-Ionide doesn't just provide syntax highlighting and autocomplete. It's an ecosystem:
+Ionide spans a full ecosystem beyond syntax highlighting and autocomplete:
 - **Language Server** (Clef Compiler Services)
 - **Project Explorer** (MSBuild integration)
 - **Debugger** (CoreCLR protocol)
@@ -60,7 +58,7 @@ Clef requires parallel infrastructure:
 - **Lattice Analyzers** - NuGet package with analyzers that plug into CAC
 - **Native Bindings** - MLIR dialect integration, not BCL
 
-Attempting to merge these concerns into Ionide would create a maintenance nightmare: feature flags everywhere, dual type systems, bifurcated build paths. 
+Merging these concerns into Ionide would carry a heavy maintenance cost: feature flags everywhere, dual type systems, and bifurcated build paths.
 
 > The Ionide team shouldn't have to reason about MLIR dialects. The Lattice toolchain shouldn't have to preserve MSBuild compatibility.
 
@@ -80,7 +78,7 @@ To avoid potential confusion, we re-labeled the extant Clef tooling ecosystem fr
 - **Activates On**: `.fidproj`, `.fsnx`, `.fsproj`, `.fsni`, `.fidsln`
 - **Config Namespace**: `lattice.fsharp.*`
 
-Built with Fable (F# → JavaScript), just like Ionide. Understands both .NET F# (via FsAutoComplete) and Clef (via CAC). You can use Ionide and Lattice side-by-side, they have different extension IDs and don't conflict.
+Built with Fable (F# → JavaScript), just like Ionide. Understands both .NET F# (via FsAutoComplete) and Clef (via CAC). Ionide and Lattice run side-by-side: they have different extension IDs and don't conflict.
 
 ### 2. [lattice-analyzers](https://github.com/FidelityFramework/lattice-analyzers)
 **Custom Analyzers for Clef**
@@ -89,7 +87,7 @@ Built with Fable (F# → JavaScript), just like Ionide. Understands both .NET F#
 - **Framework**: Uses `FSharp.Analyzers.SDK` (community standard)
 - **Target**: .NET 10
 
-Analyzers that understand native type semantics. For example, warning when you try to use `System.String` methods that assume UTF-16 encoding, detecting unnecessary heap allocations in stack-only memory models, preventing `null` usage (Clef is null-safe by design), and blocking `obj` downcasting operations that assume .NET's type hierarchy.
+Analyzers that understand native type semantics. They warn on `System.String` methods that assume UTF-16 encoding, detect unnecessary heap allocations in stack-only memory models, prevent `null` usage (Clef is null-safe by design), and block `obj` downcasting operations that assume .NET's type hierarchy.
 
 ### 3. [lattice-vim](https://github.com/FidelityFramework/lattice-vim)
 **Vim/Neovim Plugin**
@@ -107,37 +105,19 @@ For developers who prefer modal editing. Connects to CAC via LSP protocol, provi
 
 Type-safe F# bindings for the VSCode extension API. Compiled to JavaScript via Fable. Keeps the extension codebase in idiomatic F#.
 
----
 
-## Why "Lattice"?
-
-The name progression is intentional:
-
-**Ionide** → Individual ions, reactive and independent
-**Lattice** → Organized crystal structure with emergent properties
-
-Ionide provides excellent tooling for F# in the .NET ecosystem, a single, well-defined domain. Lattice extends into **polyglot systems programming**:
-
-- **Clef** (via Composer)
-- **MLIR** (via Alex lowering)
-- **LLVM** (final backend)
-- **F\*** (verification, future integration)
-- **Lua** (scripting, configuration)
-- **C** (FFI, platform bindings)
-
-Just as a crystal lattice exhibits properties, electrical conductivity, optical refraction, mechanical strength, that individual ions lack, Lattice provides **cross-language integration** that pure F# tooling cannot.
 
 ---
 
-## Heritage and Gratitude
+## Heritage
 
 Every file in the Lattice repositories begins with the same acknowledgment:
 
-> This project is a hard fork of [Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community. We are deeply grateful for the exceptional foundation we build upon.
+> This project is a hard fork of [Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community.
 
-We preserve the original MIT License with Ionide copyright holders. We maintain `IONIDE_HERITAGE.md` in each repository explaining the fork rationale. We link to Ionide in every README.
+We preserve the original MIT License with Ionide copyright holders. We maintain `IONIDE_HERITAGE.md` in each repository explaining the fork rationale, and we link to Ionide in every README.
 
-**Lattice does not interfere with Ionide.** We serve different, occasionaly adjacent use cases:
+The two toolchains serve different, occasionally adjacent use cases:
 
 | Aspect | Ionide | Lattice |
 |--------|--------|---------|
@@ -154,24 +134,15 @@ If you're building operating system kernels, [embedded unikernels](/blog/getting
 
 ---
 
-## The Road Ahead
-
-1. **v0.1.0 Releases** - First stable alpha releases 
-2. **VSCode Marketplace** - Publish `lattice-fsharp` extension
-3. **NuGet** - Publish `Lattice.Analyzers` package
-4. **Documentation** - Comprehensive guides for `.fidproj` authoring
-5. **WREN Stack templates** - Provide `dotnet new` templates for trying out Composer and build a native application with the WREN Stack
-
-
 ## A Unified Vision
 
-Lattice isn't just an IDE plugin or a collection of tools. It's a framework for creating a **cohesive editing experience** that seamlessly brings together Clef with MLIR's dialect system, LLVM's optimization infrastructure, and eventually F\* proof interactions. By integrating Clang and related LLVM tooling alongside native Clef semantics, Lattice provides a unified environment for **systems application development** where type-safe functional programming meets bare-metal performance and formal verification. The lattice structure ensures each component, compiler services, language servers, analyzers, build tools, works in concert to deliver the developer experience that modern systems programming demands.
+Lattice is a framework for a cohesive editing experience that brings Clef together with MLIR's dialect system and LLVM's optimization infrastructure. By integrating Clang and related LLVM tooling alongside native Clef semantics, it provides one environment for systems application development, where type-safe functional programming meets bare-metal performance. Its components, the compiler services, language servers, analyzers, and build tools, work as one toolchain across the Composer pipeline.
 
 ---
 
 ## Acknowledgments
 
-**To Krzysztof Cieślak and the Ionide community**: Thank you for creating the gold standard of F# IDE tooling. Lattice exists because Ionide showed us what great F# developer experience looks like.
+**To Krzysztof Cieślak and the Ionide community**: Thank you for creating the gold standard of F# IDE tooling. Lattice is a hard fork that leans heavily on Ionide, and it exists because Ionide showed us what great F# developer experience looks like.
 
 **To the F# community**: Your feedback on Clef has been invaluable. Every GitHub issue, every discussion thread, every "why would you do this?" question has sharpened our thinking.
 

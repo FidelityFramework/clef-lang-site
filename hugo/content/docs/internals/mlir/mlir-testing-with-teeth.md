@@ -11,9 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-The MLIR ecosystem has a dirty secret: its testing infrastructure is built on regex and prayer. While MLIR itself represents a triumph of progressive lowering and type-safe compilation, the tools used to verify its correctness, `lit` and `FileCheck`, operate at the level of untyped string matching. This isn't just an aesthetic concern. For frameworks like Fidelity that need to prove semantic preservation through compilation, text-based testing is fundamentally inadequate.
+MLIR's testing infrastructure rests on text matching. While MLIR itself is built on progressive lowering and type-safe compilation, the tools used to verify its correctness, `lit` and `FileCheck`, operate at the level of untyped string matching. That gap is structural rather than aesthetic. For frameworks like Fidelity that need to preserve semantic properties through compilation, text-based testing cannot reach the properties at issue.
 
-This entry examines the structural limitations of mainstream MLIR testing and explains why the Fidelity Framework requires, and is building, a fundamentally different approach. Using parser combinators, semantic graphs, and proof-carrying hyperedges, Composer's testing infrastructure treats verification as a first-class compilation concern. The goal isn't merely better ergonomics; it's establishing a foundation for compiler correctness proofs that text-based tools cannot provide.
+This entry examines the structural limitations of mainstream MLIR testing and explains why the Fidelity Framework requires, and is building, a different approach. Using parser combinators, semantic graphs, and proof-carrying hyperedges, Composer's testing infrastructure treats verification as a first-class compilation concern. The aim is a foundation for compiler correctness properties that text-based tools cannot establish, with better ergonomics following from that foundation rather than being the point of it.
 
 ## The Current State: lit + FileCheck
 
@@ -41,7 +41,7 @@ func.func @main(%arg0: i32) -> i32 {
 }
 ```
 
-When this test passes, `lit` shows minimal output, silence is success. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic: tests should be fast, simple, and universally applicable.
+When this test passes, `lit` shows minimal output, silence is success. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic, favoring tests that are fast, simple, and universally applicable.
 
 ### What lit Does Well
 
@@ -93,7 +93,7 @@ Because `lit` extracts directives from comments via regex, there's no compile-ti
  
 ```
 
-This test won't fail until runtime. If the pass name is wrong, you discover it in CI, or worse, when the test silently stops testing what you thought it tested. There's no type safety, no autocomplete, no refactoring support.
+This test won't fail until runtime. If the pass name is wrong, it surfaces in CI, or worse, when the test silently stops checking what it was written to check. There's no type safety, no autocomplete, no refactoring support.
 
 Compare this to MLIR itself, where passes are strongly typed and verified at compile time.
 
@@ -101,41 +101,37 @@ Compare this to MLIR itself, where passes are strongly typed and verified at com
 
 ### Problem 3: The Tautology Trap
 
-A subtler issue emerges when your MLIR generator and your test infrastructure share code. If you use the same AST types to generate MLIR and to verify it, you're testing your generator with itself, a tautology. The test can't catch bugs in the shared representation.
+A subtler issue emerges when the MLIR generator and the test infrastructure share code. Using the same AST types to generate MLIR and to verify it tests the generator with itself, a tautology. The test can't catch bugs in the shared representation.
 
 This is why `lit`'s external tool execution is actually valuable: it runs real `mlir-opt`. The problem is that `FileCheck`'s verification is too weak to leverage this independence effectively.
 
-### Problem 4: The Maintenance Nightmare
+### Problem 4: Maintenance Burden at Scale
 
-Here's the question that exposes the fundamental problem: **Does MLIR generate its own tests?**
+One question exposes the structural issue: does MLIR generate its own tests?
 
-The answer is revealing: No. MLIR's tests are almost entirely hand-written. The `generate-test-checks.py` script that exists doesn't generate tests from scratch, it only helps add `CHECK` directives to test files you've already written. You write the MLIR code, run the tool, it sees what `mlir-opt` produces, and it generates CHECK patterns for that output.
+It does not. MLIR's tests are almost entirely hand-written. The `generate-test-checks.py` script doesn't generate tests from scratch, it adds `CHECK` directives to test files already written. A developer writes the MLIR code, runs the tool against what `mlir-opt` produces, and it generates CHECK patterns for that output.
 
-This creates a vicious cycle:
+This creates a repeating cycle:
 
-1. You write a transformation pass
-2. You hand-write test inputs
-3. You run `generate-test-checks.py` to create CHECK patterns
+1. Write a transformation pass
+2. Hand-write test inputs
+3. Run `generate-test-checks.py` to create CHECK patterns
 4. Someone refactors SSA numbering or formatting
 5. Hundreds of tests break
-6. You run `update_test_checks.py` to mass-update all broken CHECK patterns
+6. Run `update_test_checks.py` to mass-update all broken CHECK patterns
 7. Repeat
 
-The LLVM project has over **100,000 tests**. When you refactor a core component, you don't just fix your code, you potentially break thousands of fragile text-based assertions. The fact that LLVM ships multiple scripts (`update_test_checks.py`, `update_llc_test_checks.py`, `update_mir_test_checks.py`) specifically to mass-fix broken FileCheck tests after refactoring should tell you everything you need to know about the scalability of this approach.
+The LLVM project has over **100,000 tests**. Refactoring a core component reaches well past the code under change: a single edit can break thousands of text-based assertions. LLVM ships several scripts (`update_test_checks.py`, `update_llc_test_checks.py`, `update_mir_test_checks.py`) specifically to mass-fix broken FileCheck tests after refactoring, which is a direct measure of how the approach scales.
 
-This is automation built to patch the brittleness of regex-based testing. It's a band-aid on a fundamental architectural problem.
+This is automation built to patch the brittleness of regex-based testing, addressing the symptom rather than the underlying representation.
 
-The MLIR testing guide tries to mitigate this with best practices: "tests should be minimal", "don't check unnecessary details", "avoid diff tests". But these are guidelines, not guarantees. There's nothing in the tooling that *prevents* you from writing brittle tests. The entire burden falls on developer discipline across hundreds of contributors.
+The MLIR testing guide tries to mitigate this with best practices: "tests should be minimal", "don't check unnecessary details", "avoid diff tests". These are guidelines, not guarantees. Nothing in the tooling *prevents* brittle tests. The burden falls on developer discipline across hundreds of contributors.
 
-When your test infrastructure requires dedicated tooling to repair itself after routine refactoring, you don't have a testing problem, you have an architecture problem.
+Test infrastructure that requires dedicated tooling to repair itself after routine refactoring reflects an architectural limit, not a testing one.
 
-### Problem 5: Python in the Middle
+### Problem 5: Dynamically Typed Verification Tooling
 
-Let's address the elephant in the room: `lit` is written in Python. For projects prioritizing type safety, formal methods, and predictable behavior, depending on Python for correctness verification feels... incongruous. It's not just aesthetic distaste; it's a genuine concern about reliability.
-
-Python's duck typing and runtime errors introduce unpredictability in a context demanding determinism. When your compiler uses progressive lowering, formal verification, and type-preserving transformations, having your test infrastructure potentially fail due to an `AttributeError` or indentation mismatch feels like a category error.
-
-This isn't Python-bashing (well, not entirely). It's recognizing that different tools suit different contexts. Python's flexibility makes it excellent for rapid prototyping and scripting. But for compiler correctness verification, where soundness and completeness matter, statically typed functional programming offers clearer guarantees.
+`lit` is written in Python, which suits it well for rapid prototyping and broad tool coverage. For correctness verification, where soundness and completeness matter, its dynamic typing and runtime errors introduce failure modes orthogonal to the compiler under test: a test run can fail on an `AttributeError` or an indentation mismatch rather than on a real property violation. A statically typed functional harness moves those failure modes to compile time, so a passing build is a stronger signal about the harness itself.
 
 ## What Fidelity Requires
 

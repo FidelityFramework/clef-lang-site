@@ -1,7 +1,7 @@
 ---
 title: "Fidelity Lowered to STM32"
 linkTitle: "Fidelity Lowered to STM32"
-description: "Revolutionary Hardware Type Safety: Zero-Runtime Cost Through Pre-Optimized Memory Mapping"
+description: "Hardware type safety at zero runtime cost through pre-optimized memory mapping"
 date: 2024-01-02T16:59:54+06:00
 authors: ["Houston Haynes"]
 tags: ["Architecture"]
@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-The embedded systems industry has operated under a fundamental assumption for decades: achieving hardware control requires sacrificing high-level abstractions and type safety. This assumption has created a divide between embedded development and modern software engineering practices, forcing developers to choose between expressiveness and efficiency. The Fidelity Framework aims to challenge this paradigm by delivering hardware type safety with truly zero runtime cost through principled hardware/software co-design.
+Embedded development has long treated hardware control and high-level type safety as competing goals, keeping it at a distance from the abstractions common in modern software engineering. The Fidelity Framework targets hardware type safety at zero runtime cost through hardware/software co-design, so that expressiveness and efficiency do not have to be traded against each other.
 
 > **December 2025 Update**: As part of our ongoing effort to keep the SpeakEZ blog current with laboratory progress, this article has been revised to reflect architectural evolution in the Fidelity Framework. The core vision remains unchanged: Clef on bare metal with zero runtime cost. This article provides the foundation, and the companion article [Clef on Metal Revisited](https://speakez.tech/blog/fsharp-on-metal-revisited/) presents the next progression in this evolution.
 
@@ -21,13 +21,13 @@ Traditional embedded development approaches hardware access as a runtime concern
 
 By parsing hardware definitions (such as CMSIS headers for ARM-based microcontrollers) and transforming them into type-safe Clef abstractions that flow through MLIR to native code, we would achieve compile-time hardware type safety that generates identical machine code to hand-written assembly. Memory layouts would be optimized before the first line of MLIR is generated.
 
-## The Iceberg Model: Power Below, Simplicity Above
+## Two Layers: Memory Mapping Below, Application Code Above
 
-Think of the Fidelity Framework's approach as an iceberg. Below the waterline lies the sophisticated memory mapping infrastructure: the BAREWire descriptors, the header parsing, and the MLIR transformations. This foundation is designed to provide the power and control needed for embedded systems. Above the waterline, developers could work with clean, idiomatic Clef code that looks and feels like normal application development.
+The framework separates the memory-mapping infrastructure from the code an application developer writes against it. The lower layer holds the BAREWire descriptors, the header parsing, and the MLIR transformations that provide the control an embedded target needs. The upper layer is idiomatic Clef code that reads like normal application development.
 
-Once the memory scaffolding is in place, it can be conceptually set aside. Farscape is designed to parse vendor-provided headers to create memory mappings and hardware abstractions, packaging them into a focused library. Application developers then import this module and work entirely in the realm of business logic, never needing to think about register offsets or bit manipulation unless they choose to dive deeper.
+Once the memory scaffolding is in place, application code no longer references it directly. Farscape is designed to parse vendor-provided headers into memory mappings and hardware abstractions, packaging them into a focused library. Application developers import that module and work in business logic, without reaching for register offsets or bit manipulation unless they choose to.
 
-This hardware abstraction work happens once per microcontroller family. When someone uses Farscape to generate bindings for a target microcontroller (STM32, or any supported family), that library becomes available to developers worldwide. The next developer targeting the same hardware could simply reference the existing library and start writing application code immediately.
+This hardware abstraction work happens once per microcontroller family. When Farscape generates bindings for a target microcontroller (STM32, or any supported family), a later developer targeting the same hardware references the existing library and starts writing application code immediately.
 
 ```fsharp
 // Above the waterline: Application code (written by any Clef developer)
@@ -57,19 +57,19 @@ module SensorApplication =
         monitorLoop()
 ```
 
-Developers work with clean Clef code while the framework maintains the performance of hand-crafted C. The complexity of hardware abstraction becomes a solved problem, shared across the community.
+Developers work with idiomatic Clef code while the framework holds to the performance of hand-written C. The hardware abstraction is generated once and reused by later developers targeting the same family.
 
 ## Understanding the STM32 Compilation Challenge
 
-STM32 microcontrollers exemplify the challenges of embedded development. Built around ARM Cortex-M cores, they use the Thumb-2 instruction set and have distinct memory regions at fixed addresses. Your code lives in Flash memory starting at 0x08000000, variables reside in SRAM at 0x20000000, and hardware peripherals are accessed through memory-mapped registers at addresses like 0x40020000. There's no operating system, no memory management unit, and no room for abstraction overhead.
+STM32 microcontrollers exemplify the challenges of embedded development. Built around ARM Cortex-M cores, they use the Thumb-2 instruction set and have distinct memory regions at fixed addresses. Code lives in Flash memory starting at 0x08000000, variables reside in SRAM at 0x20000000, and hardware peripherals are accessed through memory-mapped registers at addresses like 0x40020000. There is no operating system, no memory management unit, and no room for abstraction overhead.
 
-The traditional compilation path loses critical information at each stage. By the time code reaches LLVM, the compiler must infer your intent from memory access patterns, often missing optimization opportunities or requiring unsafe constructs to achieve desired behavior. The Fidelity Framework would invert this information flow, preserving hardware intent from the source level through to machine code.
+The traditional compilation path loses information at each stage. By the time code reaches LLVM, the compiler must infer intent from memory access patterns, often missing optimization opportunities or requiring unsafe constructs to reach the desired behavior. The Fidelity Framework would invert this information flow, preserving hardware intent from the source level through to machine code.
 
 ## The MLIR and LLVM Pipeline: From Clef to Silicon
 
-The compilation journey begins with Clef code that uses BAREWire-generated hardware abstractions. These abstractions aren't mere wrappers; they're compile-time constructs designed to capture the complete hardware memory model. When you write Clef code to configure a GPIO pin, you're not calling a function that manipulates registers; you're expressing an intent that compiles directly to the optimal register access pattern.
+The compilation journey begins with Clef code that uses BAREWire-generated hardware abstractions. These abstractions are compile-time constructs that capture the hardware memory model and leave no runtime wrapper behind. Clef code that configures a GPIO pin expresses an intent that compiles directly to the register access pattern, with no function call standing between the source and the hardware.
 
-Let's trace how the clean application code transforms through the compilation pipeline. The beauty of this approach is that the hardware abstraction complexity is handled once when the library is generated:
+The following trace shows how application code transforms through the compilation pipeline. The hardware abstraction is resolved once when the library is generated:
 
 ```fsharp
 // Hardware abstraction library (generated once, used by many)
@@ -169,11 +169,11 @@ configurePin:
     bx      lr              @ Return
 ```
 
-This assembly is identical to what an expert embedded programmer would write by hand, yet it's generated from type-safe Clef code with full compile-time verification. The application developer who wrote the temperature monitoring code never sees any of this complexity.
+This assembly matches what an expert embedded programmer would write by hand, generated from type-safe Clef code with register offsets and layouts resolved at compile time. The application developer who wrote the temperature monitoring code never sees any of this.
 
-## BAREWire: The Pre-Optimization Revolution
+## BAREWire Pre-Optimization
 
-The magic enabling this zero-cost abstraction is BAREWire's pre-optimization approach. Traditional compilers must analyze code to infer memory layouts and optimization opportunities. BAREWire inverts this by generating optimized memory layouts at the Clef level, where complete semantic information is available.
+The zero-cost abstraction rests on BAREWire's pre-optimization approach. Traditional compilers analyze code to infer memory layouts and optimization opportunities. BAREWire inverts this by generating optimized memory layouts at the Clef level, where the full semantic information is available.
 
 ### Parsing Hardware Headers with Farscape
 
@@ -204,7 +204,7 @@ typedef struct
 #define GPIOA                 ((GPIO_TypeDef *) GPIOA_BASE)
 ```
 
-Farscape transforms these C definitions into Clef quotations and active patterns that preserve all hardware semantics while adding type safety. This is not a simple syntactic transformation; it's a semantic bridge that captures hardware intent and makes it available to the compiler at the source level. Once generated, any developer can use these abstractions without being forced to grapple with the underlying complexity.
+Farscape transforms these C definitions into Clef quotations and active patterns that preserve the hardware semantics while adding type safety. The transformation is semantic rather than syntactic: it captures hardware intent and makes it available to the compiler at the source level. Once generated, the abstractions are usable without reference to the underlying layout.
 
 ### Platform-Specific Memory Optimization
 
@@ -346,12 +346,6 @@ module Application =
 ```
 
 The memory management strategy is determined when the library is generated based on the target platform. Application developers could work with standard Clef collections and data structures, while the framework handles the complexity of mapping these high-level constructs to the appropriate low-level memory operations.
-
-## The Path Forward
-
-The Fidelity Framework with its BAREWire pre-optimization approach represents a fundamental reimagining of how high-level languages can target constrained devices. The combination of Clef's expressive type system, BAREWire's pre-optimized memory mapping, Farscape's quotation-based binding generation, and MLIR/LLVM's code generation capabilities aims to create a hardware/software co-design methodology where safety and performance coexist. Developers need not choose between abstraction and control, or between productivity and efficiency.
-
-With the right approach and community collaboration, embedded development could become as accessible and productive as any other domain of software development. The Fidelity Framework envisions embedded development in Clef that clears a higher bar than mere feasibility, reaching for productivity, safety, and accessibility.
 
 ## See also
 

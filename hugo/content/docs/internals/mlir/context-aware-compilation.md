@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern processors are marvels of parallel execution. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reimagine computation entirely. Yet most code fails to harness even a fraction of this power. Why? Because the right parallel execution strategy follows from what your code does together with what it needs from its environment, and a traditional compiler only sees the first half. Coeffects transform compilation.
+Modern processors offer substantial parallel execution capacity. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reorganize computation around different execution models. Yet most code harnesses only a fraction of this capacity, because the right parallel execution strategy follows from what a program does together with what it needs from its environment, and a traditional compiler sees only the first half. Coeffect analysis supplies the second half.
 
 ## The Parallelism Predicament
 
@@ -28,19 +28,19 @@ let processDataset (data: float[]) =
 How should this compile? The answer depends on context that traditional compilers can't see:
 
 - Is `complexTransform` a pure mathematical function or does it access external resources?
-- What's the size of the data array - does it fit in L3 cache or span gigabytes?
-- Are we running on a CPU with strong single-thread performance or a GPU with massive parallelism?
+- What is the size of the data array: does it fit in L3 cache or span gigabytes?
+- Is the target a CPU with strong single-thread performance or a GPU with massive parallelism?
 - Does the computation pattern allow for SIMD vectorization or require scalar operations?
 
-Get these decisions wrong and your "parallel" code runs slower than sequential execution. Get them right and you can achieve near-theoretical peak performance. The Fidelity framework uses coeffect analysis to make these decisions automatically and optimally.
+Get these decisions wrong and the "parallel" code runs slower than sequential execution; get them right and it approaches peak hardware throughput. The Fidelity framework uses coeffect analysis to make these decisions at compile time.
 
 ## Two Paths to Parallelism
 
-At the heart of Fidelity's approach lies a fundamental choice between two radically different compilation strategies: interaction nets for pure parallelism and delimited continuations for controlled concurrency. Understanding when to use each is the key to efficient execution.
+Fidelity's approach rests on a choice between two compilation strategies: interaction nets for pure parallelism and delimited continuations for controlled concurrency. The coeffects a program carries determine which strategy applies to a given region of code.
 
 ### Interaction Nets: When Everything Can Happen at Once
 
-Interaction nets represent computation as a graph where nodes interact through local rewrite rules. When your code has no sequential dependencies or external effects, this model enables maximum parallelism:
+Interaction nets represent computation as a graph where nodes interact through local rewrite rules. When code has no sequential dependencies or external effects, this model admits maximum parallelism:
 
 ```fsharp
 // Pure computation - perfect for interaction nets
@@ -103,7 +103,7 @@ The choice between interaction nets and delimited continuations fundamentally de
 
 ## Coeffects
 
-Coeffects revolutionize compilation. By tracking what code needs from its environment, coeffects provide exactly the information needed to choose between parallel execution strategies:
+Coeffects track what code needs from its environment, and that requirement is the information needed to choose between parallel execution strategies:
 
 ```fsharp
 // Coeffect inference discovers the nature of computation
@@ -223,13 +223,13 @@ let runInference (model: Model) (input: Tensor) =
 // - Attention → All-to-all → Configure as crossbar
 // - Convolution → Spatial → Configure as 2D mesh
 //
-// Maverick reconfigures between layers!
+// Maverick reconfigures between layers
  
 ```
 
-## The Coeffect Advantage
+## Separation of Concerns
 
-The beauty of coeffect-driven compilation is that developers write clean, intent-focused code while the compiler handles the messy details of determining strategies for parallel execution:
+Under this design, developers write intent-focused code while the compiler determines the strategy for parallel execution from the inferred coeffects:
 
 ```mermaid
 graph LR
@@ -302,12 +302,12 @@ let alignSequences (reference: DNA) (samples: DNA[]) =
  
 ```
 
-## The Telemetry Bonus
+## Observability Falls Out of the Same Analysis
 
-A powerful bonus in coeffect analysis is automatic observability. Since the compiler already tracks context requirements, adding telemetry becomes trivial:
+Coeffect analysis carries a second use: automatic observability. Since the compiler already tracks context requirements, telemetry can be inserted at the boundaries that analysis already identifies:
 
 ```fsharp
-// Your code remains clean
+// The source code remains clean
 let processOrder order =
     validateOrder order
     |> Result.bind calculatePricing
@@ -324,9 +324,9 @@ let processOrder order =
  
 ```
 
-This telemetry falls out of the same analysis that drives optimization, rather than being bolted on after the fact. Fidelity's Program Semantic Graph the static resolution of interaction nets and delimited continuations mean that all code paths are known and fully traceable. There are no opaque allocations or "object downcasts" of convenience that obscure data and control flow. Establishing determinism and tracking it through the compute graph is the secret superpower of this approach.
+This telemetry falls out of the same analysis that drives optimization. Fidelity's Program Semantic Graph, and the static resolution of interaction nets and delimited continuations, keep all code paths known and traceable, with no opaque allocations or convenience downcasts to obscure data and control flow. The boundary-level telemetry rides on that determinism: because the compute graph tracks it, the observation points are already there to read.
 
-Engineering in this system not only saves money at runtime, but it also saves on the "fixed costs" of day-over-day development cycles. REducing the time from inspiration to deployment for use by business is this framework's most potent advantage. And the immediate transparency that these designs enjoy also makes production monitoring and maintenance less of an ongoing business cost. This approach is efficient in the lab and at the data center.
+The same determinism reduces the fixed costs of day-over-day development cycles, not only runtime cost. The transparency these designs carry also lowers the ongoing burden of production monitoring and maintenance.
 
 ## Separate Analysis, Accurate Workloads
 
@@ -502,15 +502,4 @@ let adaptiveHybridInference (model: HybridModel) (stream: TokenStream) =
     }
 ```
 
-### The Future of Heterogeneous AI
-
-This hybrid BitNet + compressed KV architecture represents a glimpse into the future of AI systems:
-
-1. **Models designed for heterogeneous execution** - Not monolithic GPU workloads
-2. **Compression as a first-class concern** - Enabling efficient memory usage
-3. **Zero-copy memory architectures** - Eliminating transfer bottlenecks
-4. **Automatic workload distribution** - Coeffects guide optimal placement
-
-The Fidelity framework, with its coeffect analysis and BAREWire technology, makes this future achievable. By understanding what each component needs from its environment, the compiler will be able to automatically generate code that puts the right computation on the right processor - achieving performance that would be impossible with traditional approaches.
-
-Context-aware compilation enables not just choosing between interaction nets and delimited continuations, but orchestrating entire heterogeneous systems where CPUs handle ternary operations, GPUs accelerate parallel decompression, and zero-copy memory enables them to work in perfect harmony. The academic rigor of coeffects doesn't just yield performance - it enables entirely new architectures that were previously unimaginable.
+In this hybrid BitNet and compressed-KV arrangement, the coeffects a region carries drive where it runs: CPUs take the ternary operations, GPUs take parallel decompression, and the analysis of what each component needs from its environment decides the placement. That is the same purity-and-requirement reading the rest of this document describes, applied across processors instead of within one.

@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce truly minimal native executables. In the world of traditional .NET development, your "Hello World" application carries the weight of the entire runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, this overhead is unacceptable. Our solution involves a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what's actually needed while preserving the rich type information required by subsequent compiler phases.
+When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce minimal native executables. In traditional .NET development, a "Hello World" application carries the weight of the runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, that overhead is a real cost. Our design takes a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what's actually needed while preserving the type information required by subsequent compiler phases.
 
 ## Concrete Example: HelloWorld with CCS Intrinsics
 
@@ -37,9 +37,9 @@ Everything else in the native type system - the `ReadLine` functions, the `stack
 
 ## Tree Shaking Through Type-Preserving Analysis
 
-Tree shaking is a form of dead code elimination that removes unused code from your final executable. The name comes from the mental model of shaking a tree to make dead branches fall off, leaving only the living, connected parts. What makes Composer's approach unique is how we leverage Clef's rich type system throughout the reachability analysis, enabling optimizations impossible with traditional approaches.
+Tree shaking is a form of dead code elimination that removes unused code from the final executable. The name comes from the mental model of shaking a tree to make dead branches fall off, leaving only the living, connected parts. Composer's approach leverages Clef's type system throughout the reachability analysis, which lets it act on information that call-graph-only dead code elimination does not carry.
 
-Consider how our type-aware analysis surpasses traditional dead code elimination:
+Our type-aware analysis extends traditional dead code elimination in the following way:
 
 ```fsharp
 // Type with complex generic constraints
@@ -59,15 +59,15 @@ type DateProcessor() =
     interface IProcessor<DateTime> with
         member _.Process x = x.AddDays(1.0)
 
-// Your application only uses int processing
+// The application only uses int processing
 let result = IntProcessor().Process(42)
 ```
 
-Traditional tree shaking might struggle to determine which processor implementations are actually used. Composer's type-preserving analysis traces the exact type instantiations through your program, determining that only `IProcessor<int>` and `IntProcessor` are needed. The `FloatProcessor` and `DateProcessor`, along with their associated type specializations, are eliminated entirely.
+Call-graph-only tree shaking struggles to determine which processor implementations are actually used. Composer's type-preserving analysis traces the type instantiations through the program, determining that only `IProcessor<int>` and `IntProcessor` are needed. The `FloatProcessor` and `DateProcessor`, along with their associated type specializations, are eliminated.
 
-This precision stands in contrast to the challenges facing .NET's Native AOT compilation. While Microsoft has made significant progress with ahead-of-time compilation in .NET 8 through 10, their approach must contend with the runtime's historical reliance on reflection and dynamic code generation. Generic type instantiation presents particular difficulties - the AOT compiler cannot always determine which `ILogger<T>` instantiations an application will request through dependency injection, leading to either over-inclusion of code or runtime failures. Attributes like `RequiresDynamicCodeAttribute` and `DynamicallyAccessedMembers` help developers annotate their code for trimming compatibility, but these are fundamentally workarounds for a system not designed with static analysis as a fundamental tenet.
+.NET's Native AOT compilation reaches this precision less directly. Microsoft has made progress with ahead-of-time compilation across .NET 8 through 10, and the approach still contends with the runtime's historical reliance on reflection and dynamic code generation. Generic type instantiation is a particular difficulty: the AOT compiler cannot always determine which `ILogger<T>` instantiations an application will request through dependency injection, which leads to either over-inclusion of code or runtime failures. Attributes like `RequiresDynamicCodeAttribute` and `DynamicallyAccessedMembers` let developers annotate their code for trimming compatibility, working around a system whose original design did not treat static analysis as a primary concern.
 
-By building on Clef's type system and its deterministic foundations, the compiler constructs a complete dependency graph at compile time. There's no reflection to defeat tree shaking, no dynamic instantiation to second-guess. The analysis is correct by construction.
+By building on Clef's type system and its deterministic foundations, the compiler constructs a full dependency graph at compile time. There is no reflection to defeat tree shaking and no dynamic instantiation to second-guess, so the reachable set the analysis computes is exact rather than conservative.
 
 Consider a typical Clef utility library with generic functions and type specializations:
 
@@ -96,7 +96,7 @@ module Algorithms =
     let sortStrings = sort<string>  // Specialized for strings
     // ... more specializations
 
-// Your application
+// The application
 open Collections
 let myTree = Node(Leaf 1, 2, Leaf 3)
 let doubled = map ((*) 2) myTree
@@ -107,21 +107,9 @@ Composer's type-aware tree shaking analyzes function calls and type instantiatio
 - Only `map` is called on trees; `fold`, `filter`, `balance`, etc. are eliminated
 - The generic `sort` function is never instantiated, so all specializations are removed
 
-Early prototypes show 70-90% size reductions for generic-heavy libraries, far exceeding what traditional tree shaking achieves.
+Early prototypes show 70-90% size reductions for generic-heavy libraries, exceeding what call-graph-only tree shaking achieves.
 
-### The Structural Advantage Over Assembly-Based Compilation
-
-These results highlight a fundamental architectural advantage that Composer holds over approaches constrained by assembly-based compilation. When .NET's Native AOT compiles an application, it operates on IL assemblies - an intermediate representation designed for runtime flexibility, not static optimization. The assembly format preserves information needed for reflection, dynamic loading, and JIT compilation, but obscures the precise dependency relationships that enable aggressive tree shaking.
-
-Consider what happens when .NET Native AOT encounters a generic type like `List<T>`. The IL contains a single generic definition, but the runtime may instantiate it with dozens of different type arguments. The AOT compiler must make conservative assumptions: if `List<int>` appears anywhere in reachable code, it generates specialized code for that instantiation. But determining *all* possible instantiations requires whole-program analysis that the assembly format makes difficult. The compiler cannot easily distinguish between `List<Customer>` that's actually constructed and `List<Customer>` that merely appears in a type signature but is never instantiated.
-
-Composer operates upstream of this problem. By analyzing Clef source through FCS before any lowering to intermediate representations, we have access to the full semantic context: which generic instantiations are actually constructed, which type parameters flow through which call sites, and crucially, which paths through the code are actually reachable. The PSG captures these relationships directly rather than reconstructing them from assembly metadata.
-
-The practical impact extends beyond binary size. .NET applications targeting Native AOT frequently encounter trimming warnings - indications that the compiler cannot prove certain code paths are safe to remove. Developers must annotate their code with attributes like `[DynamicallyAccessedMembers]` or maintain XML configuration files listing types that must be preserved. These are fundamentally workarounds for information that was available at compile time but lost during the lowering to IL.
-
-Composer's approach eliminates this entire category of problems. Since tree shaking operates on the semantic graph before any information is discarded, there are no trimming warnings to suppress, no runtime directive files to maintain, no surprising `MissingMethodException` errors in production.
-
-> The analysis is complete because it operates on complete information: "correct by construction," as we put it in the lab.
+The precision comes from where the analysis sits in the pipeline. Composer analyzes Clef source through FCS before any lowering to intermediate representations, so it has access to the full semantic context: which generic instantiations are actually constructed, which type parameters flow through which call sites, and which paths through the code are reachable. The PSG captures these relationships directly rather than reconstructing them from assembly metadata, where a single generic definition and its instantiation sites are already separated. Because the reachable set is computed before any information is discarded, there are no trimming warnings to suppress and no runtime directive files to maintain.
 
 ## Soft-Delete Reachability: The Nanopass Approach
 
@@ -157,7 +145,7 @@ This direct analysis enables cross-cutting optimizations. When we determine a ty
 
 ## Type-Directed Reachability Analysis
 
-The heart of effective tree shaking lies in precise reachability analysis. Our type-preserving approach goes beyond simple function-call tracking to understand the rich relationships in Clef code:
+Precise reachability analysis carries the weight of effective tree shaking. Our type-preserving approach goes past function-call tracking to reach the type relationships in Clef code:
 
 ```fsharp
 // Semantic reachability context - tracks what's actually used
@@ -192,7 +180,7 @@ let analyzeReachability (psg: ProgramSemanticGraph) (entryPoints: FSharpSymbol l
       EntryPoints = entryPoints }
 ```
 
-This sophisticated analysis handles Clef's advanced type system features:
+The analysis covers Clef's advanced type system features:
 
 ### Discriminated Union Optimization
 

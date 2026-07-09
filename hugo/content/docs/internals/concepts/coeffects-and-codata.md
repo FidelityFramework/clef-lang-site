@@ -15,11 +15,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern async and parallel programming presents an engineering challenge: we need both the performance of low-level control and the safety of high-level abstractions. Nearly 20 years ago, the .NET ecosystem pioneered the `async`/`await` syntactic pattern, making concurrent code accessible to millions of developers and influencing other technology stacks in following years. However, this pattern comes with tradeoffs - runtime machinery that, while powerful, can become opaque when we need to understand or optimize workload behavior.
+Modern async and parallel programming presents an engineering challenge: we need both the performance of low-level control and the safety of high-level abstractions. Nearly 20 years ago, the .NET ecosystem pioneered the `async`/`await` syntactic pattern, making concurrent code accessible to millions of developers and influencing other technology stacks in following years. That pattern comes with tradeoffs: runtime machinery that can become opaque when a developer needs to understand or optimize workload behavior.
 
-Composer explores a fresh perspective in that design space: what if we could preserve Clef's elegant async abstractions while compiling them to transparent, predictable machine code? By applying mathematical concepts from programming language theory - specifically **coeffects** (tracking what code needs from its context) and **codata** (recognizing demand-driven computation patterns) - the Composer compiler design aims to transform high-level Clef async code into efficient implementations tailored for speed and safety.
+Composer explores a fresh perspective in that design space. What if we could preserve Clef's async abstractions while compiling them to transparent, predictable machine code? By applying mathematical concepts from programming language theory, specifically **coeffects** (tracking what code needs from its context) and **codata** (recognizing demand-driven computation patterns), the Composer compiler design aims to transform high-level Clef async code into efficient implementations tailored for speed and safety.
 
-We want to emphasize that this approach isn't about replacing existing solutions. It's about exploring how functional programming principles can drive compiler design to achieve new levels of performance and observability without compromise.
+This approach complements existing solutions rather than replacing them. We are exploring how functional programming principles can drive compiler design toward better performance and observability.
 
 ## The Engineering Challenge
 
@@ -46,18 +46,18 @@ In traditional compilation, this innocent-looking code generates a complex web o
 
 ### .NET's Opacity Problem
 
-**Hidden State Machines**: The .NET compiler transforms each `async` block into an opaque state machine class within the Common Language Runtime (CLR). These generated types aren't part of source code, making them difficult to profile or debug. When performance problems arise, you're left guessing which state transitions are causing bottlenecks.
+**Hidden State Machines**: The .NET compiler transforms each `async` block into an opaque state machine class within the Common Language Runtime (CLR). These generated types aren't part of source code, making them difficult to profile or debug. When performance problems arise, which state transitions cause the bottlenecks is left to guesswork.
 
 **Allocation Mysteries**: Every `let!` and `do!` potentially creates:
 
-- Task objects hidden in heap allocations you can't inspect
+- Task objects hidden in heap allocations that resist inspection
 - Continuation delegates capturing local state
 - Boxing of value types in generic contexts
 - Internal queue nodes in the thread pool
 
-These allocations happen deep in runtime code, invisible to standard memory profilers. You can see total memory pressure, but correlating it back to specific async operations becomes significant detective work.
+These allocations happen deep in runtime code, invisible to standard memory profilers. Total memory pressure is visible, but correlating it back to specific async operations becomes significant detective work.
 
-**Scheduling Black Boxes**: The .NET thread pool decides when and where your continuations run based on heuristics that preclude direct inspection:
+**Scheduling Black Boxes**: The .NET thread pool decides when and where continuations run based on heuristics that preclude direct inspection:
 
 - Work-stealing algorithms with unpredictable CPU cache effects
 - Timer queues managed by internal data structures
@@ -68,26 +68,26 @@ When latency spikes occur, determining whether the cause was scheduling delay, q
 **Context Capture Overhead**: The `SynchronizationContext` and `ExecutionContext` flow through async calls, carrying security, culture, and synchronization state. This ambient data:
 
 - Gets captured and restored at every await point
-- Adds memory overhead you cannot measure directly
+- Adds memory overhead that resists direct measurement
 - Introduces performance costs that vary by environment
 - Creates coupling to runtime implementation details
 
-In practice, this means your async operation that takes 10ms in development might take 50ms or more in production due to different synchronization contexts. Memory that appears as "framework overhead" in profilers could be these hidden context captures. Most critically, you have no way to opt out of this overhead when you know it's unnecessary - the runtime decides for you.
+In practice, an async operation that takes 10ms in development might take 50ms or more in production due to different synchronization contexts. Memory that appears as "framework overhead" in profilers could be these hidden context captures. There is no way to opt out of this overhead when it is known to be unnecessary: the runtime decides.
 
 ### Debugging Challenges
 
 When the above sensor processing code exhibits problems in production:
 
-- Stack traces show framework internals, not your logical flow
+- Stack traces show framework internals, not the logical flow of the source
 - Memory dumps reveal generated classes with cryptic names
 - Performance profiles highlight symptoms (GC pressure) not causes
 - Concurrency bugs hide in the gaps between state machine transitions
 
-> The fundamental issue: **the runtime owns your program's execution model**, and it provides limited windows into its decision-making process.
+> The runtime owns the program's execution model and provides limited windows into its decision-making process.
 
 ### The Composer Alternative
 
-The Composer compiler design aspires to a different goal: analyze what your source code needs from its environment at compile time, then generate the most efficient implementation for the target hardware. By making the implicit explicit, our approach aims to transcend .NET's runtime opacity to create a new level of compile-time and runtime transparency.
+The Composer compiler design aspires to a different goal: analyze what source code needs from its environment at compile time, then generate an efficient implementation for the target hardware. By making the implicit explicit, our approach aims to move past .NET's runtime opacity toward compile-time and runtime transparency.
 
 ## Coeffects: Tracking Context Requirements
 
@@ -97,7 +97,7 @@ In mathematical notation:
 
 \[f : \Gamma @ R \vdash \tau\]
 
-The \(R\) represents the coeffect - the resources and context required by \(f\) to produce a value of type \(\tau\) from context \(\Gamma\). This isn't just academic notation; it's the foundation for making principled compilation decisions.
+The \(R\) represents the coeffect: the resources and context required by \(f\) to produce a value of type \(\tau\) from context \(\Gamma\). This notation grounds the principled compilation decisions that follow.
 
 ### Practical Coeffect Tracking
 
@@ -165,7 +165,7 @@ The coeffect system's ability to track resource access patterns directly address
 Unlike traditional compilers that make optimization decisions based on heuristics, Composer's currently proposed coeffect system is designed to make these decisions based on explicit and predictable factors:
 
 ```fsharp
-// Developer will be able to see exactly why this compiles to a tight loop
+// A developer can see exactly why this compiles to a tight loop
 let processData (data: float[]) =
     data
     |> Array.map (fun x -> x * 2.0 + 1.0)
@@ -201,7 +201,7 @@ and StreamCell<'T> =
     | SCons of 'T * Stream<'T>
 ```
 
-The eager list must materialize all elements immediately. The stream produces elements only when requested. This isn't just about memory usage; it fundamentally changes how the compiler can optimize the code.
+The eager list must materialize all elements immediately. The stream produces elements only when requested. Beyond the memory difference, this distinction changes how the compiler can optimize the code.
 
 #### The Idiomatic Trap
 
@@ -911,21 +911,4 @@ The theoretical underpinnings of Composer's design draw from several areas of pr
 
 **Delimited Continuations** (Danvy and Filinski, 1990) provide the theoretical foundation for WAMI's stack switching implementation. By recognizing async/await as a syntax for delimited continuations, Composer achieves zero-copy context switching without runtime support.
 
-The integration of these concepts - using coeffects to identify codata patterns and compiling them via delimited continuations - represents a novel synthesis that will enable hardware-aware functional programming. We believe that this will enable new opportunities for the Clef language and for new ecosystems to emerge that provide ample opportunity to confidently produce efficient, transparent workloads for high reliability systems.
-
-## The Future of Functional Systems Programming
-
-Our "virtual whiteboard" session in the blog post demonstrates that functional programming abstractions need not come at the cost of performance or transparency. By embracing mathematical foundations, we envision building a robust framework that:
-
-- Makes optimization decisions explicit and predictable
-- Generates code competitive with hand-written C
-- Preserves high-level abstractions without runtime overhead
-- Targets diverse hardware from a single source
-
-This approach points toward a future where the boundaries between systems programming and functional programming dissolve. Where async operations become as transparent as synchronous mechanisms. Where the same elegant Clef code runs efficiently on everything from embedded devices to data center scaled server clusters. There are still significant engineering challenges to overcome and new opportunities to discover, but we're confident in the theoretical and technological path we've chosen.
-
-Coeffects and codata form the theoretical backbone for Fidelity's complete approach to systems programming. From solving the byref problem through capability-based memory management, to enabling RAII-based actor systems with deterministic cleanup, to supporting zero-copy cross-process communication through memory mapping and Reference Sentinels, these concepts enable a unified architecture. The same mathematical principles that guide compilation decisions also inform memory management strategies, creating a coherent system where theory and practice reinforce each other.
-
-The marriage of formalism and pragmatism in Composer's design philosophy shows that we don't have to choose between abstraction and performance, between safety and efficiency, between portability and optimization. Through coeffects and codata, we have all that is needed to achieve these lofty goals - functional programming that truly understands the hardware on which it runs.
-
-As we continue developing Composer and the broader Fidelity framework, we're not just building a new compiler; we're exploring how functional programming principles can fundamentally reshape our approach to systems programming. The journey from abstraction to engineering result is not just possible - it's a clear, opportunity-rich path forward for the next generation of hardware-software co-design.
+The integration of these concepts, using coeffects to identify codata patterns and compiling them via delimited continuations, is the synthesis Composer is built on. The same mathematical principles that guide the compilation decisions also inform the memory-management strategies: the byref treatment through capability-based memory management, the RAII-based actor cleanup, and the zero-copy cross-process communication through memory mapping and Reference Sentinels all rest on the same coeffect-and-codata substrate.

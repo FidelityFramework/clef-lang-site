@@ -11,11 +11,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-In the landscape of modern compiler design, a fundamental tension exists between preserving the elegance of high-level abstractions and generating efficient machine code. The Fidelity framework confronts this challenge head-on. By leveraging a powerful insight, referential transparency, the Composer compiler provides a natural decision point for compilation strategies.
+Compiler design carries a standing tension between keeping high-level abstractions and generating efficient machine code. In our design, referential transparency gives the Composer compiler a decision point for compilation strategy: whether a region is pure gives a mathematical property to branch on, rather than a heuristic.
 
-At the heart of our Clef native compiler lies the Program Hypergraph (PHG), which analyzes code to identify any referentially transparent regions. This analysis drives a sophisticated compilation strategy that chooses between two powerful computational models: interaction nets for pure, concurrent computations and delimited continuations for effectful, sequential operations. This reaches past ordinary optimization into a fundamental rethinking of how functional programs should be compiled for modern heterogeneous hardware.
+At the heart of our Clef native compiler lies the Program Hypergraph (PHG), which analyzes code to identify referentially transparent regions. That analysis drives a compilation strategy that chooses between two computational models: interaction nets for pure, concurrent computations, and delimited continuations for effectful, sequential operations.
 
-By automatically selecting the appropriate compilation strategy based on mathematical properties rather than heuristics, Composer preserves the high-level intent of Clef code while generating executables that rival hand-optimized implementations. This document explores how these two paradigms work together to create a compilation framework that respects both the functional programmer's intent and the realities of modern hardware architectures.
+Selecting the compilation strategy from the purity of a region, rather than from optimization heuristics, lets Composer preserve the high-level intent of Clef code while targeting the appropriate execution model. This document describes how the two paradigms work together across heterogeneous hardware. The mechanisms here describe the designed pipeline.
 
 ## Core Architecture
 
@@ -76,9 +76,9 @@ func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
 2. **No Synchronization Overhead** - Pure functions need no coordination
 3. **Optimal for GPUs** - Maps directly to SIMD/SIMT execution models
 
-## Post-Transformer Revolution
+## Interaction Nets and Post-Transformer Architectures
 
-While interaction nets might seem "rare" for traditional ML workloads dominated by matrix multiplication, post-transformer architectures fundamentally change this equation. [MatMul-free](https://arxiv.org/abs/2406.02528) and sub-quadratic models are *perfectly* suited for interaction net compilation.
+Interaction nets might seem a poor fit for traditional ML workloads dominated by matrix multiplication. Post-transformer architectures change that fit. [MatMul-free](https://arxiv.org/abs/2406.02528) and sub-quadratic models map well onto interaction net compilation.
 
 ### MatMul-Free Networks as Interaction Patterns
 
@@ -87,7 +87,7 @@ Post-transformer architectures replace matrix multiplication with simple arithme
 ```fsharp
 // Ternary operations from MatMul-free networks
 let ternaryOperation (input: Vector<float>) (weights: TernaryMatrix) =
-    // Only additions and subtractions - perfect for Inet!
+    // Only additions and subtractions, mapping to interaction rules
     for i in 0..outputDim-1 do
         for j in 0..inputDim-1 do
             match weights.[i,j] with
@@ -118,7 +118,7 @@ let bitnetLayer (input: Tensor) (weights: PackedBitArray) (scale: float32) =
         return outputs
     }
 
-// Compiles to highly efficient SPIR-V with no tensor cores needed!
+// Compiles to SPIR-V with no tensor cores required
  
 ```
 
@@ -139,16 +139,16 @@ let mambaStep (state: State) (input: float) (A: Diagonal) (B: Vector) =
     }
 ```
 
-### Memory Efficiency Revolution
+### Memory Characteristics
 
-Post-transformer models via Inet achieve dramatic efficiency gains:
+Compiling post-transformer models through the Inet path shifts where the work lands:
 
-| Architecture | Traditional GPU | Inet + SPIR-V | Improvement |
+| Architecture | Traditional GPU | Inet + SPIR-V | Direction |
 |-------------|----------------|---------------|-------------|
-| Memory per param | 16-32 bits | 1.58-2 bits | 10-20x reduction |
-| Ops per token | Billions (MatMul) | Millions (Add/Sub) | 1000x fewer |
-| Memory bandwidth | Bottlenecked | Register-only | ∞ improvement |
-| Hardware required | Tensor cores | Any GPU | Democratized |
+| Memory per param | 16-32 bits | 1.58-2 bits | Fewer bits per weight |
+| Ops per token | MatMul-dominated | Add/Sub-dominated | Simpler arithmetic |
+| Memory bandwidth | A bottleneck | Register/cache-resident | Less DRAM traffic |
+| Hardware required | Tensor cores | Any GPU | No tensor cores |
 
 ## Delimited Continuations for Effects
 
@@ -227,7 +227,7 @@ SPIR-V's capabilities align perfectly with interaction net compilation, especial
 let matMulFreeLayer (input: Tensor<float32>) (weights: TernaryTensor) =
     inet {
         let! parallelOps = inet.parallel_map (fun outputIdx ->
-            // Each GPU thread: just adds/subtracts in registers!
+            // Each GPU thread: adds/subtracts in registers
             let mutable sum = 0.0f
             for inputIdx in 0..inputSize-1 do
                 match weights.[outputIdx, inputIdx] with
@@ -242,9 +242,9 @@ let matMulFreeLayer (input: Tensor<float32>) (weights: TernaryTensor) =
 
 // Generates SPIR-V that:
 // - Uses no tensor cores (works on any GPU)
-// - Keeps weights in shared memory (2 bits each!)
-// - Accumulates in registers (no memory bandwidth issues)
-// - Achieves near-theoretical ALU utilization
+// - Keeps weights in shared memory (2 bits each)
+// - Accumulates in registers (avoids DRAM bandwidth)
+// - Targets high ALU utilization
  
 ```
 
@@ -288,13 +288,13 @@ let hybridInference (model: HybridBitNet) (input: TokenSequence) =
 
 ### Performance Characteristics
 
-| Pattern | Compilation Strategy | Target Hardware | Performance |
+| Pattern | Compilation Strategy | Target Hardware | Characteristic |
 |---------|---------------------|-----------------|-------------|
-| Pure map/reduce | Inet dialect | GPU/SIMD | Near-optimal |
+| Pure map/reduce | Inet dialect | GPU/SIMD | Parallel reduction |
 | Async I/O | DCont dialect | CPU | Deterministic memory |
 | Mixed workload | Hybrid | Heterogeneous | Adaptive |
-| **MatMul-free layers** | **Inet dialect** | **Any GPU** | **10-100x memory reduction** |
-| **Ternary networks** | **Inet dialect** | **CPU SIMD** | **8x throughput vs MatMul** |
+| **MatMul-free layers** | **Inet dialect** | **Any GPU** | **Reduced memory footprint** |
+| **Ternary networks** | **Inet dialect** | **CPU SIMD** | **Add/sub in place of MatMul** |
 | **State space models** | **Inet dialect** | **GPU** | **Linear complexity** |
 
 ### Post-Transformer Specific Benefits

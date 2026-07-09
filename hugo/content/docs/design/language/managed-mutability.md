@@ -11,15 +11,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-We just hit a milestone in the Composer compiler: mutable variables work in simple loops. Three console samples compile and execute correctly. Many more don't.
+We just hit a milestone in the Composer compiler: mutable variables work in simple loops. Three console samples compile and execute correctly. Many more don't, and this is the third time we've reached this point along different design paths.
 
-The ***real*** trick is this is (at least) the *third* time we've been here. Most teams would bury that in a footnote. We're writing a blog post about it.
+Those three working samples carry an architectural pattern that composes cleanly and fails visibly. The failures locate where the architecture is incomplete, and they do it precisely. What follows is how we built managed mutability this way, why honest accounting serves the design better than inflated claims, and how our compositional patterns hold up under pressure.
 
-Why? Because those three working samples represent something more interesting than "mutables work, again." They represent an architectural pattern that composes cleanly, fails visibly, and sets up the next round of work. The failures tell us where the architecture is incomplete, and they do it precisely.
-
-This is the story of what we learned building managed mutability this way, why honest accounting serves the design better than inflated claims, and how our compositional patterns hold up under pressure.
-
-## Nothing Is As Easy As It Seems
+## The Irreducible Complexity Behind One Line
 
 Our second "hello world" is deceptively simple:
 
@@ -81,7 +77,7 @@ Actual output: `"Hello, <garbage characters>"`
 
 The compiler worked. The binary ran. But somewhere between reading stdin and printing the greeting, we were handing off the wrong string. Not a crash. Not a type error. Just silent corruption that produced visually obvious garbage at runtime.
 
-In a [nanopass compiler](/docs/internals/concepts/nanopass-navigation/), bugs have addresses. When you trace execution through discrete transformation stages, you can pinpoint exactly which component mishandled the data. This one involved three components:
+In a [nanopass compiler](/docs/internals/concepts/nanopass-navigation/), bugs have addresses. Tracing execution through discrete transformation stages pinpoints exactly which component mishandled the data. This one involved three components:
 
 - Console input reading
 - String interpolation
@@ -141,7 +137,7 @@ This pattern composes **7 Element operations** across **4 MLIR dialects** (MemRe
 
 Result: `"Hello, Alice!"`
 
-The pattern is a handful of lines of code. It's reusable. It's testable in isolation. It demonstrates that our compositional architecture scales under the pressure of real-world constraints.
+The pattern is a handful of lines of code. It's reusable and testable in isolation, and it holds the compositional architecture together under real-world constraints.
 
 ## The Other Bug: Infinite Loops and Mutable Indices
 
@@ -162,7 +158,7 @@ The binary compiled without errors. The loop condition evaluated correctly. The 
 
 > This is where a nanopass compiler earns its complexity budget.
 
-When code compiles successfully but behaves incorrectly, you need visibility into the instructions the compiler *actually* generated, set against what it *should* have generated. The generated MLIR, a product of nanopass layered processing, showed the issue immediately:
+When code compiles successfully but behaves incorrectly, the diagnosis needs visibility into the instructions the compiler *actually* generated, set against what it *should* have generated. The generated MLIR, a product of nanopass layered processing, showed the issue immediately:
 
 ```mlir
 %v7 = memref.alloca() : memref<1xindex>    // pos is TMemRef
@@ -180,7 +176,7 @@ scf.while : () -> () {
 }
 ```
 
-The VarRef witness was forwarding the memref **address** (`%v7`) instead of loading the value. Why? Because VarRef is context-agnostic. It doesn't know if you need the address (for `Set` operations) or the value (for expressions).
+The VarRef witness was forwarding the memref **address** (`%v7`) instead of loading the value. VarRef is context-agnostic: it doesn't distinguish a caller that needs the address (for `Set` operations) from one that needs the value (for expressions).
 
 > This is the classic **lvalue vs rvalue** distinction that every compiler must handle.
 
@@ -217,7 +213,7 @@ Early attempts at auto-loading used parameter passing (PUSH model). The witness 
 
 It was a mess.
 
-A more idiomatic type-driven approach (PULL model) restores the structured carriage of computation. In the Alex component, Patterns pull data from Coeffects state when they need it. They detect `TMemRef` via pattern matching and compose load operations at the point of use. No parameter threading means no order dependencies. No mutable accumulation means no state synchronization. Each Pattern remains a 'pure' transformation: "given these types and this context, produce these operations." The monadic bind operator (`let!`) threads the computational context through without any component needing to manage it explicitly. This is what makes the architecture compositional - you can understand each Pattern in isolation because it carries no hidden dependencies from earlier stages.
+A more idiomatic type-driven approach (PULL model) restores the structured carriage of computation. In the Alex component, Patterns pull data from Coeffects state when they need it. They detect `TMemRef` via pattern matching and compose load operations at the point of use. No parameter threading means no order dependencies. No mutable accumulation means no state synchronization. Each Pattern remains a 'pure' transformation: "given these types and this context, produce these operations." The monadic bind operator (`let!`) threads the computational context through without any component needing to manage it explicitly. The architecture stays compositional: each Pattern can be understood in isolation because it carries no hidden dependencies from earlier stages.
 
 Result: Infinite loop fixed. Position advances correctly. Sample executes.
 
@@ -273,7 +269,7 @@ func @createCounter() -> closure {
 }
 ```
 
-The closure holds a dangling pointer. The compiler doesn't stop you. It generates code that compiles and crashes unpredictably. This is the problem escape analysis will solve.
+The closure holds a dangling pointer. The compiler doesn't reject it; it generates code that compiles and crashes unpredictably. This is the problem escape analysis will solve.
 
 ## Partial Escape Analysis
 
