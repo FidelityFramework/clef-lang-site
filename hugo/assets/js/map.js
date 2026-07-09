@@ -408,6 +408,11 @@
 
   function loadGraphLive() {
     var c = document.getElementById("clef-map-cy");
+    // Tear down any prior graph up front so the query always runs over a clean canvas with the
+    // spinner on top — never over a stale mid-session graph (which reads as a jarring flash when
+    // it's swapped) and never a blank canvas with no spinner. The spinner IS the interstitial.
+    if (cy) { try { cy.destroy(); } catch (e) {} cy = null; }
+    if (c) c.innerHTML = "";
     spinner(true);
     return loadCytoscape()
       .then(function () {
@@ -416,7 +421,6 @@
         return fetch(url, { cache: "no-store" }).then(function (r) { return r.json(); });
       })
       .then(function (g) {
-        if (cy) { try { cy.destroy(); } catch (e) {} cy = null; }
         if (c) c.innerHTML = "";
         spinner(false);
         render(g);
