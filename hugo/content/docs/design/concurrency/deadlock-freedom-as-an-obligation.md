@@ -14,7 +14,7 @@ Our actor model gives every actor an arena that lives exactly as long as the act
 
 ## Two properties use the word "safe"
 
-Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes RAII was built to kill, and in [Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) it kills them.
+Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes actor-scoped RAII is designed to foreclose, and in [Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) it forecloses them.
 
 Deadlock is a liveness property: something good eventually happens. A set of actors each blocked waiting for a message that only another blocked actor in the set could send will sit there indefinitely. Prospero never retires any of them, because none has crashed or completed. They are all alive and quiescent. The entire memory apparatus stays consistent while the program stops doing anything.
 
