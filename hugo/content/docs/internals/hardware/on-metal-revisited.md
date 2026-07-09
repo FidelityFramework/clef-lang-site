@@ -72,7 +72,7 @@ The larger architectural shift involved what Farscape produces. The original vis
 
 ### Why Quotations?
 
-Quotations are Clef code represented as data. They can be inspected, transformed, and consumed by other parts of the compilation pipeline. When Farscape generates a `PeripheralDescriptor` quotation, it creates a structured representation of hardware memory layout that the CCS nanopass pipeline can decompose:
+Quotations are Clef code represented as data. They can be inspected, transformed, and consumed by other parts of the compilation pipeline. When Farscape generates a `PeripheralDescriptor` quotation, it creates a structured representation of hardware memory layout that the CCS [nanopass pipeline](/docs/internals/concepts/nanopass-navigation/) can decompose:
 
 ```fsharp
 let gpioPeripheralQuotation: Expr<PeripheralDescriptor> = <@

@@ -245,7 +245,7 @@ Stillwater Universal proved that posit arithmetic works in practice, and the alg
 
 ## SRTP Integration
 
-Fidelity uses Statically Resolved Type Parameters (SRTP) for generic numeric operations. The full posit family integrates into this pattern:
+Fidelity uses [Statically Resolved Type Parameters (SRTP)](/docs/design/types/structural-polymorphism/) for generic numeric operations. The full posit family integrates into this pattern:
 
 ```fsharp
 [<AbstractClass; Sealed>]

@@ -218,7 +218,7 @@ The memory layout analyzer integrates with tree shaking to optimize union storag
 
 ### Generic Specialization Tracking
 
-Clef's inline functions and SRTP (Statically Resolved Type Parameters) create specialized code for each type instantiation. Our analysis tracks these precisely:
+Clef's inline functions and [SRTP (Statically Resolved Type Parameters)](/docs/design/types/structural-polymorphism/) create specialized code for each type instantiation. Our analysis tracks these precisely:
 
 ```fsharp
 let inline sumBy< ^T, ^U when ^T : (member Length : int)

@@ -91,7 +91,7 @@ Setting `machine_model = "moore"` as a project default means every `[<HardwareMo
 
 ## What the Compiler Sees
 
-The analysis itself is a natural fit for our nanopass architecture. A `MachineDependencyAnalysis` pass walks the step function body in the PSG (Program Semantic Graph) and traces, for each output field, whether any path in the dependency graph reaches an input parameter.
+The analysis itself is a natural fit for our [nanopass architecture]({{< ref "/docs/internals/concepts/nanopass-navigation" >}}). A `MachineDependencyAnalysis` pass walks the step function body in the PSG (Program Semantic Graph) and traces, for each output field, whether any path in the dependency graph reaches an input parameter.
 
 The mechanics:
 

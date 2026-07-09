@@ -140,7 +140,7 @@ For .NET developers, this preserves the familiar mental model while enabling nat
 
 ## From Source to Silicon
 
-The Composer compiler implements a nanopass architecture: a series of small, focused transformation phases, each with explicit preconditions and postconditions. This structure enables rigorous reasoning about correctness at each stage.
+The Composer compiler implements a [nanopass architecture]({{< ref "/docs/internals/concepts/nanopass-navigation" >}}): a series of small, focused transformation phases, each with explicit preconditions and postconditions. This structure enables rigorous reasoning about correctness at each stage.
 
 ### Structural Construction and Type Correlation
 CCS like its predecessor provides both the syntax tree (AST) and typed tree. Baker correlates these into the Program Semantic Graph (PSG), where every node carries both structural context and resolved type information. This is the "compiler front end" that will see continuous refinement as the native architecture progresses.
@@ -258,7 +258,7 @@ let encrypt (key: byte[]<keyBytes>) (iv: byte[]<ivBytes>) (plaintext: byte[]) =
     AesGcm.encrypt key iv plaintext
 ```
 
-Farscape leverages Clef's meta-programming capabilities, the same statically resolved type parameters (SRTPs) that power CCS intrinsics, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
+Farscape leverages Clef's meta-programming capabilities, the same [statically resolved type parameters (SRTPs)](/docs/design/types/structural-polymorphism/) that power CCS intrinsics, to generate bindings that compile away to direct native calls. Units of measure catch parameter confusion at compile time. Memory ownership transfers cleanly between Clef and native code through BAREWire integration.
 
 This opens a path for .NET developers to access the broader native ecosystem without sacrificing safety. AI accelerator SDKs, post-quantum cryptography implementations, high-performance database drivers: all could become accessible through type-safe Clef APIs that perform identically to hand-written C bindings.
 

@@ -182,7 +182,7 @@ Notice what happened to the pipe operator. In the source, `Console.readln() |> g
 
 This desugaring happens during PSG construction, in a nanopass called `ReducePipeOperators`. By the time the zipper walks the graph, the pipe is gone. What remains is the semantic truth: `greet` is called with the result of `readln`.
 
-This is why nanopass architecture matters. Each transformation does one thing. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
+This is why [nanopass architecture](/docs/internals/concepts/nanopass-navigation/) matters. Each transformation does one thing. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
 
 ## Sample 4
 

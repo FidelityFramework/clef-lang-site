@@ -14,7 +14,7 @@ params:
 
 The `inline` keyword began life as a compiler hint in C, suggesting that a function might benefit from inline expansion. Over decades, it evolved into `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each incarnation reflects a different philosophy about who should make optimization decisions: the programmer or the compiler.
 
-For Clef developers working with the Fidelity Framework, `inline` serves dual masters. It's mandatory for Statically Resolved Type Parameters (SRTP), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
+For Clef developers working with the Fidelity Framework, `inline` serves dual masters. It's mandatory for [Statically Resolved Type Parameters (SRTP)](/docs/design/types/structural-polymorphism/), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
 
 The [F# documentation warns against this pattern](https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/functions/inline-functions):
 

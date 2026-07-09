@@ -5,7 +5,7 @@ description: "From fixed-point combinators to porous recurrent loops, the typed 
 date: 2026-03-23T00:00:00-04:00
 weight: 09
 authors: ["Houston Haynes"]
-tags: ["AI", "Architecture", "Innovation"]
+tags: ["AI", "Architecture", "Innovation", "machine-learning"]
 aliases:
   - /docs/design/categorical-foundations/typed-recurrence-categorical-control/
 params:

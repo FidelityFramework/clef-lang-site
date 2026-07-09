@@ -149,7 +149,7 @@ Everything else â€” socket operations, threading primitives, file system calls â
 
 ## The Compilation Pipeline
 
-Source-level dependency resolution integrates with Composer's nanopass compilation pipeline. The full process follows these steps:
+Source-level dependency resolution integrates with Composer's [nanopass compilation pipeline](/docs/internals/concepts/nanopass-navigation/). The full process follows these steps:
 
 1. **Resolve** dependencies declared in `.fidproj` using ClefPak
 2. **Discover** source files from resolved packages (clefpak.dev and local)

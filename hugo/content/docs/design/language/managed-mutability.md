@@ -81,7 +81,7 @@ Actual output: `"Hello, <garbage characters>"`
 
 The compiler worked. The binary ran. But somewhere between reading stdin and printing the greeting, we were handing off the wrong string. Not a crash. Not a type error. Just silent corruption that produced visually obvious garbage at runtime.
 
-In a nanopass compiler, bugs have addresses. When you trace execution through discrete transformation stages, you can pinpoint exactly which component mishandled the data. This one involved three components:
+In a [nanopass compiler](/docs/internals/concepts/nanopass-navigation/), bugs have addresses. When you trace execution through discrete transformation stages, you can pinpoint exactly which component mishandled the data. This one involved three components:
 
 - Console input reading
 - String interpolation

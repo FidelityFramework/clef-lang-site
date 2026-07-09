@@ -57,7 +57,7 @@ Several properties that the DTS paper establishes as design-time verification re
 
 Wadler's paper is explicitly an accessible reformulation of Reynolds' abstraction theorem. Reynolds proved in 1983 that types can be read as relations: a type denotes not just a set of values but a relation between different interpretations of the type. Polymorphic functions must preserve these relations. Wadler showed that this relational reading generates useful theorems for specific types.
 
-Reynolds also independently discovered continuations (as documented in his 1993 survey "The Discoveries of Continuations"), which provide the formal basis for Clef's DCont mechanism. The two contributions, abstraction (parametricity) and continuations (DCont), are the two formal pillars of the porous loop's typed interface:
+Reynolds also independently discovered continuations (as documented in his 1993 survey "The Discoveries of Continuations"), which provide the formal basis for Clef's DCont mechanism. The two contributions, abstraction (parametricity) and continuations (DCont), are the two formal pillars of the [porous loop's typed interface]({{< ref "/docs/design/categorical-foundations/structured-recurrence" >}}):
 
 DCont provides the suspension and resumption mechanism. In the design we are building toward, the recurrent model suspends mid-computation, passes its state as a delimited continuation to a domain actor, and resumes with the response.
 

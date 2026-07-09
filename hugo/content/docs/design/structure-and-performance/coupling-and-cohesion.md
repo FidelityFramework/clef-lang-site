@@ -4,7 +4,7 @@ linkTitle: "Coupling & Cohesion"
 description: "Using functional programming structure to guide efficient compilation"
 date: 2025-07-09T00:00:00+00:00
 authors: ["Houston Haynes"]
-tags: ["Design", "Architecture", "Innovation"]
+tags: ["Design", "Architecture", "Innovation", "native-compilation"]
 weight: 20
 params:
   originally_published: 2025-07-09

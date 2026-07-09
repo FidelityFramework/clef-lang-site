@@ -37,7 +37,7 @@ Something about the layering kept drawing our attention.
 
 ## The Realization: Types ARE the Language
 
-In late 2025, while exploring reference implementations for the nanopass architecture, we spent time with [the Scheme-based nanopass framework](https://github.com/nanopass/nanopass-framework-scheme) and its `define-language` form. The pattern stood out: in nanopass, you don't import a library of types. You define the language's types as part of the compiler itself.
+In late 2025, while exploring reference implementations for the [nanopass architecture](/docs/internals/concepts/nanopass-navigation/), we spent time with [the Scheme-based nanopass framework](https://github.com/nanopass/nanopass-framework-scheme) and its `define-language` form. The pattern stood out: in nanopass, you don't import a library of types. You define the language's types as part of the compiler itself.
 
 ```scheme
 (define-language L0
@@ -275,7 +275,7 @@ let (|FatPointer|_|) (ty: NativeType) =
 
 **SRTP for Compile-Time Polymorphism**
 
-Statically resolved type parameters drive generic operations without runtime cost:
+[Statically resolved type parameters](/docs/design/types/structural-polymorphism/) drive generic operations without runtime cost:
 
 ```fsharp
 let inline add (x: ^T) (y: ^T) : ^T

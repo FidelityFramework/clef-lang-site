@@ -6,7 +6,7 @@ description: "How Clef resolves ad-hoc polymorphism from the structure of types 
 date: 2025-09-05T10:00:00-04:00
 authors:
   - SpeakEZ
-tags: ["Analysis", "Design", "Innovation"]
+tags: ["Analysis", "Design", "Innovation", "Type Systems"]
 params:
   originally_published: 2025-09-05
   original_url: "https://speakez.tech/blog/traits-versus-statically-resolved-type-parameters/"

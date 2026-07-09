@@ -43,7 +43,7 @@ The code appears straightforward, but it exercises the full range of Clef's expr
 
 ## The Nanopass Pipeline Architecture
 
-Composer's compilation proceeds through distinct phases, each building on the previous through small, single-purpose transformations inspired by the nanopass framework pioneered at Indiana University:
+Composer's compilation proceeds through distinct phases, each building on the previous through [small, single-purpose transformations](/docs/internals/concepts/nanopass-navigation/) inspired by the nanopass framework pioneered at Indiana University:
 
 ```
 Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → Native Binary
@@ -119,7 +119,7 @@ The PSG construction phase includes a crucial type integration step. After build
 [TYPE INTEGRATION] CANONICAL correlation complete: 5844/5898 nodes updated with type information
 ```
 
-This step captures the results of FCS's sophisticated constraint solving, including SRTP resolution. When FCS determines that a generic parameter `^T` in `readInto` is actually `StackBuffer<byte>`, that resolved type is stored in the PSG node.
+This step captures the results of FCS's sophisticated constraint solving, including [SRTP resolution](/docs/design/types/structural-polymorphism/). When FCS determines that a generic parameter `^T` in `readInto` is actually `StackBuffer<byte>`, that resolved type is stored in the PSG node.
 
 What makes this architecture forward-looking is the bidirectional zipper implementation. The zipper provides context-aware navigation through the PSG, enabling sophisticated transformations while preserving graph invariants:
 

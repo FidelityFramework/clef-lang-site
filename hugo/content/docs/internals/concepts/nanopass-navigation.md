@@ -4,7 +4,7 @@ linkTitle: "Nanopass Navigation"
 description: "How Single-Purpose Transformations Enable Multi-Stack Compilation"
 date: 2026-01-30T00:00:00+00:00
 authors: ["Houston Haynes"]
-tags: ["Architecture", "Design", "Innovation"]
+tags: ["Architecture", "Design", "Innovation", "native-compilation"]
 params:
   originally_published: 2026-01-30
   original_url: "https://speakez.tech/blog/nanopass-navigation/"

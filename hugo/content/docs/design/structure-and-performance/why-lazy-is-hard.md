@@ -242,7 +242,7 @@ Much of the implementation challenge lies not in the conceptual model but in the
 
 Each step produces an SSA value. The final insert operation produces the lazy struct that subsequent code references. This chain must be computed before code generation begins so that dependent operations know which SSA identifier to reference.
 
-The Fidelity approach computes all SSA assignments in a dedicated nanopass. Lazy expressions receive SSA slots for each construction step. Thunk bodies receive SSA slots for extracting captures from the struct pointer. Force operations receive SSA slots for the result value. Everything is determined before the zipper begins its traversal.
+The Fidelity approach computes all SSA assignments in a dedicated [nanopass](/docs/internals/concepts/nanopass-navigation/). Lazy expressions receive SSA slots for each construction step. Thunk bodies receive SSA slots for extracting captures from the struct pointer. Force operations receive SSA slots for the result value. Everything is determined before the zipper begins its traversal.
 
 This is not glamorous work. It is bookkeeping at scale. But it is the bookkeeping that enables clean code generation: the witness layer observes pre-computed coeffects and emits operations without runtime decisions.
 

@@ -55,7 +55,7 @@ Before Baker even wakes up, our **Elaboration** nanopasses have already run. The
 
 ## The Nanopass Infrastructure
 
-One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs and while it serves its purpose it also means that "piercing the veil" is very difficult. Instead, we use a **nanopass infrastructure**, which is more stratified, more testable and easier to reason through the pipeline. This approach allows us to write focused transformations that are direct to reason about and much easier to test.
+One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs and while it serves its purpose it also means that "piercing the veil" is very difficult. Instead, we use a [**nanopass infrastructure**](/docs/internals/concepts/nanopass-navigation/), which is more stratified, more testable and easier to reason through the pipeline. This approach allows us to write focused transformations that are direct to reason about and much easier to test.
 
 Baker executes within the PSGSaturation stage using a **Fan-Out / Fold-In** pattern:
 

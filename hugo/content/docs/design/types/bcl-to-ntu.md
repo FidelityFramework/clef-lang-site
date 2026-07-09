@@ -561,7 +561,7 @@ This has practical consequences. Code that relies on boxing or dynamic type test
 
 ## Statically Resolved Type Parameters
 
-Clef supports Statically Resolved Type Parameters (SRTPs) for ad-hoc polymorphism:
+Clef supports Statically Resolved Type Parameters (SRTPs) for [ad-hoc polymorphism](/docs/design/types/structural-polymorphism/):
 
 ```fsharp
 let inline add (x: ^T) (y: ^T) : ^T =

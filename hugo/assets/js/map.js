@@ -182,7 +182,9 @@
         { selector: "node[?iso]", style: { "opacity": 0.25 } },
         { selector: 'edge[type="href"]', style: { "width": 0.4, "line-color": dark ? "#484f58" : "#d0d7de", "curve-style": "haystack", "opacity": 0.45 } },
         { selector: 'edge[type="cites"]', style: { "width": 0.8, "line-color": "#e3b341", "curve-style": "haystack", "opacity": 0.55 } },
-        { selector: 'edge[type="tag"]', style: { "width": 0.3, "line-color": "#bc8cff", "line-style": "dashed", "curve-style": "haystack", "opacity": 0.2 } },
+        // Theme edges (shared specific tag). Hidden by default — the "Themes" toggle reveals them,
+        // at an opacity readable enough to show clustering rather than the near-invisible 0.2 wash.
+        { selector: 'edge[type="tag"]', style: { "width": 0.5, "line-color": "#bc8cff", "line-style": "dashed", "curve-style": "haystack", "opacity": 0.35, "display": "none" } },
         { selector: "node:selected", style: { "border-width": 2.5, "border-color": dark ? "#e6edf3" : "#1f2328" } },
         // Cascade (later selectors win): faded states first, then the lit frozen set, then the
         // brightest live-hover on top.

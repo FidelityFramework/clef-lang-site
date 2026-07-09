@@ -4,7 +4,7 @@ linkTitle: "Referential Transparency"
 description: "Balancing Interaction Nets and Delimited Continuations in the Composer PHG"
 date: 2025-08-05
 authors: ["Houston Haynes"]
-tags: ["Architecture", "Design", "Innovation"]
+tags: ["Architecture", "Design", "Innovation", "Concurrency"]
 params:
   originally_published: 2025-08-05
   original_url: "https://speakez.tech/blog/seeking-referential-transparency/"
