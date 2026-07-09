@@ -12,11 +12,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-Software verification has always forced a cruel choice: accept runtime overhead for safety checks, or trust that your optimizing compiler won't break critical invariants. Traditional compilers treat proofs as obstacles to optimization, while proof assistants have a reputation (earned or not) that they generate code too conservative for production use. But what if verification and optimization weren't opposing forces but complementary dimensions of the same compilation process? The Fidelity Framework's hypergraph architecture makes this vision real by treating proof obligations as first-class hyperedges that guide, not hinder, aggressive optimization.
+Software verification has long forced a choice: accept runtime overhead for safety checks, or trust that an optimizing compiler will not break a critical invariant. Traditional compilers treat proofs as obstacles to optimization, and proof assistants carry a reputation, earned or not, for generating code too conservative for production. The Fidelity Framework's hypergraph architecture is designed to treat this seeming dichotomy as one process, carrying proof obligations as first-class hyperedges that guide optimization rather than presenting an adverse burden.
 
 What's more, there's a feed-forward effect to this approach which allows developers to take advantage of verification "for free" along with application development while keeping the process close to a "standard" [Clef language](https://clef-lang.com) design-time experience. The process and tooling will be fully opt-in, and much of the instrumentation is designed with low-overhead automation built into the compiler internals. So this keeps formalism restrained and approachable, and by the same design developers can leverage the advantages of proofs without becoming experts in them.
 
-This isn't about some false binary choice of safety versus speed. It's about recognizing that proofs contain valuable information that can enable MORE aggressive optimization. When your compiler understands what properties must be preserved, it can transform everything else with confidence. And the proofs *themselves* can point the way to certain classes of optimization. The hypergraph makes this understanding explicit and actionable.
+Safety and speed are not a binary choice here. Proofs carry information that enables more aggressive optimization: when the compiler knows which properties must be preserved, it can transform everything else with confidence, and the proofs themselves point the way to certain classes of optimization. The hypergraph makes that information explicit and actionable.
 
 ## The Dimensional Nature of Verified Computation
 
@@ -44,7 +44,7 @@ In the hypergraph, proof obligations aren't annotations attached to code; they'r
 
 ## Proofs as Optimization Enablers
 
-Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must choose between preserving every check (safe but slow) or eliminating them through fragile heuristics (fast but risky). The hypergraph enables a third way: proof-guided ***optimization that is both safe and fast***.
+The mechanisms in this section describe the designed pipeline: what the hypergraph representation makes possible and how Composer is built to use it. Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must choose between preserving every check (safe but slow) or eliminating them through fragile heuristics (fast but risky). The hypergraph opens a third way: proof-guided ***optimization that is both safe and fast***.
 
 When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler gains crucial information. Past the bare fact that a check exists, it knows WHY it exists, WHAT it protects, and WHEN it can be safely transformed. This knowledge enables sophisticated optimizations:
 
@@ -53,11 +53,11 @@ When a bounds check exists as a proof hyperedge connecting an array and its acce
 - **Check elimination**: Remove checks entirely when other proof hyperedges already establish safety
 - **Check specialization**: Generate different code paths for proven-safe and potentially-unsafe cases
 
-🔑 Proofs aren't overhead to be minimized; they're information to be cultivated. While the proof elements of Fidelity are opt-in, we expect that the "heat shielding" it provides will see gradual adoption for domains where proof-adjacent coding was considered too burdensome for the benefit. This approach could dramatically reduce the overhead of test-based validation, and we expect as that benefit becomes more known then proof-aware compilation will become an increasingly "standard practice" in the framework.
+🔑 Proofs aren't overhead to be minimized; they're information to be cultivated. While the proof elements of Fidelity are opt-in, we expect that the "heat shielding" it provides will see gradual adoption for domains where proof-adjacent coding was considered too burdensome against the benefit. This approach could reduce the overhead of test-based validation, and we expect that as the benefit becomes clearer, proof-aware compilation will settle into broader acceptance.
 
 ## MISRA-Style Safety as Hyperedge Libraries
 
-MISRA-C and similar safety standards define patterns that prevent common errors. In the hypergraph representation, these patterns become reusable proof hyperedges that can be instantiated across your codebase:
+MISRA-C and similar safety standards define patterns that prevent common errors. In the hypergraph representation, these patterns become reusable proof hyperedges instantiated across a codebase:
 
 ```mermaid
 graph LR
@@ -85,7 +85,19 @@ graph LR
 
 ```
 
-These rule hyperedges don't just check compliance; they carry optimization information. A pointer arithmetic rule knows that certain transformations preserve safety while others don't. A memory allocation rule understands ownership patterns that enable aggressive deallocation strategies. The compiler can use this knowledge to optimize confidently within proven boundaries.
+Beyond checking compliance, these rule hyperedges carry optimization information. A pointer arithmetic rule marks which transformations preserve safety and which do not. A memory allocation rule carries the ownership pattern that licenses a deallocation strategy. Composer is designed to optimize within those marked boundaries rather than reason about safety from scratch at each site.
+
+## Why This Class of Bug Cannot Form
+
+A bounds-check hyperedge guards some failures at runtime. Others never arise, because the state they depend on cannot be represented, and a proof carries nothing for those: there is nothing left to prove.
+
+Buffer overruns of the classic kind are in the second category. The failure needs a length that can go out of range and a boundary that silently reinterprets it, and Clef's range-derived representation removes both. A length into a one-kilobyte buffer occupies the interval `[0, KSIZE]`. That interval is non-negative, so the value's representation is unsigned by construction, chosen from the range and not from a type name a caller could substitute. There is no signed form of the length for a negative value to be smuggled through, because a negative value is not something the type can hold. The representation is selected once and carried to the boundary as a fact the later stages still hold, so there is no second, different type at the far end for the value to be reinterpreted against. The reinterpreting boundary is not a boundary this pipeline crosses.
+
+This is a Tier 1 property in the [four-tier model](/docs/internals/verification/decidability-sweet-spot/): it follows from the range structure the abelian fragment already carries, decided without an annotation and without a solver query. The unsafe state is not caught and rejected at runtime; it is absent from the space of programs the type discipline can express.
+
+That absence pays twice. A structurally impossible failure needs no guard, so the runtime cost of the defensive check is not deferred or optimized away but never incurred. And the defensive code itself, the clamp, the sign test, the length guard a careful engineer writes and every later contributor has to preserve, leaves the source. Those lines are an adverse burden of their own: they swell a function until the algorithm it expresses is hard to read under the armor around it, and they are the very lines a bug can hide inside. When the bad state cannot form, the developer writes the solution and not the solution wrapped in its vigilance, and the syntax carries the intent instead of the intent plus its defenses.
+
+A real instance is worth more than the abstract statement. [A Lesson in Memory Safety](/blog/a-lesson-in-memory-safety/) walks a resolved FreeBSD kernel bug of exactly this shape, a length that clamps correctly and still overflows because a signed value is reinterpreted as unsigned at a boundary. The check was there and it was correct; the bug lived inside the defensive code, which is why removing the need for that code is worth more than trusting it. The post traces why the same routine has nowhere to fail under a range-derived representation.
 
 ## The Three-Layer Optimization Strategy
 
@@ -93,7 +105,7 @@ The hypergraph architecture enables a sophisticated three-layer optimization str
 
 ### Layer 1: Hypergraph Optimization
 
-At the hypergraph level, the compiler has complete visibility into both program structure and the in-scope proof obligations. This is where the most aggressive optimizations occur:
+At the hypergraph level, the compiler sees both program structure and the in-scope proof obligations together. This is where the most aggressive optimizations occur:
 
 - **Proof-guided fusion**: Combine operations when their proof hyperedges are compatible
 - **Algebraic simplification**: Apply mathematical laws that proof hyperedges validate
@@ -149,7 +161,7 @@ LLVM isn't asked to preserve high-level properties it can't understand. Instead,
 
 ## Composition and Deduplication of Proofs
 
-When the same verified library function is called multiple times, the hypergraph naturally deduplicates and composes proofs. Instead of carrying redundant proof obligations, the hypergraph creates a single canonical proof hyperedge with multiple instantiation points:
+When the same verified library function is called multiple times, the hypergraph deduplicates and composes the proofs by construction. Instead of carrying redundant proof obligations, the hypergraph creates a single canonical proof hyperedge with multiple instantiation points:
 
 ```mermaid
 graph TD
@@ -187,18 +199,18 @@ graph TD
 
 ```
 
-This deduplication isn't just a memory optimization; it enables the compiler to reason about patterns across multiple call sites. When it sees three sequential array accesses with constant indices, it can generate a single range check instead of three individual checks, guided by the unified proof hyperedge.
+This deduplication saves memory, and it also lets the compiler reason about patterns across call sites. Three sequential array accesses with constant indices become a single range check instead of three, guided by the unified proof hyperedge.
 
 ## The Zipper as Verification Navigator
 
-The bidirectional zipper that traverses the hypergraph becomes a powerful tool for maintaining proofs during transformation. As it navigates through the graph, it carries both the current focus and the proof context:
+The bidirectional zipper that traverses the hypergraph maintains proofs during transformation. As it navigates the graph, it carries both the current focus and the proof context:
 
 - **Forward navigation** accumulates proof obligations that must be satisfied
 - **Backward navigation** propagates postconditions that have been established
 - **Lateral movement** discovers related proofs that can be composed
 - **Context preservation** ensures transformations maintain required properties
 
-This navigation pattern enables incremental verification where each transformation step is validated locally without requiring whole-program analysis. The zipper essentially becomes a mobile proof assistant that guides optimization decisions.
+This navigation pattern supports incremental verification, where each transformation step is checked locally without whole-program analysis. The zipper carries the proof context as it moves, so an optimization decision is made against the obligations in scope at that focus.
 
 ## Real-World Impact: Aerospace and Automotive
 
@@ -206,35 +218,23 @@ In safety-critical domains like aerospace and automotive, formal verification is
 
 The hypergraph approach eliminates this false choice. The same codebase serves both purposes:
 
-- **Development**: Full verification with detailed proof checking
+- **Development**: the carried safety properties checked at design time as the developer works
 - **Testing**: Instrumented builds with proof validation at boundaries
 - **Production**: Optimized binaries with proofs compiled away
 - **Certification**: Proof artifacts that demonstrate compliance
 
-A flight control system might have thousands of safety properties that must be maintained. In the hypergraph, these become a network of proof hyperedges that guide compilation. The resulting binary is both formally verified AND highly optimized, achieving performance comparable to hand-tuned assembly while maintaining mathematical proof of correctness.
+A flight control system carries many safety properties that must be maintained. In the hypergraph, these become a network of proof hyperedges that guide compilation. The resulting binary would be optimized while carrying the safety properties the proof hyperedges hold, the bounds, allocation, and access invariants checked at design time rather than a full functional-correctness proof.
 
 ## Beyond Safety: Proofs for Performance
 
-Proof hyperedges don't just ensure safety; they can guarantee performance properties:
+The same proof hyperedges that establish safety can also carry performance properties:
 
 - **Worst-case execution time**: Proofs that loops terminate within bounded iterations
 - **Memory consumption**: Proofs that allocation never exceeds specified limits
 - **Cache behavior**: Proofs that access patterns maintain locality
 - **Parallelism**: Proofs that operations are genuinely independent
 
-These performance proofs enable optimizations that would otherwise be too risky. If you can prove a loop executes exactly N times, you can fully unroll it. If you can prove memory accesses are cache-aligned, you can use SIMD instructions confidently. If you can prove operations are independent, you can parallelize aggressively.
-
-## The Competitive Advantage
-
-Organizations adopting proof-aware compilation through hypergraphs gain multiple advantages:
-
-**Development Speed**: Developers write normal Clef code with lightweight annotations. The hypergraph automatically derives and maintains proof obligations. No need for separate verification languages or tools.
-
-**Runtime Performance**: Proof-guided optimization often exceeds traditional compilation because the compiler has more information to work with. Knowing what must be preserved allows everything else to be transformed aggressively.
-
-**Certification Efficiency**: Proof artifacts are generated automatically during compilation. Compliance with safety standards becomes a build artifact, not a separate process.
-
-**Maintenance Confidence**: Changes to verified code automatically re-verify affected proofs. The hypergraph tracks dependencies, ensuring modifications don't silently break invariants.
+These performance proofs enable optimizations that would otherwise be too risky. A loop proven to execute exactly N times can be fully unrolled. Memory accesses proven cache-aligned admit SIMD instructions. Operations proven independent can be parallelized aggressively.
 
 ## Patent-Pending Innovation
 
@@ -242,12 +242,4 @@ SpeakEZ has a patent pending for this innovation: "System and Method for Verific
 
 As computing evolves toward greater specialization of hardware, the challenge of correctly interfacing with these diverse architectures becomes increasingly critical. SpeakEZ's innovation addresses this challenge by providing a formal verification framework that adapts to the specific characteristics of different hardware platforms while maintaining strong correctness guarantees.
 
-The patent-pending technology enables a new approach to hardware/software co-design, where verification properties can be maintained across the entire compilation pipeline despite aggressive optimizations targeting specialized hardware. This becomes especially important as heterogeneous computing environments with CPUs, GPUs, FPGAs, and domain-specific accelerators become the norm rather than the exception.
-
-## The Future of Verified Systems
-
-The hypergraph approach to proof-aware compilation represents a fundamental shift in how we think about program correctness. Instead of viewing proofs as constraints that limit optimization, we recognize them as information that enables it. Instead of separating verification from compilation, we unify them in a single process that produces both evidence of correctness and efficient code.
-
-This isn't just an incremental improvement over existing verification approaches; it's a new paradigm where safety and speed reinforce each other. The dimensional nature of hypergraphs naturally represents the multi-faceted nature of modern software requirements: functional correctness, memory safety, performance guarantees, and resource bounds all become hyperedges in a unified compilation framework.
-
-As software becomes increasingly critical to safety and infrastructure, the ability to produce verified yet efficient code becomes a competitive necessity. The organizations that master proof-aware compilation won't just ship safer software; they'll ship it faster, run it more efficiently, and maintain it with greater confidence. The hypergraph isn't just a data structure; it's the foundation for a future where every critical system runs verified code without sacrificing performance.
+The patent-pending technology addresses hardware/software co-design, where verification properties are carried across the compilation pipeline despite aggressive optimization targeting specialized hardware. That matters more as heterogeneous environments with CPUs, GPUs, FPGAs, and domain-specific accelerators become ordinary rather than exceptional.
