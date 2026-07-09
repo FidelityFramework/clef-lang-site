@@ -13,12 +13,6 @@ params:
 
 ---
 
-## Update: 2026
-
-This post was written while formal verification in the framework was still framed as an F\*-style sidecar, with proof obligations hand-annotated on each wrapper. F\* was the natural starting point: it descends from F#, the lineage Clef carries forward, so it was the first verification tradition this work reached for. The design has since consolidated into a [four-tier model](/blog/proofs-from-dimensional-types/), and two things changed. First, the kindred influence turned out to be [Dafny](https://dafny.org/) as much as F\*, a decidability-first, SMT-backed tradition that keeps a proof assistant out of the common path, which is the discipline the tiers below settled into, developed in [Between Rocq & A Hard Case](/blog/between-a-rocq-and-a-hard-case/). Second, most of what a shadow wrapper guarantees, the memory layout that crosses the boundary, the null and bounds discipline, the escape class of the buffer, now falls into the lower tiers and is *derived* from the structure the wrapper already has, with no proof annotations written by hand. The dimensional and escape facts are free at Tier 1; the integer bounds are a Tier 2 obligation the compiler infers from the wrapper's own branches and a solver discharges. Hand-written annotation reappears only for the genuinely higher-tier properties, a functional-correctness or relational guarantee that has to be *established* rather than read off the structure. The examples below are preserved as written; read the hand-annotated versions as the period detail, and the tier framing here as where the design now sits.
-
----
-
 The cybersecurity landscape has shifted dramatically in recent years, with memory safety vulnerabilities accounting for approximately 70% of critical security issues in systems software. This reality has prompted governments and industries to mandate transitions to memory-safe languages for critical infrastructure. Yet the economics of wholesale rewrites are daunting: decades of refined C and C++ code represent trillions of dollars in intellectual property and domain expertise. What if, instead of rewriting everything, we could wrap existing code in provably safe interfaces?
 
 ## The Architectural Vision

@@ -12,10 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-## Update: 2026
-
-> This is the framework's founding primer, written when the surface language was still framed as "F# native" and verification as an F\* sidecar. Both have since matured: the present language is Clef, which carries its F# heritage forward, and the verification story consolidated into a [tiered model](/docs/design/categorical-foundations/the-compilation-sheaf/) we arrived at through our own work. The architecture this piece lays out, type-preserving compilation through CCS to MLIR with memory layout and the decidable proof tiers carried through the middle-end, is the design we have kept building toward. We have updated the language and verification framing below; the original goals stand.
-
 The computing world has fragmented into specialized ecosystems. Embedded systems demand byte-level control, mobile platforms enforce strict resource constraints, and server applications require elasticity and parallelism. Traditionally, these environments have forced developers to choose between conflicting approaches: use a high-level language with garbage collection and accept the performance overhead, or drop down to systems programming with manual memory management and lose expressiveness. The targets themselves have grown more capable. Mobile devices now ship multi-processor architectures with multi-threading the norm. The near future is in being able to directly address heterogeneous architectures for a given device or solution.
 
 ## Beyond Runtime Boundaries

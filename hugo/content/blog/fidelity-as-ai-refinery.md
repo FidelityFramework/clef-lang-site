@@ -12,10 +12,6 @@ params:
   migration_date: 2026-02-15
 ---
 
-## Update: 2026
-
-> We have updated our priors since this 2023 piece. The verification direction it sketches as a "bridge to F\*" has since resolved into a tiered model with typed [mode shifts](/docs/internals/verification/mode-shifts/) that we arrived at through our own type-theoretic work; we now read F\* and [Dafny](https://dafny.org/) as constituency in the same problem space rather than antecedents. The framework's present language is Clef, which carries its F# heritage forward. The body below reflects these corrections; the architectural thesis it argues has held.
-
 The AI industry is shifting in how computational resources are allocated and optimized. While the last decade saw rapid advances through massive pre-training efforts on repurposed GPUs, we're now entering an era where **test-time compute (TTC)** and custom accelerators are emerging as the next stage of AI advancement. As highlighted in recent industry developments, DeepSeek AI lab disrupted the market with a model that delivers high performance at a fraction of competitors' costs, signaling two significant shifts: smaller labs producing state-of-the-art models and test-time compute becoming the next driver of AI progress.
 
 ## From Training to Test-Time Compute

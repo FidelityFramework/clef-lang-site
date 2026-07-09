@@ -13,8 +13,6 @@ params:
 
 Embedded development has long treated hardware control and high-level type safety as competing goals, keeping it at a distance from the abstractions common in modern software engineering. The Fidelity Framework targets hardware type safety at zero runtime cost through hardware/software co-design, so that expressiveness and efficiency do not have to be traded against each other.
 
-> **December 2025 Update**: As part of our ongoing effort to keep the SpeakEZ blog current with laboratory progress, this article has been revised to reflect architectural evolution in the Fidelity Framework. The core vision remains unchanged: Clef on bare metal with zero runtime cost. This article provides the foundation, and the companion article [Clef on Metal Revisited](https://speakez.tech/blog/fsharp-on-metal-revisited/) presents the next progression in this evolution.
-
 ## Pre-Optimized Hardware Mapping
 
 Traditional embedded development approaches hardware access as a runtime concern, with memory layouts and register mappings resolved during execution. Even modern "zero-cost abstractions" often carry hidden overhead through function calls, runtime checks, or suboptimal memory access patterns. The Fidelity Framework reimagines this approach through pre-optimized hardware mapping: capturing hardware semantics at the highest level of the compilation pipeline and carrying them through to native code generation.
