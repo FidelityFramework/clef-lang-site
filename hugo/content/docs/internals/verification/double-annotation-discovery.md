@@ -135,4 +135,4 @@ The saturated PSG is intended to become the single source of truth for verificat
 
 The Clef approach diverges from F#'s Units of Measure in a critical way: F# erases dimensional annotations during IL generation, so a `float<meters>` becomes a `float64` in the emitted CIL. The dimensions exist only for the type checker and vanish before code generation. DTS is designed to preserve dimensional annotations through every stage of compilation. Dimensions would survive from source through the PSG, into MLIR as custom `clef.dim` attributes, through dialect lowering where they guide representation selection, and finally into debug metadata in the emitted binary.
 
-Dimensional preservation through compilation enables downstream stages to make representation decisions based on the full semantic context. The [next article](../decidability-sweet-spot) explores the algebraic foundation in depth, and why DTS occupies a different formal category from dependent types.
+Dimensional preservation through compilation enables downstream stages to make representation decisions based on the full semantic context.
