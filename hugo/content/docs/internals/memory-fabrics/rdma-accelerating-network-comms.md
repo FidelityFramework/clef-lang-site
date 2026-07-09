@@ -181,7 +181,7 @@ let distributeData (channel: DistributedChannel<'T>) (data: 'T list) =
     |> Async.Ignore
 ```
 
-This pattern is particularly valuable for distributed machine learning, allowing model parameters and gradients to be shared efficiently across nodes.
+This pattern fits distributed machine learning, where model parameters and gradients are shared across nodes and the sharing cost dominates.
 
 ## Integration with Heterogeneous Computing Architectures
 
@@ -365,7 +365,7 @@ let createDistributedSupervisor (nodes: NetworkEndpoint list) (strategy: Supervi
     DistributedSupervisor.create localSupervisor supervisors
 ```
 
-These capabilities would be particularly valuable for distributed AI workloads, allowing computation to continue even when individual nodes fail. The combination of BAREWire's memory model, RDMA's zero-copy network operations, and the Olivier model's supervision hierarchy would create a foundation for building resilient distributed systems that could maintain both high performance and fault tolerance.
+For distributed AI workloads, these capabilities would let computation continue when individual nodes fail. The combination of BAREWire's memory model, RDMA's zero-copy network operations, and the Olivier model's supervision hierarchy would create a foundation for building resilient distributed systems that could maintain both high performance and fault tolerance.
 
 ## Prospero: Orchestrating Distributed Systems with RDMA
 
@@ -405,7 +405,7 @@ RDMA operations bypass the operating system kernel, potentially reducing communi
 
 RDMA technologies can potentially utilize nearly the full bandwidth of high-speed networks, a capability that would be essential for distributed AI workloads where large tensors must be transferred between nodes:
 
-These performance benefits would be particularly valuable for distributed AI workloads, where communication overhead often becomes the limiting factor in scaling beyond a single machine. By minimizing this overhead through zero-copy operations and RDMA, Fidelity could potentially achieve near-linear scaling for many workloads.
+In distributed AI workloads, communication overhead often becomes the limiting factor in scaling beyond a single machine, which is where these performance benefits would tell. By minimizing this overhead through zero-copy operations and RDMA, Fidelity could potentially achieve near-linear scaling for many workloads.
 
 ## Practical RDMA Implementation for AI Workloads
 
@@ -466,7 +466,7 @@ Key benefits of this planned integration would include:
 4. **Unified Programming Model**: Consistent abstractions from single-process to multi-system deployments
 5. **Adaptable Architecture**: Support for diverse hardware architectures through principled adaptation layers
 
-Our approach would emphasize adaptability to different hardware architectures, recognizing that modern heterogeneous computing environments include specialized AI accelerators, traditional CPU clusters, and emerging technologies like CXL-enabled systems. Rather than assuming a one-size-fits-all communication model, Fidelity would provide appropriate abstraction layers that map to each architecture's specific capabilities and requirements.
+Our approach would emphasize adaptability to different hardware architectures, recognizing that modern heterogeneous computing environments include specialized AI accelerators, traditional CPU clusters, and emerging technologies like CXL-enabled systems. Each of those has its own communication model, so Fidelity would provide abstraction layers that map to each architecture's specific capabilities and requirements.
 
 This flexible approach would enable Fidelity to support a wide range of hardware configurations:
 
