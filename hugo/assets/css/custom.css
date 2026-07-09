@@ -887,8 +887,53 @@ pre.mermaid svg {
   font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; }
 .clef-map-help-x:hover { color: #e6edf3; }
 .clef-map-stats { font-size: 0.7rem; color: #9ca3af; margin-left: 0.5rem; }
-#clef-map-cy { flex: 1; min-height: 0; background: #fafafa; }
+#clef-map-cy {
+  flex: 1;
+  min-height: 0;
+  background: #fafafa;
+  /* Resting state. The first-open reveal transitions INTO this from .clef-map-hydrate below:
+     a half-second fade-in with a short upward slide. Only the first open per session arms the
+     class, so returning to the Atlas shows the graph already in place. */
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
 :is(.dark) #clef-map-cy { background: #0d1117; }
+/* Armed (first open, pre-reveal): graph hidden and nudged down; dropping the class runs the
+   transition above, so it fades up into place after the graph has hydrated. */
+#clef-map-cy.clef-map-hydrate {
+  opacity: 0;
+  transform: translateY(12px);
+}
+@media (prefers-reduced-motion: reduce) {
+  #clef-map-cy { transition: none; }
+  #clef-map-cy.clef-map-hydrate { opacity: 1; transform: none; }
+}
+/* Spinner shown while the graph query runs, cleared as the graph becomes visible. Lives as a
+   sibling overlay (not inside #clef-map-cy) so it stays visible while the graph container is
+   still faded out during the first-open reveal. */
+.clef-map-spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+.clef-map-spinner[hidden] { display: none; }
+.clef-map-spinner-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(88, 166, 255, 0.25);
+  border-top-color: #58a6ff;
+  animation: clef-map-spin 0.7s linear infinite;
+}
+@keyframes clef-map-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .clef-map-spinner-ring { animation-duration: 1.4s; }
+}
 .clef-map-tip {
   position: absolute; z-index: 30; max-width: 300px; display: none; pointer-events: none;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.6rem 0.75rem;

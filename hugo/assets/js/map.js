@@ -63,6 +63,17 @@
   var ANCHOR_KEY = "clefAtlasAnchor";
   var anchorId = loadAnchor();
 
+  // Whether the Atlas has been revealed once this session. The fade-up reveal plays only on the
+  // FIRST open per session; after that the graph is simply present on open (no reveal animation),
+  // so a returning user does not re-orient to the same node positions every time.
+  var SEEN_KEY = "clefAtlasSeen";
+  function hasBeenSeen() {
+    try { return sessionStorage.getItem(SEEN_KEY) === "1"; } catch (e) { return false; }
+  }
+  function markSeen() {
+    try { sessionStorage.setItem(SEEN_KEY, "1"); } catch (e) {}
+  }
+
   function loadState() {
     try {
       var raw = sessionStorage.getItem(FROZEN_KEY);
@@ -109,7 +120,10 @@
     t.style.left = (x + 16) + "px"; t.style.top = (y + 16) + "px";
   }
 
-  function buildLayout(name, indeg) {
+  // animate is opt-in per call: the INITIAL render places nodes instantly (no corner-to-ring
+  // flight — the reveal is a CSS fade-up on the container instead), but a user-triggered layout
+  // TOGGLE (Concentric↔Grouped) animates so the rearrange reads as a deliberate change.
+  function buildLayout(name, indeg, animate) {
     if (name === "grouped") {
       var ord = {
         preprint: 900, external: 800,
@@ -117,14 +131,14 @@
         "docs-tooling": 400, "docs-internals": 300, "docs-design": 200, blog: 100,
       };
       return { name: "concentric", concentric: function (n) { return ord[bandOf(n.data())] + (10 - Math.min(9, indeg[n.data("id")] || 0)); },
-               levelWidth: function () { return 3; }, minNodeSpacing: 9, spacingFactor: 1.0, animate: true, animationDuration: 500 };
+               levelWidth: function () { return 3; }, minNodeSpacing: 9, spacingFactor: 1.0, animate: !!animate, animationDuration: 500 };
     }
     // 9 bands, preprint(1)…blog(9). Spread the concentric values widely (×10) and force a
     // small levelWidth so each band gets its OWN ring — at gap-of-1 Cytoscape was bucketing
     // adjacent crowded docs tiers (design 66 + internals 35) into one ring, collapsing the
     // three docs tiers into two. Higher value = innermost, so invert.
     return { name: "concentric", concentric: function (n) { return (10 - LEVEL[bandOf(n.data())]) * 10; },
-             levelWidth: function () { return 5; }, minNodeSpacing: 10, spacingFactor: 0.9, animate: true, animationDuration: 500 };
+             levelWidth: function () { return 5; }, minNodeSpacing: 10, spacingFactor: 0.9, animate: !!animate, animationDuration: 500 };
   }
 
   function render(g) {
@@ -163,7 +177,7 @@
         // Live hover: brightest, layered on top of whatever resting state exists.
         { selector: ".hi", style: { "opacity": 0.95, "width": 1.4, "line-color": dark ? "#e6edf3" : "#1f2328" } }
       ],
-      layout: buildLayout("concentric", indeg)
+      layout: buildLayout("concentric", indeg, false)
     });
 
     // ── Freeze: the frozen set becomes the working sub-graph ──────────────────────────────
@@ -283,7 +297,7 @@
       b.onclick = function () {
         document.querySelectorAll("#clef-map-modal [data-map-layout]").forEach(function (x) { x.classList.remove("active"); });
         b.classList.add("active");
-        cy.layout(buildLayout(b.getAttribute("data-map-layout"), indeg)).run();
+        cy.layout(buildLayout(b.getAttribute("data-map-layout"), indeg, true)).run();
         // re-apply frozen styling after the layout settles (layout clears classes)
         applyFrozen();
       };
@@ -296,9 +310,20 @@
         cy.edges('[type="' + type + '"]').style("display", on ? "element" : "none");
       };
     });
-    // Clear button: wipe the frozen set + persisted state.
+    // Clear button: reset to the full graph. Wipes the frozen sub-graph AND the current
+    // selection/anchor + any transient highlight, so it does something useful even when no
+    // sub-graph is frozen (drop the "you were here" breadcrumb and show everything lit).
     document.querySelectorAll("#clef-map-modal [data-map-clear]").forEach(function (b) {
-      b.onclick = function () { frozen.clear(); persistState(); applyFrozen(); };
+      b.onclick = function () {
+        frozen.clear(); persistState();
+        setAnchor(null);
+        cy.batch(function () {
+          cy.elements().removeClass("dim hi restdim frz frznode");
+          cy.elements().unselect();
+        });
+        updateFreezeUI();
+        tip(null);
+      };
     });
 
     // ── Help popover (the ? button) ──────────────────────────────────────────────────────
@@ -376,9 +401,14 @@
   // Always fetch the graph live on open (the user wants current state every time they pull
   // it up). Cytoscape itself loads once; the data and the rendered instance are rebuilt each
   // open, so a re-indexed graph shows immediately without a page reload.
+  function spinner(on) {
+    var sp = document.getElementById("clef-map-spinner");
+    if (sp) sp.hidden = !on;
+  }
+
   function loadGraphLive() {
     var c = document.getElementById("clef-map-cy");
-    if (c) c.innerHTML = '<div style="padding:2rem;color:#9ca3af">Loading map…</div>';
+    spinner(true);
     return loadCytoscape()
       .then(function () {
         // cache-bust so a CDN/browser cache never serves a stale graph
@@ -388,9 +418,11 @@
       .then(function (g) {
         if (cy) { try { cy.destroy(); } catch (e) {} cy = null; }
         if (c) c.innerHTML = "";
+        spinner(false);
         render(g);
       })
       .catch(function (err) {
+        spinner(false);
         if (c) c.innerHTML = '<div style="padding:2rem;color:#9ca3af">Map unavailable: ' + err + "</div>";
       });
   }
@@ -399,7 +431,22 @@
     var m = modal(); if (!m) return;
     m.style.display = "";
     document.body.style.overflow = "hidden";
-    loadGraphLive().then(function () { if (cy) cy.resize().fit(undefined, 30); });
+    // First open of the session: arm the reveal so the graph starts hidden and fades up once
+    // hydrated. Do this BEFORE the fetch so no fully-drawn graph flashes before the fade begins.
+    var c = document.getElementById("clef-map-cy");
+    var reveal = c && !hasBeenSeen();
+    if (reveal) c.classList.add("clef-map-hydrate");
+    loadGraphLive().then(function () {
+      if (cy) cy.resize().fit(undefined, 30);
+      // Graph is positioned and fit. On first open, drop the arming class on the next frame so the
+      // CSS transition runs (fade-in + slide-up). On later opens the graph is simply present.
+      if (reveal && c) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { c.classList.remove("clef-map-hydrate"); });
+        });
+        markSeen();
+      }
+    });
   }
   function close() {
     var m = modal(); if (!m) return;
