@@ -5,6 +5,8 @@ description: "Leveraging InfiniBand, RoCE, and Ethernet for Zero-Copy Networking
 date: 2025-05-17
 authors: ["Houston Haynes"]
 tags: ["Design"]
+aliases:
+  - /docs/internals/memory-fabrics/rdma-accelerating-network-comms/
 params:
   originally_published: 2025-05-17
   original_url: "https://speakez.tech/blog/rdma-accelerating-network-comms/"
@@ -13,13 +15,13 @@ params:
 
 As a companion to our exploration of CXL and memory coherence, this article examines how the Fidelity framework could extend its zero-copy paradigm beyond single-system boundaries. While our BAREWire protocol is designed to enable high-performance, zero-copy communication within a system, modern computing workloads often span multiple machines or data centers. Remote Direct Memory Access (RDMA) technologies represent a promising avenue for extending BAREWire's zero-copy semantics across network boundaries.
 
-This planned integration of RDMA capabilities with BAREWire's memory model would allow Fidelity to provide consistent zero-copy semantics from local processes all the way to cross-datacenter communication, expressed through [the Clef language](https://clef-lang.com)'s elegant functional programming paradigm. The design concepts presented here outline our vision for a comprehensive approach to distributed systems programming that could revolutionize performance-critical domains like AI model training and inference.
+This planned integration of RDMA capabilities with BAREWire's memory model would allow Fidelity to provide consistent zero-copy semantics from local processes all the way to cross-datacenter communication, expressed through [the Clef language](https://clef-lang.com)'s functional programming paradigm. The design concepts presented here outline our vision for distributed systems programming aimed at performance-critical domains like AI model training and inference.
 
-RDMA programming in C++ involves a steep learning curve: queue pairs, completion queues, memory registration, and careful attention to which buffers are registered where. The ibverbs API exposes raw pointers with no type-level distinction between registered and unregistered memory; passing an unregistered buffer to an RDMA operation fails at runtime. Rust's rdma-sys crate wraps ibverbs but inherits its unsafe API surface. The borrow checker ensures memory safety within a process but cannot verify that a buffer remains registered for the duration of an RDMA operation. Fidelity's approach encodes registration status in the type system, making RDMA operations type-safe without sacrificing performance.
+RDMA programming in C++ involves a steep learning curve: queue pairs, completion queues, memory registration, and careful attention to which buffers are registered where. The ibverbs API exposes raw pointers with no type-level distinction between registered and unregistered memory. Passing an unregistered buffer to an RDMA operation fails at runtime. Rust's rdma-sys crate wraps ibverbs but inherits its unsafe API surface. The borrow checker ensures memory safety within a process but cannot verify that a buffer remains registered for the duration of an RDMA operation. Fidelity's approach encodes registration status in the type system, making RDMA operations type-safe without sacrificing performance.
 
 ## RDMA and BAREWire: Extending Zero-Copy Across Network Boundaries
 
-In our planned architecture, BAREWire's memory model would be adapted to work seamlessly with RDMA network operations:
+In our planned architecture, [BAREWire's memory model](/docs/design/memory/native-memory-management/) would be adapted to work with RDMA network operations:
 
 ```fsharp
 module BAREWire.RDMA =
@@ -58,7 +60,7 @@ module BAREWire.RDMA =
 
 This approach would ensure that RDMA operations could respect the type safety and memory layout guarantees that BAREWire would provide, creating a consistent programming model spanning from single-process to multi-datacenter deployments. The implementation remains conceptual at this stage, pending further development of the core BAREWire protocol and its associated memory management strategies.
 
-The type signature tells a story that C++ ibverbs cannot express. The `RdmaMemoryRegion<'T>` carries both the data type and the registration keys; the compiler prevents passing an unregistered buffer where a registered one is required. In C++, registration is a side effect that mutates invisible state: `ibv_reg_mr()` returns a handle that the programmer must track separately from the buffer pointer. Forget to register, and the operation fails. Register the same buffer twice, and behavior is undefined. Deregister while an operation is in flight, and the program crashes. Fidelity makes these errors impossible to express.
+The type signature tells a story that C++ ibverbs cannot express. The `RdmaMemoryRegion<'T>` carries both the data type and the registration keys. The compiler prevents passing an unregistered buffer where a registered one is required. In C++, registration is a side effect that mutates invisible state: `ibv_reg_mr()` returns a handle that the programmer must track separately from the buffer pointer. Forget to register, and the operation fails. Register the same buffer twice, and behavior is undefined. Deregister while an operation is in flight, and the program crashes. In our design, carrying the registration keys in the type alongside the data means this class of error is not expressible in the source.
 
 ### RDMA Transport Options
 
@@ -118,11 +120,11 @@ let rdmaRead<'T> (qp: QueuePair)
 }
 ```
 
-These code examples showcase our design thinking for how Fidelity could bridge the gap between local and remote memory operations. While these specific implementations may evolve as the framework matures, they illustrate the principles that would guide our development: type safety, functional composition, and zero-copy operations across system boundaries.
+These code examples set out our design thinking for how Fidelity could bridge the gap between local and remote memory operations. While these specific implementations may evolve as the framework matures, they illustrate the principles that would guide our development: type safety, functional composition, and zero-copy operations across system boundaries.
 
 ## Developer-Friendly RDMA Abstractions
 
-While RDMA traditionally requires deep systems knowledge, Fidelity makes it accessible through high-level Clef abstractions:
+While RDMA traditionally requires deep systems knowledge, our design would make it accessible through high-level Clef abstractions:
 
 ```fsharp
 module Fidelity.Networking =
@@ -144,11 +146,11 @@ module Fidelity.Networking =
 
 This abstraction allows developers to leverage RDMA without understanding the complex details of verbs, queue pairs, or completion queues.
 
-The contrast with C++ RDMA programming is substantial. A C++ developer building similar functionality would write hundreds of lines of boilerplate: creating protection domains, allocating queue pairs, configuring connection parameters, polling completion queues. Each step involves raw pointers and manual resource management. Rust's tokio-rdma and similar crates reduce some boilerplate but still expose the fundamental unsafety of the ibverbs model. Fidelity's channel abstraction is not merely syntactic sugar; it encodes resource ownership in the type system, ensuring that channels are properly cleaned up and that operations cannot outlive their underlying resources.
+The contrast with C++ RDMA programming is substantial. A C++ developer building similar functionality would write hundreds of lines of boilerplate: creating protection domains, allocating queue pairs, configuring connection parameters, polling completion queues. Each step involves raw pointers and manual resource management. Rust's tokio-rdma and similar crates reduce some boilerplate but still expose the fundamental unsafety of the ibverbs model. Fidelity's channel abstraction goes past syntactic sugar. It [encodes resource ownership in the type system](https://arxiv.org/abs/2603.16437) as a coeffect discipline checked at compile time, so that channels are cleaned up and operations cannot outlive their underlying resources.
 
 ### Memory Channel Pattern
 
-A particularly powerful abstraction is the Memory Channel pattern, which creates a virtual shared memory space between nodes:
+The Memory Channel pattern creates a virtual shared memory space between nodes:
 
 ```fsharp
 let createDistributedChannel<'T> (nodes: NetworkEndpoint list) : DistributedChannel<'T> =
@@ -242,7 +244,7 @@ Our design would implement several high-level communication patterns on top of t
 
 ### One-Sided Operations
 
-RDMA's one-sided operations would allow memory access without involving the remote CPU—a capability we could leverage in Fidelity:
+RDMA's one-sided operations would allow memory access without involving the remote CPU, a capability we could leverage in Fidelity:
 
 ```fsharp
 let fetchRemoteData<'T> (endpoint: NetworkEndpoint) (address: RemoteAddress) : Async<'T> = async {
@@ -273,7 +275,7 @@ let updateRemoteData<'T> (endpoint: NetworkEndpoint)
 }
 ```
 
-These operations represent a radical departure from traditional distributed programming models, as they would allow direct access to remote memory without waking the remote CPU. This capability, when combined with BAREWire's type safety, could enable new patterns in distributed computing that balance performance with programming simplicity.
+These operations differ from traditional distributed programming models, as they would allow direct access to remote memory without waking the remote CPU. This capability, combined with BAREWire's type safety, could enable new patterns in distributed computing that balance performance with programming simplicity.
 
 ### Distributed Shared Memory
 
@@ -298,11 +300,11 @@ let updateSharedValue<'T> (memory: SharedMemory<'T>) (nodeIndex: int) (updater: 
     memory.WriteTo(nodeIndex, newValue)
 ```
 
-This abstraction would make it possible to implement distributed algorithms with code that looks remarkably similar to their single-system counterparts, removing much of the complexity traditionally associated with distributed programming.
+This abstraction would make it possible to implement distributed algorithms with code that looks close to their single-system counterparts, removing much of the complexity traditionally associated with distributed programming.
 
 ## Integration with the Olivier Actor Model
 
-The Fidelity framework's planned Olivier actor model would integrate naturally with RDMA capabilities to create ergonomic distributed actor systems:
+The Fidelity framework's planned [Olivier actor model](/docs/design/concurrency/the-three-layer-actor-contract/) would integrate with RDMA capabilities to create ergonomic distributed actor systems:
 
 ```fsharp
 module Olivier.Distributed =
@@ -454,7 +456,7 @@ This approach would allow AI workloads to scale efficiently across multiple node
 
 ## Fidelity and Cross-System Communication
 
-The integration of Fidelity's BAREWire protocol with advanced communication technologies would create a powerful foundation for distributed computing. By extending zero-copy semantics across system boundaries, this integration would reduce overhead in distributed systems while maintaining the type safety and functional elegance of Clef.
+The integration of Fidelity's BAREWire protocol with advanced communication technologies would create a foundation for distributed computing. By extending zero-copy semantics across system boundaries, this integration would reduce overhead in distributed systems while maintaining the type safety and functional composition of Clef.
 
 Key benefits of this planned integration would include:
 
@@ -472,10 +474,10 @@ This flexible approach would enable Fidelity to support a wide range of hardware
 - Specialized accelerators like Tenstorrent would use dedicated adapters for their unique memory hierarchies
 - CXL-enabled systems would benefit from hardware-coherent memory sharing as described in our companion article
 
-The common thread across all these platforms would be a consistent, Clef-based programming model that abstracts away the complexities of cross-system communication while maintaining high performance. By providing these capabilities through Clef's functional programming paradigm, Fidelity would make distributed systems programming more accessible and safer, allowing developers to focus on their application logic rather than low-level communication details.
+The common thread across all these platforms would be a consistent, Clef-based programming model that abstracts away the complexities of cross-system communication while maintaining high performance. By providing these capabilities through Clef's functional programming paradigm, Fidelity would make distributed systems programming more accessible and safer, keeping developers' attention on their application logic while the framework handles low-level communication details.
 
-The state of RDMA programming in mainstream languages reflects the technology's origins in high-performance computing, where correctness verification was the programmer's responsibility. C++ ibverbs tutorials warn developers to "always check return codes" and "carefully manage memory registration lifetimes"; the API provides no structural enforcement. Rust crates improve memory safety within process boundaries but cannot extend ownership semantics across network connections. The result is that RDMA remains a specialist technology, used primarily by teams willing to invest significant engineering effort in manual verification.
+The state of RDMA programming in mainstream languages reflects the technology's origins in high-performance computing, where correctness verification was the programmer's responsibility. C++ ibverbs tutorials warn developers to "always check return codes" and "carefully manage memory registration lifetimes." The API provides no structural enforcement. Rust crates improve memory safety within process boundaries but cannot extend ownership semantics across network connections. The result is that RDMA remains a specialist technology, used primarily by teams willing to invest significant engineering effort in manual verification.
 
-Fidelity rejects this tradeoff. If RDMA operations require registered memory, the type system should encode registration. If distributed ownership has different semantics than local ownership, the capability model should express those differences. If fault tolerance requires supervision hierarchies across network boundaries, the actor model should support them directly. The cognitive burden that C++ and Rust place on RDMA developers is not inherent to distributed systems; it reflects limitations in those languages' abstractions that Fidelity does not share.
+Our design does not accept that tradeoff as given. RDMA operations require registered memory, so the type system encodes registration. Distributed ownership has different semantics than local ownership, so the capability model expresses those differences. Fault tolerance requires supervision hierarchies across network boundaries, so the actor model supports them directly. The cognitive burden that C++ and Rust place on RDMA developers is not inherent to distributed systems. It reflects limitations in those languages' abstractions that our design works to remove.
 
 As we continue to develop the Fidelity framework, this communication architecture will evolve to support new hardware technologies and communication protocols, always guided by our core design principles: type safety, functional composition, and zero-copy operations across system boundaries.

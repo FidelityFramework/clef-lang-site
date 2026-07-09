@@ -294,7 +294,7 @@ Native goes where our Composer IR reaches, and we made that reach part of the de
 
 - [Fidelity Lowered to STM32](/docs/internals/hardware/fidelity-on-stm32/): the bare-metal end of the same native-compilation path
 - [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of evolution in graduated memory across native targets
-- [RDNA Unified Memory on the Desktop](/docs/internals/hardware/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
+- [RDNA Unified Memory on the Desktop](/docs/internals/memory-fabrics/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
 
 ### UI patterns
 

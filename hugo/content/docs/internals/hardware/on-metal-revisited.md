@@ -197,7 +197,7 @@ The vision from the original article remains: Clef on bare metal with zero runti
 - [Clef Goes Metal](https://speakez.tech/blog/fsharp-on-metal---fidelity-lowered-to-stm32/): The original vision for bare-metal Clef (updated December 2025)
 - [Fidelity Framework: A Primer](https://speakez.tech/blog/fidelity-framework-a-primer/): Overview of the native Clef compilation approach
 - [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis these bare-metal targets sit inside
-- [RDNA Unified Memory on the Desktop](/docs/internals/hardware/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
+- [RDNA Unified Memory on the Desktop](/docs/internals/memory-fabrics/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
 
 ### Memory Architecture
 
