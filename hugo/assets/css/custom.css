@@ -859,6 +859,16 @@ pre.mermaid svg {
 .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; margin-left: 0.4rem; }
 :is(.dark) .clef-map-btn-clear { border-color: #e3b341; color: #e3b341; }
 .clef-map-btn-clear:hover { background: #e3b34122; }
+/* Transient cue on re-hydrate with an active selection: a brief gold pulse to draw the eye to
+   Clear, so a returning user knows it will reset the restored highlight. Removed after ~2.2s. */
+.clef-map-btn-cue { animation: clef-map-cue 0.6s ease-in-out 2; }
+@keyframes clef-map-cue {
+  0%, 100% { background: transparent; box-shadow: none; }
+  50% { background: #e3b34133; box-shadow: 0 0 0 3px #e3b34140; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clef-map-btn-cue { animation: none; background: #e3b34122; }
+}
 /* Homepage "Try Atlas" feature card: gold-bordered to echo the Atlas nav button and draw the eye */
 .clef-atlas-card { border-color: rgba(227,179,65,0.45); }
 .clef-atlas-card:hover { border-color: #e3b341; }
@@ -891,20 +901,22 @@ pre.mermaid svg {
   flex: 1;
   min-height: 0;
   background: #fafafa;
-  /* Resting state. The first-open reveal transitions INTO this from .clef-map-hydrate below:
-     a half-second fade-in with a short upward slide. Only the first open per session arms the
-     class, so returning to the Atlas shows the graph already in place. */
+  /* Resting state. The graph transitions INTO this from an armed hydrate class every time it
+     hydrates, so a re-hydrate never snaps in. Two reveals share this resting state:
+       .clef-map-hydrate        — quick fade only (every open, incl. mid-session re-hydrate)
+       .clef-map-hydrate-full   — added on the first open of the session: also slides up
+     Opacity fades quickly on every reveal; the slower transform only has an effect on the full
+     reveal, since the quick reveal never sets translateY (nothing for the transform to animate). */
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition: opacity 0.28s ease, transform 0.5s ease;
 }
 :is(.dark) #clef-map-cy { background: #0d1117; }
-/* Armed (first open, pre-reveal): graph hidden and nudged down; dropping the class runs the
-   transition above, so it fades up into place after the graph has hydrated. */
-#clef-map-cy.clef-map-hydrate {
-  opacity: 0;
-  transform: translateY(12px);
-}
+/* Armed, base (every open): graph hidden. Removing the class fades it in. No transition while the
+   class is present, so arming is instant and only the removal animates. */
+#clef-map-cy.clef-map-hydrate { opacity: 0; transition: none; }
+/* Armed, first open of the session: also nudged down, so its reveal fades AND slides up. */
+#clef-map-cy.clef-map-hydrate-full { transform: translateY(12px); }
 @media (prefers-reduced-motion: reduce) {
   #clef-map-cy { transition: none; }
   #clef-map-cy.clef-map-hydrate { opacity: 1; transform: none; }

@@ -99,6 +99,26 @@
     }
   }
 
+  // Cue on re-hydrate with an active selection but no frozen set (a restored anchor the user could
+  // reset): show "Clear (1)" and pulse it twice to draw the eye, so a returning user knows Clear
+  // will reset the highlighted link. The COUNT STAYS — it is a persistent affordance until the user
+  // actually clicks Clear (which resets everything). Only the pulse animation is transient. A
+  // frozen set is NOT cued here — it already carries its own persistent count.
+  var cueTimer = null;
+  function cueClear() {
+    var btn = document.querySelector("#clef-map-modal [data-map-clear]");
+    if (!btn || frozen.size) return;
+    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
+    btn.textContent = "Clear (1)";
+    btn.style.opacity = "1";
+    btn.classList.add("clef-map-btn-cue");
+    // Strip only the pulse class once the animation is done; leave "Clear (1)" in place.
+    cueTimer = setTimeout(function () {
+      btn.classList.remove("clef-map-btn-cue");
+      cueTimer = null;
+    }, 1300);
+  }
+
   function modal() { return document.getElementById("clef-map-modal"); }
   function isOpen() { var m = modal(); return m && m.style.display !== "none"; }
 
@@ -315,6 +335,8 @@
     // sub-graph is frozen (drop the "you were here" breadcrumb and show everything lit).
     document.querySelectorAll("#clef-map-modal [data-map-clear]").forEach(function (b) {
       b.onclick = function () {
+        if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
+        b.classList.remove("clef-map-btn-cue");
         frozen.clear(); persistState();
         setAnchor(null);
         cy.batch(function () {
@@ -385,6 +407,9 @@
           var fn = cy.getElementById(id);
           if (fn && !fn.empty()) fn.removeClass("dim");
         });
+        // Cue the Clear button so the returning user sees it can reset this restored selection.
+        // Only when nothing is frozen — a frozen set already shows its own persistent count.
+        cueClear();
       } else {
         setAnchor(null);  // anchored node no longer in the graph — drop the stale breadcrumb
       }
@@ -408,6 +433,9 @@
 
   function loadGraphLive() {
     var c = document.getElementById("clef-map-cy");
+    // Cancel any pending Clear-button cue from a prior open so a stale timer can't revert the
+    // button text against a freshly rendered graph.
+    if (cueTimer) { clearTimeout(cueTimer); cueTimer = null; }
     // Tear down any prior graph up front so the query always runs over a clean canvas with the
     // spinner on top — never over a stale mid-session graph (which reads as a jarring flash when
     // it's swapped) and never a blank canvas with no spinner. The spinner IS the interstitial.
@@ -435,18 +463,21 @@
     var m = modal(); if (!m) return;
     m.style.display = "";
     document.body.style.overflow = "hidden";
-    // First open of the session: arm the reveal so the graph starts hidden and fades up once
-    // hydrated. Do this BEFORE the fetch so no fully-drawn graph flashes before the fade begins.
+    // The graph always reveals itself when it hydrates, so a re-hydrate never snaps in. The
+    // session flag only decides HOW MUCH: the first open of the session gets the full unveiling
+    // (a longer fade WITH an upward slide), every later open gets a quick fade only (no slide,
+    // so identical node positions never appear to move — nothing to re-locate). Arm the class
+    // BEFORE the fetch so no fully-drawn graph flashes before the reveal begins.
     var c = document.getElementById("clef-map-cy");
-    var reveal = c && !hasBeenSeen();
-    if (reveal) c.classList.add("clef-map-hydrate");
+    var full = c && !hasBeenSeen();
+    if (c) { c.classList.add("clef-map-hydrate"); if (full) c.classList.add("clef-map-hydrate-full"); }
     loadGraphLive().then(function () {
       if (cy) cy.resize().fit(undefined, 30);
-      // Graph is positioned and fit. On first open, drop the arming class on the next frame so the
-      // CSS transition runs (fade-in + slide-up). On later opens the graph is simply present.
-      if (reveal && c) {
+      // Graph is positioned and fit. Drop the arming class on the next frame so the CSS
+      // transition runs. Two rAFs so the hidden (opacity:0) state paints before the transition.
+      if (c) {
         requestAnimationFrame(function () {
-          requestAnimationFrame(function () { c.classList.remove("clef-map-hydrate"); });
+          requestAnimationFrame(function () { c.classList.remove("clef-map-hydrate", "clef-map-hydrate-full"); });
         });
         markSeen();
       }
