@@ -195,9 +195,9 @@
         // Frozen sub-graph = the active working set: lit (full color), nodes gold-ringed, edges
         // emphasized. Overrides the fades so it stays bright while the rest is dimmed.
         { selector: "node.frznode", style: { "opacity": 1, "border-width": 2, "border-color": "#e3b341" } },
-        { selector: "edge.frz", style: { "opacity": 0.9, "width": 1.2, "line-color": "#e3b341", "line-style": "solid" } },
+        { selector: "edge.frz", style: { "opacity": 0.9, "width": 1.2, "line-color": "#e3b341", "line-style": "solid", "display": "element" } },
         // Live hover: brightest, layered on top of whatever resting state exists.
-        { selector: ".hi", style: { "opacity": 0.95, "width": 1.4, "line-color": dark ? "#e6edf3" : "#1f2328" } }
+        { selector: ".hi", style: { "opacity": 0.95, "width": 1.4, "line-color": dark ? "#e6edf3" : "#1f2328", "display": "element" } }
       ],
       layout: buildLayout("concentric", indeg, false)
     });
