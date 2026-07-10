@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2025-05-24
-  original_url: "https://speakez.tech/blog/scaling-fidelityui/"
   migration_date: 2026-03-12
 ---
 

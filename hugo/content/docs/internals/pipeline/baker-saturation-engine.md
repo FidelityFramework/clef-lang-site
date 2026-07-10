@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2025-12-12
-  original_url: "https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/"
   migration_date: 2026-02-15
 ---
 
@@ -132,10 +131,10 @@ Baker has transformed from a complex correlation mechanism into a streamlined en
 For more on the Composer compiler and Fidelity framework:
 
 - [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - The theoretical foundation connecting functional programming to modern compilation
-- [Static and Dynamic Library Binding](https://speakez.tech/blog/library-binding-in-fidelity-framework/) - How FidelityExtern flows through the compilation pipeline
-- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/) - Schema-driven binary serialization for native memory layouts
-- [Intelligent Tree Shaking](https://speakez.tech/blog/intelligent-tree-shaking/) - Type-aware dead code elimination for minimal native executables
-- [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
-- [Context-Aware Compilation](https://speakez.tech/blog/context-aware-compilation/) - Coeffects and their role in optimization decisions
-- [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why native compilation is displacing virtual machines
-- [Seeing Beyond Assemblies](https://speakez.tech/blog/seeing-beyond-assemblies/) - Source-based package management in the Fidelity ecosystem
+- [Static and Dynamic Library Binding](/docs/design/interop/library-binding/) - How FidelityExtern flows through the compilation pipeline
+- [Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/) - Schema-driven binary serialization for native memory layouts
+- [Intelligent Tree Shaking](/docs/internals/pipeline/intelligent-tree-shaking/) - Type-aware dead code elimination for minimal native executables
+- [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
+- [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/) - Coeffects and their role in optimization decisions
+- [The Return of the Compiler](/blog/the-return-of-the-compiler/) - Why native compilation is displacing virtual machines
+- [Seeing Beyond Assemblies](/blog/seeing-beyond-assemblies/) - Source-based package management in the Fidelity ecosystem

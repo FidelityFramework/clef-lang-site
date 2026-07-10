@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance", "Innovation"]
 params:
   originally_published: 2025-09-25
-  original_url: "https://speakez.tech/blog/dcont-inet-duality/"
   migration_date: 2026-02-15
 ---
 
@@ -16,7 +15,7 @@ Clef's computation expressions give a unified syntax for control flow that would
 
 The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case; an applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
-This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](https://speakez.tech/blog/context-aware-compilation/) to our [exploration of continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), and from our [reactive programming model](/blog/fidelityrx-native-reactivity/) to our [approach to referential transparency](https://speakez.tech/blog/seeking-referential-transparency/).
+This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to our [exploration of continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from our [reactive programming model](/blog/fidelityrx-native-reactivity/) to our [approach to referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
 
 ## A Principled Start
 
@@ -100,7 +99,7 @@ This distinction determines the compilation strategy for the whole expression. A
 
 ### Three Lowering Lanes
 
-The unit of analysis is the region, classified by its effect and data dependency rather than by the computation expression keyword. Our [Program Hypergraph](https://speakez.tech/blog/coupling-and-cohesion/) carries that classification as a coloring pass over the graph, the same pass that licenses the interaction-net breakout. Three lanes come out of it.
+The unit of analysis is the region, classified by its effect and data dependency rather than by the computation expression keyword. Our [Program Hypergraph](/docs/design/structure-and-performance/coupling-and-cohesion/) carries that classification as a coloring pass over the graph, the same pass that licenses the interaction-net breakout. Three lanes come out of it.
 
 - **Sequential effects lower through DCont.** A region whose steps depend on prior results, or that touches the world, captures its continuation at each suspension point and resumes when the result arrives. This is the dependency-carrying lane.
 - **Regular data-parallel work lowers to the tensor path.** Dense, statically shaped, rectangular work, map and filter and reduce and scan over arrays, is SIMD and SIMT data parallelism. It lowers through the standard arithmetic and tensor dialects and the GPU dialect to NVVM for NVIDIA targets and the AMDGPU backend for AMD, with MLIR-AIE carrying NPU targets. Its iterations are independent by construction, so there is no graph rewriting to coordinate.
@@ -213,9 +212,9 @@ What licenses running every active pair at once is strong confluence: Lafont's o
 
 This is the monad/applicative axis read through the compiler. The classifier is the region's dependency structure, and the computation expression keyword is only a hint at it.
 
-**Effectful computations** sequence operations through time. They interact with the world, maintain state, or depend on previous results, which is the monadic case where the second effect can depend on the first value. These map to delimited continuations (DCont). As we explored in [continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), these patterns can survive surprisingly deep into the compilation pipeline.
+**Effectful computations** sequence operations through time. They interact with the world, maintain state, or depend on previous results, which is the monadic case where the second effect can depend on the first value. These map to delimited continuations (DCont). As we explored in [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), these patterns can survive surprisingly deep into the compilation pipeline.
 
-**Independent computations** carry no effects and no sequential dependencies, which is the applicative case where independent effects compose. These parallelize, and the parallel target depends on shape: dense rectangular work to the tensor path, irregular reduction to interaction nets. Our work on [referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) shows how the compiler identifies these pure regions.
+**Independent computations** carry no effects and no sequential dependencies, which is the applicative case where independent effects compose. These parallelize, and the parallel target depends on shape: dense rectangular work to the tensor path, irregular reduction to interaction nets. Our work on [referential transparency](/docs/internals/concepts/seeking-referential-transparency/) shows how the compiler identifies these pure regions.
 
 Computation expressions encode a default classification in their structure, and the coloring pass refines it from the region's actual dependencies:
 
@@ -270,7 +269,7 @@ let traditional() = async {
  
 ```
 
-Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/memory/beyond-zero-allocation/) and [the full Frosty experience](https://speakez.tech/blog/the-full-frosty-experience/):
+Our DCont compilation is designed to eliminate these heap allocations, as we detailed in our exploration of [deterministic memory patterns](/docs/design/memory/beyond-zero-allocation/) and [platform-aware continuation compilation](/docs/design/concurrency/delimited-continuations/#platform-aware-continuation-compilation):
 
 ```fsharp
 // Fidelity: Stack-based continuations
@@ -327,7 +326,7 @@ On a GPU, the target is thousands of elements processed in a single cycle. On a 
 
 ## Hybrid Patterns
 
-Real applications often mix sequential and parallel patterns. Our Composer compiler is designed to handle these together, using our [Program Hypergraph architecture](https://speakez.tech/blog/coupling-and-cohesion/) to identify boundaries between pure and effectful regions:
+Real applications often mix sequential and parallel patterns. Our Composer compiler is designed to handle these together, using our [Program Hypergraph architecture](/docs/design/structure-and-performance/coupling-and-cohesion/) to identify boundaries between pure and effectful regions:
 
 ```fsharp
 let hybridWorkflow data = async {

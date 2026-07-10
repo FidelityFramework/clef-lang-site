@@ -8,7 +8,6 @@ authors:
 tags: ["AI", "Design"]
 params:
   originally_published: 2023-01-03
-  original_url: "https://speakez.tech/blog/fidelity-as-ai-refinery/"
   migration_date: 2026-02-15
 ---
 

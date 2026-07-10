@@ -10,7 +10,6 @@ aliases:
   - /docs/design/categorical-foundations/typed-recurrence-categorical-control/
 params:
   originally_published: 2026-03-23
-  original_url: "https://speakez.tech/research/typed-structural-control-of-neural-inference/"
 ---
 
 ## The Recurring Problem of Recurrence

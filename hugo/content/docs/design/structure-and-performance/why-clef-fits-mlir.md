@@ -8,7 +8,6 @@ tags: ["Design", "Architecture", "Innovation"]
 weight: 10
 params:
   originally_published: 2025-07-28
-  original_url: "https://speakez.tech/blog/why-fsharp-is-a-natural-fit-for-mlir/"
   migration_date: 2026-02-15
 ---
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-01-06
-  original_url: "https://speakez.tech/blog/wren-stack/"
   migration_date: 2026-03-12
 ---
 

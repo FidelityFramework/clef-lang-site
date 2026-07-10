@@ -6,7 +6,6 @@ tags: ["Analysis", "Architecture", "Innovation"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2025-09-26
-  original_url: https://speakez.tech/blog/breaking-the-p-vs-np-mystique/
   migration_date: 2026-03-29
 ---
 

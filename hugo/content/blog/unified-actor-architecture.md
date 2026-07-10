@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 params:
   originally_published: 2025-12-04
-  original_url: "https://speakez.tech/blog/unified-actor-architecture/"
   migration_date: 2026-03-12
 ---
 

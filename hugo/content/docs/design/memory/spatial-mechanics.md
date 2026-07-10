@@ -8,7 +8,6 @@ authors:
 tags: ["Architecture", "Design", "Innovation"]
 params:
   originally_published: 2026-01-26
-  original_url: "https://speakez.tech/blog/spatial-mechanics/"
   migration_date: 2026-02-15
 ---
 

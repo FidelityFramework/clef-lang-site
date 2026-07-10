@@ -8,7 +8,6 @@ authors:
 tags: ["AI"]
 params:
   originally_published: 2024-11-12
-  original_url: "https://speakez.tech/blog/beyond-transformers/"
   migration_date: 2026-02-15
 ---
 

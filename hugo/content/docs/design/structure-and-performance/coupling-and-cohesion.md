@@ -8,7 +8,6 @@ tags: ["Design", "Architecture", "Innovation", "native-compilation"]
 weight: 20
 params:
   originally_published: 2025-07-09
-  original_url: "https://speakez.tech/blog/coupling-and-cohesion/"
   migration_date: 2026-02-15
 ---
 

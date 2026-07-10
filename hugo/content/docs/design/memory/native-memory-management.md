@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design"]
 params:
   originally_published: 2022-01-17
-  original_url: "https://speakez.tech/blog/fsharp-memory-management-goes-native/"
   migration_date: 2026-02-15
 ---
 

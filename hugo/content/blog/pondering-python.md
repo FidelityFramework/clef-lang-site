@@ -6,7 +6,6 @@ tags: ["Analysis", "AI"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2022-09-25
-  original_url: "https://speakez.tech/blog/pondering-python/"
   migration_date: 2026-03-29
 ---
 

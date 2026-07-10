@@ -8,7 +8,6 @@ tags: ["Design", "Innovation", "Architecture"]
 weight: 10
 params:
   originally_published: 2025-12-06
-  original_url: "https://speakez.tech/blog/clef-autocomplete-integration/"
   migration_date: 2026-03-12
 ---
 

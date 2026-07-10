@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design"]
 params:
   originally_published: 2025-05-16
-  original_url: "https://speakez.tech/blog/library-binding-in-fidelity-framework/"
   migration_date: 2026-02-15
 ---
 

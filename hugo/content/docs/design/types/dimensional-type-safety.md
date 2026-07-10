@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 params:
   originally_published: 2026-01-10
-  original_url: "https://speakez.tech/blog/dimensional-type-safety/"
   migration_date: 2026-02-15
 ---
 
@@ -291,7 +290,7 @@ The Fidelity framework's approach is different. By preserving dimensional types 
 2. **No pragmas required for common cases**: The type information expresses intent directly
 3. **Verification at every stage**: Dimensional consistency is checked during control-flow analysis, SSA construction, and dataflow synthesis
 
-This is what we meant in [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) when we discussed the Program Hypergraph encoding both control-flow and dataflow views. The dimensional types aren't just for catching bugs - they're semantic information that guides code generation for diverse targets.
+This is what we meant in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) when we discussed the Program Hypergraph encoding both control-flow and dataflow views. The dimensional types aren't just for catching bugs - they're semantic information that guides code generation for diverse targets.
 
 ## Case Study: NextSilicon GUPS Benchmark
 
@@ -330,7 +329,7 @@ This information exists in the programmer's mental model. Traditional compilatio
 
 ## The Program Hypergraph
 
-In our earlier article [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/), we described the evolution from the Program Semantic Graph (PSG) to the Program Hypergraph (PHG). This remains a future design goal - something "on the board" - but the architectural direction is clear.
+In our earlier article [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/), we described the evolution from the Program Semantic Graph (PSG) to the Program Hypergraph (PHG). This remains a future design goal - something "on the board" - but the architectural direction is clear.
 
 The PHG would naturally encode both control-flow and dataflow relationships:
 
@@ -425,7 +424,7 @@ This is the reason we built Clef as its own compilation path: to carry Clef's se
 
 ### Related Articles
 
-- [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
+- [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) - The evolution from PSG to Program Hypergraph and targeting post-Von Neumann architectures
 - [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - The theoretical foundation connecting concurrent programming to modern compilation
 - [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/) - Why ownership semantics assume Von Neumann architectures
 - [Beyond Zero-Allocation](/docs/design/memory/beyond-zero-allocation/) - How async, arenas, and actors complete the Fidelity memory model

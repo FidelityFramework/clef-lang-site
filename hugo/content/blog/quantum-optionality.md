@@ -6,7 +6,6 @@ tags: ["Innovation", "Design", "Analysis"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2025-08-04
-  original_url: https://speakez.tech/blog/quantum-optionality/
   migration_date: 2026-03-29
 ---
 

@@ -8,7 +8,6 @@ tags: ["Design", "Architecture", "Innovation"]
 weight: 50
 params:
   originally_published: 2026-02-01
-  original_url: "https://speakez.tech/blog/leveling-up-with-lattice/"
   migration_date: 2026-03-12
 ---
 

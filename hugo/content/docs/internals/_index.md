@@ -37,7 +37,7 @@ Farscape provides C and C++ interoperability for Clef. These articles cover bind
 
 ### [Developer Tooling](tooling/)
 
-Lattice is the Clef language server, built on the saturated PSG. It provides design-time diagnostics, escape classification visibility, dimensional verification feedback, and restructuring proposals directly in the editor. These articles also cover autocomplete integration with the Fidelity ecosystem and the Frosty test harness for compiler validation.
+Lattice is the Clef language server, built on the saturated PSG. It provides design-time diagnostics, escape classification visibility, dimensional verification feedback, and restructuring proposals directly in the editor. These articles also cover autocomplete integration with the Fidelity ecosystem and the test harness for compiler validation.
 
 ### [Hardware Architecture](hardware/)
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 params:
   originally_published: 2026-01-23
-  original_url: "https://speakez.tech/blog/doubling-down/"
   migration_date: 2026-02-15
 ---
 

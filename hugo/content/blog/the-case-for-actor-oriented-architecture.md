@@ -6,7 +6,6 @@ tags: ["Design"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2024-06-20
-  original_url: "https://speakez.tech/blog/the-case-for-actor-oriented-architecture/"
   migration_date: 2026-03-29
 ---
 

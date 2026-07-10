@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-01-19
-  original_url: "https://speakez.tech/blog/learning-to-walk/"
   migration_date: 2026-02-15
 ---
 
@@ -246,6 +245,6 @@ That reconciliation is what we call "the walk." What looks like simplicity on th
 
 - [Composer Hello World Samples](https://github.com/FidelityFramework/Composer/tree/main/samples) - The complete list of samples toward an initial WREN Stack alpha
 - [Gaining Closure](/docs/design/memory/gaining-closure/) - Flat closure representation in Fidelity
-- [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/) - Deferred computation without garbage collection
-- [Seq'ing Simplicity](https://speakez.tech/blog/seqing-simplicity/) - Sequence expressions as state machines
+- [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/) - Deferred computation without garbage collection
+- [Seq'ing Simplicity](/docs/internals/concepts/seqing-simplicity/) - Sequence expressions as state machines
 - [Coeffects and Codata](/docs/internals/concepts/coeffects-and-codata/) - The coeffect model in depth

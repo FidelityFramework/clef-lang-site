@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Analysis", "Design", "Architecture"]
 params:
   originally_published: 2025-06-09
-  original_url: "https://speakez.tech/blog/hkts-in-fidelity-a-dialectic-analysis/"
   migration_date: 2026-02-15
 ---
 
@@ -64,15 +63,15 @@ The domains our framework targets, embedded systems programming, large distribut
 
 ## Potential Benefits of HKTs
 
-The case for HKTs in our framework rests on concrete benefits that address pain points in the current design. Consider how our Frosty concurrency library handles different stream types. The documentation mentions both HotStream and ColdStream types, each requiring separate implementations of common patterns. With HKTs, these could share a single abstraction:
+The case for HKTs in our framework rests on concrete benefits that address pain points in the current design. Consider how our concurrency model handles its two dual computation types. The `Observable` (hot) and `Incremental` (cold) primitives each require separate implementations of common patterns. With HKTs, these could share a single abstraction:
 
 ```fsharp
 // Current approach requires duplication
-type HotStream<'T> = ...
-type ColdStream<'T> = ...
+type Observable<'T> = ...   // hot, push-based
+type Incremental<'T> = ...  // cold, pull-based
 
-// With HKTs, could abstract over the stream constructor
-type Stream<'F, 'T> = ...  // where 'F :: * -> *
+// With HKTs, could abstract over the computation constructor
+type Computation<'F, 'T> = ...  // where 'F :: * -> *
  
 ```
 
@@ -100,7 +99,7 @@ There's also the ecosystem consideration. While our framework is designed to ope
 
 ## The "Developer Out" Perspective
 
-One argument against HKTs in our framework comes from its design philosophy, particularly as embodied in our BAREWire. The goal isn't to provide "top down" the most theoretically expressive abstractions; it is to create a "from the developer out" experience where developers can compose their way *to forgetting about* memory safety concerns [if they choose](https://speakez.tech/blog/memory-management-by-choice/). This is a different approach from both Rust's borrow checker and traditional HKT-based abstractions.
+One argument against HKTs in our framework comes from its design philosophy, particularly as embodied in our BAREWire. The goal isn't to provide "top down" the most theoretically expressive abstractions; it is to create a "from the developer out" experience where developers can compose their way *to forgetting about* memory safety concerns [if they choose](/docs/design/memory/memory-management-by-choice/). This is a different approach from both Rust's borrow checker and traditional HKT-based abstractions.
 
 Consider the contrast in developer experience across different approaches to memory safety. Rust achieves memory safety by making ownership semantics explicit, and by extension, unavoidable. Every reference requires a decision about mutability. Every lifetime needs consideration. Every borrow must be carefully managed. Haskell achieves safety through immutability and garbage collection, with HKTs enabling abstractions over these safe operations at a compile-time cost. Both approaches have merit, and both require developers to understand and work within their respective models.
 

@@ -8,7 +8,6 @@ authors:
 tags: ["architecture", "native-compilation", "MLIR", "LLVM", "memory-management"]
 params:
   originally_published: 2025-03-20T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/the-return-of-the-compiler/"
   migration_date: 2026-02-15
 ---
 

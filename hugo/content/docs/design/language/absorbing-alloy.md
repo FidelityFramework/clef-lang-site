@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-01-04
-  original_url: "https://speakez.tech/blog/absorbing-alloy/"
   migration_date: 2026-02-15
 ---
 

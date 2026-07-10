@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Integration"]
 params:
   originally_published: 2025-09-04
-  original_url: "https://speakez.tech/blog/binding-cpp-to-clef-in-farscape/"
   migration_date: 2026-03-12
 ---
 

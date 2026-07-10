@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Innovation"]
 params:
   originally_published: 2025-12-03
-  original_url: "https://speakez.tech/blog/getting-the-signal-with-barewire/"
   migration_date: 2026-03-12
 ---
 

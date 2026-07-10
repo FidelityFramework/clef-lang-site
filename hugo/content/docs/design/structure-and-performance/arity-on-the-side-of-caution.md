@@ -8,7 +8,6 @@ tags: ["Design", "Architecture", "Innovation"]
 weight: 30
 params:
   originally_published: 2026-01-14
-  original_url: "https://speakez.tech/blog/arity-on-the-side-of-caution/"
   migration_date: 2026-02-15
 ---
 

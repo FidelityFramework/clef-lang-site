@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Analysis", "Design", "Innovation"]
 params:
   originally_published: 2025-11-12
-  original_url: "https://speakez.tech/blog/mlir-testing-with-teeth/"
   migration_date: 2026-02-15
 ---
 

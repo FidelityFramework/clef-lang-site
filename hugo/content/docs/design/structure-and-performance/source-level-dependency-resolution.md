@@ -15,7 +15,6 @@ tags:
 weight: 60
 params:
   originally_published: 2025-05-31T11:59:54+04:00
-  original_url: "https://speakez.tech/blog/source-level-dependency-resolution/"
   migration_date: 2026-02-15
 ---
 
@@ -49,7 +48,7 @@ This innocent-looking program depends on a range of functions across multiple mo
 
 ## Farscape for C/C++ Library Binding
 
-A key aspect of our dependency resolution strategy is how we handle C/C++ libraries. The [Farscape CLI](https://speakez.tech/blog/farscape-bridge/) generates `[<FidelityExtern>]` attributed Clef binding declarations from C headers, producing source-based packages that flow through the same dependency resolution pipeline as any other Fidelity library.
+A key aspect of our dependency resolution strategy is how we handle C/C++ libraries. The [Farscape CLI](/blog/the-farscape-bridge/) generates `[<FidelityExtern>]` attributed Clef binding declarations from C headers, producing source-based packages that flow through the same dependency resolution pipeline as any other Fidelity library.
 
 Farscape generates up to three layers of output for each [library binding](/spec/draft/platform-bindings/):
 
@@ -283,7 +282,7 @@ This ecosystem approach enables the Fidelity Framework to mature while maintaini
 
 ## Related Reading
 
-- [The Farscape Bridge](https://speakez.tech/blog/farscape-bridge/) — How Farscape generates `[<FidelityExtern>]` binding declarations with the Layer 1/2/Overlay architecture
+- [The Farscape Bridge](/blog/the-farscape-bridge/) — How Farscape generates `[<FidelityExtern>]` binding declarations with the Layer 1/2/Overlay architecture
 - [ClefPak: Source-Based Package Management](/docs/tooling/clefpak-source-based-package-management/) — The ClefPak package management system in detail
 - [Seeing Beyond Assemblies](/blog/seeing-beyond-assemblies/) — Why source-based distribution replaces assembly-based packaging
 - [Static and Dynamic Library Binding](/docs/design/interop/library-binding/) — How FidelityExtern flows through the compilation pipeline

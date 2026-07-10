@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["AI", "Architecture", "HPC", "Innovation"]
 params:
   originally_published: 2025-09-21
-  original_url: "https://speakez.tech/blog/continuous-learning-inference-training-boundary/"
   migration_date: 2026-02-15
 ---
 

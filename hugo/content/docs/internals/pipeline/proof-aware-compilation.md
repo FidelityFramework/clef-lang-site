@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Safety"]
 params:
   originally_published: 2025-08-08
-  original_url: "https://speakez.tech/blog/proof-aware-compilation/"
   migration_date: 2026-02-15
 ---
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Performance"]
 params:
   originally_published: 2026-01-20
-  original_url: "https://speakez.tech/blog/collect-yourself/"
   migration_date: 2026-02-15
 ---
 
@@ -35,7 +34,7 @@ This is lambda calculus in disguise, and it follows from how the operations are 
 
 ## Why Purity Matters: The Graph Coloring Connection
 
-In a [previous exploration of graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/), we discussed how our Composer compiler analyzes code to discover hidden parallelism. Operations that do not interfere with each other can be assigned the same "color" and executed simultaneously.
+In a [previous exploration of graph coloring](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/), we discussed how our Composer compiler analyzes code to discover hidden parallelism. Operations that do not interfere with each other can be assigned the same "color" and executed simultaneously.
 
 ```mermaid
 graph TD
@@ -216,7 +215,7 @@ The purity is *intrinsic* to the operation, carried by how `map` is defined rath
 
 ## From Referential Transparency to SIMD
 
-In our exploration of [referential transparency as a compilation strategy](https://speakez.tech/blog/seeking-referential-transparency/), we showed how pure code regions can target different execution models. But there's an optimization opportunity even closer to the metal: SIMD vectorization.
+In our exploration of [referential transparency as a compilation strategy](/docs/internals/concepts/seeking-referential-transparency/), we showed how pure code regions can target different execution models. But there's an optimization opportunity even closer to the metal: SIMD vectorization.
 
 Consider array operations:
 
@@ -339,7 +338,7 @@ The pedestrian collection code written for WREN stack apps will some day automat
 
 When you write a `map`, `filter`, or `fold`, you are expressing pure lambda calculus in everyday clothing. Each operation is a building block the compiler can analyze, parallelize, and vectorize, given a framework and hardware that carry that structure through.
 
-Three threads converge here. [Graph coloring](https://speakez.tech/blog/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](https://speakez.tech/blog/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
+Three threads converge here. [Graph coloring](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](/docs/internals/concepts/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
 
 These foundations become engineering decisions. The design that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code, and the structural sharing that makes immutable collections practical is the same sharing that preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
 

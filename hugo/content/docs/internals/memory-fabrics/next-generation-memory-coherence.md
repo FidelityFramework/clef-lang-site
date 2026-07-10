@@ -9,7 +9,6 @@ aliases:
   - /docs/internals/memory-fabrics/next-generation-memory-coherence/
 params:
   originally_published: 2025-05-13
-  original_url: "https://speakez.tech/blog/next-generation-memory-coherence/"
   migration_date: 2026-03-12
 ---
 

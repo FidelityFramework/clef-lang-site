@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-01-16
-  original_url: "https://speakez.tech/blog/gaining-closure/"
   migration_date: 2026-02-15
 ---
 
@@ -204,6 +203,6 @@ For more on the Fidelity framework and native Clef compilation:
 
 - [ByRef Resolved](/docs/design/types/byref-resolved/) - Reference semantics in native Clef compilation
 - [Clef: From BCL to NTU](/docs/design/types/bcl-to-ntu/) - The Native Type Universe architecture
-- [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes are becoming vestigial
+- [The Return of the Compiler](/blog/the-return-of-the-compiler/) - Why managed runtimes are becoming vestigial
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home
 - [Memory Management By Choice](/docs/design/memory/native-memory-management/) - BAREWire and region-based memory

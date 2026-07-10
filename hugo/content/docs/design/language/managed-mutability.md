@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-02-05
-  original_url: "https://speakez.tech/blog/managed-mutability/"
   migration_date: 2026-02-15
 ---
 
@@ -416,7 +415,7 @@ This transformation happens automatically during compilation. Developers still w
 
 Yes, this looks Rust-like. That similarity is intentional for library authors who need explicit control, but the eventual goal is full lifetime inference where the compiler handles these decisions invisibly. Most Clef developers would never see arena code. They would write idiomatic Clef and trust underlying libraries and the compiler to delineate lifetimes correctly.
 
-**Phase 3: Actor-Aware Lifetime Inference** (Long-term). Escape analysis and arena hoisting solve the single-function case, but real applications don't live in single functions. They live in systems where (at least with actors) messages carry references across process boundaries and resources outlive any individual call stack. This is where lifetime inference connects to the broader [Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) memory architecture.
+**Phase 3: Actor-Aware Lifetime Inference** (Long-term). Escape analysis and arena hoisting solve the single-function case, but real applications don't live in single functions. They live in systems where (at least with actors) messages carry references across process boundaries and resources outlive any individual call stack. This is where lifetime inference connects to the broader [Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) memory architecture.
 
 In our sentinel model, each actor owns an arena that lives exactly as long as the actor does. Prospero orchestrates arena allocation across actor topologies, and sentinel references ensure that cross-actor memory access is validated at the process boundary. The vision for Phase 3 is to unify escape analysis with this actor-scoped RAII model, so the compiler doesn't just infer "stack or arena" but infers *which* arena and *whose* lifetime governs the allocation:
 
@@ -471,7 +470,7 @@ Escape analysis is the next waypoint. We have mutable variable support (TMemRef 
 
 ### SpeakEZ Blog Series
 
-- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) - Actor-aware memory management through deterministic lifetimes
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) - Actor-aware memory management through deterministic lifetimes
 
 ### External References
 

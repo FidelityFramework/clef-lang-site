@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation", "native-compilation"]
 params:
   originally_published: 2026-01-30
-  original_url: "https://speakez.tech/blog/nanopass-navigation/"
   migration_date: 2026-02-15
 ---
 
@@ -15,7 +14,7 @@ Most compilers follow a familiar structure, as we touched on in our blog entry [
 
 Traditional ahead-of-time native compilation employs varied implementation strategies, though most established compilers share a common architecture: monolithic passes that recursively process entire program structures through intertwined transformations. This approach emerged from practical necessities. When memory was measured in kilobytes and disk space was precious, minimizing intermediate representations and performing multiple transformations in single traversals made economic sense. It evolved as standard practice for languages with stable semantics targeting mature platforms; a pattern that newer systems languages have largely adopted even as those original resource constraints faded into history. While this architecture represents decades of hard-won engineering stability, it quickly reveals its limits when compiler infrastructure must adapt to emerging hardware architectures and novel execution models.
 
-As discussed in [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/), we are witnessing a fundamental shift away from the comfort of managed runtimes toward native compilation, as heterogeneous computing and specialized accelerators dominate the landscape. The current AI super-cycle is clear evidence that the ground is shifting under the ephemeral moorings of software engineering practice. That blog entry argued for the necessity of this transition.
+As discussed in [The Return of the Compiler](/blog/the-return-of-the-compiler/), we are witnessing a fundamental shift away from the comfort of managed runtimes toward native compilation, as heterogeneous computing and specialized accelerators dominate the landscape. The current AI super-cycle is clear evidence that the ground is shifting under the ephemeral moorings of software engineering practice. That blog entry argued for the necessity of this transition.
 
 The good news is that there's an answer to this challenge, and it is based on solid academic research and long-standing programming language theory. Nanopass compilation inverts the traditional compiler approach. Instead of monolithic passes that attempt to fully grapple with a tangle of intermingled processes, a nanopass compiler decomposes transformations into discrete, single-purpose passes that each perform one well-defined operation on an intermediate representation. The paradigm originated in Scheme compiler research and gained prominence through the [nanopass framework](https://github.com/nanopass/nanopass-framework-scheme) developed by Andrew Keep and R. Kent Dybvig. Their work demonstrated that compiler complexity could be managed through numerous small transformations rather than fewer large ones.
 
@@ -189,7 +188,7 @@ As hardware diversification accelerates, compilers that hard-code target assumpt
 
 The path forward joins technical infrastructure to principled design. Nanopass compilation provides that principle: single-purpose transformations, precisely defined intermediate languages, and clear separation between portable and target-specific concerns. As compilers evolve to target neuromorphic arrays, optical switches, and quantum processors, the ability to navigate this landscape through disciplined decomposition becomes essential. Composer demonstrates one approach to that navigation, built on decades of programming language theory and adapted to the practical constraints of multi-stack systems programming.
 
-What was described in [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) as the inevitable trajectory of systems programming has found concrete expression in this work. The migration from LLVM-specific types to portable MLIR represents more than a technical refactoring. It establishes a unified compilation pipeline where LLVM lowering continues to serve established architectures while the same nanopass framework extends to neuromorphic processors, reconfigurable fabrics, and emerging accelerators. The architecture that delivers solutions today provides the navigational framework for the heterogeneous compute landscape ahead.
+What was described in [The Return of the Compiler](/blog/the-return-of-the-compiler/) as the inevitable trajectory of systems programming has found concrete expression in this work. The migration from LLVM-specific types to portable MLIR represents more than a technical refactoring. It establishes a unified compilation pipeline where LLVM lowering continues to serve established architectures while the same nanopass framework extends to neuromorphic processors, reconfigurable fabrics, and emerging accelerators. The architecture that delivers solutions today provides the navigational framework for the heterogeneous compute landscape ahead.
 
 ---
 
@@ -198,14 +197,14 @@ What was described in [The Return of the Compiler](https://speakez.tech/blog/the
 **Compiler Architecture & Implementation**
 - [Coeffects and Codata in Composer](/docs/internals/concepts/coeffects-and-codata/) - The witness/codata approach that enables observation-based MLIR generation
 - [Standing Art: Clef Metaprogramming in Composer](/docs/design/language/standing-art-clef-metaprogramming/) - How quotations, active patterns, and computation expressions enable nanopass compilation
-- [Delimited Continuations: Fidelity's Turning Point](https://speakez.tech/blog/delimited-continuations-fidelitys-turning-point/) - Continuation-passing style as a unifying compilation strategy
+- [Delimited Continuations: Fidelity's Turning Point](/docs/design/concurrency/delimited-continuations/) - Continuation-passing style as a unifying compilation strategy
 
 **Type Systems & Migration**
 - [Clef: From IL to NTU](https://speakez.tech/blog/fsharp-native-from-il-to-ntu/) - The evolution from .NET type assumptions to platform-agnostic type representations
 
 **Hardware Diversification**
-- [Hardware Lessons from LISP](https://speakez.tech/blog/hardware-lessons-from-lisp/) - Historical context for the specialized hardware renaissance
+- [Hardware Lessons from LISP](/blog/hardware-lessons-from-lisp/) - Historical context for the specialized hardware renaissance
 
 **Platform Independence**
 - [The Twilight of Lazy Lock-In](https://speakez.tech/blog/the-twilight-of-lazy-lock-in/) - Why portable compilation matters for avoiding vendor lock-in
-- [Seeing Beyond Assemblies](https://speakez.tech/blog/seeing-beyond-assemblies/) - Moving from binary distribution to source-based native compilation
+- [Seeing Beyond Assemblies](/blog/seeing-beyond-assemblies/) - Moving from binary distribution to source-based native compilation

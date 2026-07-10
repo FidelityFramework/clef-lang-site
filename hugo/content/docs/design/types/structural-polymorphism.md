@@ -9,7 +9,6 @@ authors:
 tags: ["Analysis", "Design", "Innovation", "Type Systems"]
 params:
   originally_published: 2025-09-05
-  original_url: "https://speakez.tech/blog/traits-versus-statically-resolved-type-parameters/"
   migration_date: 2026-02-15
 ---
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Systems", "Compilation"]
 params:
   originally_published: 2021-09-25
-  original_url: "https://speakez.tech/blog/seeing-beyond-assemblies/"
   migration_date: 2026-02-15
 ---
 

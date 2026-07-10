@@ -8,7 +8,6 @@ tags: ["Design", "Innovation", "Architecture"]
 weight: 80
 params:
   originally_published: 2025-03-06
-  original_url: "https://speakez.tech/blog/native-fsharp-source-based-package-mgmt/"
   migration_date: 2026-02-15
 ---
 

@@ -9,7 +9,6 @@ tags: ["design", "architecture", "lazy-evaluation", "thunks", "closures", "memor
 weight: 50
 params:
   originally_published: 2026-01-17T12:00:00-05:00
-  original_url: "https://speakez.tech/blog/why-lazy-is-hard/"
   migration_date: 2026-02-15
 ---
 
@@ -323,6 +322,6 @@ For more on the Fidelity framework and native Clef compilation:
 
 - [Gaining Closure](/docs/design/memory/gaining-closure/) - MLKit-style flat closures in Fidelity
 - [From BCL to NTU](/docs/design/types/bcl-to-ntu/) - The Native Type Universe architecture
-- [The Return of the Compiler](https://speakez.tech/blog/the-return-of-the-compiler/) - Why managed runtimes face architectural limits
+- [The Return of the Compiler](/blog/the-return-of-the-compiler/) - Why managed runtimes face architectural limits
 - [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - SSA form and functional compilation
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home

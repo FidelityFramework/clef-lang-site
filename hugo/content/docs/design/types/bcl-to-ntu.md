@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2026-01-04
-  original_url: "https://speakez.tech/blog/fsharp-native-from-il-to-ntu/"
   migration_date: 2026-02-15
 ---
 
@@ -743,7 +742,7 @@ The Fidelity framework, built on these foundations, aims to bridge the gap betwe
 
 For more on the Fidelity framework and native Clef compilation:
 
-- [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/) - BAREWire and the three-level approach to memory control
+- [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/) - BAREWire and the three-level approach to memory control
 - [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/) - SSA form and functional compilation
 - [Baker: Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/) - Type correlation with dual-tree zippers
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/) - The native standard library comes home

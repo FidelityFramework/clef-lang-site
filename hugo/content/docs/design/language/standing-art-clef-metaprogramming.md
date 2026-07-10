@@ -8,7 +8,6 @@ authors:
 tags: ["architecture", "innovation", "design", "metaprogramming", "clef-lang"]
 params:
   originally_published: 2025-12-21T00:00:00+00:00
-  original_url: "https://speakez.tech/blog/standing-art-fsharp-metaprogramming-in-firefly/"
   migration_date: 2026-02-15
 ---
 

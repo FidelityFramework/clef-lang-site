@@ -8,7 +8,6 @@ authors:
 tags: ["analysis", "systems-programming", "memory-management"]
 params:
   originally_published: 2021-12-28T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/rust-revisited/"
   migration_date: 2026-02-15
 ---
 

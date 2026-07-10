@@ -7,11 +7,10 @@ authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
   originally_published: 2025-12-28
-  original_url: "https://speakez.tech/blog/fsharp-on-metal-revisited/"
   migration_date: 2026-02-15
 ---
 
-Nearly two years ago, [Clef Goes Metal](https://speakez.tech/blog/fsharp-on-metal---fidelity-lowered-to-stm32/) laid out a vision for running Clef on bare-metal microcontrollers with zero runtime cost. The core proposition remains unchanged: developers should be able to write expressive, idiomatic Clef code that compiles to machine code indistinguishable from hand-written assembly. What has changed, or more accurately has *grown*, is how we achieve that goal.
+Nearly two years ago, [Clef Goes Metal](/docs/internals/hardware/fidelity-on-mcu/) laid out a vision for running Clef on bare-metal microcontrollers with zero runtime cost. The core proposition remains unchanged: developers should be able to write expressive, idiomatic Clef code that compiles to machine code indistinguishable from hand-written assembly. What has changed, or more accurately has *grown*, is how we achieve that goal.
 
 The original article described Farscape parsing CMSIS headers through CppSharp, a .NET binding to libclang. That approach worked to a certain degree, but it carried baggage that conflicted with our broader philosophy. This article traces the evolution from wrapper-based parsing to a direct Clef approach. It details how this progression was always seen as inevitable, and describes how the introduction of CCS (Clef Compiler Services) enabled that more principled, more precise architecture. This entry also serves as a survey of the much broader architectural vision which started as an idea two years ago, and now has become manifest in the Fidelity framework's continued development today.
 
@@ -148,7 +147,7 @@ That constraint was a starting point, not an endpoint. The Fidelity architecture
 
 ### RAII and Actor-Aware Arenas
 
-The [Olivier actor model](https://speakez.tech/blog/raii-in-olivier-and-prospero/) provides natural boundaries for resource ownership. Each actor owns an arena that lives exactly as long as the actor does. When an actor terminates, its entire memory arena is reclaimed immediately. No scanning, no heuristics, no unpredictable pauses. This is RAII (Resource Acquisition Is Initialization) applied to concurrent actor systems, and it scales from microcontrollers to distributed systems.
+The [Olivier actor model](/docs/design/memory/raii-in-olivier-and-prospero/) provides natural boundaries for resource ownership. Each actor owns an arena that lives exactly as long as the actor does. When an actor terminates, its entire memory arena is reclaimed immediately. No scanning, no heuristics, no unpredictable pauses. This is RAII (Resource Acquisition Is Initialization) applied to concurrent actor systems, and it scales from microcontrollers to distributed systems.
 
 The [Prospero orchestration layer](/docs/internals/hardware/cache-aware-compilation-cpu/) extends this by configuring arenas based on actor behavior. A high-frequency message processor receives a different arena configuration than a batch data handler. These decisions are made at compile time based on static analysis of access patterns. The result is memory management that adapts to workload characteristics without runtime overhead.
 
@@ -172,7 +171,7 @@ This unification means that improvements to continuation handling propagate acro
 
 ### The Spectrum of Control
 
-[Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/) captures the philosophy: developers should be able to choose when and where to think about memory. Most code uses sensible defaults. Performance-critical paths can take explicit control. Library authors can leverage detailed annotations while application developers consume clean APIs.
+[Memory Management by Choice](/docs/design/memory/memory-management-by-choice/) captures the philosophy: developers should be able to choose when and where to think about memory. Most code uses sensible defaults. Performance-critical paths can take explicit control. Library authors can leverage detailed annotations while application developers consume clean APIs.
 
 This spectrum extends to hardware access. The quotation-based peripheral descriptors that Farscape generates provide high-level abstractions for typical use. Developers who need precise control over register timing or DMA configuration can reach through to the underlying memory model. The framework provides defaults without imposing ceilings.
 
@@ -196,17 +195,17 @@ The vision from the original article remains: Clef on bare metal with zero runti
 
 ### The Foundation
 
-- [Clef Goes Metal](https://speakez.tech/blog/fsharp-on-metal---fidelity-lowered-to-stm32/): The original vision for bare-metal Clef (updated December 2025)
-- [Fidelity Framework: A Primer](https://speakez.tech/blog/fidelity-framework-a-primer/): Overview of the native Clef compilation approach
+- [Clef Goes Metal](/docs/internals/hardware/fidelity-on-mcu/): The original vision for bare-metal Clef (updated December 2025)
+- [Fidelity Framework: A Primer](/blog/fidelity-framework-primer/): Overview of the native Clef compilation approach
 - [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis these bare-metal targets sit inside
 - [RDNA Unified Memory on the Desktop](/docs/internals/memory-fabrics/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
 
 ### Memory Architecture
 
-- [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/): The spectrum from automatic to explicit memory control
-- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes
+- [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/): The spectrum from automatic to explicit memory control
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes
 - [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): From memory-aware to cache-aware compilation
-- [Next-Generation Memory Coherence](https://speakez.tech/blog/next-generation-memory-coherence/): Leveraging CXL, NUMA, and PCIe for zero-copy computing
+- [Next-Generation Memory Coherence](/docs/internals/memory-fabrics/next-generation-memory-coherence/): Leveraging CXL, NUMA, and PCIe for zero-copy computing
 
 ### Compiler Architecture
 
@@ -216,5 +215,5 @@ The vision from the original article remains: Clef on bare metal with zero runti
 
 ### Reactive Systems
 
-- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): Subscription-free reactive programming across native, web, and edge targets
+- [Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/): Subscription-free reactive programming across native, web, and edge targets
 - [Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/): Push-based observables with zero allocation overhead

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance", "Innovation"]
 params:
   originally_published: 2025-07-30
-  original_url: "https://speakez.tech/blog/context-aware-compilation/"
   migration_date: 2026-02-15
 ---
 

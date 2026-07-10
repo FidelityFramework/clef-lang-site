@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design"]
 params:
   originally_published: 2025-02-02
-  original_url: "https://speakez.tech/blog/window-layout-with-fidelity/"
   migration_date: 2026-03-12
 ---
 
@@ -334,8 +333,8 @@ let counterApp = elmishApp {
             { model with Count = model.Count + 1 }
         | LoadData -> 
             // Compiler detects background operation
-            Frosty.start (
-                coldStream {
+            Observable.start (
+                incremental {
                     let! data = fetchData()  // Background process
                     // Compiler inserts process coordination here
                     do! Timeline.dispatchOnUI (DataLoaded data)

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Innovation"]
 params:
   originally_published: 2025-05-20
-  original_url: "https://speakez.tech/blog/leveraging-fabulous-for-native-ui/"
   migration_date: 2026-03-12
 ---
 

@@ -1,4 +1,4 @@
-OK ---
+---
 title: "Posit Arithmetic and Dimensional Type Systems"
 linkTitle: "Posit Arithmetic & DTS"
 description: "Representation Selection for Domain-Aware Computation"
@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "HPC", "Innovation"]
 params:
   originally_published: 2025-08-17
-  original_url: "https://speakez.tech/blog/posit-arithmetic-dimensional-type-systems/"
   migration_date: 2026-02-15
 ---
 

@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "HPC", "Innovation"]
 params:
   originally_published: 2025-08-31
-  original_url: "https://speakez.tech/blog/target-architectures-compilation-strategy/"
   migration_date: 2026-02-15
 ---
 

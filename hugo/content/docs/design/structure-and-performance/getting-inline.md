@@ -8,7 +8,6 @@ tags: ["Design", "Architecture", "Innovation"]
 weight: 40
 params:
   originally_published: 2026-02-05
-  original_url: "https://speakez.tech/blog/getting-inline/"
   migration_date: 2026-02-15
 ---
 

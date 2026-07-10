@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design"]
 params:
   originally_published: 2025-08-03
-  original_url: "https://speakez.tech/blog/fidelityrx-native-reactivity-in-fidelity/"
   migration_date: 2026-03-12
 ---
 

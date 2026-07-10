@@ -6,7 +6,6 @@ tags: ["Architecture", "Design", "Innovation"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2025-08-21
-  original_url: https://speakez.tech/blog/advent-of-neuromorphic-ai/
   migration_date: 2026-03-29
 ---
 

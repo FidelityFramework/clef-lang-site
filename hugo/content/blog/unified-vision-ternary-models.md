@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "AI", "Innovation"]
 params:
   originally_published: 2025-06-19
-  original_url: "https://speakez.tech/blog/a-unified-vision-for-ternary-models/"
   migration_date: 2026-03-12
 ---
 

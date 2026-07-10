@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
   originally_published: 2025-12-20
-  original_url: "https://speakez.tech/blog/bringing-posit-arithmetic-to-fsharp/"
   migration_date: 2026-02-15
 ---
 
@@ -648,7 +647,7 @@ Setting aside the acceleration possibilities, the practical question remains: wh
 
 These application domains share common characteristics: constrained memory, deterministic timing requirements, and computations where numerical accuracy directly affects outcomes. The Fidelity framework and Clef were designed precisely for these environments. Native compilation without runtime overhead, deterministic memory management, and cache-aware data layout are foundational principles of that design, present from the first architectural decisions. Posits fit naturally into this architecture.
 
-Posits are value types with deterministic layout. A Posit32 is 4 bytes, identical in size to an IEEE float. Arrays of posits pack contiguously with no hidden headers or alignment padding beyond what the element size requires. The [cache-aware compilation](https://speakez.tech/blog/cache-aware-compilation-cpu/) that Fidelity applies to other data structures works identically for posit arrays.
+Posits are value types with deterministic layout. A Posit32 is 4 bytes, identical in size to an IEEE float. Arrays of posits pack contiguously with no hidden headers or alignment padding beyond what the element size requires. The [cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-cpu/) that Fidelity applies to other data structures works identically for posit arrays.
 
 The quires, however, introduce interesting memory considerations.
 
@@ -663,7 +662,7 @@ The quires, however, introduce interesting memory considerations.
 
 Quire32's 64-byte size is fortuitous: it matches the cache line size on most modern processors. A dot product accumulating into a Quire32 touches exactly one cache line for the accumulator, regardless of how many posit pairs it processes. This is optimal for cache utilization.
 
-Quire64 at 256 bytes spans four cache lines. For short-lived computations (a single matrix row), stack allocation remains appropriate. For longer-lived accumulators (an actor maintaining running statistics), arena allocation with the actor's lifetime makes more sense. The [arena-based memory model](https://speakez.tech/blog/raii-in-olivier-and-prospero/) that Fidelity uses for actor systems handles this naturally: the quire lives in the actor's arena and is reclaimed when the actor terminates.
+Quire64 at 256 bytes spans four cache lines. For short-lived computations (a single matrix row), stack allocation remains appropriate. For longer-lived accumulators (an actor maintaining running statistics), arena allocation with the actor's lifetime makes more sense. The [arena-based memory model](/docs/design/memory/raii-in-olivier-and-prospero/) that Fidelity uses for actor systems handles this naturally: the quire lives in the actor's arena and is reclaimed when the actor terminates.
 
 **SIMD Alignment Requirements**
 
@@ -691,7 +690,7 @@ let activation = MixedPrecision.widen8to16 weight * input
 
 Posits have a property IEEE 754 lacks: bit-exact reproducibility across implementations. The same posit computation produces identical bit patterns regardless of platform, compiler, or optimization level. This determinism extends to serialization.
 
-[BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/) serialization of posit arrays is trivial: the bits are the representation. No normalization, no endianness concerns beyond the usual integer handling, no platform-specific padding. A Posit32 array serializes as a contiguous sequence of 4-byte values. A Quire32 serializes as 64 bytes. The receiver reconstructs identical values.
+[BAREWire](/blog/getting-the-signal-with-barewire/) serialization of posit arrays is trivial: the bits are the representation. No normalization, no endianness concerns beyond the usual integer handling, no platform-specific padding. A Posit32 array serializes as a contiguous sequence of 4-byte values. A Quire32 serializes as 64 bytes. The receiver reconstructs identical values.
 
 This determinism matters for distributed computation. When multiple nodes accumulate partial results into quires, the merge operation produces bit-exact results regardless of which node performs it. Debugging distributed numerical code becomes tractable when "the same computation" actually means the same bits.
 
@@ -724,14 +723,14 @@ This is the Fidelity approach: express posit arithmetic in idiomatic Clef, compi
 
 ### Fidelity Framework
 
-- [Fidelity Framework: A Primer](https://speakez.tech/blog/fidelity-framework-a-primer/): Overview of native Clef compilation
+- [Fidelity Framework: A Primer](/blog/fidelity-framework-primer/): Overview of native Clef compilation
 - [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): The broader memory modeling vision
-- [Cache-Conscious Memory Management](https://speakez.tech/blog/cache-aware-compilation-cpu/): How data layout affects performance
-- [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/): The spectrum from automatic to explicit control
-- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes
-- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): Deterministic serialization across native targets
+- [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): How data layout affects performance
+- [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/): The spectrum from automatic to explicit control
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes
+- [Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/): Deterministic serialization across native targets
 - [Categorical Deep Learning and Universal Numbers](https://speakez.tech/blog/categorical-deep-learning-and-universal-numbers/): Posits in the context of ML compilation
-- [Advent of Neuromorphic AI](https://speakez.tech/blog/advent-of-neuromorphic-ai/): Posits for membrane dynamics
+- [Advent of Neuromorphic AI](/blog/advent-of-neuromorphic-ai/): Posits for membrane dynamics
 
 ### IEEE 754 History and Context
 

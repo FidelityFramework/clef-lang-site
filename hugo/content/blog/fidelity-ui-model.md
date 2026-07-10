@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design"]
 params:
   originally_published: 2025-05-16
-  original_url: "https://speakez.tech/blog/fidelity-ui-model/"
   migration_date: 2026-03-12
 ---
 

@@ -8,7 +8,6 @@ authors:
 tags: ["Architecture", "AI", "Innovation", "formal-verification", "quantum-resistance", "heterogeneous-computing"]
 params:
   originally_published: 2025-08-10
-  original_url: "https://speakez.tech/blog/categorical-deep-learning-and-universal-numbers/"
   migration_date: 2026-02-15
 ---
 
@@ -30,7 +29,7 @@ This would, in effect, provide a coherent framework to explore them all from a s
 
 Over the past several years, SpeakEZ has been designing components that form the foundation for a unified vision. Each piece on its own was solving a technical problem, and each was removing a source of computational inefficiency:
 
-The exploration of [matmul-free architectures](https://speakez.tech/blog/beyond-transformers/) demonstrated that the industry's obsession with matrix multiplication was more historical accident than mathematical necessity. It showed how [ternary quantization and sub-quadratic models](https://arxiv.org/abs/2406.02528) could achieve comparable performance with dramatically lower computational requirements, often 10-100x more efficient.
+The exploration of [matmul-free architectures](/blog/beyond-transformers/) demonstrated that the industry's obsession with matrix multiplication was more historical accident than mathematical necessity. It showed how [ternary quantization and sub-quadratic models](https://arxiv.org/abs/2406.02528) could achieve comparable performance with dramatically lower computational requirements, often 10-100x more efficient.
 
 And work on [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) speculated on how AMD's unified memory architecture could enable new paradigms for distributed AI inference, with BAREWire providing the zero-copy substrate for efficient model orchestration, eliminating the memory bandwidth bottleneck that consumes up to 90% of cycle wait times in current systems.
 
@@ -40,7 +39,7 @@ Insights into [hypergraph architecture](/docs/internals/pipeline/hyping-hypergra
 
 Our patent-pending [proof-aware compilation design](/docs/internals/pipeline/proof-aware-compilation/) demonstrated that verification doesn't add overhead; it removes it by enabling aggressive optimizations impossible without formal guarantees.
 
-And the early vision of [Fidelity as an AI Refinery](https://speakez.tech/blog/fidelity-as-ai-refinery/) established the framework's role in transforming raw computational capabilities into efficient intelligent systems.
+And the early vision of [Fidelity as an AI Refinery](/blog/fidelity-as-ai-refinery/) established the framework's role in transforming raw computational capabilities into efficient intelligent systems.
 
 Each of these efforts was solving a specific problem, but looking back, they were all converging on the same observation:
 
@@ -205,15 +204,15 @@ What sets Clef apart is its pragmatic bridge to software engineering reality. We
 
 2. **Mutable Optimization**: When needed, Clef allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive model design](/blog/fidelityrx-native-reactivity/) (now [absorbed into CCS](/docs/design/language/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
 
-3. **True Concurrency & Parallelism**: Clef's async expressions naturally model the parallel structure of categorical compositions, but as we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, Frosty transforms async computations into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
+3. **True Concurrency & Parallelism**: Clef's async expressions naturally model the parallel structure of categorical compositions, and as we explored in [Delimited Continuations](/docs/design/concurrency/delimited-continuations/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, cold computations transform into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
 
-4. **Interop**: The FFI in Rust is verbose and the ecosystem in OCaml is narrower, where Clef provides direct interop with C/C++ libraries, extended through our [Farscape CLI](https://speakez.tech/blog/the-farscape-bridge/) tool. As detailed in [Farscape's Modular Entry Points](https://speakez.tech/blog/farscape-modular-entry-points/), this goes beyond simple bindings; we can generate drop-in replacements for tools like OpenSSL that maintain API compatibility while adding type safety. The established ecosystem of HPC libraries, from PETSc for scientific computing to FFTW for signal processing, becomes available with Clef's type safety. The categorical structures we're implementing integrate with numerical libraries that have been optimized over decades. We have found no other functional language that pairs this combination in the standing literature we have reviewed: expressing 2-categorical morphisms while calling directly into established HPC kernels, with compile-time type safety and no additional overhead.
+4. **Interop**: The FFI in Rust is verbose and the ecosystem in OCaml is narrower, where Clef provides direct interop with C/C++ libraries, extended through our [Farscape CLI](/blog/the-farscape-bridge/) tool. As detailed in [Farscape's Modular Entry Points](/docs/internals/farscape/farscape-modular-entry-points/), this goes beyond simple bindings; we can generate drop-in replacements for tools like OpenSSL that maintain API compatibility while adding type safety. The established ecosystem of HPC libraries, from PETSc for scientific computing to FFTW for signal processing, becomes available with Clef's type safety. The categorical structures we're implementing integrate with numerical libraries that have been optimized over decades. We have found no other functional language that pairs this combination in the standing literature we have reviewed: expressing 2-categorical morphisms while calling directly into established HPC kernels, with compile-time type safety and no additional overhead.
 
 Clef is a strong fit for implementing categorical deep learning: it combines the expressiveness to represent 2-categories with the engineering capabilities to deploy them at scale. OCaml carries the theory with a narrower ecosystem. Rust carries the performance with friction against the abstractions. Haskell carries the categories with a harder interop story. Through close alignment to F# idioms and our Composer compiler, the Fidelity framework is designed to bridge these worlds.
 
 ### Quantum Computing: The Natural Beneficiary
 
-As we explored in our [quantum optionality](https://speakez.tech/blog/quantum-optionality/) analysis, this 2-categorical foundation is not limited to classical computation. Quantum computing emerges as a beneficiary of the same mathematical framework, and the alignment follows from the mathematics rather than from forcing a fit.
+As we explored in our [quantum optionality](/blog/quantum-optionality/) analysis, this 2-categorical foundation is not limited to classical computation. Quantum computing emerges as a beneficiary of the same mathematical framework, and the alignment follows from the mathematics rather than from forcing a fit.
 
 Quantum computations are categorical. Quantum circuits are morphisms, quantum gates are natural transformations, and quantum mechanics is expressed in the language of monoidal categories. The same 2-categorical structure that unifies HPC and AI extends to quantum:
 
@@ -306,7 +305,7 @@ Where the forward pass \(\text{Fwd}_f\) and backward pass \(\text{Bwd}_f\) form 
 
 > The mathematics are identical. Only the ***substrate*** differs.
 
-This is a blueprint for unification that Clef is designed to express through its computation expressions, type providers, and quotation system. As we explored in our [Beyond Transformers](https://speakez.tech/blog/beyond-transformers/) work, the shift away from matrix multiplication opens the door to other representations. Category theory provides that representation, and Clef provides the engineering vehicle.
+This is a blueprint for unification that Clef is designed to express through its computation expressions, type providers, and quotation system. As we explored in our [Beyond Transformers](/blog/beyond-transformers/) work, the shift away from matrix multiplication opens the door to other representations. Category theory provides that representation, and Clef provides the engineering vehicle.
 
 ### Key CDL Principles Applied to HPC+AI
 
@@ -377,7 +376,7 @@ This biproduct structure is essential for gradient decomposition and is automati
 
 #### The Missing Link
 
-F* and Z3 provide the formal verification layer for the unified framework. The point often missed is that **proofs don't just ensure correctness; they inform optimization patterns that can be up to 100x more efficient**. This extends the work we outlined in [Transforming AI Efficiency](https://speakez.tech/blog/fidelity-as-ai-refinery/) where we show that proofs are also lowered in MLIR to execute through SMTLIB.
+F* and Z3 provide the formal verification layer for the unified framework. The point often missed is that **proofs don't just ensure correctness; they inform optimization patterns that can be up to 100x more efficient**. This extends the work we outlined in [Transforming AI Efficiency](/blog/fidelity-as-ai-refinery/) where we show that proofs are also lowered in MLIR to execute through SMTLIB.
 
 ### Proof-Carrying Code in the Hypergraph
 
@@ -735,7 +734,7 @@ module ClimateModel =
 
 #### Autonomous Systems with Certified Safety
 
-As we explored in our [post-transformer architectures](https://speakez.tech/blog/beyond-transformers/), safety-critical systems benefit from unified verification:
+As we explored in our [post-transformer architectures](/blog/beyond-transformers/), safety-critical systems benefit from unified verification:
 
 ```fsharp
 module AutonomousVehicle =
@@ -1123,7 +1122,7 @@ graph TB
 
 ## A Natural Path to General Quantum Compute
 
-As we explored in our [quantum optionality](https://speakez.tech/blog/quantum-optionality/) analysis, this categorical foundation does more than unify classical HPC and AI; it provides an algorithmic bridge to quantum computing. The same categorical morphisms that describe neural networks and physical simulations also describe quantum circuits.
+As we explored in our [quantum optionality](/blog/quantum-optionality/) analysis, this categorical foundation does more than unify classical HPC and AI; it provides an algorithmic bridge to quantum computing. The same categorical morphisms that describe neural networks and physical simulations also describe quantum circuits.
 
 The alignment is algorithmic rather than aspirational. Quantum mechanics was categorical before computer scientists discovered category theory. When Heisenberg developed matrix mechanics and Schrödinger wave mechanics in the 1920s, they were unknowingly working with functors between categories. When Dirac showed these were equivalent formulations, he was proving a categorical equivalence:
 

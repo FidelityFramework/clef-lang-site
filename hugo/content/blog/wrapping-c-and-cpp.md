@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design"]
 params:
   originally_published: 2025-06-11
-  original_url: "https://speakez.tech/blog/wrapping-c-and-cpp/"
   migration_date: 2026-03-12
 ---
 
@@ -17,7 +16,7 @@ The cybersecurity landscape has shifted dramatically in recent years, with memor
 
 ## The Architectural Vision
 
-Our Fidelity framework takes a different approach to the memory safety challenge. Rather than treating existing C and C++ code as technical debt to be eliminated, we can view it as a valuable asset to be protected. The architecture creates thin, verifiable safety wrappers around native libraries, adding memory safety at the boundary without touching the underlying implementation. The binding half of this is not a proposal. [Farscape](https://speakez.tech/blog/the-farscape-bridge/), our bindings generator, parses C headers with clang and generates `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding declarations (Layer 1) and idiomatic safety wrappers (Layer 2) today. It runs against real libraries in shipping code; [HelloWayland](https://github.com/FidelityFramework/HelloWayland) draws a native window through Farscape-generated `wayland-client` bindings. What remains forward-looking is the verification layer described later in this post, the proof obligations the tiers carry on top of those wrappers; the generation that produces them is working software.
+Our Fidelity framework takes a different approach to the memory safety challenge. Rather than treating existing C and C++ code as technical debt to be eliminated, we can view it as a valuable asset to be protected. The architecture creates thin, verifiable safety wrappers around native libraries, adding memory safety at the boundary without touching the underlying implementation. The binding half of this is not a proposal. [Farscape](/blog/the-farscape-bridge/), our bindings generator, parses C headers with clang and generates `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding declarations (Layer 1) and idiomatic safety wrappers (Layer 2) today. It runs against real libraries in shipping code; [HelloWayland](https://github.com/FidelityFramework/HelloWayland) draws a native window through Farscape-generated `wayland-client` bindings. What remains forward-looking is the verification layer described later in this post, the proof obligations the tiers carry on top of those wrappers; the generation that produces them is working software.
 
 Consider this architectural pattern:
 

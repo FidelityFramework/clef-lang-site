@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Innovation"]
 params:
   originally_published: 2023-06-06
-  original_url: "https://speakez.tech/blog/raii-in-olivier-and-prospero/"
   migration_date: 2026-03-12
 ---
 

@@ -19,11 +19,10 @@ tags:
   - LLVM
 params:
   originally_published: 2026-01-18T00:00:00-05:00
-  original_url: "https://speakez.tech/blog/seqing-simplicity/"
   migration_date: 2026-02-15
 ---
 
-There is a peculiar satisfaction in watching complex machinery disappear behind a simple interface. The best APIs feel inevitable, as though any other design would have been wrong. Clef's sequence expressions belong to this category. You write `seq { yield 1; yield 2; yield 3 }` and receive something that walks and talks like a list but evaluates dynamically. You write `seq { for x in xs do yield f x }` and transformation happens on demand. The syntax is declarative; the semantics are [lazy](https://speakez.tech/blog/why-lazy-is-hard/); the implementation is invisible.
+There is a peculiar satisfaction in watching complex machinery disappear behind a simple interface. The best APIs feel inevitable, as though any other design would have been wrong. Clef's sequence expressions belong to this category. You write `seq { yield 1; yield 2; yield 3 }` and receive something that walks and talks like a list but evaluates dynamically. You write `seq { for x in xs do yield f x }` and transformation happens on demand. The syntax is declarative; the semantics are [lazy](/docs/design/structure-and-performance/why-lazy-is-hard/); the implementation is invisible.
 
 That invisibility is precisely the point. Simon Peyton Jones once observed that the measure of a good abstraction is how much it lets you forget. Sequence expressions let you forget about iteration state, about memory allocation patterns, about the machinery of resumption. You describe what values to produce; the language handles when and how.
 
@@ -33,7 +32,7 @@ For native compilation, every one of those capabilities becomes a question. Wher
 
 > The surface simplicity of `seq { }` conceals an iceberg of implementation concerns.
 
-This is the story of how Fidelity implements sequence expressions for native targets. The approach extends patterns established in [Gaining Closure](/docs/design/memory/gaining-closure/) and [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. What emerges is a design where the API remains idiomatic Clef while the implementation is native state machinery.
+This is the story of how Fidelity implements sequence expressions for native targets. The approach extends patterns established in [Gaining Closure](/docs/design/memory/gaining-closure/) and [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. What emerges is a design where the API remains idiomatic Clef while the implementation is native state machinery.
 
 ## What Makes Sequences Challenging
 
@@ -82,7 +81,7 @@ Fidelity's approach to sequences did not emerge from first principles. It compos
 
 [Closures](/docs/design/memory/gaining-closure/) established flat closure representation: captured variables stored directly in the struct, no environment pointers, no null fields.[^2][^3] This created a foundation where closures are self-contained values with deterministic layout.
 
-[Lazy values](https://speakez.tech/blog/why-lazy-is-hard/) extended that foundation with memoization state: a flat closure plus a `computed` flag and a `value` slot.[^6] The thunk calling convention, where the thunk receives a pointer to its containing struct and extracts its own captures, proved essential.
+[Lazy values](/docs/design/structure-and-performance/why-lazy-is-hard/) extended that foundation with memoization state: a flat closure plus a `computed` flag and a `value` slot.[^6] The thunk calling convention, where the thunk receives a pointer to its containing struct and extracts its own captures, proved essential.
 
 Sequences extend the pattern once more. [A sequence is a flat closure with state machine fields and internal mutable state](/spec/draft/seq-representation/#41-seq-structure):
 
@@ -393,12 +392,12 @@ The journey continues. Each step reveals the next.
 ## Related Reading
 
 - [Gaining Closure](/docs/design/memory/gaining-closure/): The flat closure foundation that sequences extend
-- [Why Lazy Is Hard](https://speakez.tech/blog/why-lazy-is-hard/): Lazy thunks as extended closures, the immediate precursor to sequences
+- [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/): Lazy thunks as extended closures, the immediate precursor to sequences
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/): Types belong in the compiler, not a library
 - [Hello World Goes Native](/docs/internals/mlir/hello-world-goes-native/): The nanopass pipeline that processes sequence expressions
 - [Why Clef Fits MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/): SSA and functional programming share the same foundations
 - [Baker Saturation Engine](/docs/internals/pipeline/baker-saturation-engine/): The typed tree zipper used for semantic analysis
-- [WREN Stack](https://speakez.tech/blog/wren-stack/): The broader desktop development vision that sequences support
+- [WREN Stack](/blog/wren-stack/): The broader desktop development vision that sequences support
 
 ## References
 

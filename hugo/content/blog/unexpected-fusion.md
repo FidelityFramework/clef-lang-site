@@ -15,7 +15,6 @@ tags:
   - formal-verification
 params:
   originally_published: 2025-09-29T00:00:00-05:00
-  original_url: "https://speakez.tech/blog/unexpected-fusion/"
   migration_date: 2026-02-15
 ---
 
@@ -25,7 +24,7 @@ This convergence wasn't immediately obvious. When Don Syme first presented F# to
 
 ## The OCaml Foundation: More Than Just Syntax
 
-F# began its life in 2002 as what was informally called "Caml for .NET", an attempt to bring OCaml's ML-style functional programming to [Microsoft's new runtime](https://speakez.tech/blog/the-return-of-the-compiler/). But from the beginning, F# was more than a transliteration of OCaml to a new platform. It enhanced that ML foundation with features that would prove essential for building concurrent systems.
+F# began its life in 2002 as what was informally called "Caml for .NET", an attempt to bring OCaml's ML-style functional programming to [Microsoft's new runtime](/blog/the-return-of-the-compiler/). But from the beginning, F# was more than a transliteration of OCaml to a new platform. It enhanced that ML foundation with features that would prove essential for building concurrent systems.
 
 The divergences from OCaml were deliberate and thoughtful. Where OCaml required explicit type annotations in many contexts, F# pushed type inference further. Where OCaml used semicolons and explicit delimiters, F# adopted Python's significant whitespace, making the code cleaner and more approachable. These might seem like surface-level changes, but they reflected a deeper philosophy: F# would be pragmatic where OCaml was purist, accessible where OCaml was opinionated.
 
@@ -88,7 +87,7 @@ graph TD
     end
 ```
 
-Our Prospero supervision layer, detailed in our exploration of [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/), is designed to bring Erlang-style supervision trees to F#. Where Erlang's process-per-actor model gives each actor an isolated heap, Prospero uses arena allocation within shared process memory. This design choice reflects modern hardware realities: cache coherence has advanced, memory is abundant, and the cost of message copying often exceeds the benefit of complete isolation.
+Our Prospero supervision layer, detailed in our exploration of [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), is designed to bring Erlang-style supervision trees to F#. Where Erlang's process-per-actor model gives each actor an isolated heap, Prospero uses arena allocation within shared process memory. This design choice reflects modern hardware realities: cache coherence has advanced, memory is abundant, and the cost of message copying often exceeds the benefit of complete isolation.
 
 ```fsharp
 module Olivier =
@@ -108,7 +107,7 @@ module Olivier =
         supervisor.Start()
 ```
 
-Our framework's design aspires to maintain compatibility with Akka.NET's cluster communication protocols, because real-world systems need "paved" paths to interoperate. Organizations with existing Akka.NET deployments would be able to gradually include Fidelity components where they show particular advantage. The [actor-oriented architecture](https://speakez.tech/blog/the-case-for-actor-oriented-architecture/) we advocate is designed to provide process-level protection without runtime overhead, a balance between isolation and native efficiency. We expect this awareness to grow as "agentic systems" become the norm in enterprise environments.
+Our framework's design aspires to maintain compatibility with Akka.NET's cluster communication protocols, because real-world systems need "paved" paths to interoperate. Organizations with existing Akka.NET deployments would be able to gradually include Fidelity components where they show particular advantage. The [actor-oriented architecture](/blog/the-case-for-actor-oriented-architecture/) we advocate is designed to provide process-level protection without runtime overhead, a balance between isolation and native efficiency. We expect this awareness to grow as "agentic systems" become the norm in enterprise environments.
 
 ## Actors at The Cloud's Edge
 
@@ -182,7 +181,7 @@ When the compiler knows that certain message orderings are impossible, it can el
 
 ## Erlang Lessons, F# Innovations
 
-The influence of Erlang on our actor implementations beyond the `mailboxprocessor` runs deep, and we have weighed it critically. As examined in our analysis of [Erlang lessons in Fidelity](https://speakez.tech/blog/ode-to-erlang---lessons-from-fez/), we have taken up several of Erlang's positions while adapting our technical approach to modern technology.
+The influence of Erlang on our actor implementations beyond the `mailboxprocessor` runs deep, and we have weighed it critically. As examined in our analysis of [Erlang lessons in Fidelity](/blog/ode-to-erlang/), we have taken up several of Erlang's positions while adapting our technical approach to modern technology.
 
 Erlang's "let it crash" philosophy appears in both Fidelity and Fidelity.CloudEdge but with type-safe refinements. Where Erlang relies on dynamic pattern matching to handle failures, F# uses exhaustive pattern matching with compile-time verification:
 

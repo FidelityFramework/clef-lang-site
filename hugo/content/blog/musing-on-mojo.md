@@ -6,7 +6,6 @@ authors: ["Houston Haynes"]
 tags: ["Analysis"]
 params:
   originally_published: 2023-07-04
-  original_url: "https://speakez.tech/blog/musing-on-mojo/"
   migration_date: 2026-02-15
 ---
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Analysis", "Design", "Innovation"]
 params:
   originally_published: 2025-09-05
-  original_url: "https://speakez.tech/blog/abstract-machine-model-paradox/"
   migration_date: 2026-02-15
 ---
 
@@ -75,7 +74,7 @@ This is where the article's Rust-colored view becomes most limiting. Rust's owne
 
 Our Composer compiler carries both CFG (Control Flow Graph) and DFG (Data Flow Graph) views within the same hypergraph structure. A single Clef function might compile to control flow for CPU execution, data flow for FPGA implementation, or spike trains for neuromorphic processing. The compiler holds both views and selects based on the target hardware and the computation's inherent structure rather than forcing a choice.
 
-This is why our approach of making design-time memory management optional rather than mandatory (as explored in [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/)) carries weight here. In Rust, every function signature must declare its ownership semantics: taking ownership, borrowing immutably, or borrowing mutably. On an FPGA those concepts have no referent. Data has flow paths, not ownership. Memory is accessed through spatial locality, not borrowed. When memory management is something the developer reaches for where it pays off, instead of a discipline every value carries, the framework can target architectures where Rust's core abstractions fight the targeted processor's reality.
+This is why our approach of making design-time memory management optional rather than mandatory (as explored in [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/)) carries weight here. In Rust, every function signature must declare its ownership semantics: taking ownership, borrowing immutably, or borrowing mutably. On an FPGA those concepts have no referent. Data has flow paths, not ownership. Memory is accessed through spatial locality, not borrowed. When memory management is something the developer reaches for where it pays off, instead of a discipline every value carries, the framework can target architectures where Rust's core abstractions fight the targeted processor's reality.
 
 ## A Heterogeneous Future in Action
 

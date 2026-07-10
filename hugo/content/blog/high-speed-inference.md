@@ -8,7 +8,6 @@ authors:
 tags: ["AI", "Design", "Innovation"]
 params:
   originally_published: 2025-05-18T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/high-speed-inference/"
   migration_date: 2026-02-15
 ---
 

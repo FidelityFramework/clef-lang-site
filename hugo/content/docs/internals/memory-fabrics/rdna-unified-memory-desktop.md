@@ -9,7 +9,6 @@ aliases:
   - /docs/internals/hardware/rdna-unified-memory-desktop/
 params:
   originally_published: 2025-12-14
-  original_url: "https://speakez.tech/blog/rdna-and-the-unified-memory-desktop/"
   migration_date: 2026-03-12
 ---
 

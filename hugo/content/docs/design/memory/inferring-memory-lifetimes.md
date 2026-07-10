@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
   originally_published: 2026-01-14
-  original_url: "https://speakez.tech/blog/inferring-memory-lifetimes/"
   migration_date: 2026-02-15
 ---
 
@@ -379,7 +378,7 @@ Each follows the same design question: what can the compiler determine that deve
 
 ## Connection to RAII and Actor Boundaries
 
-This lifetime inference principle connects directly to our RAII-based actor architecture (see [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/)). In that design, each actor owns an arena that lives exactly as long as the actor does. The actor boundary provides a natural lifetime scope.
+This lifetime inference principle connects directly to our RAII-based actor architecture (see [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/)). In that design, each actor owns an arena that lives exactly as long as the actor does. The actor boundary provides a natural lifetime scope.
 
 Lifetime inference extends this further:
 
@@ -431,4 +430,4 @@ The explicit form remains the foundation everything else builds on. It is the es
 This is the fuller sense of "Memory Management by Choice": the choice covers both when to optimize and, one level up, whether memory enters the developer's thinking at all.
 
 ---
-*This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/types/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/concurrency/delimited-continuations/) for the connection between continuation boundaries and memory management.*
+*This article continues our exploration of native Clef compilation. See ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) for the foundational three-level design, ["ByRef Resolved"](/docs/design/types/byref-resolved/) for the technical solution to .NET's byref restrictions, [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) for how these lifetime principles extend to actor-based systems, and ["Delimited Continuations: Fidelity's Turning Point"](/docs/design/concurrency/delimited-continuations/) for the connection between continuation boundaries and memory management.*

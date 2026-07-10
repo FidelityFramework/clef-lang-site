@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
   originally_published: 2025-05-16
-  original_url: "https://speakez.tech/blog/byref-resolved/"
   migration_date: 2026-02-15
 ---
 

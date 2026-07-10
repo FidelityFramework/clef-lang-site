@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
   originally_published: 2025-02-22
-  original_url: "https://speakez.tech/blog/the-farscape-bridge/"
   migration_date: 2026-03-12
 ---
 

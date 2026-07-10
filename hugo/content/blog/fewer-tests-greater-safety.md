@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Systems"]
 params:
   originally_published: 2025-08-08
-  original_url: "https://speakez.tech/blog/fewer-tests-greater-safety/"
   migration_date: 2026-02-15
 ---
 

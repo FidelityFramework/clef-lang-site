@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design"]
 params:
   originally_published: 2021-07-15
-  original_url: "https://speakez.tech/blog/cryptographic-certainty/"
   migration_date: 2026-03-12
 ---
 

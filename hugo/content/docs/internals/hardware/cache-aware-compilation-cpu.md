@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance"]
 params:
   originally_published: 2025-09-24
-  original_url: "https://speakez.tech/blog/cache-aware-compilation-cpu/"
   migration_date: 2026-02-15
 ---
 
@@ -17,7 +16,7 @@ The Fidelity framework's Prospero orchestration layer is designed to address thi
 
 ## Developer Spectrum of Control
 
-The Fidelity framework embraces progressive disclosure in developer experience. As explored in our previous article on [Memory Management by Choice](https://speakez.tech/blog/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
+The Fidelity framework embraces progressive disclosure in developer experience. As explored in our previous article on [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
 
 The detailed memory layout annotations and cache-specific optimizations presented in this document represent the full spectrum of control available to developers who need maximum performance. However, these represent the exception rather than the rule. Most Clef code written for Fidelity will use standard Clef syntax, with the Composer compiler inferring appropriate memory layouts and cache strategies. Library authors may leverage explicit annotations to provide optimized implementations that application developers consume through clean, idiomatic APIs. This layered approach ensures that complexity appears only where performance demands it, maintaining Clef's elegance for the vast majority of application code.
 

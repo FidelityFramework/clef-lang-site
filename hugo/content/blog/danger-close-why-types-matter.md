@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Analysis", "Architecture", "Design"]
 params:
   originally_published: 2025-06-24
-  original_url: "https://speakez.tech/blog/danger-close-why-types-matter/"
   migration_date: 2026-02-15
 ---
 

@@ -6,7 +6,6 @@ tags: ["Analysis"]
 authors: ["Houston Haynes"]
 params:
   originally_published: 2022-02-02
-  original_url: "https://speakez.tech/blog/hidden-dominance-of-functional-programming/"
   migration_date: 2026-03-29
 ---
 

@@ -9,7 +9,6 @@ aliases:
   - /docs/internals/memory-fabrics/rdma-accelerating-network-comms/
 params:
   originally_published: 2025-05-17
-  original_url: "https://speakez.tech/blog/rdma-accelerating-network-comms/"
   migration_date: 2026-03-12
 ---
 

@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["AI"]
 params:
   originally_published: 2024-12-15
-  original_url: "https://speakez.tech/blog/cnn-to-topoc-transfer-learning/"
   migration_date: 2026-03-12
 ---
 

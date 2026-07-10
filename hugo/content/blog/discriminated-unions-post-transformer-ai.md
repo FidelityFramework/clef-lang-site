@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Innovation", "Architecture", "AI"]
 params:
   originally_published: 2025-06-17
-  original_url: "https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/"
   migration_date: 2026-03-12
 ---
 

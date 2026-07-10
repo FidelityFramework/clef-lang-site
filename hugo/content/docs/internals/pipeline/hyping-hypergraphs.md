@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 params:
   originally_published: 2025-08-07
-  original_url: "https://speakez.tech/blog/hyping-hypergraphs/"
   migration_date: 2026-02-15
 ---
 

@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture"]
 params:
   originally_published: 2025-04-16
-  original_url: "https://speakez.tech/blog/from-dotnet-to-fidelity-concurrency/"
   migration_date: 2026-02-15
 ---
 
@@ -38,7 +37,7 @@ Our Fidelity framework includes several key libraries for concurrency, which we'
 
 1. **CCS Intrinsics**: Automatic static resolution of functions and types
 2. **BAREWire**: Zero-copy memory protocol for efficient data handling
-3. **Frosty**: Async library that replaces .NET's Task
+3. **Incremental and Observable**: The dual cold and hot computation primitives that replace .NET's Task
 4. **Olivier**: Actor model implementation with Erlang-inspired semantics
    - **Prospero**: Scheduling, orchestration and heap management via RAII
 5. **Alex**: Transformation of Clef code to MLIR operations
@@ -116,25 +115,25 @@ This means multiple components are meant to access the same memory without copyi
 
 Rust achieves similar zero-copy goals through its ownership model, and the comparison is instructive. Rust's approach verifies at compile time that references do not outlive their referents and that mutable access is exclusive. This works well within a single address space but requires careful design when crossing process boundaries; Rust IPC libraries typically serialize data or use unsafe blocks for shared memory. BAREWire's capability model takes a different approach: rather than tracking reference lifetimes, we track access permissions that can be explicitly transferred. Both approaches provide memory safety without garbage collection; they differ in what the type system tracks and how cross-boundary sharing is expressed.
 
-## Frosty Async
+## Cold and Hot: Incremental and Observable
 
-Building on CCS intrinsics and BAREWire, our Frosty async library draws on lessons from [IcedTasks](https://github.com/TheAngryByrd/IcedTasks), an F# library created by Jimmy Byrd, reimplemented here without .NET Task dependencies for native compilation:
+Building on CCS intrinsics and BAREWire, the framework's async model is not a separate library but two intrinsic, dual primitives: `Incremental` for cold pull-based computation and `Observable` for hot push-based computation. `async`/`await` is the historical surface that industry convention standardized on, and it maps onto the cold `Incremental` side. The cold/hot design draws on lessons from [IcedTasks](https://github.com/TheAngryByrd/IcedTasks), an F# library created by Jimmy Byrd, reworked here without .NET Task dependencies for native compilation:
 
 ```fsharp
-// Creating a cold task (doesn't start until someone subscribes)
-let coldAsync = Frosty.startCold (fun () ->
+// A cold computation: Incremental, held as a value, does not run until observed
+let coldWork = Incremental.defer (fun () ->
     calculateSomething()
 )
 
-// Creating a hot task (starts immediately)
-let hotAsync = Frosty.startHot (fun () ->
+// A hot computation: Observable, running as its source produces values
+let hotWork = Observable.start (fun () ->
     calculateSomething()
 )
 
-// Composing tasks with a computation expression (looks like async!)
-let combinedAsync = frosty {
-    let! result1 = firstAsync
-    let! result2 = secondAsync
+// Composing cold computations with a computation expression (looks like async!)
+let combinedWork = incremental {
+    let! result1 = firstWork
+    let! result2 = secondWork
     return result1 + result2
 }
 ```
@@ -328,7 +327,7 @@ This alignment between Clef and MLIR comes from independent work in programming 
 
 Our Fidelity framework is designed to free Clef from the constraints of a managed runtime environment. The aim is to keep the expressive syntax Clef carries while changing what happens beneath the surface.
 
-Under this design, Clef code is no longer bound by garbage collection pauses, thread pool configurations, or runtime overhead. Instead, the code flows through a progressive lowering pipeline, from computation expressions to continuations, through CCS intrinsics, BAREWire, Frosty, Olivier, and finally Alex, emerging as machine code tailored to the target hardware with semantic intent preserved at every step.
+Under this design, Clef code is no longer bound by garbage collection pauses, thread pool configurations, or runtime overhead. Instead, the code flows through a progressive lowering pipeline, from computation expressions to continuations, through CCS intrinsics, BAREWire, Olivier, and finally Alex, emerging as machine code tailored to the target hardware with semantic intent preserved at every step.
 
 The intent is more than a performance change. The same Clef code meant to power server applications is designed to run directly on embedded devices. The actor model concepts you apply in distributed systems are meant to scale down to real-time applications. The memory safety the design depends on is structural, enforced without the overhead of a runtime or a monolithic garbage collector.
 

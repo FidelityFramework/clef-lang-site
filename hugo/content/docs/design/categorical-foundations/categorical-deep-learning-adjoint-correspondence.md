@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "AI", "Innovation"]
 params:
   originally_published: 2025-08-10
-  original_url: "https://speakez.tech/blog/categorical-deep-learning-adjoint-correspondence/"
   migration_date: 2026-02-15
 ---
 

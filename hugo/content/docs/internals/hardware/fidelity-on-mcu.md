@@ -9,7 +9,6 @@ aliases:
   - /docs/internals/hardware/fidelity-on-stm32/
 params:
   originally_published: 2024-01-02
-  original_url: "https://speakez.tech/blog/fsharp-on-metal-fidelity-lowered-to-stm32/"
   migration_date: 2026-02-15
 ---
 

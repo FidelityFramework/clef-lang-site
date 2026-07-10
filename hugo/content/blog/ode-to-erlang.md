@@ -8,7 +8,6 @@ authors:
 tags: ["analysis", "actor-model", "distributed-systems", "functional-programming", "concurrency"]
 params:
   originally_published: 2024-12-28T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/ode-to-erlang-lessons-from-fez/"
   migration_date: 2026-02-15
 ---
 
@@ -340,11 +339,11 @@ let embeddedConfig =
 Erlang's concurrency model is built on processes and messages, and it has held up over decades. Its primitives stay basic, though: spawn a process, send a message, receive a message. The operations combine well, but complex concurrency patterns can become unwieldy. Composition is hard. Patterns like parallel map or concurrent resource management get rebuilt in each application rather than pulled from libraries, and error handling across process boundaries needs careful manual coordination.
 
 **Fidelity Advancement:**
-Frosty, our Fidelity concurrency library, builds on Erlang's model with compositional primitives meant to make complex concurrency patterns easier to express and more predictable to execute:
+Our concurrency model builds on Erlang's with compositional primitives meant to make complex concurrency patterns easier to express and more predictable to execute. It is not a separate library: the cold and hot sides are the intrinsic dual primitives `Incremental` and `Observable`.
 
 ```clef
-// Compositional streams with cancellation
-let processData = coldStream {
+// Compositional cold computation with cancellation
+let processData = incremental {
     // Type-safe data access with BAREWire
     let! buffer = BAREWire.receiveBuffer messagePort
     use view = BAREWire.createTypedView<Vector<float>> buffer
@@ -352,17 +351,17 @@ let processData = coldStream {
     // Process with cancellation support
     let! result =
         transform view
-        |> ColdStream.withTimeout (TimeSpan.FromSeconds 5.0)
+        |> Incremental.withTimeout (TimeSpan.FromSeconds 5.0)
 
     return result
 }
 ```
 
-This example shows a few of the pieces. The computation expression syntax (`coldStream { ... }`) gives a declarative way to express asynchronous operations. The `use` keyword disposes resources even if exceptions occur or the operation is cancelled. The `withTimeout` combinator attaches cancellation behavior without complicating the core logic.
+This example shows a few of the pieces. The computation expression syntax (`incremental { ... }`) gives a declarative way to express cold, deferred operations. The `use` keyword disposes resources even if exceptions occur or the operation is cancelled. The `withTimeout` combinator attaches cancellation behavior without complicating the core logic.
 
-Frosty is designed to provide two stream types: `HotStream<'T>` for operations that begin immediately and `ColdStream<'T>` for operations that start on demand. The distinction controls when and how concurrent operations execute. Paired with structured cancellation and resource management, these primitives are meant to let developers build concurrent workflows that stay maintainable and predictable.
+The two primitives are duals: `Observable<'T>` for hot push-based operations that begin as their source produces values, and `Incremental<'T>` for cold pull-based operations that start on demand. `async`/`await` is the historical surface that industry convention standardized on, and it maps onto the cold `Incremental` side. Paired with structured cancellation and resource management, these primitives are meant to let developers build concurrent workflows that stay maintainable and predictable.
 
-Frosty is designed to integrate with the rest of our Fidelity stack. BAREWire provides memory-efficient data structures, XParsec enables zero-copy parsing, and the MLIR/LLVM pipeline optimizes the resulting code for the target platform. The aim is a concurrency model more expressive than Erlang's and more efficient in execution.
+The model integrates with the rest of our Fidelity stack. BAREWire provides memory-efficient data structures, XParsec enables zero-copy parsing, and the MLIR/LLVM pipeline optimizes the resulting code for the target platform. The aim is a concurrency model more expressive than Erlang's and more efficient in execution.
 
 ## Lessons from Fez Worth Preserving
 

@@ -9,7 +9,6 @@ authors:
 tags: ["architecture", "design", "innovation"]
 params:
   originally_published: 2025-07-29T00:00:00+04:00
-  original_url: "https://speakez.tech/blog/the-continuation-preservation-paradox/"
   migration_date: 2026-02-15
 ---
 

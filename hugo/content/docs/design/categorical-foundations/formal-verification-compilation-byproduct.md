@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation"]
 params:
   originally_published: 2025-09-14
-  original_url: "https://speakez.tech/blog/formal-verification-compilation-byproduct/"
   migration_date: 2026-02-15
 ---
 

@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["AI", "Architecture", "Innovation"]
 params:
   originally_published: 2025-08-24
-  original_url: "https://speakez.tech/blog/forward-gradients-exact-accumulation/"
   migration_date: 2026-02-15
 ---
 

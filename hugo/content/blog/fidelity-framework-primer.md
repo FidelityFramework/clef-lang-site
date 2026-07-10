@@ -8,7 +8,6 @@ authors:
 tags: ["systems", "native-compilation", "type-safety", "memory-management", "MLIR", "LLVM"]
 params:
   originally_published: 2025-01-03T16:59:54+06:00
-  original_url: "https://speakez.tech/blog/fidelity-framework-a-primer/"
   migration_date: 2026-02-15
 ---
 
@@ -293,7 +292,7 @@ This primer provides an overview of the Fidelity Framework. For detailed treatme
 - [Absorbing Alloy](/docs/design/language/absorbing-alloy/): how the native type system evolved from a standalone library to compiler intrinsics
 - [Intelligent Tree-Shaking](/docs/internals/pipeline/intelligent-tree-shaking/): semantic reachability analysis, soft-delete patterns, and library boundary classification
 - [Clef Source-Based Package Management](/docs/tooling/clefpak-source-based-package-management/): the `.fidproj` format, `cpk` package manager, and clefpak.dev registry
-- [Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/): type-safe concurrency primitives and actor supervision hierarchies
-- [RAII in Olivier and Prospero](https://speakez.tech/blog/raii-in-olivier-and-prospero/): actor-aware memory management through deterministic lifetimes and arena allocation
-- [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): zero-copy serialization, reactive signals, and cross-platform data exchange
-- [The Farscape Bridge](https://speakez.tech/blog/the-farscape-bridge/): type-safe bindings for C/C++ libraries, AI accelerators, and post-quantum cryptography
+- [Unified Actor Architecture](/blog/unified-actor-architecture/): type-safe concurrency primitives and actor supervision hierarchies
+- [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/): actor-aware memory management through deterministic lifetimes and arena allocation
+- [Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/): zero-copy serialization, reactive signals, and cross-platform data exchange
+- [The Farscape Bridge](/blog/the-farscape-bridge/): type-safe bindings for C/C++ libraries, AI accelerators, and post-quantum cryptography

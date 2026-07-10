@@ -8,7 +8,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 params:
   originally_published: 2025-12-14
-  original_url: "https://speakez.tech/blog/delimited-continuations-fidelitys-turning-point/"
   migration_date: 2026-02-15
 ---
 
@@ -57,7 +56,7 @@ The transformation looks verbose, but it reveals the underlying structure:
 
 > async expressions are syntax sugar over delimited continuations.
 
-The `let!` keyword hides the explicit continuation capture that happens underneath. As we explored in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), this transformation enables Clef's async syntax to compile to native code with deterministic memory management.
+The `let!` keyword hides the explicit continuation capture that happens underneath. This transformation is what lets Clef's async syntax compile to native code with deterministic memory management, worked through in [Platform-Aware Continuation Compilation](#platform-aware-continuation-compilation) below.
 
 ## Actors as Sugared Continuations
 
@@ -82,13 +81,13 @@ let counterActor = MailboxProcessor.Start(fun inbox ->
 
 The `let! msg = inbox.Receive()` line captures a continuation: everything that happens after the message arrives. The `return! loop count` tail call represents another continuation capture: suspend this actor, prepare to receive the next message, and when it arrives, execute the loop body again.
 
-This is why [our Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/) can bridge Fidelity's native Olivier actors with Cloudflare's Durable Objects. Despite radically different runtimes, both are executing the same continuation-based pattern. The actor abstraction is syntactic sugar over delimited continuations with message-driven resumption.
+This is why [our Unified Actor Architecture](/blog/unified-actor-architecture/) can bridge Fidelity's native Olivier actors with Cloudflare's Durable Objects. Despite radically different runtimes, both are executing the same continuation-based pattern. The actor abstraction is syntactic sugar over delimited continuations with message-driven resumption.
 
 The deeper insight, explored in [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/), is that supervision hierarchies are themselves continuation management structures. When a supervisor spawns a child, it captures a continuation for handling that child's failure. When the child fails, the supervisor's continuation resumes with a decision: restart, escalate, or terminate. Erlang made "let it crash" famous, but in the Fidelity framework it is actually "capture the failure continuation" by another name.
 
 ## Computation Expressions: The Unifying Syntax
 
-Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) explores, the classifier is the region's effect and data dependency, not the builder keyword. A region that sequences effects lowers through delimited continuations (DCont). A region of independent pure work lowers to a parallel target, and that target splits by shape: dense rectangular work goes to the tensor path, irregular higher-order reduction goes to interaction nets (Inet). The builder picks up the common case, and the dependency structure decides the rest.
+Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) explores, the classifier is the region's effect and data dependency, not the builder keyword. A region that sequences effects lowers through delimited continuations (DCont). A region of independent pure work lowers to a parallel target, and that target splits by shape: dense rectangular work goes to the tensor path, irregular higher-order reduction goes to interaction nets (Inet). The builder picks up the common case, and the dependency structure decides the rest.
 
 ```fsharp
 // Sequential: each step depends on previous (DCont pattern)
@@ -118,11 +117,11 @@ Each `Bind` call is a continuation capture. The second argument to `Bind` (namel
 
 This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and route them through the appropriate MLIR dialects. Sequential patterns flow through DCont; independent pure patterns flow to the tensor path when the work is dense and rectangular, and to Inet when the reduction is irregular. The computation expression syntax that developers write maps to optimized native execution patterns.
 
-## Frosty: Platform-Aware Continuation Compilation
+## Platform-Aware Continuation Compilation
 
-The Frosty subsystem, detailed in [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/), handles the challenge of compiling Clef's async expressions to efficient native code across different platforms. Frosty must express continuation-passing style in ways that survive through to code generation. This is not the typical CPS transformation that compilers perform internally, but an explicit articulation of continuation structure that the Composer compiler recognizes and translates to MLIR.
+Compiling Clef's async expressions to efficient native code across different platforms means expressing continuation-passing style in a way that survives to code generation. This is an explicit articulation of continuation structure that the Composer compiler recognizes and translates to MLIR, not the implicit CPS transformation a compiler performs internally. The framework's real primitives here are the dual `Incremental` and `Observable`: cold pull-based computation on one side, push-based on the other. `async`/`await` is the historical surface that industry convention has standardized on, and it maps onto the cold `Incremental` side, a deferred computation held as a value that does not run until it is observed.
 
-The approach combines delimited continuations with true RAII principles. Where .NET async relies on heap-allocated Tasks and thread pool scheduling, Frosty compiles to stack-based state machines with deterministic resource cleanup:
+The approach combines delimited continuations with true RAII principles. Where .NET async relies on heap-allocated Tasks and thread pool scheduling, a Clef async expression compiles to a stack-based state machine with deterministic resource cleanup:
 
 ```fsharp
 // What developers write - familiar Clef async
@@ -133,14 +132,14 @@ let processFile() = async {
     return buffer.Slice(0, bytesRead)
 }
 
-// What Frosty compiles to:
+// What it compiles to:
 // - Stack frame for continuation state (0 heap bytes)
 // - Automatic resource cleanup at scope boundaries
 // - Platform-specific I/O (IOCP on Windows, io_uring on Linux)
  
 ```
 
-The types themselves encode CPS structure. Frosty's async primitives make continuation capture explicit in their signatures, and the Composer compiler recognizes these patterns during type resolution, recording them in the Program Semantic Graph for code generation.
+The types themselves encode CPS structure. The async primitives make continuation capture explicit in their signatures, and the Composer compiler recognizes these patterns during type resolution, recording them in the Program Semantic Graph for code generation.
 
 The DCont dialect in MLIR provides the target representation:
 
@@ -213,17 +212,17 @@ This unification enables:
 
 1. **Shared optimization infrastructure**: Continuation fusion, suspension point elimination, and closure conversion apply uniformly across async, actors, and custom CEs.
 
-2. **Consistent memory model**: As [The Continuation Preservation Paradox](https://speakez.tech/blog/the-continuation-preservation-paradox/) explores, continuations can be stack-allocated when their scope is bounded, eliminating heap allocation regardless of whether they originate from async or actors.
+2. **Consistent memory model**: As [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/) explores, continuations can be stack-allocated when their scope is bounded, eliminating heap allocation regardless of whether they originate from async or actors.
 
 3. **Compositional semantics**: An async operation inside an actor message handler composes naturally because both are continuations. No impedance mismatch, no special cases.
 
 4. **Principled extension**: New computation expression builders automatically benefit from the continuation compilation infrastructure. Library authors can create domain-specific patterns that compile efficiently.
 
-5. **Hardware diversity**: The continuation model maps naturally to dataflow architectures beyond Von Neumann machines. As explored in [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/) and [Advent of Neuromorphic AI](https://speakez.tech/blog/advent-of-neuromorphic-ai/), the explicit control flow boundaries that delimited continuations provide align with how CGRAs, neuromorphic processors, and other emerging architectures express computation: as graphs of operations with explicit data dependencies rather than sequential instruction streams.
+5. **Hardware diversity**: The continuation model maps naturally to dataflow architectures beyond Von Neumann machines. As explored in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) and [Advent of Neuromorphic AI](/blog/advent-of-neuromorphic-ai/), the explicit control flow boundaries that delimited continuations provide align with how CGRAs, neuromorphic processors, and other emerging architectures express computation: as graphs of operations with explicit data dependencies rather than sequential instruction streams.
 
 ## Continuations and Hardware Targets
 
-The DCont preservation strategy extends to hardware targeting. As noted in [The Continuation Preservation Paradox](https://speakez.tech/blog/the-continuation-preservation-paradox/), WebAssembly's Stack Switching proposal provides first-class support for delimited continuations. When targeting WASM, the Composer compiler can preserve continuation structure all the way to the runtime:
+The DCont preservation strategy extends to hardware targeting. As noted in [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/), WebAssembly's Stack Switching proposal provides first-class support for delimited continuations. When targeting WASM, the Composer compiler can preserve continuation structure all the way to the runtime:
 
 ```mlir
 // DCont operations map to WASM stack switching
@@ -251,11 +250,11 @@ Delimited continuations touch every part of the Fidelity framework:
 
 **Reactivity** ([Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/)) uses continuation capture for subscription callbacks. [When an observable emits, it resumes the captured continuation of each subscriber](/spec/draft/observable-computation/#42-emission).
 
-**BAREWire** ([Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/)) leverages continuations for zero-copy message handling. The deserialization callback is a continuation that processes the message without intermediate allocation.
+**BAREWire** ([Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/)) leverages continuations for zero-copy message handling. The deserialization callback is a continuation that processes the message without intermediate allocation.
 
 **Olivier actors** use continuations for both message receipt and supervision. A supervisor's failure handler is a continuation captured when the child was spawned.
 
-**Frosty** ([The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/)) provides platform-aware async through continuation-based I/O. On Windows, IOCP callbacks resume continuations; on Linux, io_uring completions do the same.
+**Async I/O** ([platform-aware continuation compilation](#platform-aware-continuation-compilation)) resumes continuations through the platform's own completion mechanism. On Windows, IOCP callbacks resume continuations; on Linux, io_uring completions do the same.
 
 This pervasive use of continuations creates architectural coherence. Different framework components speak the same language at the compilation level, enabling cross-cutting optimizations and uniform semantics.
 
@@ -263,7 +262,7 @@ This pervasive use of continuations creates architectural coherence. Different f
 
 The centrality of delimited continuations to Fidelity's architecture has implications for future development:
 
-**Algebraic effects**: The CE-based effect system described in [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/) is essentially typed delimited continuations. As we extend Fidelity's effect tracking, the continuation infrastructure is already in place.
+**Algebraic effects**: The CE-based effect system described in [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) is essentially typed delimited continuations. As we extend Fidelity's effect tracking, the continuation infrastructure is already in place.
 
 **Formal verification**: Continuation semantics are well-studied mathematically. The continuation-based compilation model gives our [four-tier proof architecture](/docs/internals/verification/) a clean structure to verify against: obligations are built from the continuation structure already present in the graph, discharged by Z3 through Tier 3, with the Rocq kernel entering the trusted base only for the relational judgments at Tier 4.
 
@@ -281,16 +280,15 @@ For developers, this means writing natural Clef code (async expressions, computa
 
 ## Further Reading
 
-- [Why F# Is A Natural Fit for MLIR](https://speakez.tech/blog/why-fsharp-is-a-natural-fit-for-mlir/): SSA as functional programming and the compilation advantage
-- [The Full Frosty Experience](https://speakez.tech/blog/the-full-frosty-experience/): Platform-aware async through delimited continuations
-- [The Continuation Preservation Paradox](https://speakez.tech/blog/the-continuation-preservation-paradox/): How deep can continuations survive in compilation?
+- [Why F# Is A Natural Fit for MLIR](/docs/design/structure-and-performance/why-clef-fits-mlir/): SSA as functional programming and the compilation advantage
+- [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/): How deep can continuations survive in compilation?
 - [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/): The actor model's role in modern distributed systems
-- [Seeking Referential Transparency](https://speakez.tech/blog/seeking-referential-transparency/): How the PHG chooses between interaction nets and delimited continuations
-- [The DCont/Inet Duality](https://speakez.tech/blog/dcont-inet-duality/): How computation expressions decompose into fundamental patterns
-- [A Unified Actor Architecture](https://speakez.tech/blog/unified-actor-architecture/): Bridging native and edge actors through shared semantics
+- [Seeking Referential Transparency](/docs/internals/concepts/seeking-referential-transparency/): How the PHG chooses between interaction nets and delimited continuations
+- [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/): How computation expressions decompose into fundamental patterns
+- [A Unified Actor Architecture](/blog/unified-actor-architecture/): Bridging native and edge actors through shared semantics
 - [Baker: A Key Ingredient to Composer](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/): The zipper-based correlation pipeline
-- [Hyping Hypergraphs](https://speakez.tech/blog/hyping-hypergraphs/): Temporal program graphs and dataflow compilation strategies
-- [Advent of Neuromorphic AI](https://speakez.tech/blog/advent-of-neuromorphic-ai/): Spike-based computing and post-Von Neumann hardware targets
+- [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/): Temporal program graphs and dataflow compilation strategies
+- [Advent of Neuromorphic AI](/blog/advent-of-neuromorphic-ai/): Spike-based computing and post-Von Neumann hardware targets
 
 ### Academic Papers
 
