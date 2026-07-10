@@ -237,7 +237,7 @@ This setup proves especially valuable when developing C/C++ bindings through Far
 
 ## Farscape and clangd Integration
 
-Native library binding is a critical capability for the Fidelity ecosystem. Our upcoming [STM32L5 unikernel demonstration](/blog/getting-to-the-heart-of-unikernels/) requires bindings to both the CMSIS HAL (for hardware abstraction) and post-quantum cryptography libraries (for secure communication). Farscape generates these bindings by parsing C headers with `clang` and producing idiomatic Clef interfaces that bind to the C library at compile time.
+Native library binding is a critical capability for the Fidelity ecosystem. Our upcoming [STM32L5 unikernel demonstration](/blog/getting-to-the-heart-of-unikernels/) requires bindings to both the CMSIS HAL (for hardware abstraction) and post-quantum cryptography libraries (for secure communication). Farscape generates these bindings by parsing C headers with `clang` and producing idiomatic Clef interfaces that bind to the C library at compile time. Binding a vendor HAL this way is one of the two microcontroller paths [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) lays out.
 
 During binding development, clangd provides IntelliSense for the C headers being analyzed:
 

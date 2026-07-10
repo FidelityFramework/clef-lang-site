@@ -151,7 +151,7 @@ Alex (the "Library of Alexandria" code generation component) transforms the enri
 - Control flow to `scf` or `cf` based on structure
 
 ### Native Output
-MLIR optimization passes leverage preserved type information before lowering to backend targets. LLVM serves as the first and most diverse backend; its broad architecture support provides early validation of the upstream compiler mechanics while targeting everything from servers to microcontrollers. Other backends are on the roadmap, but LLVM offers immediate access to x86-64, ARM, RISC-V, and WebAssembly. By this point in the pipeline, discriminated unions have become tagged structs, pattern matches are branch tables, and fat pointers are simple `{ptr, i64}` pairs. The type information that guided every transformation has done its job and compiled away to nothing.
+MLIR optimization passes leverage preserved type information before lowering to backend targets. LLVM serves as the first and most diverse backend; its broad architecture support provides early validation of the upstream compiler mechanics while targeting everything from servers to [microcontrollers](/docs/internals/hardware/fidelity-on-mcu/). Other backends are on the roadmap, but LLVM offers immediate access to x86-64, ARM, RISC-V, and WebAssembly. By this point in the pipeline, discriminated unions have become tagged structs, pattern matches are branch tables, and fat pointers are simple `{ptr, i64}` pairs. The type information that guided every transformation has done its job and compiled away to nothing.
 
 ## Developer Experience: Understanding Your Code
 

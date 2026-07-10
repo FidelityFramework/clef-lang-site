@@ -309,7 +309,7 @@ module Graphics =
  
 ```
 
-When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed.
+When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed. Getting the artifact small enough to flash is what makes the [pure-Clef microcontroller unikernel](/docs/internals/hardware/fidelity-on-mcu/) fit.
 
 ## Developer Experience: Understanding Elimination
 

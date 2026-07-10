@@ -20,7 +20,7 @@ To understand why ClefPak represents such a departure from .NET package manageme
 
 Native compilation pivots away from this limited exchange of convenience for monolithic assets. When the Fidelity Framework compiles Clef code for different targets, it's not merely translating to different instruction sets. Each platform may demand different approaches to memory management, calling conventions, and optimization strategies. Consider the vast differences between compilation targets:
 
-- An ARM Cortex-M4 microcontroller operates with kilobytes of RAM, no memory management unit, and requires static allocation strategies
+- An [ARM Cortex-M4 microcontroller](/docs/internals/hardware/fidelity-on-mcu/) operates with kilobytes of RAM, no memory management unit, and requires static allocation strategies
 - An NVIDIA GPU demands SIMT (Single Instruction, Multiple Thread) execution models with specialized memory hierarchies
 - An x86-64 processor with AVX-512 extensions offers complex vector operations and sophisticated caching systems
 

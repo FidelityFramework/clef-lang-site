@@ -77,7 +77,7 @@ Our Fidelity Framework is designed to target diverse platforms from a unified de
 
 
 
-* **Micro-controllers On The Metal**: From the tiny ESP32 to high end SoCs, Fidelity will deliver speed equal to C and C++ embedded code in a developer-friendly Python-like syntax, all with higher memory safety and compute reliability guarantees
+* **[Micro-controllers On The Metal](/docs/internals/hardware/fidelity-on-mcu/)**: From the tiny ESP32 to high end SoCs, Fidelity will deliver speed equal to C and C++ embedded code in a developer-friendly Python-like syntax, all with higher memory safety and compute reliability guarantees
 * **Native iOS Applications**: Unlike frameworks that compile to intermediate representations or require runtime bloat, Fidelity will generate native ARM64 binaries that integrate directly with iOS delivery requirements
 * **Native Android Applications**: Through its MLIR/LLVM pipeline, Fidelity will create genuine native Android applications without the overhead of runtime interpreters, connecting directly to Android's NativeActivity infrastructure
 * **Industrial and Complex Embedded Systems**: Dedicated control systems will leverage our Fidelity Framework through hardware implementations on FPGAs and ASICs, using industry-standard HDLs with a compilation flow that incorporates MLIR and LLVM for efficient hardware/software co-design and optimization

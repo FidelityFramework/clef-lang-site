@@ -78,7 +78,7 @@ The **BackEnd** delegates to mlir-opt for dialect lowering and LLVM for final co
 
 Early Composer development hard-coded LLVM types directly into MiddleEnd MLIR generation. String types became `!llvm.struct<(ptr, i64)>`, pointers became `!llvm.ptr`, and memory operations used LLVM-specific intrinsics. This approach worked for x86-64 but blocked multi-stack targeting.
 
-The problem manifested when considering embedded ARM compilation, one of our first targets after CPU compilation is "settled art". ARM Cortex-M processors lack LLVM's assumed memory model. Pointers are not opaque; they reference specific memory regions (SRAM, Flash, peripheral registers) with distinct access patterns. Using `!llvm.ptr` forced Cortex-M code through x86-64 assumptions, producing incorrect or inefficient binaries.
+The problem manifested when considering embedded ARM compilation, one of our first targets after CPU compilation is "settled art". ARM Cortex-M processors lack LLVM's assumed memory model. Pointers are not opaque; they reference specific memory regions (SRAM, Flash, peripheral registers) with distinct access patterns. Using `!llvm.ptr` forced Cortex-M code through x86-64 assumptions, producing incorrect or inefficient binaries. Keeping those region distinctions intact down to the register is what [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) builds on.
 
 In the bigger picture, GPU targeting requires memory operations that LLVM cannot express. CUDA kernels operate on shared memory, global memory, and constant memory with different coherence semantics. AMD ROCm adds coarse-grained and fine-grained regions. FPGA designs need explicit HDL stream buffers. These targets cannot share LLVM's pointer abstraction.
 

@@ -329,7 +329,7 @@ This approach borrows from the F* programming language, where platform-dependent
 
 ## Memory Regions
 
-Native compilation requires explicit attention to where data resides in memory. The managed runtime provides a uniform heap with garbage collection. Native environments expose a heterogeneous memory landscape: stack, heap, memory-mapped peripherals, DMA-accessible regions, flash storage.
+Native compilation requires explicit attention to where data resides in memory. The managed runtime provides a uniform heap with garbage collection. Native environments expose a heterogeneous memory landscape: stack, heap, memory-mapped peripherals, DMA-accessible regions, flash storage. The `Peripheral` region below is what the [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) register handles ride on, down to a Cortex-M part.
 
 NTU extends the type parameter system to track memory regions:
 

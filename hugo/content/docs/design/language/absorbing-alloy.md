@@ -211,7 +211,7 @@ module Platform.Console =
         @>
 ```
 
-The quotation `<@ ... @>` captures the implementation as data, allowing the compiler to inspect it, transform it based on platform context, and generate appropriate MLIR. On Linux x86_64, `Sys.write` becomes a syscall with arguments in specific registers. On ARM64, the calling convention differs. On bare-metal embedded targets, it might become a UART write sequence.
+The quotation `<@ ... @>` captures the implementation as data, allowing the compiler to inspect it, transform it based on platform context, and generate appropriate MLIR. On Linux x86_64, `Sys.write` becomes a syscall with arguments in specific registers. On ARM64, the calling convention differs. On [bare-metal embedded targets](/docs/internals/hardware/fidelity-on-mcu/), it might become a UART write sequence.
 
 This separation preserves a clean division of concerns:
 

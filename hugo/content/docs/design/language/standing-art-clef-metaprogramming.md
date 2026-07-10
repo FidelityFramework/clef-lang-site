@@ -41,7 +41,7 @@ let gpioQuotation: Expr<PeripheralDescriptor> = <@
 @>
 ```
 
-This quotation is not evaluated at runtime. Our Composer compiler is designed to inspect its structure during PSG construction, extracting the peripheral layout, memory region classification, and instance addresses. The information flows through the [nanopass pipeline](/docs/internals/concepts/nanopass-navigation/) and informs code generation: Alex emits volatile loads for peripheral access because the quotation carried that semantic through.
+This quotation is not evaluated at runtime. Our Composer compiler is designed to inspect its structure during PSG construction, extracting the peripheral layout, memory region classification, and instance addresses. The information flows through the [nanopass pipeline](/docs/internals/concepts/nanopass-navigation/) and informs code generation: Alex emits volatile loads for peripheral access because the quotation carried that semantic through. This is the Farscape-to-register path that carries a microcontroller binding, [set out in full for the MCU targets](/docs/internals/hardware/fidelity-on-mcu/).
 
 This differs from reflection-based approaches. Quotations are compile-time artifacts. They require no runtime support, introduce no BCL dependencies, and impose no overhead in the generated binary. The F# compiler verifies their structure, and our Composer pipeline is designed to transform them.
 

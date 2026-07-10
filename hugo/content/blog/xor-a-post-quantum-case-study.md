@@ -300,7 +300,7 @@ For cryptographic materials, the copying is a security liability. Every copy cre
 
 Our Fidelity zero-copy architecture eliminates this entire class of concerns. Data flows from hardware registers through computation to output without intermediate copies. There's no managed heap to marshal across, no GC relocating buffers, no implicit copies hiding sensitive material in unexpected memory locations. The attack surface shrinks to the essential minimum: the data exists in exactly the locations the code specifies, and nowhere else.
 
-Managed runtimes abstract the hardware away. Their abstract machine stops above the device registers, so the instruction "read these four ADC channels in parallel" lives in native code, where the channels are addressable.
+Managed runtimes abstract the hardware away. Their abstract machine stops above the device registers, so the instruction "read these four ADC channels in parallel" lives in native code, where the channels are addressable. Reaching those registers from Clef is the [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) story, and this credential is the pure-Clef unikernel that path is built for.
 
 ### The Native Compilation Advantage
 

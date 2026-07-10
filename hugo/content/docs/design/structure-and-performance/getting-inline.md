@@ -432,7 +432,7 @@ let compute<'T when 'T :> IComputable<'T>> (x: 'T) (y: 'T) =
 
 ## Multi-Target Flexibility
 
-One of Fidelity's design goals is targeting diverse hardware: CPUs, GPUs, TPUs, NPUs, and microcontrollers. Each platform has radically different optimization profiles:
+One of Fidelity's design goals is targeting diverse hardware: CPUs, GPUs, TPUs, NPUs, and [microcontrollers](/docs/internals/hardware/fidelity-on-mcu/). Each platform has radically different optimization profiles:
 
 **CPU**: Preserve stack frames for debugging, moderate inlining for instruction cache
 

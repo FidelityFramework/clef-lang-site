@@ -163,7 +163,7 @@ let readTemperature (sensor: TemperatureSensor) : float<celsius> =
     MemoryMapped.read sensor.Address
 ```
 
-The practical consequence: when you write `velocity * time`, the compiler doesn't just check that you're multiplying two floats. It verifies that the dimensional algebra produces meters. When you read from a peripheral register, the compiler knows the access pattern and the unit of the returned value. This information guides code generation for the target architecture.
+The practical consequence: when you write `velocity * time`, the compiler doesn't just check that you're multiplying two floats. It verifies that the dimensional algebra produces meters. When you read from a peripheral register, the compiler knows the access pattern and the unit of the returned value. This information guides code generation for the target architecture, and on a microcontroller it is what drives the [typed register access down to the silicon](/docs/internals/hardware/fidelity-on-mcu/).
 
 ## The Unifying Insight
 
