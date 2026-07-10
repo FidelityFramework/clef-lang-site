@@ -26,7 +26,7 @@ flowchart LR
     Composer --> MCU["STM32, RA6M5<br>bare ELF / picolibc"]
 ```
 
-Our approach to mobile and embedded programming was built from the other direction. We compile directly to native artifacts across heterogeneous platforms, [down to bare-metal microcontrollers like the STM32](/docs/internals/hardware/fidelity-on-stm32/). The compiler architecture and binding tooling were chosen because they support producing native artifacts for several targets without a runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary. What follows walks through our early design decisions and the cross-platform native capability they produce. That thinking traces back through our earlier UI work, from the [window layout system]({{< ref "window-layout-with-fidelity" >}}) and [the FidelityUI model]({{< ref "fidelity-ui-model" >}}) to [leveraging Fabulous for native UI]({{< ref "leveraging-fabulous-for-native-ui" >}}). LLVM platform tuples serve as the low-level back end, with two adjacent UI patterns our framework supports today. We describe per-platform packaging, the language mechanism that lets one design satisfy multiple platform targets, and the costs and benefits the approach carries.
+Our approach to mobile and embedded programming was built from the other direction. We compile directly to native artifacts across heterogeneous platforms, [down to bare-metal microcontrollers](/docs/internals/hardware/fidelity-on-mcu/). The compiler architecture and binding tooling were chosen because they support producing native artifacts for several targets without a runtime substrate in between. Mobile, in this view, is one of the targets the native compilation path reaches without a boutique runtime or other intermediary. What follows walks through our early design decisions and the cross-platform native capability they produce. That thinking traces back through our earlier UI work, from the [window layout system]({{< ref "window-layout-with-fidelity" >}}) and [the FidelityUI model]({{< ref "fidelity-ui-model" >}}) to [leveraging Fabulous for native UI]({{< ref "leveraging-fabulous-for-native-ui" >}}). LLVM platform tuples serve as the low-level back end, with two adjacent UI patterns our framework supports today. We describe per-platform packaging, the language mechanism that lets one design satisfy multiple platform targets, and the costs and benefits the approach carries.
 
 The wrapper around each artifact is what differs across the platform set; the binary inside is what Composer produces from substantially shared Clef source code and per-target handling of the compilation back end.
 
@@ -141,7 +141,7 @@ Our wrapper would use a Swift `AppDelegate` and at least one `UIViewController`.
 
 ### Embedded (STM32, RA6M5)
 
-The artifact is a flashable image. It is produced by linking statically against the runtime the target tolerates and emitting raw ELF for the bootloader. The runtime selection is per-target. The libc surface is musl-static or picolibc, depending on flash budget. Vendor HAL bindings are brought in through Farscape from each vendor's headers: CMSIS for Cortex-M cores, Renesas FSP for the RA family, ST's HAL for STM32. The choice of libc and HAL is dictated by the flash budget, the peripheral set, and the runtime requirements ([Fidelity on STM32](https://clef-lang.com/docs/internals/hardware/fidelity-on-stm32/) walks the constraints).
+The artifact is a flashable image. It is produced by linking statically against the runtime the target tolerates and emitting raw ELF for the bootloader. The runtime selection is per-target. The libc surface is musl-static or picolibc, depending on flash budget. Vendor HAL bindings are brought in through Farscape from each vendor's headers: CMSIS for Cortex-M cores, Renesas FSP for the RA family, ST's HAL for STM32. A security-critical target can also drop the vendor runtime and compile Clef straight to the reset vector, which is the route the credential work takes on the RA6M5. The choice of libc, HAL, and bring-up route is dictated by the flash budget, the peripheral set, and the trust the application places in vendor code ([Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) walks both paths and the constraints).
 
 ## The Module Signatures That Make It Work
 
@@ -292,7 +292,7 @@ Native goes where our Composer IR reaches, and we made that reach part of the de
 
 ### Hardware targets
 
-- [Fidelity Lowered to STM32](/docs/internals/hardware/fidelity-on-stm32/): the bare-metal end of the same native-compilation path
+- [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/): the bare-metal end of the same native-compilation path, from vendor-HAL binding to the pure-Clef unikernel
 - [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of evolution in graduated memory across native targets
 - [RDNA Unified Memory on the Desktop](/docs/internals/memory-fabrics/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
 

@@ -249,7 +249,7 @@ Beyond traditional architectures, continuation structure provides a natural fit 
 
 Delimited continuations touch every part of the Fidelity framework:
 
-**Rx** ([AlloyRx: Native Reactivity in Fidelity](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/)) uses continuation capture for subscription callbacks. [When an observable emits, it resumes the captured continuation of each subscriber](/spec/draft/observable-computation/#42-emission).
+**Reactivity** ([Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/)) uses continuation capture for subscription callbacks. [When an observable emits, it resumes the captured continuation of each subscriber](/spec/draft/observable-computation/#42-emission).
 
 **BAREWire** ([Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/)) leverages continuations for zero-copy message handling. The deserialization callback is a continuation that processes the message without intermediate allocation.
 

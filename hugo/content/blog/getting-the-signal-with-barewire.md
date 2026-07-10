@@ -1065,15 +1065,15 @@ flowchart TD
 
 This edge backplane is meant to carry the signal model from a single-runtime pattern into distributed coordination. The same Clef code, compiled through Fable to JavaScript, would run in browsers, Cloudflare Workers, and Durable Objects. Signals flow across these boundaries with BAREWire carrying the binary encoding. The platform provides the persistence, fan-out, and resilience; the application code remains focused on reactive logic.
 
-## Connecting to Alloy.Rx
+## Connecting to Observable and Incremental
 
-The signal model presented here complements the [Alloy.Rx reactive framework](/blog/fidelityrx-native-reactivity/) by providing a different abstraction for different use cases. Where Alloy.Rx distinguishes between multicast (broadcast) and unicast (isolated) observables based on push semantics, the signal model focuses on pull semantics with automatic dependency tracking.
+The signal model presented here complements the framework's [push-based reactive model](/blog/fidelityrx-native-reactivity/), which is intrinsic to the language through `Observable` and `Incremental` rather than a bolt-on library. Where an observable distinguishes between multicast (broadcast) and unicast (isolated) push semantics, the signal model focuses on pull semantics with automatic dependency tracking. The two are the push and pull faces of the same codata treatment the Composer applies.
 
-The distinction matters. Our Alloy.Rx multicast observables suit event streams where producers push updates to multiple observers, achieving zero allocation for broadcast scenarios. This makes them a natural fit for sensor data, UI events, and system notifications. Unicast observables provide per-subscriber isolation with arena-based allocation, which becomes appropriate when each subscriber needs independent processing state.
+The distinction matters. Multicast observables suit event streams where producers push updates to multiple observers, achieving zero allocation for broadcast scenarios. This makes them a natural fit for sensor data, UI events, and system notifications. Unicast observables provide per-subscriber isolation with arena-based allocation, which becomes appropriate when each subscriber needs independent processing state.
 
 The signal model takes a different approach: pull-based semantics with implicit dependency tracking. This makes signals a natural fit for derived state, computed properties, and reactive UI bindings where the consumer controls when values are read rather than reacting to pushed updates.
 
-These models can interoperate. A signal can be updated from an Alloy.Rx observable:
+These models can interoperate. A signal can be updated from an observable:
 
 ```fsharp
 let bridgeToSignal (observable: Observable<'T, Multicast>) : Signal<'T> =
@@ -1094,7 +1094,7 @@ let bridgeToObservable (signal: Signal<'T>) : Observable<'T, Multicast> =
     observable
 ```
 
-The choice between models depends on the communication pattern. Event streams flow through Alloy.Rx; derived state lives in signals.
+The choice between models depends on the communication pattern. Event streams flow through observables; derived state lives in signals.
 
 ## Schema Evolution and Versioning
 
@@ -1181,7 +1181,7 @@ This is the direction we will keep building toward: a reactive system where data
 
 ---
 
-*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), [ByRef Resolved](/docs/design/types/byref-resolved/), and [Alloy.Rx: Native Reactivity in Fidelity](/blog/fidelityrx-native-reactivity/).*
+*This article is part of our ongoing series exploring the Fidelity Framework's designs for systems programming with Clef. Related entries include [Coeffects and Codata in Composer](/blog/coeffects-and-codata-in-composer/), [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), [ByRef Resolved](/docs/design/types/byref-resolved/), and [Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/).*
 
 [^1]: The SPEC stack (SolidJS, Partas.Solid, Elmish, and Fidelity.CloudEdge) is our design for unified web development in Clef.
 

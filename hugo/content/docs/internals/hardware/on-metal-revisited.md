@@ -138,6 +138,8 @@ This generalization matters for our current work on hardware security modules. D
 
 The Fidelity architecture accommodates these variations without becoming fragmented. Whether targeting STM32 for its ecosystem maturity, Renesas for its security features, or other families for their specific strengths, the same Clef source compiles through the same pipeline to optimal native code.
 
+The header-parsing route described here is one of two ways onto a microcontroller, and it is the right one when a vendor HAL already exists and belongs in the trusted computing base. A security case can also demand the opposite: no vendor runtime at all, with Clef compiled straight to the reset vector so the audited source is the trusted computing base end to end. The credential work is built in that second direction on the RA6M5, reading the Renesas FSP for register knowledge while running nothing of it. [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) sets the two paths side by side and gives the pure-Clef bring-up idiom.
+
 ## Beyond Stack Allocation
 
 The original article emphasized stack-only allocation as the target memory model. This was intentional. Proving that Clef could compile to native code with purely stack-based memory management served two purposes: it validated that our approach could work in the most constrained environments (microcontrollers with kilobytes of RAM), and it demonstrated a clean break from managed runtime ideology. If we could compile Clef without any dynamic memory allocation, we had truly escaped the assumptions that garbage collection embeds in language design.
@@ -215,4 +217,4 @@ The vision from the original article remains: Clef on bare metal with zero runti
 ### Reactive Systems
 
 - [Getting the Signal with BAREWire](https://speakez.tech/blog/getting-the-signal-with-barewire/): Subscription-free reactive programming across native, web, and edge targets
-- [AlloyRx: Native Reactivity in Fidelity](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/): Push-based observables with zero allocation overhead
+- [Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/): Push-based observables with zero allocation overhead

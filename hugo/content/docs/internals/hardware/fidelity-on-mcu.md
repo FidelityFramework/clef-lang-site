@@ -1,23 +1,27 @@
 ---
-title: "Fidelity Lowered to STM32"
-linkTitle: "Fidelity Lowered to STM32"
-description: "Hardware type safety at zero runtime cost through pre-optimized memory mapping"
+title: "Fidelity on MCU"
+linkTitle: "Fidelity on MCU"
+description: "Two paths to a microcontroller: binding a vendor HAL through Farscape, and compiling Clef straight to the reset vector"
 date: 2024-01-02T16:59:54+06:00
 authors: ["Houston Haynes"]
 tags: ["Architecture"]
+aliases:
+  - /docs/internals/hardware/fidelity-on-stm32/
 params:
   originally_published: 2024-01-02
   original_url: "https://speakez.tech/blog/fsharp-on-metal-fidelity-lowered-to-stm32/"
   migration_date: 2026-02-15
 ---
 
-Embedded development has long treated hardware control and high-level type safety as competing goals, keeping it at a distance from the abstractions common in modern software engineering. The Fidelity Framework targets hardware type safety at zero runtime cost through hardware/software co-design, so that expressiveness and efficiency do not have to be traded against each other.
+Embedded development has long treated hardware control and high-level abstraction as competing goals, keeping it at a distance from the expressiveness common in modern software engineering. The Fidelity Framework closes that distance through hardware/software co-design: the register layout and access rules a developer would otherwise track by hand become types the compiler checks, and they resolve to native machine code with nothing left to check at runtime.
+
+There are two ways to bring Clef onto a microcontroller, and this entry covers both. The first binds a vendor's Hardware Abstraction Layer through Farscape, so an application reaches the silicon through the vendor's own C API expressed as typed Clef. The second compiles Clef straight to the reset vector with no vendor runtime beneath it, a pure-Clef unikernel where the binary on the device is the binary the compiler produced. The first path is the faster route onto a well-supported board. The second is the one a security case reaches for when the trusted computing base has to be the source itself. The sections below walk the shared foundation, then each path, then the comparison that decides between them.
 
 ## Pre-Optimized Hardware Mapping
 
 Traditional embedded development approaches hardware access as a runtime concern, with memory layouts and register mappings resolved during execution. Even modern "zero-cost abstractions" often carry hidden overhead through function calls, runtime checks, or suboptimal memory access patterns. The Fidelity Framework reimagines this approach through pre-optimized hardware mapping: capturing hardware semantics at the highest level of the compilation pipeline and carrying them through to native code generation.
 
-By parsing hardware definitions (such as CMSIS headers for ARM-based microcontrollers) and transforming them into type-safe Clef abstractions that flow through MLIR to native code, we would achieve compile-time hardware type safety that generates identical machine code to hand-written assembly. Memory layouts would be optimized before the first line of MLIR is generated.
+By parsing hardware definitions (such as CMSIS headers for ARM-based microcontrollers) and transforming them into Clef abstractions the compiler type-checks, then carrying those through MLIR to native code, we would catch a mismatched register access at compile time and still emit machine code identical to hand-written assembly. Memory layouts would be resolved before the first line of MLIR is generated.
 
 ## Two Layers: Memory Mapping Below, Application Code Above
 
@@ -57,13 +61,17 @@ module SensorApplication =
 
 Developers work with idiomatic Clef code while the framework holds to the performance of hand-written C. The hardware abstraction is generated once and reused by later developers targeting the same family.
 
-## Understanding the STM32 Compilation Challenge
+## Understanding the MCU Compilation Challenge
 
-STM32 microcontrollers exemplify the challenges of embedded development. Built around ARM Cortex-M cores, they use the Thumb-2 instruction set and have distinct memory regions at fixed addresses. Code lives in Flash memory starting at 0x08000000, variables reside in SRAM at 0x20000000, and hardware peripherals are accessed through memory-mapped registers at addresses like 0x40020000. There is no operating system, no memory management unit, and no room for abstraction overhead.
+STM32 microcontrollers exemplify the challenges of embedded development, and the RA6M5 that appears later in this entry sits in the same class. Built around ARM Cortex-M cores, they use the Thumb-2 instruction set and have distinct memory regions at fixed addresses. Code lives in Flash memory starting at 0x08000000, variables reside in SRAM at 0x20000000, and hardware peripherals are accessed through memory-mapped registers at addresses like 0x40020000. There is no operating system, no memory management unit, and no room for abstraction overhead.
 
 The traditional compilation path loses information at each stage. By the time code reaches LLVM, the compiler must infer intent from memory access patterns, often missing optimization opportunities or requiring unsafe constructs to reach the desired behavior. The Fidelity Framework would invert this information flow, preserving hardware intent from the source level through to machine code.
 
-## The MLIR and LLVM Pipeline: From Clef to Silicon
+## Path One: Binding a Vendor HAL Through Farscape
+
+The first path meets a board where its vendor left it. Every microcontroller family ships a C description of its own hardware, and the fastest route to working code reuses that description rather than re-deriving it. Farscape reads those vendor headers and produces the typed Clef abstraction the application writes against.
+
+### The MLIR and LLVM Pipeline: From Clef to Silicon
 
 The compilation journey begins with Clef code that uses BAREWire-generated hardware abstractions. These abstractions are compile-time constructs that capture the hardware memory model and leave no runtime wrapper behind. Clef code that configures a GPIO pin expresses an intent that compiles directly to the register access pattern, with no function call standing between the source and the hardware.
 
@@ -152,9 +160,9 @@ entry:
 }
 ```
 
-Finally, LLVM's ARM backend generates optimal Thumb-2 assembly:
+Finally, LLVM's ARM backend generates Thumb-2 assembly:
 
-```armasm
+```asm
 configurePin:
     ldr     r3, [r0]        @ Load MODER register
     lsls    r1, r1, #1      @ Calculate bit position
@@ -165,23 +173,18 @@ configurePin:
     orrs    r3, r2          @ Set new mode
     str     r3, [r0]        @ Store back to MODER
     bx      lr              @ Return
+ 
 ```
 
-This assembly matches what an expert embedded programmer would write by hand, generated from type-safe Clef code with register offsets and layouts resolved at compile time. The application developer who wrote the temperature monitoring code never sees any of this.
-
-## BAREWire Pre-Optimization
-
-The zero-cost abstraction rests on BAREWire's pre-optimization approach. Traditional compilers analyze code to infer memory layouts and optimization opportunities. BAREWire inverts this by generating optimized memory layouts at the Clef level, where the full semantic information is available.
+This assembly matches what an expert embedded programmer would write by hand, generated from Clef code whose register offsets and layouts were resolved and checked at compile time. The application developer who wrote the temperature monitoring code never sees any of this.
 
 ### Parsing Hardware Headers with Farscape
 
-The process begins with Farscape, which parses vendor-provided hardware headers. For ARM-based microcontrollers, these are typically CMSIS (Cortex Microcontroller Software Interface Standard) headers containing comprehensive descriptions of every register, bit field, and memory map in the microcontroller.
+The process begins with Farscape, which parses vendor-provided hardware headers. For ARM-based microcontrollers these are typically CMSIS (Cortex Microcontroller Software Interface Standard) headers, and for the Renesas RA family they are the Flexible Software Package (FSP) headers. Both describe every register, bit field, and memory map in the microcontroller.
 
-Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to parse these headers directly in pure Clef. This approach eliminates dependencies on external C/C++ tooling and enables type-safe parsing with excellent error messages. Rather than raw P/Invoke bindings, the output is quotation-based hardware descriptors that integrate with the Clef compilation pipeline.
+Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to read these headers, so a malformed header fails the parse with a precise diagnostic at its source location, where a wrapper-based flow would carry the mistake forward into a silently wrong binding. The output is quotation-based hardware descriptors that integrate with the Clef compilation pipeline rather than raw P/Invoke bindings. [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/) traces this path in depth, from the CMSIS `__I`/`__O`/`__IO` qualifiers through to the `MemoryModel` record the compiler consumes.
 
 When a contributor runs Farscape on a new microcontroller's headers, it generates a complete Clef hardware abstraction library with three components: quotations encoding memory layout, active patterns for PSG recognition, and a MemoryModel record for Clef integration.
-
-The generated library captures all hardware semantics while adding type safety:
 
 ```c
 // Example CMSIS header content (input to Farscape)
@@ -202,109 +205,98 @@ typedef struct
 #define GPIOA                 ((GPIO_TypeDef *) GPIOA_BASE)
 ```
 
-Farscape transforms these C definitions into Clef quotations and active patterns that preserve the hardware semantics while adding type safety. The transformation is semantic rather than syntactic: it captures hardware intent and makes it available to the compiler at the source level. Once generated, the abstractions are usable without reference to the underlying layout.
+Farscape transforms these C definitions into Clef quotations and active patterns that preserve the hardware semantics and carry the access rules as types the compiler can check. The transformation is semantic rather than syntactic: it captures hardware intent and makes it available to the compiler at the source level. Once generated, the abstractions are usable without reference to the underlying layout.
 
-### Platform-Specific Memory Optimization
+This is the path to take when a vendor HAL already exists and the application is content to sit on top of it. The generated library recognizes the HAL's own calls (a `HAL_GPIO_WritePin` on STM32, its FSP equivalent on the RA family) and lowers them to the register accesses they stand for. The vendor code is part of the trusted computing base, and the artifact is a Clef application over a vendor runtime.
 
-BAREWire's true power emerges when combined with platform-specific configuration. Different microcontroller variants have different memory constraints, peripheral layouts, and optimization requirements. The generated libraries adapt to these through functional composition:
+## Path Two: A Pure-Clef Unikernel to the Reset Vector
 
-```fsharp
-// Platform configuration in the generated library
-// Application developers rarely need to see this
-module internal PlatformOptimization =
-    let stm32Config =
-        PlatformConfig.base'
-        |> withPlatform PlatformType.CortexM4
-        |> withMemoryModel MemoryModelType.Constrained
-        |> withVectorCapabilities VectorCapabilities.DSPExtensions
-        |> withFlashSize (256<kb>)
-        |> withSRAMSize (64<kb>)
+The second path removes the vendor runtime entirely. Composer would compile Clef straight to the ELF the device mounts, with no CMSIS HAL, no FSP, no RTOS, and no C runtime beneath it. The security case that motivates this is direct: the binary on the device is the binary the verifier saw, down to the reset vector. This is the path the [Post-Quantum Credential]({{< ref "cryptographic-certainty" >}}) work takes on the Renesas EK-RA6M5 (a Cortex-M33 part), where the trusted computing base has to be the audited source and nothing under it.
 
-    // BAREWire generates platform-optimized layouts
-    let generateOptimizedLayout config structDef =
-        match config.MemoryModel with
-        | MemoryModelType.Constrained ->
-            // Pack structures tightly for memory-constrained devices
-            structDef |> packStructure |> optimizeAlignment 4
-        | MemoryModelType.Performance ->
-            // Align for optimal access patterns
-            structDef |> alignFields 8 |> padForCache
-        | _ ->
-            structDef // Use default layout
- 
-```
+Removing the HAL relocates a question it does not answer. The vendor runtime used to bring the clocks up, clear the module-stop bits, and sequence the peripheral registers, and now the Clef source does. The design problem is to express that irreducibly ordered, effectful sequence in a language whose posture is values and inference, without smuggling C's idioms back in under an ML surface.
 
-This platform-aware optimization happens when the library is generated, producing memory layouts tailored to the specific target device. Application developers benefit from these optimizations automatically when they reference the library.
+### The Substrate Is Closures, Not Pointers
 
-## Hardware Type Safety Without Runtime Cost
+The prior a reader brings from C is that low-level work means pointers, null sentinels, casts, and mutation ordered by statement sequence. None of those are the substrate here. The Fidelity substrate down to bare Cortex-M33 silicon is flat closures, thunks, and deferred computation values as the primitive machine representation, and the register layer is built on that same substrate, one layer up from it and made of the same material.
 
-The culmination of this approach is a system designed to provide complete hardware type safety with absolutely zero runtime overhead. This isn't intended as a compromise or approximation; it represents a genuine breakthrough in hardware/software co-design.
+- The flat closure is the code-address mechanism. A code pointer paired with one flat block of captured values, stack- or region-allocated, with no environment chain and no GC. The pointer representation exists only inside the compiler's lowering and never surfaces in the language. The spec states this as foundational in [closure representation](/spec/draft/closure-representation/), with the backend resolving the pointer cast per target under [backend lowering architecture](/spec/draft/backend-lowering-architecture/).
+- The thunk is that same closure with a computed flag and a value slot, null-free before and after it is forced ([lazy representation](/spec/draft/lazy-representation/)). The sequence is a thunk carrying iteration state ([seq representation](/spec/draft/seq-representation/)), and the continuation is a thunk carrying the rest of the program. One representation family carries code addresses, deferred computation, iteration, and suspension across the system, including the unikernel's event loop.
+- Absence carries the rest. `Option` replaces null, `Result` replaces error codes, and width-typed register handles (`Reg8`/`Reg16`/`Reg32` in the MMIO seam below) replace pointer arithmetic at device memory. The spec's [Option/null marshalling rules](/spec/draft/ffi-boundary/#4-optionnull-marshalling) govern the boundary where a Clef `Option` meets a C API. There is no `voidptr`, no pointer math, no cast-to-object, and no null in the register regime, and their absence is structural in the language rather than forbidden by a linter.
 
-Consider how interrupt handlers, traditionally one of the most error-prone aspects of embedded development, could become both safe and ergonomic. The complexity of interrupt vector tables and handler registration is handled by the generated library:
+A `Mmio.write32` compiles to a single volatile 32-bit store at a literal address, and a closure call compiles to an indirect branch through a struct field. Those are the same instructions a C compiler would emit for the same work. What is removed is the vocabulary for holding them wrong.
+
+### The Imperative Seam
+
+Peripheral bring-up is control-flow-centered and stateful by nature: the silicon demands a specific sequence of register writes, in order, with a side effect at each step. Clef kept the imperative tooling from its F# lineage for exactly this kind of work. The design contains that imperative effect at one named layer, the MMIO seam, and keeps everything above it as ordinary values.
+
+Four principles govern the driver modules.
+
+1. **Keep the imperative register-poke core.** Bring-up is irreducibly ordered and effectful (write `PLLCCR`, poll the stable flag, write the clock-source select). Direct register writes are correct there, and the goal is not to dissolve the effect into a pure abstraction.
+2. **Contain it at one layer.** All register effects live in the `Mmio` module: width-typed accessors plus a bounded spin (`waitUntil16`) and a discard-read barrier (`readback32`). Each accessor compiles to a single volatile access. Nothing above this layer touches a register, so it is the one audit point where volatile, width, and ordering guarantees attach.
+3. **Make ordering visible in types.** Above the seam, configuration is immutable `Plan` and `Cfg` values, and the ordering between bring-up steps is carried by phantom witness tokens threaded as values: `ClockReady`, `ModuleStarted`, `PinsAnalog`, `AdcConfigured`, `DrainArmed`. Each token is minted only by the step that establishes its invariant and demanded as an argument by the next step. Because each token is a real value threaded through, it is also a real SSA def-use dependency the optimizer cannot hoist across.
+4. **Refuse the OO-shaped control block.** A vendor HAL threads an opaque control structure into every call and mutates it in place, so "what has happened so far" lives in a mutable cell and ordering is implied by the sequence of method calls. Transcribing that into Clef yields C wearing an ML costume. The target is that organization (control-block-as-object, self-mutating methods, ordering-by-call-sequence), and the imperative effects stay.
+
+### The Bring-Up Manifests as a Computation Expression
+
+The clock-and-peripheral bring-up reads as a `result` computation expression whose steps are the ordered writes, with the bounded waits as the `do!` bindings that can fail. The function produces the witness token that downstream steps demand, so the ordering is the type-checker's obligation as much as the reader's. The clock generation subsystem is the sharpest case, roughly forty ordered writes and spin-waits with unlock bracketing and a flash-wait-state set before the core clock is raised:
 
 ```fsharp
-// In the generated hardware library (hidden complexity)
-module internal InterruptInfrastructure =
-    [<VectorTable(BaseAddress = 0x08000000u)>]
-    let private vectorTable = {|
-        StackPointer = __stack_end
-        ResetHandler = Reset.handler
-        NMIHandler = NMI.handler
-        HardFaultHandler = HardFault.handler
-        USART1Handler = ref Unchecked.defaultof<unit -> unit>
-        // ... additional handlers
-    |}
+// L1 — the Plan is an immutable value. Pure, inspectable, hashable.
+type Plan = { PllSrc: PllSource; Pllmul: PllMul; IclkDiv: Div; (* ... *) Flwt: Flwt }
+let entropyPlan : Plan = { (* the bring-up numbers as literals *) }
+let validate (p: Plan) : Result<Plan, RatioError> = // pure ratio check, no effect
 
-    // Public API for application developers
-    module UART =
-        let onDataReceived
-            with set (handler: unit -> unit) =
-                vectorTable.USART1Handler := handler
+// L0-ordered sequence. Irreducibly imperative, and correct here. The seam is the
+// Mmio.* calls; the order WITHIN this function is the silicon-mandated statement sequence.
+// PRODUCES ClockReady — the reified postcondition, the only way downstream proves clocks up.
+let configureForEntropy () : Result<ClockReady, ClockFault> =
+    result {
+        do   Mmio.write16 Reg.PRCR 0xA503us                       // unlock clock + low-power regs
+        do   Mmio.write8 Reg.MOSCCR 0x00uy                        // start 24 MHz crystal
+        do!  Mmio.waitUntil16 Reg.OSCSF 0x08us 0x08us moscBudget  // BOUNDED wait -> Result
+             |> Result.mapError (fun _ -> MoscTimeout)
+        do   Mmio.write16 Reg.PLLCCR (encodePll entropyPlan)      // PLL divider, source, multiplier
+        do   Mmio.write8 Reg.PLLCR 0x00uy                         // start PLL
+        do!  waitPll pllBudget                                     // stable-flag poll, bounded
+        do   Mmio.write8 Reg.FLWT (flwtBits entropyPlan.Flwt)     // flash wait states before raising the clock
+        do   Mmio.write32 Reg.SCKDIVCR (dividerBits entropyPlan)
+        do   Mmio.write8 Reg.SCKSCR 0x05uy                        // switch system clock to PLL
+        do   Mmio.write16 Reg.PRCR 0xA500us                       // re-lock
+        return ClockReady                                          // mint the witness
+    }
 
-// Application code using the simple API
-module SerialCommunication =
-    open STM32F4.Hardware
-
-    let handleIncomingData() =
-        match UART.tryReceive() with
-        | Some data ->
-            MessageQueue.enqueue data
-        | None ->
-            () // No data available
-
-    // Register the handler with one line
-    do UART.onDataReceived <- handleIncomingData
+// DEMANDS ClockReady; PRODUCES ModuleStarted. Read-back after every module-stop clear.
+let startModules (_: ClockReady) : Result<ModuleStarted, ClockFault> =
+    Mmio.write32 Reg.MSTPCRD (clearBits [16; 15] (Mmio.read32 Reg.MSTPCRD))  // enable two ADC units
+    Mmio.readback32 Reg.MSTPCRD                                    // write-completion barrier (mandatory)
+    Ok ModuleStarted
 ```
 
-The application developer writes a simple function to handle incoming data. Behind the scenes, the generated library ensures this handler is properly registered in the interrupt vector table, using the correct calling convention, accessing hardware registers safely. The generated machine code is identical to hand-written assembly, yet the developer experience feels like writing a normal Clef event handler.
+The imperative core is still present. `configureForEntropy` is ordered register pokes, as the silicon demands. What is gone is the mutable control block around it: no forgeable `ctrl.ClockReady <- true`, no unbounded spin that wedges the boot on a dead crystal, no missing read-back barrier, and no runtime `if` standing in for a type. `startModules` cannot be called without a `ClockReady`, and `ClockReady` exists only because `configureForEntropy` returned it.
 
-## Real-World Impact: A New Embedded Development Paradigm
+The witness tokens earn their place at both altitudes. A reader follows the ordering by reading the type each step demands and produces. The optimizer respects the same ordering because each token is a genuine SSA dependency, so a later step cannot float above an earlier one even at low optimization levels. Ordering stated as a type is ordering the compiler is obligated to keep.
 
-This approach aims to transform embedded development from a specialized craft to an accessible engineering discipline. The creation of hardware abstraction libraries becomes a community effort, with each new microcontroller support benefiting all Clef developers. Once a library exists in the registry, any developer can target that hardware without embedded expertise.
+### What This Costs at the Silicon, and What Is Still Open
 
-### Development Velocity
+Nothing above is free of engineering that Composer does not yet do, and honesty about that state is part of the design. The witness-token ordering between steps holds today, because it rides SSA dependencies. The ordering of the writes inside a single step, and the correctness of the bounded spins and read-back barriers, depend on volatile stores surviving lowering, which is the work in progress: today a discarded read-back can be removed as dead code and a spin-wait's load can be hoisted, so those constructs are the right shape to author now while their guarantee is still landing. The staged plan runs from rounding the bare-metal triple through the tools, to standing up the reset handler and linker script, to the volatile MMIO operation and the small barrier set the Cortex-M33's in-order Device-memory semantics still require. The framework's proven non-hosted path today is FPGA synthesis (the [HelloArty](/docs/internals/pipeline/learning-to-walk/) design reaches placed hardware through the CIRCT path), and the bare-metal ELF leg is the second backend path this work stands up. LLVM already does the hard parts (instruction selection, Thumb-2, volatile, the barriers), so the work is teaching Composer to ask LLVM for what it already offers.
 
-Traditional embedded development requires extensive testing to catch errors that manifest only at runtime. With Fidelity's approach, many of these errors are caught at compile time. More importantly, the existence of pre-generated hardware libraries means developers can start productive work immediately:
+## Choosing a Path: The Comparison That Drove Roll-Your-Own
 
-```fsharp
-let implementDataLogger() = async {
-    // Initialize components using high-level APIs
-    let storage = SDCard.mount()
-    let sensor = TemperatureSensor.connect(I2C.Bus1)
+The two paths are not ranked in the abstract. The choice follows from what the application needs the trusted computing base to be, and for the credential work three backend strategies were weighed before the pure-Clef unikernel was chosen.
 
-    // Business logic with no hardware details
-    while true do
-        let! reading = sensor.readAsync()
-        let timestamp = Clock.now()
+**Ride stock LLVM with a bare-metal triple and codegen discipline.** Use the stock `thumbv8m.main-none-eabi` target that embedded Rust, Zig, and C already use for the M33, teach Composer to pass the real triple and CPU, emit volatile stores and the required barriers, and ship the reset vector, linker script, bare-metal startup, and a small set of freestanding builtins. This is plumbing plus one real subsystem (startup), not a new compiler, and it is the chosen path.
 
-        do! storage.appendAsync($"{timestamp},{reading}")
-        do! Async.Sleep 1000
-}
-```
+**Make the seam compiler-enforced.** Add a distinguished MMIO operation to Composer's backend model, a sibling of the flat-closure pointer mechanism that already ships, and grow toward a peripheral-region coeffect so "this pointer is device memory" becomes a type-checked, witness-validated fact the compiler enforces on its own, with no reliance on the `Mmio` module's name as the marker. This end state is reader-visible and compiler-enforced, and it is a real subsystem layered on the first path. It is where the design grows to, once the first path proves out on hardware.
 
-### Community-Driven Hardware Support
+**Own the ELF backend, bypassing LLVM.** Rejected for this target. Composer already has a non-LLVM backend leg (the CIRCT path that reaches FPGA silicon), so the middle end is deliberately backend-agnostic and LLVM is one leg among several. A hand-rolled ELF codegen would mean reinventing instruction selection, Thumb-2 encoding, and register allocation, a large unaudited layer, exactly the surface the no-HAL posture exists to avoid, when the stock LLVM leg already does all of it. AMD's Peano is the instructive precedent: a purpose-built LLVM target for AIE, whose lesson is that a custom LLVM target beats bypassing LLVM. Here the stock `thumbv8m` target already honors volatile and emits the barriers, so no custom target is needed at all.
 
-The Farscape model creates a virtuous cycle. When a new microcontroller is released, the vendor or an interested community member can generate and publish the hardware abstraction library once. This investment benefits every Clef developer who might target that hardware in the future. Popular microcontrollers quickly gain high-quality support, while even niche hardware becomes accessible to the broader Clef community.
+Underneath the three options is one boundary. In Composer the middle end (Alex) stays in portable dialects and commits to no target, and the backend is whatever commits to a target, with more than one leg: the LLVM serializer for CPU and MCU, the CIRCT path for FPGA. An `llvm.*` operation in the middle end is a category error rather than a style violation, because a target commitment destroys information. Everything in the program's semantics that the chosen target cannot express is gone the moment the commitment is made, and no other backend leg can recover it. The middle end holds the full semantic content in a form every leg can still read, so each backend commits from complete information.
+
+For the Farscape path the vendor HAL is inside the trusted computing base, and the application ships over a vendor runtime, which is the right trade when the board is well-supported and the security surface tolerates the vendor code. For the credential the trusted computing base has to be the audited Clef source with nothing under it, so the unikernel path is the one that fits. The published bare-metal record on this site historically routed the Renesas RA family through FSP header bindings, and the credential's direction supersedes that for the pure-Clef unikernel case: the RA6M5 driver layer there is Clef to the reset vector, and it reads the FSP for register knowledge while running nothing of it.
+
+## Interrupts and the Vector Table
+
+Interrupt handling shows the same division. On the Farscape path, the generated library registers handlers against the vendor's vector-table machinery, and application code writes an ordinary handler function. On the unikernel path, the vector table is a flash-resident array the compiler emits: slot zero is the initial stack pointer, slot one is the reset handler, and the peripheral handlers follow, all resolved at compile time with no runtime mutation of the table. Either way the application developer writes a handler that reads like a normal Clef function, and the calling convention and register-safety obligations are the compiler's to discharge. The register regime a handler touches is the same width-typed `Reg*` handles and bounded stack arrays as the rest of the driver layer, so an interrupt path allocates nothing.
 
 ## Memory Management: Graduated Strategies Without Compromise
 
@@ -333,20 +325,18 @@ module internal MemoryConfiguration =
         | _ ->
             // Default configuration
             StandardMemory.configure()
-
-// Application developers just use normal Clef code
-module Application =
-    // Memory management is handled transparently
-    let processData (input: byte[]) =
-        let processed = Array.map transform input
-        let filtered = Array.filter isValid processed
-        Array.fold accumulate State.initial filtered
 ```
 
-The memory management strategy is determined when the library is generated based on the target platform. Application developers could work with standard Clef collections and data structures, while the framework handles the complexity of mapping these high-level constructs to the appropriate low-level memory operations.
+The memory management strategy is determined when the library is generated based on the target platform. Application developers work with standard Clef collections and data structures, while the framework handles the mapping to the appropriate low-level memory operations. On the constrained end, the bit-banging driver layer allocates nothing at all: a register write is value-in, store-out, and buffers are static and linker-provided, an invariant the build can check. [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/) traces the graduated-memory story from stack-only allocation through actor-aware arenas.
+
+## A New Embedded Development Paradigm
+
+Across both paths, the aim is to move embedded development from a specialized craft toward an accessible engineering discipline. On the Farscape path, hardware abstraction becomes a community effort, and each new microcontroller library benefits every Clef developer who targets that family. On the unikernel path, the security-critical applications that could never accept an opaque vendor runtime get a binary they can audit from the reset vector up. The same Clef source, the same compiler, and the same verification obligations carry across both, and what the application needs its trusted computing base to be is what selects between them.
 
 ## See also
 
-- [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis this STM32 target sits inside
-- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of graduated-memory evolution on bare metal
+- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): the Farscape header-parsing path in depth, from CMSIS qualifiers to the graduated-memory model
+- [Getting to the Heart of Unikernels]({{< ref "getting-to-the-heart-of-unikernels" >}}): freestanding versus bare-metal entry, the Cortex-M33 reset vector, and no-libc execution
+- [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis this MCU target sits inside
+- [Cryptographic Certainty]({{< ref "cryptographic-certainty" >}}): the Post-Quantum Credential work that drives the pure-Clef unikernel on the RA6M5
 - [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): memory placement decided at compile time across hardware

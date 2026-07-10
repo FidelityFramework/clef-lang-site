@@ -16,7 +16,7 @@ Clef's computation expressions give a unified syntax for control flow that would
 
 The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case; an applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
-This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](https://speakez.tech/blog/context-aware-compilation/) to our [exploration of continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), and from our [reactive programming model](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/) to our [approach to referential transparency](https://speakez.tech/blog/seeking-referential-transparency/).
+This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](https://speakez.tech/blog/context-aware-compilation/) to our [exploration of continuation preservation](https://speakez.tech/blog/the-continuation-preservation-paradox/), and from our [reactive programming model](/blog/fidelityrx-native-reactivity/) to our [approach to referential transparency](https://speakez.tech/blog/seeking-referential-transparency/).
 
 ## A Principled Start
 
@@ -442,7 +442,7 @@ These improvements compound. A workflow that mixes async I/O with data processin
 
 ## Custom Computation Expressions
 
-The classification extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This carries over to domain-specific languages like our [Rx reactive framework](https://speakez.tech/blog/alloyrx-native-reactivity-in-fidelity/), where multicast observables map to the parallel side and unicast observables map to delimited continuations:
+The classification extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This carries over to the framework's [intrinsic reactive model](/blog/fidelityrx-native-reactivity/), where multicast observables map to the parallel side and unicast observables map to delimited continuations:
 
 ```fsharp
 [<CompileTo(ComputationPattern.Parallel)>]

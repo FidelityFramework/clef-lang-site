@@ -902,5 +902,5 @@ The binding architecture stays a cornerstone of where we are taking our Fidelity
 - [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/): How coeffects guide optimization across heterogeneous hardware
 - [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/): The nanopass architecture underlying the compilation pipeline
 - [Getting Inline](/docs/design/structure-and-performance/getting-inline/): How Fidelity handles inlining for native compilation
-- [Fidelity on STM32](/docs/internals/hardware/fidelity-on-stm32/): Embedded deployment targeting constrained microcontrollers
+- [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/): Embedded deployment targeting constrained microcontrollers, by vendor-HAL binding or pure-Clef unikernel
 - [Native Memory Management](/docs/design/memory/native-memory-management/): Memory management across the computing spectrum
