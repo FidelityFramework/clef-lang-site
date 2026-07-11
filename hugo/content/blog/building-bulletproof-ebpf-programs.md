@@ -7,7 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["eBPF", "Verification", "Architecture"]
 ---
 
-Here is a claim that might sound a bit reckless on the surface: an kernel-level program written by an application developer can be loaded into the running OS kernel, on a production server, under live traffic, and the kernel carries a guarantee that program cannot crash the machine. 
+Here is a claim that might sound a bit reckless on the surface: a kernel-level program can be loaded into the running OS kernel, on a production server, under live traffic, and the kernel carries a guarantee that program cannot crash the machine. 
 
 > Not that it probably will not crash. That it **cannot**. 
 
