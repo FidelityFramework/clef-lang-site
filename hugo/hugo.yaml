@@ -81,7 +81,7 @@ menu:
 params:
   description: "Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems."
   images:
-    - /images/Clef_Banner.png
+    - /images/Clef_Lang_Banner_Dark.png
 
   navbar:
     displayTitle: true
