@@ -1,7 +1,7 @@
 ---
-title: "A Unified Actor Architecture for Clef"
+title: "A Unified Actor Architecture"
 linkTitle: "Unified Actor Architecture"
-description: "Bridging Fidelity and Conclave Through Shared Actor Semantics"
+description: "Bridging Native and Cloud Edge Through Shared Actor Semantics"
 date: 2025-12-04
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
