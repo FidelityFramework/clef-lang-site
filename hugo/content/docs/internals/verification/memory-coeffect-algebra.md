@@ -17,7 +17,7 @@ Effects describe what a computation *does* to its environment (mutation, I/O, ex
 
 ## Escape Classification
 
-Classical escape analysis determines whether a value outlives its creating scope. In most compilers, this is a binary classification (escapes or doesn't) used to decide between stack and heap allocation. The analysis runs during optimization, is opaque to the developer, and produces no design-time feedback.
+Classical escape analysis determines whether a value outlives its creating scope. In most compilers, this is a binary classification (escapes or doesn't) used to decide between stack and heap allocation. The analysis runs during optimization, is opaque to the developer, and produces no design-time feedback. The classification also prices hard target budgets: on the [eBPF target](/blog/building-bulletproof-ebpf-programs/), stack bytes across a probe's call chain must sum within the kernel's 512-byte ceiling, an obligation assembled directly from these classifications.
 
 The coeffect model replaces this with a richer taxonomy:
 

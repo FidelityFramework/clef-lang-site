@@ -902,4 +902,5 @@ The binding architecture stays a cornerstone of where we are taking our Fidelity
 - [Nanopass Navigation](/docs/internals/concepts/nanopass-navigation/): The nanopass architecture underlying the compilation pipeline
 - [Getting Inline](/docs/design/structure-and-performance/getting-inline/): How Fidelity handles inlining for native compilation
 - [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/): Embedded deployment targeting constrained microcontrollers, by vendor-HAL binding or pure-Clef unikernel
+- [Building Bulletproof eBPF Programs](/blog/building-bulletproof-ebpf-programs/): the platform-binding discipline aimed at the Linux kernel's programmable surface
 - [Native Memory Management](/docs/design/memory/native-memory-management/): Memory management across the computing spectrum

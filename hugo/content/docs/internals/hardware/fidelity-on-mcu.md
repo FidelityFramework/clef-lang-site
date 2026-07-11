@@ -339,3 +339,4 @@ Across both paths, the aim is to move embedded development from a specialized cr
 - [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis this MCU target sits inside
 - [Cryptographic Certainty]({{< ref "cryptographic-certainty" >}}): the Post-Quantum Credential work that drives the pure-Clef unikernel on the RA6M5
 - [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): memory placement decided at compile time across hardware
+- [Building Bulletproof eBPF Programs]({{< ref "building-bulletproof-ebpf-programs" >}}): the same platform-descriptor voice aimed at the Linux kernel, where the operating system is the device

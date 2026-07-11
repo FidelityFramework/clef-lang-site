@@ -13,7 +13,7 @@ params:
 
 ## Translation Validation via the MLIR SMT Dialect
 
-After the PSG reaches saturation, with every node stamped with its dimensional proof certificate and its coeffect resolution, the code is lowered to MLIR. Lowering introduces a new risk: optimizations can violate verified properties. The MLIR SMT dialect is designed to close this gap through **translation validation**.
+After the PSG reaches saturation, with every node stamped with its dimensional proof certificate and its coeffect resolution, the code is lowered to MLIR. Lowering introduces a new risk: optimizations can violate verified properties. The MLIR SMT dialect is designed to close this gap through **translation validation**. The [eBPF target](/blog/building-bulletproof-ebpf-programs/) raises the stakes on exactly this discipline: at load, the Linux kernel's own verifier re-derives admissibility from the delivered bytecode, an external referee for the properties translation validation preserves.
 
 The approach builds on the work of Fehr et al. (2025), who demonstrated "First-Class Verification Dialects for MLIR," the ability to express verification constraints directly within the IR rather than as external artifacts that can become disconnected from the code. Their work found five miscompilation bugs in upstream MLIR through this approach.
 
