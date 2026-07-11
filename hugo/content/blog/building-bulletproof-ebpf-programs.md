@@ -1,7 +1,7 @@
 ---
 title: "Building Bulletproof eBPF Programs"
 linkTitle: "Building Bulletproof eBPF Programs"
-description: "The mission is simple: a program that compiles is a program that is guaranteed to load."
+description: "There's more to the world of CPU workloads that user space apps, and we plan to make the deeper reaches more accessible than ever"
 date: 2026-07-10T09:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["eBPF", "Verification", "Architecture"]
