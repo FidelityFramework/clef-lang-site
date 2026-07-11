@@ -1,6 +1,6 @@
 ---
-title: "Building Bulletproof eBPF Kernels"
-linkTitle: "Building Bulletproof eBPF Kernels"
+title: "Building Bulletproof eBPF Programs"
+linkTitle: "Building Bulletproof eBPF Programs"
 description: "The mission is simple: a kernel that compiles is a kernel that loads."
 date: 2026-07-10T09:00:00-04:00
 authors: ["Houston Haynes"]
@@ -15,7 +15,7 @@ It sounds bizarre at first because everything *the kernel **is*** says it should
 
 The answer that grew up to solve this is [eBPF](https://ebpf.io), and its move is to stop 'trusting' code and **prove its validity** instead. A program is submitted as bytecode, and before a single instruction runs, a static analyzer inside the kernel, the verifier, walks every path the program can take and refuses to load anything it cannot show is safe. The sandbox is a proof rather than a wall. Over the last decade that one idea turned the kernel from something to work around into something to deploy to.
 
-Now we are working on a design-time experience that we hope to make the formalism approachable. Our goal is to enable any developer to deliver a reliable eBPF kernel that can be confidently deployed.
+Now we are working on a design-time experience that we hope to make the formalism approachable. Our goal is to enable any developer to deliver a reliable eBPF program that can be confidently deployed.
 
 Anyone who ships these programs knows the tax that usually comes with that lofty low-level goal. The verifier rejects what it cannot prove, and what it can prove depends on the exact shape of the bytecode in front of it. 
 
@@ -84,7 +84,7 @@ eBPF supplies something no other target has shown: the artifact is ***re*-judged
 
 ## Hooks Are Pins
 
-Every target our compiler aims to serve is described by a platform descriptor. For the Arty A7 FPGA board the descriptor enumerates pins, clocks, and reset behavior as typed records, and our FPGA flow consumes those records to bind logical ports to physical pins all the way into the synthesis constraints. We see the eBPF kernel's programmable surface as enumerated in the same procedure. An attach point is a pin: it has a name, a context type it hands your program, and a return convention it expects back. A helper call is a peripheral: it has a signature, an availability window, and in some cases a licensing condition. Map kinds, stack ceilings, and instruction budgets fill out the record. The descriptor machinery our FPGA targets use carries this without extension. The addition is a set of new record types in the same contracts for eBPF scenarios.
+Every target our compiler aims to serve is described by a platform descriptor. For the Arty A7 FPGA board the descriptor enumerates pins, clocks, and reset behavior as typed records, and our FPGA flow consumes those records to bind logical ports to physical pins all the way into the synthesis constraints. We see the eBPF program's programmable surface as enumerated in the same procedure. An attach point is a pin: it has a name, a context type it hands your program, and a return convention it expects back. A helper call is a peripheral: it has a signature, an availability window, and in some cases a licensing condition. Map kinds, stack ceilings, and instruction budgets fill out the record. The descriptor machinery our FPGA targets use carries this without extension. The addition is a set of new record types in the same contracts for eBPF scenarios.
 
 A pinned program is never invoked by the application that loaded it. An event fires, and the kernel runs the program right there, with the event's data.
 
@@ -100,7 +100,7 @@ flowchart LR
 
 The kernel descriptor inverts the CPU frame. When considering a standard user space CPU application, the view from "top down" is that the operating system sits at a layer of remove. eBPF flips that. The bytecode is fixed and portable, and the kernel's JIT settles the processor question at load, with a well-formed interface to derive and collect data and kernel speed. What varies is the host: which hooks exist, which helpers answer, what the verifier will accept. Each of those is a function of a given kernel version. For this target the operating system **is** *the device* so to speak.
 
-The descriptor earns its keep on the version axis. A helper that arrived in kernel 5.17 is a capability with a floor. A map kind that arrived in 5.8 is another. Settling this as a structured capability map is the subject of some design consideration. We imagine that project files would pin a minimum host version, and the capability gate might filter every candidate against that pin. A use below the floor is a witnessed failure naming the version that would satisfy it. This too would be a design-time diagnostic that would provide a "pit of success" framing that can be corrected when the cost of re-directing the course of the program is 'cheap'. Our numeric selection already surfaces information this way when a target lacks a numeric representation, and we expect that the eBPF kernel surface will slot into the same discipline without significant additional work.
+The descriptor earns its keep on the version axis. A helper that arrived in kernel 5.17 is a capability with a floor. A map kind that arrived in 5.8 is another. Settling this as a structured capability map is the subject of some design consideration. We imagine that project files would pin a minimum host version, and the capability gate might filter every candidate against that pin. A use below the floor is a witnessed failure naming the version that would satisfy it. This too would be a design-time diagnostic that would provide a "pit of success" framing that can be corrected when the cost of re-directing the course of the program is 'cheap'. Our numeric selection already surfaces information this way when a target lacks a numeric representation, and we expect that the eBPF program surface will slot into the same discipline without significant additional work.
 
 In the record vocabulary the FPGA targets already use, the sketch is direct:
 
