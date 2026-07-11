@@ -7,13 +7,13 @@ authors: ["Houston Haynes"]
 tags: ["eBPF", "Verification", "Architecture"]
 ---
 
-Here is a claim that might sound a bit reckless on the surface: 
+Here is a claim that might sound a bit reckless on the surface: an kernel-level program written by an application developer can be loaded into the running OS kernel, on a production server, under live traffic, and the kernel carries a guarantee that program cannot crash the machine. 
 
-> an eBPF program written by an application developer can be loaded into the running Linux kernel, on a production server, under live traffic, and the kernel carries a guarantee that program cannot crash the machine. 
+> Not that it probably will not crash. That it **cannot**. 
 
-Not that it *probably* will not crash. That it ***cannot***. Netflix uses code like this to watch every disk request on live boxes. Cloudflare uses it to drop attack floods before the kernel allocates memory for a single junk packet. Google routes traffic between containers with it.
+Netflix uses code like this to watch every disk request on live systems. Cloudflare uses it to drop attack floods before the kernel allocates memory for a single junk packet. Google routes traffic between containers with it.
 
-And now for the first time we're putting a design-time safety net in a programming workflow that guarantees *if the compiler allows it, the eBPF program will not crash the OS kernel.* That's a bold claim, but one that we feel that we are uniquely qualified to embrace.
+And now for the first time we're putting a design-time safety net in a programming workflow that guarantees *if the compiler allows it, the eBPF program will not crash the OS kernel.* That's a bold claim, but one that we feel that we are uniquely qualified to deliver.
 
 It sounds bizarre at first because everything *the kernel **is*** says it should be impossible. Ordinary programs run in user space, inside a quarantine the OS enforces: when one crashes, the operating system shrugs and reaps it. The **OS kernel** has no such net. It runs with total privilege over the hardware, and a single bad pointer at that tier does not *just* kill a process, it can take down the *entire* machine. That depth is also exactly where a firewall, a profiler, or a packet filter operates, close to every low level event. The challenge has always been how to hand the kernel a program it has never seen and let it run resident without betting the entire server on that single program being correct.
 
