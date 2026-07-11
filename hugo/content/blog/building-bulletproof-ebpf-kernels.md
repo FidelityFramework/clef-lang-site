@@ -1,7 +1,7 @@
 ---
 title: "Building Bulletproof eBPF Programs"
 linkTitle: "Building Bulletproof eBPF Programs"
-description: "There more to the world of CPU workloads than user space apps, and we plan to make it more accessible than ever."
+description: "There's more to the world of CPU workloads than user space apps, and we plan to make it more accessible than ever."
 date: 2026-07-10T09:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["eBPF", "Verification", "Architecture"]
