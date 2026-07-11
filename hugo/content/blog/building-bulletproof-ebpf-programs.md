@@ -33,16 +33,21 @@ That is the position behind the eBPF target we have been designing for our Compo
 
 Strip away the mystique and that verifier is doing something those of us in the ML-family language tradition consider table stakes. It tracks a range for every register at every instruction and demands a bound for every loop. Stack bytes are accounted across calls. A pointer dereference that no comparison dominates is *refused*. In the compiler literature this is abstract interpretation, and it is the same family of analysis our compiler already runs at design time. Our width inference converges integer ranges to choose hardware bit widths, and we've shown our pipeline carries those results through synthesis and place-and-route on a real FPGA design. Our [escape classification]({{< ref "/docs/internals/verification/memory-coeffect-algebra" >}}) decides where every value may live. So that verifier asks the same kinds of questions about the same kinds of facts. It just asks them at the worst possible moment: after the program is built, near load time, at the most expensive possible place to recover information.
 
-Laid end to end, our pipeline holds one program and two gates:
+Our pipeline is designed to hold verification at two gates:
 
 ```mermaid
 flowchart TD
-    subgraph CT["design time: Composer"]
+    subgraph CT["design time: Clef Compiler Services"]
         SRC["Clef source"] --> OB["obligations gathered:<br/>ranges, escapes, loop bounds"]
         OB --> ZD["discharged in QF_LIA,<br/>witnesses attached"]
-        ZD --> EM["emission: guards in<br/>recognized shapes"]
     end
-    EM --> BC["BPF bytecode"]
+    subgraph BT["build time: Composer + MLIR"]
+        RC["witnesses re-checked<br/>at every lowering pass"]
+        RC --> EM["guards emitted in<br/>recognized shapes"]
+        EM --> LP["optimizer contractually bound:<br/>verified properties preserved<br/>through LLVM"]
+    end
+    ZD --> RC
+    LP --> BC["BPF bytecode"]
     BC --> LD
     subgraph KT["load time: the kernel"]
         LD["bpf() syscall"] --> VF{"verifier re-derives<br/>the proof"}
@@ -52,7 +57,7 @@ flowchart TD
     end
 ```
 
-The first gate belongs to the Clef Compiler Service (CCS), where a failure is a design-time source span in the editor and the fix is immediate. Everything below is aimed at making the second gate a formality by the time bytecode reaches it.
+The first gate belongs to the Clef Compiler Service (CCS), where a failure is a design-time source span in the editor and the fix is immediate. Between the gates, at build time, Composer's middle end carries the next tier of verification: every witness is re-checked at each lowering pass, and the computation substrate is managed so LLVM cannot optimize a verified property away. Everything below is aimed at making the second gate a formality by the time bytecode reaches it.
 
 | What the verifier demands | What CCS handles at design time |
 |---|---|
