@@ -214,7 +214,7 @@ let dotProduct (a: array<Posit32, n>) (b: array<Posit32, n>) : Posit32 =
     quire.ToPosit32()
 ```
 
-The quire's 512 bits eliminate rounding error during accumulation. The final conversion to posit is the only rounding operation. For streaming computations where millions of values accumulate, this property holds numerical error to that single conversion, where IEEE floats accumulate rounding at every step.
+The full-gamut posit32 quire's 512 bits eliminate rounding error during accumulation (a b-posit uses a fixed 800-bit quire regardless of width). The final conversion to posit is the only rounding operation. For streaming computations where millions of values accumulate, this property holds numerical error to that single conversion, where IEEE floats accumulate rounding at every step.
 
 ## Hardware Targeting Through MLIR
 

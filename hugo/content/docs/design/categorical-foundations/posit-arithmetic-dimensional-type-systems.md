@@ -55,11 +55,11 @@ This is a deterministic function from dimensional constraints and target capabil
 
 ## The Quire: A Coeffect Case Study
 
-The posit quire accumulator illustrates how representation selection interacts with memory management. A quire holds intermediate results of multiply-add operations without rounding; rounding occurs once, when the final result is converted back to a posit value [1]. The Posit Standard (2022) [2] defines the quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32.
+The posit quire accumulator illustrates how representation selection interacts with memory management. A quire holds intermediate results of multiply-add operations without rounding; rounding occurs once, when the final result is converted back to a posit value [1]. The Posit Standard (2022) [2] defines the full-gamut quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32. The b-posit revision [4] sets a single fixed quire of 800 bits for any width \(n > 12\), independent of precision.
 
-This fixed relationship between posit precision and quire width makes compiler modeling straightforward. For posit32:
+This fixed relationship between full-gamut posit precision and quire width makes compiler modeling straightforward. For posit32 (a b-posit instead carries a fixed 800-bit quire, below):
 
-- **Size:** 512 bits = 64 bytes = exactly one cache line on typical architectures
+- **Size:** 512 bits (64 bytes)
 - **Allocation:** stack-eligible for short-lived accumulations, arena-eligible for long-lived ones
 - **FPGA mapping:** a 512-bit value mapped to fabric by the synthesis tool, pipelined for single-cycle FMA throughput
 - **Neuromorphic:** unavailable (the target lacks sufficient accumulator width)

@@ -98,16 +98,18 @@ Posit32 is not the only configuration. The posit specification defines a family 
 [<Struct>] type Posit64 = val Bits: uint64; new(b) = { Bits = b }
 ```
 
-Each size has a corresponding quire for exact accumulation:
+Each full-gamut posit size has a corresponding quire for exact accumulation. The Posit Standard (2022) fixes the exponent size at `es = 2` for every bit width, so precision changes with `n` while the exponent field does not:
 
 | Posit Type | es | Quire Size | Use Case |
 |------------|----|-----------:|----------|
-| Posit8     | 0  | 32 bits    | ML weights, activations, memory-constrained inference |
-| Posit16    | 1  | 128 bits   | Intermediate calculations, gradients, embedded ML |
+| Posit8     | 2  | 32 bits    | ML weights, activations, memory-constrained inference |
+| Posit16    | 2  | 128 bits   | Intermediate calculations, gradients, embedded ML |
 | Posit32    | 2  | 512 bits   | General computation, IEEE float replacement |
-| Posit64    | 3  | 2048 bits  | High-precision scientific computing |
+| Posit64    | 2  | 2048 bits  | High-precision scientific computing |
 
-The quire sizes follow a formula: for a posit with `n` bits, the quire needs `16 * n` bits to guarantee exact accumulation of any product sum.
+The full-gamut quire size follows the standard formula `n²/2`: a posit with `n` bits needs `n²/2` bits to accumulate any product sum exactly.
+
+The **b-posit** (bounded posit; Jonnalagadda, Thotli, and Gustafson, [arXiv:2603.01615](https://arxiv.org/abs/2603.01615)) breaks this precision-dependent sizing. By capping the regime field at 6 bits, it makes the non-significand field identical across widths, which fixes a single **universal quire of 800 bits (a vector of 25 32-bit integers) for any precision `n > 12`**. One accumulator width serves every b-posit precision.
 
 ### Quires Across the Family
 
@@ -195,7 +197,7 @@ Every precision transition is visible in the type signature. The compiler reject
 
 The posit specification is parameterized by `(nbits, es)`, which naturally suggests a generic `Posit<'N, 'ES>` type with phantom parameters. In practice, this generality is unnecessary and counterproductive.
 
-The four standard posit configurations (Posit8/es0, Posit16/es1, Posit32/es2, Posit64/es3) cover the entire practical spectrum. No hardware implementation targets exotic configurations like Posit24/es1 or Posit48/es2. No serious library optimizes for them. Research papers occasionally explore non-standard configurations, but production use converges on the four standard sizes.
+The four standard posit configurations (Posit8, Posit16, Posit32, Posit64, all at `es = 2` per the 2022 standard) cover the practical spectrum. No hardware implementation targets exotic configurations like Posit24 or Posit48 at nonstandard exponent sizes. No serious library optimizes for them. Research papers occasionally explore non-standard configurations, but production use converges on the four standard sizes.
 
 Concrete types have clear advantages over parameterized generics:
 
@@ -204,10 +206,10 @@ Concrete types have clear advantages over parameterized generics:
 | **Compilation** | Direct struct layout, known at definition | Requires monomorphization, complicates MLIR emission |
 | **SRTP** | Each type has explicit `Add`/`Mul` members | Member resolution through additional indirection |
 | **Hardware mapping** | `Posit32` → 32-bit register, `Quire32` → 512-bit accumulator | Generic storage (`uint64` for all) wastes bits |
-| **Error messages** | "Cannot convert Posit8 to Posit16" | "Cannot convert Posit<N8,ES0> to Posit<N16,ES1>" |
+| **Error messages** | "Cannot convert Posit8 to Posit16" | "Cannot convert Posit<N8,ES2> to Posit<N16,ES2>" |
 | **Mixed precision** | `widen8to16` is a named, discoverable function | Generic widening requires additional type-level machinery |
 
-The four concrete types plus their quires (eight types total) are a closed, complete set. SRTP provides the generic programming across them. If a researcher genuinely needs Posit24/es1, they can define `[<Struct>] type Posit24 = val Bits: uint32` and implement the operations. The struct-wrapping-integer pattern works at any width. This is an extension point, not the default architecture.
+The four concrete types plus their quires (eight types total) are a closed, complete set. SRTP provides the generic programming across them. If a researcher genuinely needs a Posit24, they can define `[<Struct>] type Posit24 = val Bits: uint32` and implement the operations. The struct-wrapping-integer pattern works at any width. This is an extension point, not the default architecture.
 
 ### Contrast with Stillwater Universal
 
@@ -374,7 +376,7 @@ The path from working posit types to performant posit arithmetic runs through se
 
 **Struct Alignment Control**
 
-Quire32 occupies 64 bytes, exactly one cache line on most processors. Quire64 spans 256 bytes. Aligning these structures to cache boundaries improves performance significantly, and the clef-lang-spec will need explicit alignment control:
+A full-gamut Quire32 occupies 64 bytes and a Quire64 spans 256 bytes (the `n²/2` sizing). A b-posit quire is a fixed 800 bits (100 bytes) for every precision. Aligning these structures to cache boundaries improves performance significantly, and the clef-lang-spec will need explicit alignment control:
 
 ```fsharp
 [<Align(64)>]
@@ -449,7 +451,9 @@ The smaller posit sizes (8, 16) fit within word-at-a-time operations and are via
 
 *SIMD on Commodity Hardware*: The dedicated hardware paths above are promising but not yet ubiquitous. What about acceleration on hardware that exists today, in machines developers already own?
 
-This question led to an interesting exploration. Consider AMD's Strix Halo architecture: Zen 5 cores with AVX-512, RDNA 3.5 GPU, and XDNA 2 NPU, all sharing unified memory. At first glance, this heterogeneous design seems promising for posit acceleration. The AVX-512 registers are 512 bits wide, exactly matching a Quire32. The GPU offers massive parallelism. The NPU handles INT8 matrix operations, matching Posit8's bit width.
+This question led to an interesting exploration. Consider AMD's Strix Halo architecture: Zen 5 cores with AVX-512, RDNA 3.5 GPU, and XDNA 2 NPU, all sharing unified memory. At first glance, this heterogeneous design seems promising for posit acceleration. The AVX-512 registers are 512 bits wide, exactly matching a full-gamut Quire32. The GPU offers massive parallelism. The NPU handles INT8 matrix operations, matching Posit8's bit width.
+
+A b-posit quire changes this picture in a useful way. At a fixed 800 bits (25 32-bit integers, [arXiv:2603.01615](https://arxiv.org/abs/2603.01615)), it does not fit one register; it carries across two AVX-512 registers, 1024 bits with 224 bits of slack, as vectorized shift-add over the 25 lanes. The trade is deliberate: one accumulator width for every b-posit precision, in exchange for the second register. Because the quire lives in the register file backed by unified memory, its value is coherent to the GPU and NPU without a copy, so an accumulator produced on the CPU is readable by the other two agents across the same coherent address space. The FPGA sits outside that unified-memory domain, across the link, and carries its own b-posit quire in fabric where many 800-bit accumulators bank in parallel across the LUT budget. Where the quire should live is then a placement decision: co-locate the accumulator with the ALUs that feed it and move one rounded result across the slow boundary, or place it on the far side and move every operand.
 
 Not all AVX-512 implementations are equal. AMD's Zen 5 family includes variations: desktop and server parts feature full-width 512-bit datapaths with 4x512-bit execution, while some mobile variants use 4x256-bit execution. Even the narrower implementation provides meaningful acceleration over scalar code, and the unified memory architecture remains valuable regardless. A mobile platform capable of useful posit acceleration opens development possibilities that dedicated server hardware would not: rapid iteration, power-efficient experimentation, and accessibility to labs that lack data center resources.
 
@@ -660,7 +664,7 @@ The quires, however, introduce interesting memory considerations.
 | Quire32 | 64 bytes | 1 | Stack or arena |
 | Quire64 | 256 bytes | 4 | Arena |
 
-Quire32's 64-byte size is fortuitous: it matches the cache line size on most modern processors. A dot product accumulating into a Quire32 touches exactly one cache line for the accumulator, regardless of how many posit pairs it processes. This is optimal for cache utilization.
+A full-gamut Quire32's 64-byte size is fortuitous: it matches the cache line size on most modern processors, so a dot product accumulating into a Quire32 touches one line for the accumulator regardless of how many posit pairs it processes. A b-posit quire is 100 bytes and straddles a line boundary, trading that clean fit for a single accumulator width across all precisions; on a CPU it maps to two AVX-512 registers (see the acceleration section).
 
 Quire64 at 256 bytes spans four cache lines. For short-lived computations (a single matrix row), stack allocation remains appropriate. For longer-lived accumulators (an actor maintaining running statistics), arena allocation with the actor's lifetime makes more sense. The [arena-based memory model](/docs/design/memory/raii-in-olivier-and-prospero/) that Fidelity uses for actor systems handles this naturally: the quire lives in the actor's arena and is reclaimed when the actor terminates.
 
