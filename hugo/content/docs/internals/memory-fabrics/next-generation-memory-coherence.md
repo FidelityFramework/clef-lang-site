@@ -440,7 +440,7 @@ This high-level API allows data scientists to focus on model architecture and tr
 
 ## BAREWire and CXL Memory Pooling
 
-CXL 2.0+ adds memory pooling capabilities that BAREWire can leverage for dynamic resource allocation:
+The pooling story sharpens across CXL versions. CXL 2.0 pools memory so a region can be assigned to one host at a time, which BAREWire can leverage for dynamic resource allocation. CXL 3.0 goes further with hardware-coherent memory sharing, where a single region is simultaneously accessible to multiple hosts and every host sees the most current data, and CXL 3.1 refined the fabric manageability around it. That multi-host coherent share is the hardware realization of the virtual shared-memory space our [RDMA note](/docs/internals/memory-fabrics/rdma-accelerating-network-comms/) builds in software, and it recasts distributed model training as a memory-topology problem, where the data already sits where every host can reach it:
 
 ```fsharp
 module BAREWire.MemoryPool =
@@ -495,6 +495,10 @@ module BAREWire.MemoryPool =
                 PoolId = Some pool.PoolId
             }
 ```
+
+The pooling case has now been measured on production silicon. Samsung's [CXL memory-pooling study](https://semiconductor.samsung.com/news-events/tech-blog/breaking-ai-memory-limits-with-cxl-memory-pooling/) (July 2026) aggregated CMM-D modules through a CXL switch into a 1 TB shared pool fronting NVIDIA Blackwell GPUs, and offloaded the LLM inference KV cache to it through vLLM and LMCache. The pool held approximately 92% of DRAM performance across eight GPUs while scaling capacity far past what host DRAM could hold, and a DRAM-only baseline degraded once the KV cache outgrew it, paying recompute overhead the pool avoided. The result settles the open question these designs were written against: a coherent CXL pool can carry memory-intensive AI state at near-DRAM latency and past DRAM capacity.
+
+That measured result also sharpens where our contribution sits. Samsung's stack decides KV-cache placement at runtime, through LMCache's eviction and offload heuristics over an untyped pool. In our design the cache block's pool residency is a compile-time coeffect, `SharedBuffer<'T, cxl_mem>` against `unified`, so which blocks live in the pool against GPU memory would be a placement the compiler proves against the value's dimensional range rather than a policy the cache layer guesses at each step. The [KV cache as a shared fabric region]({{< ref "the-kv-cache-as-a-shared-fabric-region" >}}) develops that inversion, and the agentic weave it opens.
 
 ### Resource Library: High-Level Memory Pools
 
@@ -677,5 +681,13 @@ These libraries and others like them will allow developers to express computatio
 These capabilities target the next generation of heterogeneous computing, where the boundaries between different memory spaces are increasingly blurred by technologies like CXL. The pre-optimization approach of BAREWire is built to match the hardware coherency provided by CXL, giving high-performance native code a foundation that spans the computing spectrum.
 
 The systems programming community has long accepted that advanced memory architectures require advanced programming discipline. CXL tutorials warn developers to "carefully track which pointers point where" and "always verify coherence domain compatibility before access." This guidance amounts to admitting that the toolchain cannot help. Our design takes the opposite premise. If the hardware provides multiple memory pools with different characteristics, the type system should encode those characteristics. If coherence domains constrain valid access patterns, the compiler should verify them. The cognitive burden that C++ and Rust place on developers working with CXL is not inherent to the problem. It reflects limitations in those languages' type systems, and Fidelity's type system is designed to lift them.
+
+## Watching the Fabric the Network Stack Cannot See
+
+CXL.mem and CXL.cache move data along paths the operating system never observes. A peer read that crosses a coherence-domain boundary touches remote memory directly, and packet-oriented tools such as tcpdump and socket tracing are blind to it. The direct response in the field is wBPF (HCDS '25), a specialized eBPF runtime for CXL pooling systems that coordinates tracing across the compute nodes sharing a memory pool and captures rare memory and communication anomalies while holding telemetry overhead low. Parallel efforts point the same instrument elsewhere: eGPU brings eBPF observability to inter-device GPU memory transfers, and TierBPF governs page-migration admission control in tiered memory that includes CXL. These attach un-typed probes reactively, sampling anomalies no static contract had ruled out.
+
+Our design would invert that arrangement. The pool residency the type already carries, `SharedBuffer<'T, cxl_mem>` against `unified` against `cpu_mem`, is the same fact the coeffect discipline checks to admit an access at compile time. A CPU-local buffer reaching CXL-coherent code is caught at design time as a diagnostic, the very failure the C++ programmer discovers at runtime as a segfault or silent corruption. The runtime monitoring predicate would be the negation of the admissibility fact the compiler already discharged, derived rather than hand-authored and bolted on afterward, so a kprobe or PMC probe on CXL.mem/CXL.cache peer transactions would witness that the fabric behaved as proven, watching exactly the transactions the type contract named.
+
+This is our [BAREWire contract gaining a fabric leg]({{< ref "building-bulletproof-ebpf-programs" >}}): the same schema-settled region that would gain a kernel leg past the syscall boundary crossing a coherent interconnect, with the kernel probe as its witness. Observability would come out as a byproduct of the fabric type, verified where the compiler already reasoned, rather than a separate telemetry program chasing anomalies after the fact.
 
 The underlying technology, built on our "System and Method for Zero-Copy Inter-Process Communication Using BARE Protocol" (US 63/786,247), opens possibilities for AI systems that distribute computation across heterogeneous hardware while reducing the overhead traditionally associated with data movement. This software from SpeakEZ AI addresses distributed AI model training and heterogeneous computing.

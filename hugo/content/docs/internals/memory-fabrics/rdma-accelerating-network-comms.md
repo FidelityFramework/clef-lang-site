@@ -188,7 +188,7 @@ Our design vision extends to compatibility with emerging AI hardware accelerator
 
 ### Tenstorrent's Architecture and Communication Model
 
-Tenstorrent's hardware employs a Network-on-Chip (NoC) architecture with Tensix cores and uses standard Ethernet for chip-to-chip communication in multi-chip configurations. Unlike traditional CPU systems that might benefit from RDMA directly, Tenstorrent's internal architecture already implements an efficient on-chip communication fabric with its own memory hierarchy and data movement abstractions through APIs like Buda.
+Tenstorrent's hardware employs a Network-on-Chip (NoC) architecture with Tensix cores and uses standard Ethernet for chip-to-chip communication in multi-chip configurations. Unlike traditional CPU systems that might benefit from RDMA directly, Tenstorrent's internal architecture already implements an efficient on-chip communication fabric with its own memory hierarchy and data movement abstractions exposed through its low-level TT-Metal programming model.
 
 Integration with such specialized hardware would require a different approach than standard RDMA:
 
@@ -405,6 +405,12 @@ RDMA operations bypass the operating system kernel, potentially reducing communi
 RDMA technologies can potentially utilize nearly the full bandwidth of high-speed networks, a capability that would be essential for distributed AI workloads where large tensors must be transferred between nodes:
 
 In distributed AI workloads, communication overhead often becomes the limiting factor in scaling beyond a single machine, which is where these performance benefits would tell. By minimizing this overhead through zero-copy operations and RDMA, Fidelity could potentially achieve near-linear scaling for many workloads.
+
+## Observing the Registered Transfer
+
+The latency win rests on RDMA operations bypassing the operating system kernel, and one-sided reads and writes go further by touching remote memory without waking the remote CPU. That data path is invisible to socket tracing, the same blind spot the OpenTelemetry eBPF network collector addresses for standardized kernel-level dataplane telemetry, and the completion path returns the visibility. A tracepoint on the ibverbs completion queue observes each verb as it retires, and at the NIC-driver edge an XDP hook reaches the RoCE and Ethernet transport the transport table above enumerates.
+
+The type already carries registration status. The `Lkey` and `Rkey` on `RdmaMemoryRegion<'T>` are what the [coeffect discipline checks at compile time](https://arxiv.org/abs/2603.16437) to admit a verb, so the completion-queue witness would confirm at runtime that every operation ran against a proven-registered region. The same inversion our [companion CXL note](/docs/internals/memory-fabrics/next-generation-memory-coherence/) develops for pool residency carries over here, with the registration contract supplying the predicate the probe checks. Observability would fall out of the RDMA memory-region type, verified where the compiler already reasoned about the transfer.
 
 ## Practical RDMA Implementation for AI Workloads
 
