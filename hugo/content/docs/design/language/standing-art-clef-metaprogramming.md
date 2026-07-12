@@ -72,7 +72,7 @@ match currentNode with
 | _ -> emitDefault node
 ```
 
-The alternative would be a nested conditional structure that mixes recognition with action, or a visitor pattern that spreads classification across multiple methods. Active patterns keep the structure visible and the logic local.
+The alternative would be a nested conditional structure that mixes recognition with action, or a visitor pattern that spreads classification across multiple methods. Active patterns keep the structure visible and the logic local. The same recognition idiom becomes the public face of our design-time reflection surface in [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
 ## Computation Expressions as Delimited Continuations
 

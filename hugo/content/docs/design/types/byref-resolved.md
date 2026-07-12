@@ -208,7 +208,7 @@ For the broader verification context, see [Building Proofs for the Real World](/
 
 ## Closing
 
-Memory safety as architecture means the safety is a property of the artifact. Our compile-time analysis runs once. The structural certificate records what the analysis confirmed. The binary realizes the commitments through its layout and access patterns, with the structural decisions baked into the code generation. The position sits between Rust and garbage collection: compile-time safety comparable to Rust's, annotation freedom comparable to GC's, and a cost profile different from both. The intellectual lineage from Tofte and Talpin, Appel and Shao, MLKit, and Perconti and Ahmed gives the architecture its specific shape; the joint constraint reasoning over our program hypergraph is what makes the components compose.
+Memory safety as architecture means the safety is a property of the artifact. Our compile-time analysis runs once. The structural certificate records what the analysis confirmed. The binary realizes the commitments through its layout and access patterns, with the structural decisions baked into the code generation. The position sits between Rust and garbage collection: compile-time safety comparable to Rust's, annotation freedom comparable to GC's, and a cost profile different from both. The intellectual lineage from Tofte and Talpin, Appel and Shao, MLKit, and Perconti and Ahmed gives the architecture its specific shape; the joint constraint reasoning over our program hypergraph is what makes the components compose. The displacement argument this document opens with has a companion piece for program metadata in [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
 ## References
 
