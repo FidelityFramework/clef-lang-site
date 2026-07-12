@@ -52,3 +52,4 @@ Normatively, the specification requires it. A design-time property the specifica
 - [Dimensional Type Safety](/docs/design/types/dimensional-type-safety/) - dimensions preserved to the final lowering stage
 - [Proofs to Silicon](/docs/internals/verification/proofs-to-silicon/) - verification facts carried through the middle end
 - [Fixed-Point Scaffolding](https://arxiv.org/abs/2606.02854) - why an MLIR/C++ scaffold carries a structurally-correct language to hardware
+- [Opining Upon Reflection](/blog/opining-upon-reflection/) - the accrual principle read against runtime reflection, for readers arriving from managed platforms

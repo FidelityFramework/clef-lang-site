@@ -160,3 +160,4 @@ Lattice is a framework for a cohesive editing experience that brings Clef togeth
 ## See also
 
 - [Bridging Clef AutoComplete To The Fidelity Ecosystem](/docs/tooling/clef-autocomplete-integration/): how CAC extends the FSAC project-loader architecture to crack `.fidproj` TOML manifests and deliver IntelliSense for native Clef projects in VSCode and nvim.
+- [Opining Upon Reflection](/blog/opining-upon-reflection/): the case for why a PSG-backed language server is not a shadow model beside the sources, told for readers arriving from the .NET reflection mindset.

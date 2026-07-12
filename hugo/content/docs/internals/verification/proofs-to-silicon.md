@@ -182,7 +182,7 @@ The Fidelity Framework's integrated approach to verification is designed to coll
 | Optimization verification | Trust the optimizer | Translation validation via MLIR SMT dialect |
 | Design-time feedback | Separate linting/analysis tools | PSG is the analysis, a compilation byproduct |
 
-The PSG is designed to persist as a long-lived data structure maintained by the language server. The elaborated, saturated graph would serve as the data source for all design-time services: hover information, resolution panels, diagnostic overlays, and restructuring suggestions. These feedback categories are all properties of the PSG that the compiler computes as part of normal compilation. Lattice will read the PSG; the design-time tooling is a view over the compilation graph.
+The PSG is designed to persist as a long-lived data structure maintained by the language server. The elaborated, saturated graph would serve as the data source for all design-time services: hover information, resolution panels, diagnostic overlays, and restructuring suggestions. These feedback categories are all properties of the PSG that the compiler computes as part of normal compilation. Lattice will read the PSG; the design-time tooling is a view over the compilation graph. The approachable statement of this position, framed for readers arriving from the runtime-reflection mindset, is [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
 The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) formalizes why preservation matters. Each compilation stage has strictly more information than its predecessor:
 

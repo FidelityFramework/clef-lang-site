@@ -248,3 +248,4 @@ That reconciliation is what we call "the walk." What looks like simplicity on th
 - [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/) - Deferred computation without garbage collection
 - [Seq'ing Simplicity](/docs/internals/concepts/seqing-simplicity/) - Sequence expressions as state machines
 - [Coeffects and Codata](/docs/internals/concepts/coeffects-and-codata/) - The coeffect model in depth
+- [Opining Upon Reflection](/blog/opining-upon-reflection/) - The design-time payoff of this walk: reflection as the observation surface of the same traversal

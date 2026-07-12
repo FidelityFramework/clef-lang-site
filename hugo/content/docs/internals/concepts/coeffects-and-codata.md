@@ -911,3 +911,5 @@ The theoretical underpinnings of Composer's design draw from several areas of pr
 **Delimited Continuations** (Danvy and Filinski, 1990) provide the theoretical foundation for WAMI's stack switching implementation. By recognizing async/await as a syntax for delimited continuations, Composer achieves zero-copy context switching without runtime support.
 
 The integration of these concepts, using coeffects to identify codata patterns and compiling them via delimited continuations, is the synthesis Composer is built on. The same mathematical principles that guide the compilation decisions also inform the memory-management strategies: the byref treatment through capability-based memory management, the RAII-based actor cleanup, and the zero-copy cross-process communication through memory mapping and Reference Sentinels all rest on the same coeffect-and-codata substrate.
+
+[Opining Upon Reflection](/blog/opining-upon-reflection/) gives this discipline its most approachable outing, tracing placed-then-observed from the coeffect substrate to a design-time reflection surface.

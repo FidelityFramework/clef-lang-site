@@ -484,3 +484,5 @@ let evolveOptimization (hyperedge: PHGHyperedge) (history: CompilationHistory) =
 ## The Evolving Compiler
 
 The temporal Program Hypergraph is the direction we are building toward now. It rests on the pieces this document has walked through: hypergraphs for the multi-way relationships, recursion schemes and bidirectional zippers for the traversal, event-sourced telemetry for the temporal record, and graph heuristic networks for pattern recognition. What it adds to the static PSG is the temporal dimension, a compiler that reads its own compilation history and carries what it learns into the next pass. As the gap between Von Neumann and post-Von Neumann targets widens, that history is where a per-target parallelization strategy accrues: each compilation sharpens the next, so the strategy is carried forward instead of recomputed from scratch.
+
+For a narrative treatment of what the joint-constraint structure buys at design time, [Opining Upon Reflection](/blog/opining-upon-reflection/) follows it from the hypergraph to the editor surface.

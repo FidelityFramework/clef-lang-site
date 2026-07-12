@@ -138,3 +138,4 @@ For more on the Composer compiler and Fidelity framework:
 - [Context-Aware Compilation](/docs/internals/mlir/context-aware-compilation/) - Coeffects and their role in optimization decisions
 - [The Return of the Compiler](/blog/the-return-of-the-compiler/) - Why native compilation is displacing virtual machines
 - [Seeing Beyond Assemblies](/blog/seeing-beyond-assemblies/) - Source-based package management in the Fidelity ecosystem
+- [Opining Upon Reflection](/blog/opining-upon-reflection/) - An approachable account of why the saturation Baker produces retires the case for runtime reflection
