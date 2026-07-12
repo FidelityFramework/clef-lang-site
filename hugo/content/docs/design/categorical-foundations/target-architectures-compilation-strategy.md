@@ -25,7 +25,7 @@ The general-purpose CPU is the default target. Its profile:
 
 **Numeric representation:** IEEE 754 `float64` (or `float32` where precision requirements permit). The representation selection function from [the posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) evaluates IEEE 754 against other candidates; on CPU targets, IEEE 754 typically wins because the hardware provides native support.
 
-**Quire support:** Software emulation. For posit32, the 512-bit quire occupies 64 bytes on the stack, exactly one cache line. Performance cost is approximately 50 cycles per fused multiply-add operation, dominated by the multi-precision integer arithmetic required to maintain exact accumulation without hardware support.
+**Quire support:** Software emulation. A b-posit32 quire occupies a fixed 800 bits (100 bytes) on the stack; a full-gamut posit32 quire is \(n^2/2 = 512\) bits (64 bytes). Performance cost is approximately 50 cycles per fused multiply-add operation, dominated by the multi-precision integer arithmetic required to maintain exact accumulation without hardware support.
 
 **Memory model:** Conventional stack/heap with the DMM coeffect discipline. Escape analysis maps to standard allocation decisions:
 

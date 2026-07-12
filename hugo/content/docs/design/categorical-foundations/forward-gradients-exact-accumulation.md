@@ -56,11 +56,11 @@ The multi-tangent extension preserves this property. \(K\) tangent vectors propa
 
 Forward-mode computes directional derivatives via inner products. The inner product \(\langle \nabla f(\theta), v \rangle\) is an accumulation of products, exactly the operation the posit quire makes exact.
 
-The quire holds intermediate multiply-add results without rounding. For posit32, the quire occupies \(n^2/2 = 512\) bits = 64 bytes, exactly one cache line. Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property matters for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
+The quire holds intermediate multiply-add results without rounding. For a b-posit, the quire is a fixed 800 bits (a vector of 25 32-bit integers, independent of precision for any width \(n > 12\)). Rounding occurs once, when the final accumulated result is converted back to a posit value [2]. This single-rounding property matters for gradient accumulation: the directional derivative computation accumulates across all parameters in a layer, and any per-step rounding error compounds across millions of parameters during training.
 
 The quire's coeffect profile in this context:
 
-- **Allocation:** 64 bytes on stack (CPU) or 512-bit fabric pipeline (FPGA)
+- **Allocation:** 100 bytes on stack (CPU) or 800-bit fabric pipeline (FPGA)
 - **Lifetime:** bounded by the forward pass through one layer; no escape
 - **Capability:** available on CPU (software emulation, ~50 cycles/FMA) and FPGA (hardware pipeline, 1 cycle/FMA); unavailable on neuromorphic targets without exact accumulation support
 
@@ -71,8 +71,8 @@ gradient_estimate: float<loss · param⁻¹>
   AD mode:      forward, K tangents (Baydin et al. [1]; Flügel et al. [4])
   Accumulation: K independent quires (exact, single rounding each)
   Aggregation:  K×K Gram inverse, O(K²·n) dominated by O(K·ops(f))
-  ├─ x86_64:  stack, 64·K bytes, ~50 cycles/fma, O(K) auxiliary memory
-  ├─ xilinx:  K × 512-bit fabric pipelines, 1 cycle/fma, O(K) auxiliary
+  ├─ x86_64:  stack, 100·K bytes, ~50 cycles/fma, O(K) auxiliary memory
+  ├─ xilinx:  K × 800-bit fabric pipelines, 1 cycle/fma, O(K) auxiliary
   └─ Memory:  no activation tape, no escape, fully stack-eligible
 ```
 
@@ -80,9 +80,9 @@ gradient_estimate: float<loss · param⁻¹>
 
 The quire's exactness guarantee has a precise reading in Hoare logic, and stating it that way clarifies what verification can establish at compile time and what it cannot.
 
-The accumulation loop that computes \(\langle \nabla f(\theta), v \rangle\) maintains an invariant at every iteration: the accumulated value occupies at most \(n^2/2\) bits (512 bits for posit32). The invariant is the loop's precondition, the loop body preserves it, and the loop's exit delivers a postcondition that the final value is the exact sum of the products with no intermediate rounding. In Hoare's sequential composition rule, the invariant is the assertion \(P\) for which \(\{P \wedge B\}\, C\, \{P\}\) is established locally, and the conclusion \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\) is the proof that the loop achieves the postcondition the next computation depends on.
+The accumulation loop that computes \(\langle \nabla f(\theta), v \rangle\) maintains an invariant at every iteration: the accumulated value occupies at most the quire width (a fixed 800 bits for a b-posit, or \(n^2/2\) for a full-gamut posit). The invariant is the loop's precondition, the loop body preserves it, and the loop's exit delivers a postcondition that the final value is the exact sum of the products with no intermediate rounding. In Hoare's sequential composition rule, the invariant is the assertion \(P\) for which \(\{P \wedge B\}\, C\, \{P\}\) is established locally, and the conclusion \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\) is the proof that the loop achieves the postcondition the next computation depends on.
 
-The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le n^2/2\) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property; the framework derives it from the layer's parameter count, the posit width, and the quire width, which are all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
+The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le 800\) for a b-posit (or \(\le n^2/2\) for a full-gamut posit) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property; the framework derives it from the layer's parameter count, the posit width, and the quire width, which are all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
 
 The Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) is the structural reason the same invariant can be checked at every lowering pass: each lowering is a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair that survives the functor's action. In sheaf-theoretic language, the quire invariant is a section of our accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the broader compositional story; here it is enough to note that the quire's exactness is a verifiable property at every stage from PSG to native binary, not only at the high-level mathematical specification.
 
@@ -116,7 +116,7 @@ Three independently established properties compose in the PSG:
 graph TD
     A[DTS: Dimensional Consistency] -->|"Chain rule closed<br>under abelian group"| D[Unified Gradient<br>Computation]
     B[Forward-Mode AD: Memory Minimal] -->|"O(1) auxiliary,<br>no activation tape"| D
-    C[Quire: Exact Accumulation] -->|"Single rounding,<br>512-bit for posit32"| D
+    C[Quire: Exact Accumulation] -->|"Single rounding,<br>fixed 800-bit b-posit quire"| D
     D -->|"Dimensionally verified<br>Memory-minimal<br>Numerically exact"| E[Design-Time<br>Diagnostic]
 ```
 

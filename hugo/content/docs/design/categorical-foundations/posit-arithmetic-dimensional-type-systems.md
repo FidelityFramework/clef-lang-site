@@ -57,11 +57,11 @@ This is a deterministic function from dimensional constraints and target capabil
 
 The posit quire accumulator illustrates how representation selection interacts with memory management. A quire holds intermediate results of multiply-add operations without rounding; rounding occurs once, when the final result is converted back to a posit value [1]. The Posit Standard (2022) [2] defines the full-gamut quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32. The b-posit revision [4] sets a single fixed quire of 800 bits for any width \(n > 12\), independent of precision.
 
-This fixed relationship between full-gamut posit precision and quire width makes compiler modeling straightforward. For posit32 (a b-posit instead carries a fixed 800-bit quire, below):
+The fixed quire width makes compiler modeling straightforward. For a b-posit32:
 
-- **Size:** 512 bits (64 bytes)
+- **Size:** 800 bits (100 bytes), fixed regardless of precision for any width \(n > 12\)
 - **Allocation:** stack-eligible for short-lived accumulations, arena-eligible for long-lived ones
-- **FPGA mapping:** a 512-bit value mapped to fabric by the synthesis tool, pipelined for single-cycle FMA throughput
+- **FPGA mapping:** an 800-bit value mapped to fabric by the synthesis tool, pipelined for single-cycle FMA throughput
 - **Neuromorphic:** unavailable (the target lacks sufficient accumulator width)
 
 In the Fidelity framework, these properties are tracked as coeffects, contextual requirements that a computation imposes on its environment. The quire requires a specific amount of memory (allocation coeffect), must persist for the duration of the accumulation loop (lifetime coeffect), and may not be available on all targets (capability coeffect).
@@ -77,8 +77,8 @@ All three are properties of the same graph node, resolved by the same inference 
 ```
 q: Quire (exact accumulator)
   Dimension: joules (inferred from fma operands)
-  ├─ x86_64:  stack, 64 bytes, 1 cache line, ~50 cycles/fma
-  ├─ xilinx:  512-bit fabric pipeline, 1 cycle/fma
+  ├─ x86_64:  stack, 100 bytes, ~50 cycles/fma
+  ├─ xilinx:  800-bit fabric pipeline, 1 cycle/fma
   └─ loihi2:  ✗ not available (no exact accumulation support)
   Lifetime: loop scope (lines 3-5), no escape detected
 ```
