@@ -92,7 +92,7 @@ flowchart TB
     F --> V["Atelier pane<br>residual: rendered view"]
 ```
 
-The 'witnesses' differ only in what directs the focus and what the residual is. When the compilation walk is the consumer, the residual is MLIR. When the developer's cursor is the consumer, the residual is a hover card. A hover card and a lowered op are the same kind of thing in this architecture: each is what a witness returns after observing the settled graph at a focus. Design-time tooling is another witness on real-time terms.
+The 'witnesses' differ only in what directs the focus the residual. When the compilation walk is the consumer, the residual is MLIR. When the developer's cursor is the consumer, the residual is a hover card. A hover card and a lowered op are the same kind of thing in this architecture: each is what a witness returns after observing the settled graph at a focus. Design-time tooling is another witness on real-time terms.
 
 ## Deferred Inference Unwrapped
 
