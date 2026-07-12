@@ -73,7 +73,7 @@ Vocabulary matters here, and this is a place where being specific has particular
 
 > "Query" stands to reflection as "emit" stands to lowering: an imperative verb borrowed from an architecture that doesn't match the norms established in ML-family language systems.
 
-A query is a request that causes computation on the observer's schedule. *Nothing in this design works **that** way*. The enrichments are placed by analysis before any consumer looks, which is the [coeffect and codata discipline](/docs/internals/concepts/coeffects-and-codata/) the compiler already runs on, and every consumer observes what is already there. Reflection, in this architecture, is the observation surface of the same traversal that compiles the program, opened to consumers **other than** the code generator:
+A query is a request that causes computation on the observer's schedule. *Nothing in this design works **that** way*. The enrichments are placed by analysis before any consumer looks, which is the [coeffect and codata discipline](/docs/internals/concepts/coeffects-and-codata/) the compiler already runs on, and every consumer observes what is already there. Reflection, in this architecture, is the observation surface of the same traversal that compiles the program, opened to consumers **other than** the code generator. That traversal is not an abstraction invented for this essay: [Learning to Walk](/docs/internals/pipeline/learning-to-walk/) follows it step by step, from the saturated graph through the zipper's movement to the MLIR that falls out of witness observation. What follows is that 'walk' with a wider range of consumers:
 
 ```mermaid
 flowchart TB
@@ -94,9 +94,9 @@ flowchart TB
 
 The 'witnesses' differ only in what directs the focus and what the residual is. When the compilation walk is the consumer, the residual is MLIR. When the developer's cursor is the consumer, the residual is a hover card. A hover card and a lowered op are the same kind of thing in this architecture: each is what a witness returns after observing the settled graph at a focus. Design-time tooling is another witness on real-time terms.
 
-## Deferred Inference Read Back Out
+## Deferred Inference Unwrapped
 
-Readers of [The Gift of Deferred Inference](/blog/deferred-inference/) have already seen this surface in a different guise. That piece argued that a commitment removes options **and the *option space* is the information**, so the compiler holds representation choices open until ranges and targets close them, and the range and its selected representation ride the graph as coeffects. Here is the editor readout that piece presented, read with this piece's emphasis:
+Readers of [The Gift of Deferred Inference](/blog/deferred-inference/) have already seen this surface in a different form. That piece argued that a commitment removes options **and the *option space* is the information**, so the compiler holds representation choices open until ranges and targets close them, and the range and its selected representation ride the graph as coeffects. Here is the editor readout that piece presented, read with this entry's emphasis:
 
 ```
 force : float<newtons>
@@ -106,13 +106,13 @@ force : float<newtons>
   └─ note     posit holds ~10x more precision in [0.01, 100], where most forces actually fall
 ```
 
-That readout *is* reflection. It is an observation of layout and representation at a focus, rendered for a human instead of for a lowering pass, and it belongs to an observation class no other platform can express. C++26 answers `offset_of` only after a representation is concrete. Under our deferred inference a layout observation is a function of the named target, so the same `float<newtons>` reports one answer for the x86-64 host and another for the Xilinx part, each with the accuracy consequence alongside. Reflection over a deferred type algebra reports what is still open as honestly as what has closed, and the `E_RANGE_UNBOUNDED` diagnostic in that piece is exactly such a report.
+That readout *is* reflection. It is an observation of layout and representation at a focus, rendered for a human instead of for a lowering pass, and it belongs to an observation class no other platform can express. C++26 answers `offset_of` only after a representation is concrete. Under our deferred inference a layout observation is a function of the named target, so the same `float<newtons>` reports one answer for the x86-64 host and another for the Xilinx FPGA part, each with the accuracy consequence that carries with it. Reflection over a deferred type algebra reports what is still open as honestly as what has closed, and the `E_RANGE_UNBOUNDED` diagnostic in that piece is exactly such a report.
 
 ## Joint Constraints over the Hypergraph
 
 The settled graph rewards observation because of how it settles. ByRef Resolved named the discipline for memory: joint constraint reasoning over our program hypergraph, where a closure's region, its captured environment, and the function's parameter regions participate in a ***single*** constraint. Memory is one dimension of a wider practice, and the dimensions differ in more than content. Each settles under its own algebra along its own edge classes. Integer intervals widen monotonically to a fixpoint along def-use and feedback edges, and that machinery in in our standing work today: it is what reads our 'HelloArty' FPGA counter at 29 bits instead of a CPU host register's 64. Escape classes join along capture and call edges. Dimensional constraints unify along type flow. Representation selection multiplies per target rather than settling to one value.
 
-The structure that reads those settled dimensions is a zipper, and that name follows a precise pattern. Huet's functional pearl[^huet] gives a cursor made of a focus and its one-hole context, and the pair is the canonical comonad: `extract` reads the focus, and `extend` runs a context-aware function at every position of the structure.
+The structure that reads those settled dimensions is a ***zipper***, and that name follows a precise pattern. Huet's functional pearl[^huet] gives a cursor made of a focus and its one-hole context, and the pair is the canonical comonad: `extract` reads the focus, and `extend` runs a context-aware function at every position of the structure.
 
 $$
 \mathrm{extract} : W\,A \to A
@@ -120,7 +120,7 @@ $$
 \mathrm{extend} : (W\,A \to B) \to W\,A \to W\,B
 $$
 
-A witness already has the shape of `extend`'s argument. It is a function from a focus-with-context to a residual, and running it across the graph is how elision covers a program. The coeffect literature formalizes context dependence comonadically for the same reason, and the copatterns tradition[^copat] completes the picture from the codata side: a codata value is defined by the projections present, so observation is the application of a projection that is in place. Every piece of this vocabulary was in our architecture before reflection was the topic. Reading the reflection surface out of it required no new machinery, only the recognition that a graph compiler's own access discipline is the API.
+A witness already has the shape of `extend`'s argument. It is a function from a focus-with-context to a residual, and running it across the graph is how elision ecapsulates aspects of a program. The coeffect literature formalizes context dependence comonadically for the same reason, and the copatterns tradition[^copat] completes the picture from the codata side: a codata value is defined by the projections present, so observation is the application of a projection that is in place. Every piece of this vocabulary was in our architecture before reflection was the topic. Reading the reflection surface out of it required no new machinery, only the recognition that a graph compiler's own access discipline is the API.
 
 ## Semantic Projections
 
