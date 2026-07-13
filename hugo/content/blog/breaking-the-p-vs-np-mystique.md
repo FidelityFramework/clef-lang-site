@@ -1,7 +1,7 @@
 ---
 title: "Breaking the P vs NP Mystique"
 date: 2025-09-26T00:00:00-04:00
-description: "How the Fidelity Framework Makes 'Intractable' Problems Practical Through Intelligent Compilation"
+description: "How the Fidelity Framework Makes 'Intractable' Problems Practical Through Intelligent Tooling"
 tags: ["Analysis", "Architecture", "Innovation"]
 authors: ["Houston Haynes"]
 params:
