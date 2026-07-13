@@ -24,7 +24,7 @@ To understand why so many problems seem harder than they should be, consider how
 \text{Fetch} \to \text{Decode} \to \text{Execute} \to \text{Memory} \to \text{Repeat}
 \]
 
-This sequential pipeline forces every computation, no matter how naturally parallel, through a narrow channel of step-by-step execution. When we encounter a problem whose parts are independent, we dutifully encode it as nested loops anyway, then pay for a serialization the problem never demanded. That cost is a property of how we compiled it, not of the problem.
+This sequential pipeline forces every computation, no matter how naturally parallel, through a narrow channel of step-by-step execution. When we encounter a problem whose parts are independent, we dutifully encode it as nested loops anyway, then pay for a serialization the problem never presented. That cost is a consequence of how we built the workload.
 
 Two things are in play, complexity and model. Worst-case complexity is real and fixed: nothing here makes an NP-complete problem stop being NP-complete. We choose the *model* at compile time, and as we explored in our [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/), there is a duality in how a computation can be represented. Control flow treats a program as a sequence of instructions. Data flow treats it as a network of dependencies. 
 
