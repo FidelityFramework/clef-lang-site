@@ -13,7 +13,7 @@ Some bugs survive in production for years because the code reads exactly like ca
 
 {{< youtube 14q9KLkbRT8 >}}
 
-The function copies a bounded region of kernel memory out to a user-supplied destination. The kernel buffer `kbuf` is 1 kilobyte. A caller passes a destination and a length, and the code clamps that length so it can never exceed the buffer:
+The function copies a bounded region of kernel memory out to a user-supplied destination. The kernel buffer `kbuf` is 1 kilobyte. A caller passes a destination and a length, and the code clamps that length so it can (at least *in theory*) never exceed the buffer:
 
 ```c
 void *memcpy(void *dest, void *src, size_t n);
