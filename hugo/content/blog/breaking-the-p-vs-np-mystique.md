@@ -18,7 +18,7 @@ Part of this claim is real and part is mystique. Avi Wigderson, the only person 
 
 ## The Control Flow Trap
 
-To understand why so many problems seem harder than they should be, consider how modern computers execute programs. Everything flows through what we call the von Neumann bottleneck:
+To understand why so many problems seem harder than they should be, consider how standard computers are expected to execute programs. Everything flows through what is often called "the von Neumann bottleneck":
 
 \[
 \text{Fetch} \to \text{Decode} \to \text{Execute} \to \text{Memory} \to \text{Repeat}
