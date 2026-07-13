@@ -76,7 +76,7 @@ But constraints don't inherently require sequential checking. Our [Program Hyper
 
 Let's be concrete about what this means for actual applications:
 
-**Scheduling systems**: a hospital roster for 100 nurses under real constraints is not the worst-case scheduling instance. Its constraints are local and blocky, most nurses interacting with few others, and that structure is what makes a schedule reachable at all. Compiling it to interaction nets on an FPGA lets the independent constraints resolve concurrently instead of single-file, so a search that ran for hours can finish far faster. The instance was tractable because of its structure, and the compilation is what stopped squandering that structure on a sequential pipeline.
+**Scheduling systems**: a hospital roster for 100 nurses under real constraints is not the worst-case scheduling instance. Its constraints are local and blocky, most nurses interacting with few others, and that structure is what makes a schedule reachable at all. Shifting this from control flow on a CPU to a 'weave' of interaction nets on an FPGA lets the independent constraints resolve concurrently instead of single-file, so a search that ran for hours previously can finish far faster. The instance is now tractable because of its structure, and the compilation can be what stops squandering that structure on an unnecessarily sequential pipeline.
 
 **Financial optimization**: portfolio optimization across thousands of assets looks prohibitive in the abstract, but real covariance structure is sparse and banded. As we detailed in our [unified vision for heterogeneous computing](/blog/unified-vision-ternary-models/), compiling to accelerators that match that structure is what makes near-real-time optimization reachable.
 
