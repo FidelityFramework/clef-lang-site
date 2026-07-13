@@ -12,7 +12,7 @@ params:
 
 When a vendor site boasts that it can "blur the lines between P and NP," it is almost always describing something more mundane: running a workload on hardware that fits it. The mathematical complexity is untouched. Our read is that most real-world performance barriers trace to an architectural mismatch, the execution model being wrong for the shape of the work, rather than to an algorithmic wall.
 
-Part of this claim is real and part is mystique. Avi Wigderson, the only person to hold both a Turing Award and an Abel Prize, laid out the real version in a recent interview, and it maps closely onto what we are building. Rather than claim to solve millennium problems, we show where intelligent compilation earns a practical speedup and where it cannot.
+Part of this claim is real and part is mystique. Avi Wigderson, the only person to hold both a Turing Award and an Abel Prize, laid out the real version in a recent interview, and it maps closely onto what we are building. Rather than claim to solve millennium problems, we show where intelligent compilation earns a practical speedup and benefit real-world solutions.
 
 {{< youtube 5GUcvSAJcJw >}}
 
