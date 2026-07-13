@@ -99,7 +99,7 @@ This won't 'transcend' computational complexity as some technology marketing wil
 
 Evangelizing the 'mystique' leaves engineers assuming their problem is intractable. The real "trouble" is surrendering to mystique before arriving at the principled solution that meets the problem equally. A small business optimizing delivery routes needs neither a quantum computer nor "P-NP blurring" technology. It needs its routing algorithm to run on the available hardware, making the best fit in the shape of its road network data.
 
-Our Fidelity framework is built to make "hard" problems practical by compiling each one to the execution model it in-effect *demands*. The source code that articulates the algorithm does not change. The mathematical problem does not change. By lowering to interaction nets, delimited continuations, or spatial architectures as the structure warrants, we stop imposing the artificial barriers that make these problem classes look more daunting than they need to be in the context of modern compute hardware.
+Our Fidelity framework is built to make "hard" problems practical by compiling each one to the execution model it in-effect *demands*. The source code that articulates the algorithm does not change. The mathematical problem does not change. By lowering to interaction nets, delimited continuations, or spatial architectures as the structure warrants, we stop imposing the artificial barriers that make these problem classes look more daunting than they need to be in the context of modern computer hardware.
 
 ## Moving Beyond the Mystique
 
