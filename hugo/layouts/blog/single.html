@@ -54,6 +54,11 @@
           {{- if lt $mins 1.0 }}{{ $mins = 1.0 }}{{ end -}}
           {{- with $mins }}<span class="hx:mx-1">·</span><span class="hx:mr-1">{{ . | int }} min read</span>{{ end -}}
 
+          {{- /* Updated slug: shown only when front matter carries an `updated`
+                  date. Kept separate from `.Date` so post ordering (which the
+                  blog keys on the original publish date) is never disturbed. */ -}}
+          {{- with .Params.updated }}<span class="hx:mx-1">·</span><span class="hx:mr-1">Updated {{ partial "utils/format-date" (time.AsTime .) }}</span>{{ end -}}
+
           {{- /* Tags, reusing the index card chip style. */ -}}
           {{- with .Params.tags }}
             <span class="blog-post-tags">

@@ -52,7 +52,7 @@ The same default posture takes other forms in other bugs, a unit left out of a t
 
 ## Forcing It Into the Open
 
-Simon Peyton Jones, one of the creators of Haskell, names the property at the heart of this in a recent interview. He was talking about shared mutable state, but the point is the same:
+Simon Peyton Jones, one of the creators of Haskell, names the property at the heart of this in a recent [interview](https://youtu.be/xcB_LF3cdqw?t=500). He was talking about shared mutable state, but the point is the same:
 
 > Reading and writing shared variables that are visible outside the scope is a form of coupling between bits of code that is very invisible. Very invisible. So functional programming forces that to become visible. It forces it into the open.
 
@@ -95,7 +95,11 @@ That representation choice, once made, is not discarded on the way to the machin
 
 The video that opens this post takes a bug hidden behind a correct-looking check and makes every step of it legible. Bugs of this shape sit in production code everywhere, in the quiet gap between a procedure's intent and the code's assumptions, and they reside in plain sight for decades precisely because the language makes them so hard to see. That is starting to change. Large language models are increasingly good at parsing details from code the way this video does, tracing a value across a boundary and flagging the assumption, and they will keep turning up anomalies wherever they lurk.
 
-We would rather these bugs have nowhere to live than be found one at a time. That is much of why we are building full memory safety into the Fidelity Framework: the semantic this failure depends on becomes unrepresentable, which closes the category instead of chasing its instances. Our goal is that a bug like this someday reads as a relic from an earlier era of language design.
+We would rather these bugs have nowhere to live than be found one at a time. That is much of why we are building full memory safety into the Fidelity Framework: the semantic this failure depends on becomes unrepresentable, which closes the category instead of chasing its instances.
+
+The lore says C is a minefield of exactly this kind of latent defect, and the lore has numbers behind it. Chromium attributes [around 70% of its high-severity security bugs](https://www.chromium.org/Home/chromium-security/memory-safety/) to memory unsafety. When Android began writing its new code in memory-safe languages, [its memory-safety vulnerabilities fell from roughly three quarters of the total in 2019 to about a quarter in 2024](https://security.googleblog.com/2024/09/eliminating-memory-safety-vulnerabilities-Android.html). SPJ tallies the cost in the [same interview](https://youtu.be/xcB_LF3cdqw?t=1400) quoted above: we built a boat out of paper clips, we act surprised that it leaks, and the ingenuity and money spent patching it is tragic. Most of modern computing floats on that boat, the Linux kernel included.
+
+That ubiquity is why we interoperate with C rather than wish it away. The hosted and static tiers above exist so the code the world already runs can be [called safely across a typed boundary](/blog/wrapping-c-and-cpp/), with Farscape generating the bindings. The bare tier is the other half of the position: where a component's safety case can no longer afford a latent-defect category, the destination is a full port, an image with no C in it at all. Our goal is that a bug like this someday reads as a relic from an earlier era of language design.
 
 ## Reading Further
 
