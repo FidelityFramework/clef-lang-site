@@ -54,7 +54,7 @@ Our own tools make this point better than waving our hands around the abstractio
 
 When companies claim breakthrough performance on NP-complete problems (and actually deliver it beyond simple marketing hype), they are typically doing one of three things, and none of them qualify as magic.
 
-**1. Hardware specialization**: building circuits that express the problem's structure directly. Our design for [ternary models on FPGAs](/blog/unified-vision-ternary-models/) assumes this position with a design to reconfigure the fabric to match the computation rather than routing it through a fixed instruction set.
+**1. Hardware specialization**: building circuits that express the problem's structure directly. Our design for [ternary models on FPGAs](/blog/unified-vision-ternary-models/) assumes this position to reconfigure the fabric to match the computation rather than routing it through a fixed instruction set.
 
 **2. Approximate solutions**: finding "good enough" answers in polynomial time. Many applications do not need the optimum, only an acceptable answer, and this relaxation is the natural escape from an NP-hard optimization. It has a proven ceiling, though. Wigderson [walks through the boundary](https://youtu.be/5GUcvSAJcJw?t=1145): for the canonical constraint problem a random guess already satisfies seven eighths of the clauses, and doing measurably better than that is itself NP-hard. So approximation is legitimate and bounded, which is exactly the register in which an LLM approximates a generative task: useful, and not a guarantee.
 
