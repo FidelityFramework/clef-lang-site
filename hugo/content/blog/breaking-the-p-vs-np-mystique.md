@@ -52,7 +52,7 @@ Our own tools make this point better than waving our hands around the abstractio
 
 ## What Some Vendors Are Actually Doing
 
-When companies claim breakthrough performance on NP-complete problems, they are typically doing one of three things, and none of them is magic.
+When companies claim breakthrough performance on NP-complete problems (and actually deliver it beyond simple marketing hype), they are typically doing one of three things, and none of them qualify as magic.
 
 **1. Hardware specialization**: building circuits that express the problem's structure directly. Our design for [ternary models on FPGAs](/blog/unified-vision-ternary-models/) assumes this position with a design to reconfigure the fabric to match the computation rather than routing it through a fixed instruction set.
 
