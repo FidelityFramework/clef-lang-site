@@ -7,7 +7,7 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
-## 'Hidden' Hierarchy
+## A 'Hidden' Hierarchy In Plain Sight
 
 ```mermaid
 graph LR
@@ -119,15 +119,16 @@ Purists sometimes reserve the word for the middle row, where the image brings it
 Cold start is where the difference is measurable. A conventional container cold start does work a sealed artifact never generates: it pulls layered filesystems, starts an init process, walks the dynamic linker across shared objects, and then warms whatever runtime the application may require. A Clef-compiled unikernel would skip nearly all of it. There is always hardware bring-up, but the cost is bounded by what the image carries: one small static binary, no interpretation or JIT warmup, no linker pass at entry, and arena-based memory with no garbage collector to initialize. Entry is a jump. [AWS built Firecracker](https://firecracker-microvm.github.io/) to boot minimal microVMs in roughly a hundred milliseconds, and it runs underneath their Lambda service. Boots measured in single-digit milliseconds inside that same harness appear throughout the unikernel literature. The floor keeps dropping as the artifact approaches the application with little additional boundary.
 
 ```mermaid
-flowchart LR
+flowchart TB
+
+    subgraph CONV["Conventional container cold start (commonly seconds)"]
+        direction LR
+        C1["pull layered<br/>filesystem"] --> C2["start init<br/>process"] --> C3["walk dynamic<br/>linker"] --> C4["warm runtime<br/>(JIT / GC)"] --> C5["run"]
+    end
 
     subgraph SEAL["Sealed image cold start (single-digit ms in the literature)"]
         direction LR
         S1["hardware<br/>bring-up"] --> S2["jump to entry"] --> S3["run"]
-    end
-    subgraph CONV["Conventional container cold start (commonly seconds)"]
-        direction LR
-        C1["pull layered<br/>filesystem"] --> C2["start init<br/>process"] --> C3["walk dynamic<br/>linker"] --> C4["warm runtime<br/>(JIT / GC)"] --> C5["run"]
     end
 
     subgraph BUILD["paid once, at build time"]
@@ -136,6 +137,9 @@ flowchart LR
         B2["links resolved by<br/>static coupling"]
         B3["native code +<br/>arena memory plan"]
     end
+
+    C5 ~~~ S1
+    S3 ~~~ B1
 
     C1 -.-> B1
     C3 -.-> B2
