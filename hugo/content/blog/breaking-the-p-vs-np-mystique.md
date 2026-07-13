@@ -40,7 +40,7 @@ Consider Boolean satisfiability (SAT), the canonical NP-complete problem. Given 
 \text{Time} = O(2^n) \text{ where } n = \text{number of variables}
 \]
 
-Here is where the real claim and the mystique part ways. Throwing raw parallelism at that exponent does not resolve it. A thousand lanes divide the search by a thousand, and a thousand is roughly `2^10`. Against `2^n` that buys back about ten variables, and then the wall returns. Wigderson makes the point in [his own terms](https://youtu.be/5GUcvSAJcJw?t=1385), that parallel time is one resource among many and for some problems more processors "maybe doesn't help at all." 
+Here is where the real claim and the mystique part ways. Throwing raw parallelism at that exponent does not resolve it. A thousand lanes divide the search by a thousand, and a thousand is roughly `2^10`. Against `2^n` that buys back about ten variables, and then the wall returns. Wigderson makes the point in [his own terms](https://youtu.be/5GUcvSAJcJw?t=1385), that **parallel time is one resource *among many*** and for some problems more processors "maybe doesn't help at all." 
 
 > Anyone selling exponential speedup from parallel hardware **alone** is selling the mystique.
 
