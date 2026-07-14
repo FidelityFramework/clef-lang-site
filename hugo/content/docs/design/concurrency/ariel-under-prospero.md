@@ -103,9 +103,13 @@ No edge connects A1 to A2. That absence is the rule.
 
 Turn discipline gives the system its concurrency character: optimistic and cooperative below the turn, preemptive above it. Within a turn nothing interrupts an actor, and the single-logical-thread guarantee rests on that. Above the turn, Prospero holds the remedies, and they operate at lifecycle granularity: retire the actor, release its arena as a unit, restart from known state. The actor-reference sentinel makes lifecycle-granularity preemption safe to perform. A reference into a retired actor reads `ActorTerminated` rather than dangling, so any holder of the reference observes the death instead of corrupting through it. The reference states our design documents give the sentinel are `Valid`, `ActorTerminated`, `ProcessUnavailable`, and `Unknown`.
 
+## Accountability Replaces Meta-Supervision
+
+One question follows every supervision tree: who watches the watchers? The contract's answer splits watching into two roles that the regress conflates. Enforcement escalates strictly outward, from the timer tier through the supervision ladder to a terminus that is never software: the hardware watchdog on the freestanding profile, armed before the first turn, or the substrate's supervisor on hosted profiles. Recording needs no watcher at all. Ariel and the control plane write into a bounded flight-recorder ring, wait-free and outside the message fabric, so observation is never load, and a non-authoritative telemetry actor drains the ring as an ordinary demand-driven node: unobserved, it is never dispatched; dead, it costs visibility and nothing else. A last-words region survives reset so that bring-up reads the record of the previous run before the tree is armed. Durable persistence beyond that region belongs to our [Modular Blob Storage](/spec/draft/modular-blob-storage/) abstraction, so the scheduler contract holds no storage commitments of its own. On the credential device, a fault record sealed into an MBS slot is testimony with the same atomicity and custody properties as the identities the store exists to hold.
+
 ## The Dormant Frontier
 
-A fifth reference state is proposed in the contract's informative closing section: `Dormant`, an actor whose identity is current and whose execution state is at rest.
+A fifth reference state is proposed in an informative section of the contract: `Dormant`, an actor whose identity is current and whose execution state is at rest.
 
 ```fsharp
 type ReferenceState =
