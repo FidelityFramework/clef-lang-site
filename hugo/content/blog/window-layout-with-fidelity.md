@@ -472,7 +472,7 @@ let createSharedRenderBuffer width height =
 
 This process-aware hybrid approach is designed to let Fidelity use both libraries while keeping process safety through compile-time verification.
 
-## Conclusion
+## Pure Layout
 
 By drawing from modern UI frameworks while focusing on LVGL and Skia integration, Fidelity is designed to provide a pure Clef layout system that pairs Clef's functional model with the performance and native feel of platform-specific implementations.
 

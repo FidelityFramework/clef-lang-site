@@ -401,7 +401,7 @@ let processAndControl (sensor: SensorInput<celsius>) =
 
 This is what our DMM and DTS aim for together: a coherent foundation for systems that span architectural boundaries while maintaining semantic consistency throughout. The mechanism is preserving the information that makes consistency verifiable.
 
-## Conclusion
+## The Multi-Stack Thesis
 
 Our Fidelity framework bets on a specific thesis: that preserving semantic information through compilation yields capabilities worth the engineering investment. The zero-cost abstraction that carries this is what makes those capabilities reachable. DMM provides deterministic memory management that makes resource lifetimes explicit and verifiable. DTS provides dimensional types that survive compilation to inform code generation. We have found no other representative implementation of this combination in the standing literature we have reviewed. Together, they are designed to support hardware-aware compilation from a single source with verified consistency across targets.
 

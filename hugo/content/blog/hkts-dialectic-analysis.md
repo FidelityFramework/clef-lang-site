@@ -185,7 +185,7 @@ The role of Link Time Optimization in this decision matters for all communities 
 
 This synthesis of design philosophy and technical capability shapes how we approach language evolution. Instead of pursuing HKTs because they're theoretically appealing (as a Haskell developer might advocate) or avoiding them due to implementation complexity (as a pragmatic .NET developer might prefer), our framework can make decisions based on what best serves its users. The compilation pipeline handles the optimization, which leaves developers free to work with specific types that make their intent obvious and their code safe by construction.
 
-## Conclusion
+## Comprehension Economics
 
 In the end, the "category theorist problem" that Syme identified remains relevant across language communities, though for evolving reasons. The issue isn't whether developers could learn category theory, clearly many Haskell and Scala developers have (and some F# developers cross-pollinate there too). The question is whether they should *have to* for a given problem domain. For systems programming with strong safety requirements, Fidelity's answer is no. The type proliferation that might seem like a limitation to a Haskell developer, or unnecessary duplication to a Scala developer, becomes a strength when combined with modern compilation techniques.
 

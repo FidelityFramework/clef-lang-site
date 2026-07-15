@@ -1515,7 +1515,7 @@ This architecture is designed to carry dense audio streams alongside sparse cont
 
 The pipeline also illustrates actor model benefits for AI workloads, a theme we have explored elsewhere. Each stage scales independently. If ASR becomes a bottleneck, spawn additional ASR actors and distribute incoming frames. If the LLM stage requires GPU acceleration, deploy that actor to hardware-equipped nodes while keeping other stages on standard compute. The actor boundaries create natural scaling points without requiring monolithic system redesign.
 
-## Conclusion
+## Temporal Distinction
 
 Considering protocol separately from transport enables a clear actor architecture across different runtimes. BAREWire provides the common language, and the transport adapts to each platform's strengths. The scheduler contract is the same separation applied to time: dispatch discharged by Ariel where we own the loop, assumed from the platform where we do not. By defining actor behaviors as pure functions that produce effects, and letting target-specific runtimes interpret those effects, we achieve a consistent developer experience without sacrificing platform-appropriate optimizations.
 

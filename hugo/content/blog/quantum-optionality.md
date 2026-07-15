@@ -223,7 +223,7 @@ This example shows capabilities beyond what QIR or basic Q# reached:
 3. **Zero-copy transfer** via BAREWire removes the memory bottleneck between quantum emulation and classical analysis
 4. **PHG architecture** transitions between control flow (data preparation) and data flow (quantum simulation) from one representation
 
-## Conclusion
+## Deliberate Optionality
 
 Quantum optionality in our Fidelity framework takes lessons from early experiments like QIR and Q# while extending their initial reach. Our Program Hypergraph architecture, posit arithmetic, proof-carrying compilation, and zero-copy protocols mapped to native machine layouts together prepare the framework for quantum computing while keeping the emulation path verifiable and precise.
 

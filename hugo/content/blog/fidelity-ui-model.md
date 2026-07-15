@@ -752,7 +752,7 @@ The main differences are:
 
 The core concepts, patterns, and mental model remain the same, making migration a matter of syntax translation rather than architectural changes.
 
-## Conclusion
+## Declarative Reach
 
 Our FidelityUI design carries the patterns established by Fabulous beyond managed runtimes into native compilation. By keeping API compatibility while transforming to native code with deterministic memory management, it aims to provide a path for Clef UI development that spans from embedded devices to desktop applications.
 
