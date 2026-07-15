@@ -10,9 +10,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? The answer lies in recognizing that actors are defined by their semantics, not their implementation details.
+The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? Our answer rests on a division the framework has since made formal in the [scheduler contract](/spec/draft/scheduler-contract/): actors are defined by their semantics, and dispatch is a separate concern with a contract of its own.
 
-This entry explores the architectural decisions behind a unified actor abstraction designed to compile to our Olivier actors in Fidelity and to Durable Object-backed actors in Conclave. By designing at the right level of abstraction, developers would write actor behaviors once and deploy them to either target without modification.
+This entry records the architectural decisions behind a unified actor abstraction, designed to compile to our Olivier actors in Fidelity and to edge actors in Conclave. By designing at the right level of abstraction, developers would write actor behaviors once and deploy them to either target without modification.
 
 ## The Core Tension
 
@@ -25,8 +25,11 @@ The two frameworks target radically different runtimes:
 | Message Passing | BAREWire IPC | WebSocket connections |
 | Lifecycle | Process spawn/terminate | DO instantiation/hibernation |
 | Concurrency | OS threads + continuations | V8 isolates + event loop |
+| Dispatch | [Ariel](/blog/surfacing-the-scheduler/) under the scheduler contract | Platform scheduler, assumed |
 
-Despite these differences, the developer mental model should remain consistent: actors receive messages, maintain state, spawn children, and participate in supervision hierarchies. The challenge is defining an abstraction that captures these semantics without sacrificing target-specific optimizations.
+Despite these differences, the developer mental model and code syntax expression should remain consistent: actors receive messages, maintain state, spawn children, and participate in supervision hierarchies. The challenge is defining an abstraction that captures these semantics without sacrificing target-specific optimizations.
+
+The dispatch row carries a name and a contract. In Fidelity, Ariel realizes dispatch under the [scheduler contract](/spec/draft/scheduler-contract/): six clauses and a per-implementation assumption manifest recording which clauses the implementation discharges itself and which it assumes from its substrate. The edge column's manifest is nearly all assumption. There is no Ariel on the edge, because the platform does the scheduling, and the Conclave manifest would record that arrangement clause by clause rather than leave it implicit. Olivier's semantics hold unchanged in both columns while dispatch varies beneath them.
 
 ## Protocol and Transport Separation
 
@@ -45,7 +48,7 @@ This separation yields a concrete benefit: a Fidelity actor and a Conclave actor
 
 ## The Shared Abstraction
 
-The abstraction is intrinsic to the compiler. CCS defines the actor types and interfaces that actor code depends upon, the same way it owns the rest of the Native Type Universe, so there is no shared library for the targets to link against. The compiler carries no execution policy with those types; each target provides its own runtime that interprets them, the native Olivier runtime on one side and our [Conclave](https://speakez.tech/blog/conclave-a-speakez-platform-service) edge platform on Cloudflare on the other.
+The abstraction is intrinsic to the compiler. CCS defines the actor types and interfaces that actor code depends upon, the same way it owns the rest of the Native Type Universe, so there is no shared library for the targets to link against. The compiler carries no execution policy with those types; each target provides its own runtime that interprets them, the native Olivier runtime on one side and our [Conclave](https://speakez.tech/blog/conclave-a-speakez-platform-service) edge platform, presently built on Cloudflare, on the other.
 
 The core types form a vocabulary for describing actor behavior without committing to execution details. An `ActorRef` is an opaque handle for sending messages; how the message reaches its destination is the runtime's concern. An `ActorBehavior` specifies how an actor responds to messages; how that specification executes depends on the target. This separation enables the "write once, deploy anywhere" property.
 
@@ -208,7 +211,7 @@ This behavior definition compiles to either target without modification. The bus
 
 ## Fidelity/Olivier Runtime
 
-In the Fidelity framework, actors execute as native code compiled through MLIR. The runtime builds on the `MailboxProcessor` model that Clef inherits from F#, a core-library actor type that serializes message delivery to a single logical thread. This serialization eliminates data races within an actor without requiring explicit locks.
+In the Fidelity framework, actors execute as native code compiled through MLIR. The runtime builds on the `MailboxProcessor` model that Clef inherits from F#, a core-library actor type that serializes message delivery to a single logical thread. This serialization eliminates data races within an actor without requiring explicit locks. Dispatch of those serialized turns belongs to [Ariel](/docs/design/concurrency/ariel-under-prospero/), cooperative below the turn, with Prospero's remedies above it.
 
 The implementation pairs each actor with a memory arena, a pre-allocated region from which the actor draws its allocations. When the actor terminates or restarts, the entire arena releases as a unit. This approach aligns with Fidelity's RAII model, detailed in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/), where resource lifetimes bind to continuation boundaries.
 
@@ -261,11 +264,11 @@ RAII cleanup happens at continuation boundaries. When an actor terminates or res
 
 ## Conclave Runtime with WebSockets
 
-Conclave targets Cloudflare's edge infrastructure, where Durable Objects provide the persistence and isolation guarantees. Unlike native actors that live in OS processes, Conclave actors exist as JavaScript objects within V8 isolates. The platform may evict these objects from memory during idle periods, a process called hibernation. When a message arrives for a hibernated actor, the platform instantiates a fresh object and rehydrates its state from durable storage.
+Conclave targets edge infrastructure through Cloudflare's Durable Objects, and the platform's own [actors framework](https://github.com/cloudflare/actors) is the surface we intend to bind against: named instances, per-instance SQLite storage, multiple alarms, lifecycle hooks, and managed WebSocket connections. Where native actors run in OS processes, Conclave actors would exist as JavaScript objects within V8 isolates. The platform may evict these objects from memory during idle periods, a process called hibernation, and the framework's socket layer carries connection state across those evictions. When a message arrives for a hibernated actor, the platform instantiates a fresh object and rehydrates its state from durable storage. Hibernation is the transparent-activation model: a caller reads the same thing after a crash as after a sleep. We take up that distinction, and what it costs supervision, in [Surfacing the Scheduler](/blog/surfacing-the-scheduler/).
 
 WebSocket connections serve as the transport layer. Each actor-to-actor relationship manifests as a persistent bidirectional channel. The Durable Object "accepts" the server side of a WebSocket pair, allowing it to receive messages and send responses without the overhead of HTTP request/response cycles.
 
-The implementation below shows how a Conclave actor handles WebSocket upgrades, processes incoming messages, and manages connections to peer actors:
+The sketch below records the runtime's job in that setting, interpreting `ActorEffect` values against platform facilities. A Fable binding to the framework's `Actor`, `Alarms`, and `Sockets` surfaces would supply those facilities directly, and two disciplines hold either way: messages cross as BAREWire frames on the socket layer, and structured-clone RPC stays on the management plane for naming and instance tracking.
 
 ```fsharp
 // Conclave.Runtime - WebSocket-based actor
@@ -1501,8 +1504,8 @@ The pipeline also illustrates actor model benefits for AI workloads, a theme we 
 
 ## Conclusion
 
-Considering protocol separately from transport enables a clear actor architecture across different runtimes. BAREWire provides the common language; the transport adapts to each platform's strengths. By defining actor behaviors as pure functions that produce effects, and letting target-specific runtimes interpret those effects, we achieve a consistent developer experience without sacrificing platform-appropriate optimizations.
+Considering protocol separately from transport enables a clear actor architecture across different runtimes. BAREWire provides the common language, and the transport adapts to each platform's strengths. The scheduler contract is the same separation applied to time: dispatch discharged by Ariel where we own the loop, assumed from the platform where we do not. By defining actor behaviors as pure functions that produce effects, and letting target-specific runtimes interpret those effects, we achieve a consistent developer experience without sacrificing platform-appropriate optimizations.
 
-Developers write actor logic once. The same `actor { }` computation expression is designed to compile to our Olivier actors communicating over IPC in Fidelity, to Durable Object actors communicating over WebSocket in Conclave, or to MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable; transport concerns stay in the runtime layer.
+Developers write actor logic once. The same `actor { }` computation expression is designed to compile to our Olivier actors communicating over IPC in Fidelity, to edge actors in Conclave, presently realized on Durable Objects over WebSocket, or to MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable; transport concerns stay in the runtime layer.
 
 This architectural direction is meant to carry several practical benefits: shared testing infrastructure for actor behaviors, gradual migration paths between deployment targets, reduced cognitive overhead for teams working across both frameworks, and cross-target actor communication through transport bridges. As MoQ matures, the transport selection layer can incorporate it without disturbing actor code or protocol definitions. The work continues toward that separation of protocol and transport, and I expect the actor abstraction to keep earning its place as more of the constellation comes online.
