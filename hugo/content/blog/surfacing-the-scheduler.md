@@ -245,10 +245,9 @@ A dormant actor has current identity and execution state at rest. A message sent
 ```mermaid
 flowchart TD
     S["sender"] -- "mail" --> M["the actor's mailbox"]
-    M -. "doorbell" .-> P(["Prospero"])
-    P -- "init turn" --> Ar(["Ariel"])
-    Ar -- "dispatch" --> A["the dormant actor"]
-    M -- "delivered" --> A
+    M <-. "1. doorbell" .-> P(["Prospero"])
+    P <-- "2. init turn" --> Ar(["Ariel"])
+    M -- "3. delivered" --> A["the newly<br>hydrated actor"]
 ```
 
 Two boundaries separate this proposal from queue management. The first is admission: Prospero receives the admission event, never the message, and the message remains in the actor's own bounded mailbox under the same clause that governs every other delivery. A control plane that carries data-plane traffic is a queueing system, and that is not the idea here. The second is reference state. Hydration preserves identity: a reference held across the dormant interval reads `Valid` at both ends, and the interval is a scheduling delay. A crash restart re-mints identity: a stale reference reads `ActorTerminated`, and the failure is observable to every holder. Under a single transparent activation, a reference reads the same after a crash as after a sleep. Supervision requires the difference, and the difference is the OTP inheritance this design preserves.
