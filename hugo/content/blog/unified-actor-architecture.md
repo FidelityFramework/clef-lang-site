@@ -470,9 +470,9 @@ JavaScript WebSockets deliver messages through event callbacks, but Clef async w
 
 ## Ask Pattern Over Persistent Connections
 
-The tell-and-forget model suffices for many actor interactions, but some scenarios require request-response semantics. A counter actor that receives `GetCount` needs to send the current value back to the requester. The ask pattern addresses this need.
+A fire-and-forget `Tell` suffices for many actor interactions, but some scenarios require request-response semantics. A counter actor that receives `GetCount` needs to send the current value back to the requester. `Ask` is the request-response counterpart: a send that carries a reply address and a deadline.
 
-With bidirectional persistent connections already in place, implementing ask is straightforward. The sender generates a correlation ID, includes it in the outbound message, and awaits a response with matching correlation. The channel's persistent nature means no connection setup overhead per request. Messages flow over the existing pipe:
+With bidirectional persistent connections already in place, implementing `Ask` is straightforward. The sender generates a correlation ID, includes it in the outbound message, and awaits a response with matching correlation. The channel's persistent nature means no connection setup overhead per request. Messages flow over the existing pipe:
 
 ```fsharp
 type ActorRef<'Message when 'Message :> IActorMessage> with
@@ -502,7 +502,7 @@ type ActorRef<'Message when 'Message :> IActorMessage> with
         }
 ```
 
-The implementation differs between targets (BAREWire framing over IPC vs. WebSocket binary messages), but the developer API is identical. This uniformity means code that uses the ask pattern works without modification across Fidelity and Conclave deployments.
+The implementation differs between targets (BAREWire framing over IPC vs. WebSocket binary messages), but the developer API is identical. This uniformity means code that uses `Ask` works without modification across Fidelity and Conclave deployments.
 
 In a distributed system, a response might never arrive: network partition, target actor failure, or processing delay all look the same from the caller's seat. The `withTimeout` combinator transforms a potentially unbounded wait into a bounded operation that either succeeds with a value or fails with a timeout exception. Callers must decide how to handle timeout failures: retry, escalate, or proceed with a default value.
 
@@ -596,7 +596,7 @@ A BAREWire message captured from a Fidelity IPC channel has the same structure a
 
 ## Connection Topology
 
-Actor systems naturally form graph structures as actors spawn children and establish peer relationships. The tell-first architecture, combined with persistent WebSocket connections in Conclave, produces topologies where connections remain open for the lifetime of the relationship.
+Actor systems naturally form graph structures as actors spawn children and establish peer relationships. A `Tell`-first architecture, combined with persistent WebSocket connections in Conclave, produces topologies where connections remain open for the lifetime of the relationship.
 
 ```mermaid
 graph TD

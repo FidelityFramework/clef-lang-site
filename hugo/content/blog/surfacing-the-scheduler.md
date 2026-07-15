@@ -153,7 +153,7 @@ let echo (conn: Connection) = async {
 
 There is no scheduling vocabulary in it because there is nothing to call. Each `let!` and `do!` is a suspension point the [computation expression lowers to a continuation](/docs/design/concurrency/delimited-continuations/), so the straight-line loop compiles into the very state machine *a systems programmer might otherwise flatten by hand* in an imperative language: park on receive, resume on arrival, park on send, resume on completion, and a clean exit that retires actor and arena together. Those discovered turns are exactly what Ariel is being designed to dispatch. This is the elegance of the actor model providing a "sugared" continuation while framing the control flow in a way that preserved design-time readability, relative to atomized imperative code.
 
-Types are the still photograph. A scheduling exchange is a zoetrope in motion, and one exchange exercises the division of labor end to end. An ask would park a caller, a resume would wake it, and a later turn would exhaust its budget and meet Prospero's remedy.
+Types are the still photograph. A scheduling exchange is a zoetrope in motion, and one exchange exercises the division of labor end to end. An `Ask` would park a caller, a resume would wake it, and a later turn would exhaust its budget and meet Prospero's remedy.
 
 ```mermaid
 flowchart TD
