@@ -49,28 +49,37 @@ A microVM profile assumes vCPU progress against a quota it can name from the dep
 
 The trusted-base table in [Weaving the Braid](/blog/weaving-the-braid/) laid these assumptions out per target before the component had a name. The assumption manifest is that table made a published artifact, one per implementation, and our Composer is being designed to emit the companion capacity manifest a freestanding image provisions from, so the mailbox depths and pool sizes in a boot image derive from escape classification and arena extents rather than developer guesses.
 
-In our current design thinking the manifest is an ordinary Clef value, with the exposure axis carried by which clauses read `Proven` and which read `Assumed`:
+In our current design thinking the manifest is an ordinary Clef value. Its map carries the four dispatch clauses the contract's profile table partitions. Determinism mode is a matter of which sources an implementation interprets, which the profile field already names, and the sixth clause is this record itself. The exposure axis is carried by which clauses read `Discharged` and which read `Assumed`:
 
 ```fsharp
+type ClauseId =                     // the four dispatch clauses the manifest partitions
+    | Fairness                      // §3: a ready actor is dispatched within finitely many events
+    | TurnDiscipline                // §4: turns run to completion; budget exhaustion is a fault
+    | ControlPlaneImmunity          // §5: supervision stays executable at saturation
+    | Admission                     // §6: accept or refuse; refusal is observable
+
 type Discharge =
-    | Proven                        // this implementation discharges the clause itself
-    | Assumed of substrate: string  // inherited; the manifest names the lender
+    | Discharged                    // this implementation discharges the clause itself
+    | Assumed of substrate: string  // discharged by the substrate this string names
+
+type Profile   = Freestanding | MicroVm | Container | Hosted | Simulated
+type Authority = Sovereign | Federated | Replicated
 
 type AssumptionManifest = {
-    Profile:   Profile              // Freestanding | MicroVm | Container | Hosted | Simulated
-    Authority: Authority            // Sovereign | Federated | Replicated
+    Profile:   Profile
+    Authority: Authority
     Clauses:   Map<ClauseId, Discharge>
 }
 
+// assumed beneath the clauses: a hardware timer, interrupt delivery
 let freestanding = {
     Profile   = Freestanding
     Authority = Sovereign
     Clauses   =
-        [ Fairness,             Proven      // interrupt binding is dispatch
-          TurnDiscipline,       Proven
-          ControlPlaneImmunity, Proven
-          Admission,            Proven      // capacities from the compiler's manifest
-          Determinism,          Proven ]
+        [ Fairness,             Discharged   // the interrupt-to-continuation binding is dispatch
+          TurnDiscipline,       Discharged
+          ControlPlaneImmunity, Discharged   // Handler mode, armed before the first turn
+          Admission,            Discharged ] // capacities from the compiler's manifest
         |> Map.ofList
 }
 ```
