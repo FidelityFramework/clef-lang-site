@@ -10,7 +10,7 @@ params:
   migration_date: 2026-03-12
 ---
 
-The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? Our answer rests on a division the framework has since made formal in the [scheduler contract](/spec/draft/scheduler-contract/): actors are defined by their semantics, and dispatch is a separate concern with a contract of its own.
+The actor model presents a useful abstraction for concurrent and distributed systems. When building two frameworks that target different runtimes, a natural question arises: can we maintain a consistent developer experience across native compilation (Fidelity) and edge deployment (Conclave)? Our answer is a division the framework has since made formal in the [scheduler contract](/spec/draft/scheduler-contract/): actors are defined by their semantics, and dispatch is a separate concern with a contract of its own.
 
 This entry records the architectural decisions behind a unified actor abstraction, designed to compile to our Olivier actors in Fidelity and to edge actors in Conclave. By designing at the right level of abstraction, developers would write actor behaviors once and deploy them to either target without modification.
 
@@ -29,7 +29,18 @@ The two frameworks target radically different runtimes:
 
 Despite these differences, the developer mental model and code syntax expression should remain consistent: actors receive messages, maintain state, spawn children, and participate in supervision hierarchies. The challenge is defining an abstraction that captures these semantics without sacrificing target-specific optimizations.
 
-The dispatch row carries a name and a contract. In Fidelity, Ariel realizes dispatch under the [scheduler contract](/spec/draft/scheduler-contract/): six clauses and a per-implementation assumption manifest recording which clauses the implementation discharges itself and which it assumes from its substrate. The edge column's manifest is nearly all assumption. There is no Ariel on the edge, because the platform does the scheduling, and the Conclave manifest would record that arrangement clause by clause rather than leave it implicit. Olivier's semantics hold unchanged in both columns while dispatch varies beneath them.
+The dispatch row carries a name and a contract. In Fidelity, Ariel realizes dispatch under the [scheduler contract](/spec/draft/scheduler-contract/): six clauses and a per-implementation assumption manifest recording which clauses the implementation discharges itself and which it assumes from its substrate. The edge column's manifest is nearly all assumption. There is no Ariel on the edge, because the platform does the scheduling, and we have no interest in re-implementing it. The work is cooperating with it, and the manifest is the instrument of that cooperation:
+
+| Clause | On the edge |
+|---|---|
+| Fairness | Assumed. The platform schedules isolates and routes requests, with no program-visible bound. |
+| Turn discipline | Assumed. One request or WebSocket message at a time per object, under a CPU clock that resets to 30 seconds per message. Overrun risks eviction, a substrate-chosen remedy. |
+| Control-plane immunity | Carried by Conclave. Supervision traffic travels its own path, never queued behind data. |
+| Admission | Carried by Conclave, with the platform's help: every send is answered, so the response is the admission verdict, and the bounded mailbox lives in the receiver's own storage. |
+| Determinism mode | Not offered. Arrival order, alarm retries, and hibernation are platform-decided. Replay belongs to the simulated profile on targets we control. |
+| Assumption manifest | This table. |
+
+Placement policy gets exactly two controls on this platform, and they differ in kind. A location hint is a suggestion: subcontinental granularity, honored only at an actor's first activation, with no confirmation of where the platform placed it. A jurisdiction is a guarantee: an actor created under `eu` or `fedramp` runs and persists only inside that boundary, and the jurisdiction is part of the actor's identity, so one name denotes different actors in different jurisdictions. For a regulated deployment, and the FedRAMP case in particular, Prospero's placement policy on this target reduces to choosing the fence at creation, and the fence is the strongest placement promise the platform makes. Olivier's semantics hold unchanged in both columns while dispatch varies beneath them.
 
 ## Protocol and Transport Separation
 
@@ -42,7 +53,7 @@ A critical architectural decision is separating protocol from transport. BAREWir
 | **Connection** | OS-level primitives | Durable Object holds socket |
 | **Persistence** | Process lifetime | Platform-managed |
 
-Both transports are persistent and bidirectional, which means the BAREWire protocol maps cleanly to either. HTTP's request/response model would have introduced impedance; WebSockets preserve the channel semantics that BAREWire expects.
+Both transports are persistent and bidirectional, which means the BAREWire protocol maps cleanly to either. HTTP's request/response model would have introduced impedance. WebSockets preserve the channel semantics BAREWire expects.
 
 This separation yields a concrete benefit: a Fidelity actor and a Conclave actor can exchange messages directly if bridged, because they speak the same protocol. Only the transport adapter differs.
 
@@ -50,9 +61,9 @@ This separation yields a concrete benefit: a Fidelity actor and a Conclave actor
 
 The abstraction is intrinsic to the compiler. CCS defines the actor types and interfaces that actor code depends upon, the same way it owns the rest of the Native Type Universe, so there is no shared library for the targets to link against. The compiler carries no execution policy with those types; each target provides its own runtime that interprets them, the native Olivier runtime on one side and our [Conclave](https://speakez.tech/blog/conclave-a-speakez-platform-service) edge platform, presently built on Cloudflare, on the other.
 
-The core types form a vocabulary for describing actor behavior without committing to execution details. An `ActorRef` is an opaque handle for sending messages; how the message reaches its destination is the runtime's concern. An `ActorBehavior` specifies how an actor responds to messages; how that specification executes depends on the target. This separation enables the "write once, deploy anywhere" property.
+The core types form a vocabulary for describing actor behavior without committing to execution details. An `ActorRef` is an opaque handle for sending messages. How the message reaches its destination is the runtime's concern. An `ActorBehavior` specifies how an actor responds to messages. How that specification executes depends on the target. This separation enables the "write once, deploy anywhere" property.
 
-Readers familiar with Erlang/OTP, Akka, or Orleans will recognize these patterns. The discriminated union `ActorEffect` resembles the behavior return types in those systems. The `SupervisionStrategy` cases mirror OTP's supervision tree options, explored in depth in [Erlang Lessons in Fidelity](/blog/ode-to-erlang/). The novelty lies not in the patterns themselves but in their application across compilation targets as different as native code and JavaScript on edge infrastructure.
+Readers familiar with Erlang/OTP, Akka, or Orleans will recognize these patterns. The discriminated union `ActorEffect` resembles the behavior return types in those systems. The `SupervisionStrategy` cases mirror OTP's supervision tree options, explored in depth in [Erlang Lessons in Fidelity](/blog/ode-to-erlang/). The novelty is the reach: the same patterns carried across compilation targets as different as native code and JavaScript on edge infrastructure.
 
 ```fsharp
 // Olivier - actor types intrinsic to CCS, shared across targets
@@ -109,9 +120,9 @@ type ActorSpec = {
 }
 ```
 
-The point of emphasis is that `ActorBehavior` can be considered a pure function from state and message to effects. No I/O, no platform dependencies. The `ActorEffect` type describes what should happen; the runtime interprets these effects according to target-specific semantics.
+`ActorBehavior` is a pure function from state and message to effects. No I/O, no platform dependencies. The `ActorEffect` type describes what should happen, and the runtime interprets those effects according to target-specific semantics.
 
-This effect-based design enables testability. An actor behavior can be tested by supplying state and messages, then inspecting the returned effects. No network, no storage, no platform; pure data in, pure data out. The runtime that eventually executes these effects is tested separately against the effect contract. This purity also opens the door to [formal verification](/docs/internals/verification/), where SMT proofs can validate actor behavior properties at compile time.
+This effect-based design enables testability. An actor behavior can be tested by supplying state and messages, then inspecting the returned effects. No network, no storage, no platform: pure data in, pure data out. The runtime that eventually executes these effects is tested separately against the effect contract. The same purity makes actor behaviors candidates for [formal verification](/docs/internals/verification/), where SMT proofs can validate behavior properties at compile time.
 
 ## Computation Expression Layer
 
@@ -163,9 +174,9 @@ The custom operations (`tell`, `spawn`, `scheduleOnce`, `stop`) extend the base 
 
 ## Identical Usage Across Targets
 
-With the abstraction and computation expression in place, the developer experience strives to be consistent regardless of compilation target. A counter actor looks the same whether it will run as native code in Fidelity or as JavaScript in a Cloudflare Durable Object. The types, the pattern matching, the effect operations: should all be identical.
+With the abstraction and computation expression in place, the developer experience strives to be consistent regardless of compilation target. A counter actor looks the same whether it will run as native code in Fidelity or as JavaScript in a Cloudflare Durable Object. The types, the pattern matching, the effect operations should all be identical.
 
-The following example defines a simple counter with three message types. `Increment` and `Decrement` modify state. `GetCount` queries state and sends a response to the provided reply address. The lifecycle handler acknowledges start, stop, and restart events without performing special actions. This behavior definition is complete and target-agnostic.
+The counter below has three message types. `Increment` and `Decrement` modify state. `GetCount` queries state and sends a response to the provided reply address. The lifecycle handler acknowledges start, stop, and restart events without performing special actions. This behavior definition is complete and target-agnostic.
 
 ```fsharp
 // Works identically in Fidelity (native) and Conclave (Cloudflare)
@@ -207,7 +218,7 @@ let counterBehavior = {
 }
 ```
 
-This behavior definition compiles to either target without modification. The business logic remains pure; platform concerns are handled by the runtime.
+This behavior definition is designed to compile to either target without modification. The business logic remains pure. Platform concerns belong to the runtime.
 
 ## Fidelity/Olivier Runtime
 
@@ -382,11 +393,11 @@ type ConclaveActor<'State, 'Message when 'Message :> IActorMessage>
 
 Durable Object hibernation is handled transparently by the Cloudflare platform. When no messages arrive for a configured period, the platform evicts the object from memory but preserves WebSocket connections. Upon receiving a new message, the platform reinstantiates the object and delivers the message to the appropriate handler. State rehydrates lazily from storage when the handler first accesses it.
 
-The alarm API enables scheduled message delivery. When an actor calls `setAlarm`, the platform guarantees invocation of the `alarm()` method at approximately the specified time, even if the object hibernates in the interim. This mechanism supports time-based behaviors such as heartbeat generation, retry scheduling, and session timeouts.
+The alarm API enables scheduled message delivery. When an actor calls `setAlarm`, the platform invokes the `alarm()` method at approximately the specified time, at least once and with retries on failure, even if the object hibernated in the interim. Scheduled messages therefore need idempotent handling. This mechanism supports time-based behaviors such as heartbeat generation, retry scheduling, and session timeouts.
 
 ## Channel Abstraction
 
-Both runtimes need a way to send and receive byte streams. The channel abstraction captures this requirement without prescribing the underlying mechanism. A channel is bidirectional, persistent, and operates on raw bytes. The BAREWire encoding happens above this layer; the channel moves frames without interpreting their contents.
+Both runtimes need a way to send and receive byte streams. The channel abstraction captures this requirement without prescribing the underlying mechanism. A channel is bidirectional, persistent, and operates on raw bytes. The BAREWire encoding happens above this layer. The channel moves frames without interpreting their contents.
 
 This separation allows Fidelity actors to communicate over IPC endpoints (OS-level primitives optimized for local communication) while Conclave actors use WebSockets (the only persistent connection mechanism available in the Cloudflare environment). Both present the same interface to actor code:
 
@@ -451,15 +462,15 @@ type WebSocketChannel(ws: WebSocket) =
         member _.IsOpen = ws.readyState = WebSocketState.Open
 ```
 
-The `byte[]` passed through these channels is always BAREWire-encoded. The channel implementation neither knows nor cares about message structure; its responsibility is frame delivery with ordering guarantees.
+The `byte[]` passed through these channels is always BAREWire-encoded. The channel implementation neither knows nor cares about message structure. Its responsibility is frame delivery under a stated contract. On the edge the platform offers two substrates with different contracts: RPC and socket frames arrive ordered per pair and at most once, with every send answered, while Cloudflare Queues delivers durably, at least once, and in no guaranteed order, so a queue-fed mailbox must deduplicate and resequence. A fabric that leaves the choice between those contracts implicit inherits one of them silently. We make the choice per edge and state it in the channel.
 
-The WebSocket implementation deserves attention for its handling of asynchronous receives. JavaScript WebSockets deliver messages through event callbacks, but Clef async workflows expect a pull-based model. The `pendingReceive` mechanism bridges this gap: if a receive request arrives before data, it stores a continuation; if data arrives before a receive request, it queues in the receive buffer. This pattern recurs in any system that bridges event-driven and continuation-based concurrency models.
+JavaScript WebSockets deliver messages through event callbacks, but Clef async workflows expect a pull-based model. The `pendingReceive` mechanism bridges that gap: if a receive request arrives before data, it stores a continuation. If data arrives before a receive request, it queues in the receive buffer. This pattern recurs in any system that bridges event-driven and continuation-based concurrency models.
 
 ## Ask Pattern Over Persistent Connections
 
 The tell-and-forget model suffices for many actor interactions, but some scenarios require request-response semantics. A counter actor that receives `GetCount` needs to send the current value back to the requester. The ask pattern addresses this need.
 
-With bidirectional persistent connections already in place, implementing ask is straightforward. The sender generates a correlation ID, includes it in the outbound message, and awaits a response with matching correlation. The channel's persistent nature means no connection setup overhead per request; messages flow over the existing pipe:
+With bidirectional persistent connections already in place, implementing ask is straightforward. The sender generates a correlation ID, includes it in the outbound message, and awaits a response with matching correlation. The channel's persistent nature means no connection setup overhead per request. Messages flow over the existing pipe:
 
 ```fsharp
 type ActorRef<'Message when 'Message :> IActorMessage> with
@@ -491,7 +502,7 @@ type ActorRef<'Message when 'Message :> IActorMessage> with
 
 The implementation differs between targets (BAREWire framing over IPC vs. WebSocket binary messages), but the developer API is identical. This uniformity means code that uses the ask pattern works without modification across Fidelity and Conclave deployments.
 
-Timeout handling deserves consideration. In a distributed system, a response might never arrive due to network partition, target actor failure, or processing delays. The `withTimeout` combinator transforms a potentially unbounded wait into a bounded operation that either succeeds with a value or fails with a timeout exception. Callers must decide how to handle timeout failures: retry, escalate, or proceed with a default value.
+In a distributed system, a response might never arrive: network partition, target actor failure, or processing delay all look the same from the caller's seat. The `withTimeout` combinator transforms a potentially unbounded wait into a bounded operation that either succeeds with a value or fails with a timeout exception. Callers must decide how to handle timeout failures: retry, escalate, or proceed with a default value.
 
 ## Supervision in Conclave
 
@@ -545,7 +556,7 @@ type ConclaveSupervisor(strategy: SupervisionStrategy) =
             ()
 ```
 
-WebSocket close events trigger supervision logic. The platform handles the mechanics of connection monitoring; the supervisor handles policy decisions. This separation of concerns mirrors the broader architecture: platform capabilities provide the foundation, while application code defines behavior.
+WebSocket close events trigger supervision logic. The platform handles the mechanics of connection monitoring. The supervisor handles policy decisions.
 
 The restart limits (maxRestarts within a time window) prevent infinite restart loops. If a child fails repeatedly, the supervisor eventually gives up and escalates the failure to its own supervisor, or terminates if it has no parent. This backoff mechanism prevents a single buggy component from consuming unbounded resources through continuous respawning.
 
@@ -577,9 +588,9 @@ module ActorProtocol =
         BAREWire.Codec.decode<MessageEnvelope> data
 ```
 
-The transport is abstracted behind the channel interface. Fidelity writes BAREWire frames to IPC channels. Conclave writes the same BAREWire frames as WebSocket binary messages. The protocol is identical; only the delivery mechanism changes.
+The transport is abstracted behind the channel interface. Fidelity writes BAREWire frames to IPC channels. Conclave writes the same BAREWire frames as WebSocket binary messages. The protocol is identical. Only the delivery mechanism changes.
 
-This uniformity has practical benefits for debugging and cross-system communication. A BAREWire message captured from a Fidelity IPC channel has the same structure as one captured from a Conclave WebSocket. Diagnostic tools work across both environments. If a future requirement involves bridging Fidelity and Conclave systems, the bridge only needs to handle transport translation; protocol translation is unnecessary.
+A BAREWire message captured from a Fidelity IPC channel has the same structure as one captured from a Conclave WebSocket, so diagnostic tools work across both environments. If a future requirement involves bridging Fidelity and Conclave systems, the bridge only needs to handle transport translation.
 
 ## Connection Topology
 
@@ -692,7 +703,7 @@ The .NET implementation demonstrates that the abstraction does not require exoti
 
 The `DotNetActor` class wraps a `MailboxProcessor` and adds the scaffolding that production systems require: error handling with configurable policies, resource tracking for automatic cleanup, metrics collection for observability, and supervisor integration for fault tolerance. The core message loop mirrors the Fidelity implementation but uses .NET's managed memory model.
 
-The code below is extensive because it addresses the complete lifecycle: message receipt, behavior application, effect interpretation, error handling, resource cleanup, and child supervision. Each concern is factored into a separate local function that the main loop coordinates:
+The code below addresses the complete lifecycle, from message receipt through effect interpretation to error handling, cleanup, and child supervision. Each concern is factored into a separate local function that the main loop coordinates:
 
 ```fsharp
 // Standalone .NET actor implementation
@@ -973,13 +984,13 @@ type DotNetSupervisor(strategy: SupervisionStrategy) =
         actor
 ```
 
-The `Spawn` method demonstrates how the supervisor integrates with the actor system. When spawning a child, the supervisor creates the actor with itself as the supervisor reference, adds the child to its tracking collection, and returns a reference that callers can use to send messages. The child actor, upon failure, will call back to this supervisor's `HandleFailure` method.
+When spawning a child, the supervisor creates the actor with itself as the supervisor reference, adds the child to its tracking collection, and returns a reference that callers can use to send messages. The child actor, upon failure, will call back to this supervisor's `HandleFailure` method.
 
 ### Transport Options
 
 The .NET implementation supports multiple transport mechanisms, selected based on deployment requirements. In-process transport uses thread-safe queues for actors within the same application domain. TCP transport enables distribution across machines. Named pipe transport offers a middle ground for inter-process communication on a single host.
 
-Each transport implements the same `ITransport` interface, making the choice transparent to actor code. An actor system configured with TCP transport sends messages over the network; the same system configured with in-process transport keeps everything in memory. The actor behaviors remain unchanged.
+Each transport implements the same `ITransport` interface, making the choice transparent to actor code. An actor system configured with TCP transport sends messages over the network. The same system configured with in-process transport keeps everything in memory. The actor behaviors remain unchanged.
 
 ```fsharp
 /// Transport abstraction for .NET actors
@@ -1117,9 +1128,9 @@ The companion module provides functional-style wrappers around the object-orient
 
 ### Usage Example
 
-The following example directly addresses questions about building production-ready actors. Developers ask for patterns that handle errors, manage resources, and provide observability without scattering boilerplate throughout handler code.
+Developers ask for patterns that handle errors, manage resources, and provide observability without scattering boilerplate throughout handler code.
 
-The answer combines a behavior definition with the `ActorSystem` builder. The behavior contains business logic; the system provides operational scaffolding. Error policies, backpressure limits, and supervision strategies are declarative configuration, not imperative code mixed into handlers.
+The answer combines a behavior definition with the `ActorSystem` builder. The behavior contains business logic. The system provides operational scaffolding. Error policies, backpressure limits, and supervision strategies are declarative configuration, not imperative code mixed into handlers.
 
 ```fsharp
 open FSharp.Actors
@@ -1210,7 +1221,7 @@ Existing .NET code migrates to the scaffolded model, gaining supervision, error 
 
 ## Transport Evolution: Media over QUIC
 
-WebSockets provide the foundation for Conclave actor communication, but they have inherent limitations for high-throughput, cross-system messaging. Cloudflare's Media over QUIC (MoQ) relay infrastructure addresses these limitations and opens significant opportunities for actor system interconnection.
+WebSockets provide the foundation for Conclave actor communication, but they have inherent limitations for high-throughput, cross-system messaging. Cloudflare's Media over QUIC (MoQ) work is aimed at exactly those limitations, and we track it as a candidate transport for actor system interconnection.
 
 ### Why MoQ Matters Beyond Media
 
@@ -1228,7 +1239,7 @@ For actor systems with dense message flows, these differences compound. A superv
 
 ### Cross-System Actor Topology
 
-MoQ relay becomes the backbone for connecting actor systems across deployment boundaries:
+We imagine a MoQ relay as the backbone connecting actor systems across deployment boundaries:
 
 ```mermaid
 graph TB
@@ -1266,7 +1277,7 @@ graph TB
     
 ```
 
-Each system maintains its internal transport (IPC for Fidelity, WebSocket for Conclave, TCP/pipes for .NET), while MoQ relay handles cross-system communication. BAREWire remains the protocol; MoQ becomes another transport option.
+Each system maintains its internal transport (IPC for Fidelity, WebSocket for Conclave, TCP/pipes for .NET), while the MoQ relay would carry cross-system communication. BAREWire remains the protocol. MoQ would be one more transport option.
 
 ### Track-Based Actor Addressing
 
@@ -1368,7 +1379,7 @@ type MoQSupervisor(strategy: SupervisionStrategy, transport: MoQTransport) =
     }
 ```
 
-The broadcast operation demonstrates another MoQ advantage: efficient fanout. When a supervisor sends a configuration update to all children, it publishes once to its track, and the MoQ relay handles distribution. Children subscribed to that track receive the update without the supervisor maintaining individual connections to each child. This pub/sub model reduces connection count and simplifies topology management.
+Fanout is the other draw. When a supervisor sends a configuration update to all children, it publishes once to its track, and the MoQ relay would carry the distribution. Children subscribed to that track receive the update without the supervisor maintaining individual connections to each child. This pub/sub model reduces connection count and simplifies topology management.
 
 ### Priority and Ordering
 
@@ -1401,13 +1412,13 @@ let sendWithPriority (transport: MoQTransport) priority targetId msg = async {
 do! sendWithPriority transport Supervision childId (Terminate "shutdown")
 ```
 
-The priority mapping is explicit and deterministic. Supervision messages always receive urgent priority. Control messages (lifecycle events, configuration changes) receive high priority. Normal business traffic flows at standard priority. Bulk operations (batch data transfers, log shipping) and background tasks (metrics collection, health checks) receive progressively lower priority. This hierarchy ensures that operational concerns never starve due to application traffic.
+The priority mapping is explicit and deterministic. Supervision messages always receive urgent priority. Control messages (lifecycle events, configuration changes) receive high priority. Normal business traffic flows at standard priority. Bulk operations (batch data transfers, log shipping) and background tasks (metrics collection, health checks) receive progressively lower priority. The hierarchy is designed so that operational concerns never starve behind application traffic.
 
 ### Transport Selection Strategy
 
 Not every message needs MoQ. Intra-system communication within a single Fidelity deployment uses IPC, which offers lower latency than any network protocol. Simple cross-system interactions with low message rates work fine over WebSocket. MoQ adds value for dense streams, real-time requirements, and scenarios where multiplexing benefits outweigh protocol overhead.
 
-The transport selector encapsulates this decision logic. Given a message pattern (intra-system, cross-system light, cross-system heavy), it returns the appropriate transport. The selection happens once when establishing a communication path; subsequent messages flow over the selected transport without repeated decision overhead.
+The transport selector encapsulates this decision logic. Given a message pattern (intra-system, cross-system light, cross-system heavy), it returns the appropriate transport. The selection happens once when establishing a communication path. Subsequent messages flow over the selected transport without repeated decision overhead.
 
 ```fsharp
 type TransportSelector = {
@@ -1498,7 +1509,7 @@ type VoiceAgentPipeline() =
     }
 ```
 
-This architecture handles dense audio streams alongside sparse control messages, each on the appropriate transport, all encoding with BAREWire protocol. The audio path uses MoQ for its multiplexing and priority capabilities. The control path uses WebSocket because control messages are infrequent and latency-tolerant. Both paths remain compatible because the protocol layer is uniform; only transport selection differs.
+This architecture is designed to carry dense audio streams alongside sparse control messages, each on the appropriate transport, all encoded as BAREWire. The audio path would use MoQ for its multiplexing and priority capabilities. The control path uses WebSocket because control messages are infrequent and latency-tolerant. Both paths remain compatible because the protocol layer is uniform. Only transport selection differs.
 
 The pipeline also illustrates actor model benefits for AI workloads, a theme we have explored elsewhere. Each stage scales independently. If ASR becomes a bottleneck, spawn additional ASR actors and distribute incoming frames. If the LLM stage requires GPU acceleration, deploy that actor to hardware-equipped nodes while keeping other stages on standard compute. The actor boundaries create natural scaling points without requiring monolithic system redesign.
 
@@ -1506,6 +1517,6 @@ The pipeline also illustrates actor model benefits for AI workloads, a theme we 
 
 Considering protocol separately from transport enables a clear actor architecture across different runtimes. BAREWire provides the common language, and the transport adapts to each platform's strengths. The scheduler contract is the same separation applied to time: dispatch discharged by Ariel where we own the loop, assumed from the platform where we do not. By defining actor behaviors as pure functions that produce effects, and letting target-specific runtimes interpret those effects, we achieve a consistent developer experience without sacrificing platform-appropriate optimizations.
 
-Developers write actor logic once. The same `actor { }` computation expression is designed to compile to our Olivier actors communicating over IPC in Fidelity, to edge actors in Conclave, presently realized on Durable Objects over WebSocket, or to MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable; transport concerns stay in the runtime layer.
+Developers write actor logic once. The same `actor { }` computation expression is designed to compile to our Olivier actors communicating over IPC in Fidelity, to edge actors in Conclave, presently realized on Durable Objects over WebSocket, or to MailboxProcessor actors communicating over TCP in standard .NET. All speak BAREWire. Business logic remains portable. Transport concerns stay in the runtime layer.
 
-This architectural direction is meant to carry several practical benefits: shared testing infrastructure for actor behaviors, gradual migration paths between deployment targets, reduced cognitive overhead for teams working across both frameworks, and cross-target actor communication through transport bridges. As MoQ matures, the transport selection layer can incorporate it without disturbing actor code or protocol definitions. The work continues toward that separation of protocol and transport, and I expect the actor abstraction to keep earning its place as more of the constellation comes online.
+We intend the payoff to be practical. Actor behaviors test once against the effect contract. Deployment targets admit gradual migration, and a team working across both frameworks carries one mental model. As MoQ matures, the transport selection layer can incorporate it without disturbing actor code or protocol definitions. The work continues toward that separation of protocol and transport, and I expect the actor abstraction to keep earning its place as more of the constellation comes online.
