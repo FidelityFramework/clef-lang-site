@@ -7,7 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Concurrency", "Architecture", "Design"]
 params:
   originally_published: 2026-07-14
-draft: true
 ---
 
 Ask three developers where "the scheduler" lives in their stack and you'll get multiple honest answers that barely overlap. A systems programmer might have wired it: an epoll or io_uring loop, a thread-per-core layout, capacities provisioned at boot from numbers somebody chose. A .NET developer building on Akka.NET may have configured it: dispatcher throughput settings tuned over a runtime thread pool. The Elixir developer inherited the best one in the business and can tell you exactly how it works: the BEAM's preemptive reduction counting is the part of that platform its community brags about, and with justification.
