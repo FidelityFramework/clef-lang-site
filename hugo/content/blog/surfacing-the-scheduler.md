@@ -1,7 +1,7 @@
 ---
 title: "Surfacing The Scheduler"
 linkTitle: "Surfacing The Scheduler"
-description: "Under Prospero's billing until now, Ariel finally steps into the limelight"
+description: "An Understudy to Prospero until now, Ariel finally steps into the limelight"
 date: 2026-07-14T09:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["Concurrency", "Architecture", "Design"]
