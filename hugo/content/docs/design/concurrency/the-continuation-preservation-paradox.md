@@ -12,15 +12,15 @@ params:
   migration_date: 2026-02-15
 ---
 
-As we design Composer, one question sits at the heart of functional systems programming: how far down the compilation stack can we preserve the abstractions that [our Clef language](https://clef-lang.com) is built on? Delimited continuations are the theoretical foundation for async/await, generators, and algebraic effects. We want to know whether they can survive the journey from high-level Clef through MLIR's SSA form to executable code, and whether they should.
+As we design Composer, we keep returning to one question: how far down the compilation stack can we preserve the abstractions that [our Clef language](https://clef-lang.com) is built on? Delimited continuations are the theoretical foundation for async/await, generators, and algebraic effects. We want to know whether they can survive the journey from high-level Clef through MLIR's SSA form to executable code, and whether they should.
 
 The answer shapes whether we can build functional device drivers, whether async code can run without heap allocation, and whether Clef can compete with C for embedded systems. It forces a choice between abstraction and performance, between the mathematical structure of the source and the hardware it has to run on.
 
 ## The Preservation Boundary
 
-Abstractions have lifespans in a compiler. They are born in the source language, live through various intermediate representations, and are lowered to something else when they meet hardware. Delimited continuations will be lowered eventually; that part is not in question. What we want to know is how long we can keep them alive, and what we gain from their longevity.
+Abstractions have lifespans in a compiler. They exist in the source language, persist across intermediate representations, and are lowered at the hardware boundary. Delimited continuations will be lowered eventually. That part is not in question. What we want to know is how far down the stack we can preserve them, and what that preservation buys us.
 
-In our Composer architecture, delimited continuations begin life as first-class citizens in our Program Hypergraph (PHG):
+In our Composer architecture, delimited continuations appear as first-class citizens in our Program Hypergraph (PHG):
 
 ```fsharp
 type PSGNode =
@@ -100,9 +100,9 @@ flowchart TD
     end
 ```
 
-The diagram shows the architectural decision. Composer builds on existing MLIR dialects, particularly the DCont (delimited continuation) dialect, rather than introducing new ones. Our PSG transforms Clef into these standard dialects, and then we choose whether to preserve continuations (the WAMI path) or compile them away (the LLVM path).
+Composer builds on existing MLIR dialects, particularly the DCont (delimited continuation) dialect, rather than introducing new ones. Our PSG transforms Clef into these standard dialects, and then we choose whether to preserve continuations (the WAMI path) or compile them away (the LLVM path).
 
-Our PSG (and the PHG that will follow it in a later revision) carries the full semantic information about continuations, effects, and resource lifetimes. That information maps onto existing MLIR dialects like DCont, Async, SCF, and MemRef, which lets us defer the preserve-or-compile decision to the last possible moment.
+Our PSG (and the PHG that will follow it in a later revision) retains the full semantic information about continuations, effects, and resource lifetimes. That information maps onto existing MLIR dialects like DCont, Async, SCF, and MemRef, which lets us defer the preserve-or-compile decision to the last possible moment.
 
 ### The WAMI Path: Semantic Preservation
 
@@ -132,7 +132,7 @@ dcont.shift @readSensor : !dcont.cont {
 ssawasm.suspend $sensor_read
 ```
 
-The suspend/resume operations in the Stack Switching proposal are delimited continuations at the IR level. The mapping does not discard the abstraction; it carries it onto an equivalent abstraction in the target platform.
+The suspend/resume operations in the Stack Switching proposal are delimited continuations at the IR level. The mapping preserves the abstraction, targeting an equivalent construct on the platform.
 
 ### The LLVM Path: Semantic Compilation
 
@@ -158,17 +158,17 @@ type ProcessAsyncStateMachine = struct
 end
 ```
 
-Here the delimited continuation semantics compile away into state machines. The abstraction does not survive the IR level; explicit state management takes its place. This is compilation in the traditional sense, where high-level constructs become low-level implementations.
+Here the delimited continuation semantics compile away into state machines, the abstraction does not survive the IR level, and explicit state management takes its place. This is compilation in the traditional sense, where high-level constructs become low-level implementations.
 
 ## The Preservation Paradox
 
-This is the paradox. The WAMI path preserves our abstractions but runs on a virtual machine that carries its own overhead. The LLVM path compiles those abstractions away and produces native code. Which one serves functional systems programming better?
+The WAMI path preserves our abstractions but runs on a virtual machine that carries its own overhead. The LLVM path compiles those abstractions away and produces native code. Which one serves functional systems programming better?
 
 The answer may be "both."
 
 ## Building Pure Functional Hardware Drivers
 
-The approach gets tested when we need to touch hardware. How do we hold functional purity while reading from an I2C sensor or writing to SPI? We treat hardware access as algebraic effects, with delimited continuations as the implementation mechanism.
+The approach gets tested when we need to touch hardware. How do we maintain functional purity while reading from an I2C sensor or writing to SPI? We treat hardware access as algebraic effects, with delimited continuations as the implementation mechanism.
 
 ### Capabilities as Effects
 
@@ -256,7 +256,7 @@ ssawasm.suspend $i2c_read
 ssawasm.resume %continuation (result)
 ```
 
-The continuation structure carries through this path. The host environment handles the hardware interaction while the functional structure stays intact.
+The continuation structure survives this path. The host environment handles the hardware interaction while the functional structure stays intact.
 
 ### Selective Compilation
 
@@ -306,14 +306,14 @@ let orchestrateProcessing() = async {
 }
 ```
 
-This hybrid approach gives us native performance in the tight loop while preserving the async coordination structure where it earns its keep.
+This hybrid approach gives us native performance in the tight loop while preserving the async coordination structure where its cost is warranted.
 
 ## Architectural Principles
 
 A few principles for building a functional systems programming platform come out of this:
 
 ### 1. Preserve Until Necessary
-Keep abstractions alive as long as they provide value. Delimited continuations give us composition and automatic resource management, so we hold them until performance demands otherwise.
+Keep abstractions alive as long as they provide value. Delimited continuations give us composition and automatic resource management, so we retain them until performance demands otherwise.
 
 ### 2. Explicit Boundaries
 Make the purity/effect boundary explicit and minimal. One interpretation point is easier to audit than effects scattered throughout the codebase.
@@ -324,11 +324,11 @@ Not all code needs maximum performance. Use native compilation for hot paths and
 ### 4. Effects as Protocols
 Model hardware interactions as pure protocol descriptions. This enables testing, simulation, and reasoning without touching actual hardware.
 
-## The Insight
+## The Unforced Trade
 
-The continuation preservation paradox points at an assumption worth questioning. The received wisdom is that low-level programming requires low-level thinking, that speed costs you your abstractions. We are designing Composer on the premise that the trade is not forced.
+Low-level programming is assumed to require low-level thinking: speed costs you your abstractions. We are designing Composer on the premise that the trade is not forced.
 
-We can preserve high-level constructs as far as they are useful, and compile them away where performance demands. The coordination logic keeps its mathematical structure while the hot paths reach native performance.
+We can preserve high-level constructs as far as they are useful, and compile them away where performance demands. The coordination logic keeps its mathematical structure while the hot paths run at native speed.
 
 This is what we are designing toward with selective compilation. By supporting both a WAMI (preservation) backend and an LLVM (compilation) backend, Composer can pick the right path for each part of a program. Delimited continuations can survive all the way to WebAssembly when that serves the design, or compile to efficient state machines when the path is performance-critical.
 
@@ -355,10 +355,10 @@ The hardware access underneath compiles to native code, with no heap allocations
 
 ## Preservation-Aware Compilation
 
-Designing Composer has shifted how we think about compilation. It is not only about lowering abstractions; it is about holding them as long as they provide value. Delimited continuations can survive further down the compilation stack than the usual rules of thumb suggest.
+Designing Composer has shifted how we think about compilation. Compilation here holds abstractions as long as they provide value, as much as it lowers them. Delimited continuations can survive further down the compilation stack than the usual rules of thumb suggest.
 
 On the WAMI path they survive into the runtime largely unchanged. On the LLVM path they compile away and leave behind efficient implementations. Both belong in a functional systems programming toolkit.
 
-The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we can keep hardware drivers functional, let async code run without allocation, and bring Clef within reach of C for embedded work. This per-call-site choice is the same inferred-with-override discipline the framework uses elsewhere: the compiler infers a default, the developer reads it where it surfaces, and an annotation overrides it at the one site that needs steering. Escape classification assigns it to every mutable binding in [managed mutability](/docs/design/language/managed-mutability/), and the [wait classification for deadlock freedom](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) assigns it to every synchronous RPC. Preservation is that discipline one axis over, on the lowering choice.
+The decision does not have to be global. By making each preservation choice locally, against the performance requirements of that code, we keep hardware drivers functional. Async code runs without allocation, and Clef comes within reach of C for embedded work. This per-call-site choice is the same inferred-with-override discipline the framework uses elsewhere: the compiler infers a default, the developer reads it where it surfaces, and an annotation overrides it at the one site that needs steering. Escape classification assigns it to every mutable binding in [managed mutability](/docs/design/language/managed-mutability/), and the [wait classification for deadlock freedom](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) assigns it to every synchronous RPC. Preservation is that discipline one axis over, on the lowering choice.
 
 This is where we are taking the design. The continuation preservation paradox is the question that shapes the next stretch of work on Composer, and the per-call-site preservation choice is the part of the answer we will keep building toward as the rest of the toolchain comes into place.

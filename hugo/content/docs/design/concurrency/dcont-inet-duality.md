@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Clef's computation expressions give a unified syntax for control flow that would otherwise be written as explicit branching. Beneath that syntax sits a mathematical structure most compilers do not exploit. A region that threads each step through the result of the last must sequence, and a region whose steps carry no such dependency can run them together. That partition between dependency-carrying and independent work is what our Fidelity framework reads off the source to choose a compilation strategy, and we are designing a compilation path around it to reach zero-cost computation graphs. The dependent side lowers through delimited continuations. The independent side lowers to a parallel target, and which target depends on the shape of the work.
+Clef's computation expressions give a unified syntax for control flow that would otherwise be written as explicit branching. Beneath that syntax sits a mathematical structure most compilers do not exploit. A region that threads each step through the result of the last must sequence, and a region whose steps have no such dependency can run them together. That partition between dependency-carrying and independent work is what our Fidelity framework reads off the source to choose a compilation strategy, and we are designing a compilation path around it to reach zero-cost computation graphs. The dependent side lowers through delimited continuations. The independent side lowers to a parallel target, and which target depends on the shape of the work.
 
 The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case; an applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
@@ -19,7 +19,7 @@ This builds on the architectural foundations we've established across the Fideli
 
 ## A Principled Start
 
-To understand how computation expressions compile to optimal machine code, we need to first understand what they actually are beneath the syntax. Let's begin with a problem every developer faces: repetitive code patterns that obscure the essential logic.
+Beneath the syntax, computation expressions are a specific pattern of function composition. The problem they solve is a familiar one: repetitive code patterns that obscure the essential logic.
 
 Consider processing data with error handling. Without computation expressions, we're forced to write explicit branching at every step:
 
@@ -57,7 +57,7 @@ The `let!` is syntactic sugar for a specific pattern of function composition. Wh
 
 ## The Continuation Connection
 
-To see why this matters for compilation, let's make the continuation pattern explicit. Every `let` binding can be rewritten as a function application:
+The continuation pattern is already there in ordinary code. Every `let` binding can be rewritten as a function application: Every `let` binding can be rewritten as a function application:
 
 ```fsharp
 // A normal let binding
@@ -89,25 +89,25 @@ maybe {
 }
 ```
 
-Once computation expressions are read as continuations, the question becomes what happens when we compile these patterns. This is where our Fidelity framework's approach diverges from a conventional compiler.
+Once we read computation expressions as continuations, we face a compilation decision a conventional compiler does not make: whether the continuations must thread in sequence or can run at once.
 
 ## The Fork: Sequential vs Parallel
 
-Once we recognize computation expressions as continuation structures, we face a compilation decision. Some computations require sequential threading of continuations, where each step depends on the previous one. Others carry no such dependencies, so all operations could in principle execute at once.
+Once we recognize computation expressions as continuation structures, we face a compilation decision. Some computations require sequential threading of continuations, where each step depends on the previous one. Others impose no such dependencies, so all operations could in principle execute at once.
 
 This distinction determines the compilation strategy for the whole expression. As we explored in our [coeffects and codata analysis](/docs/internals/concepts/coeffects-and-codata/), different computational patterns call for different execution strategies. The independent side splits once more by the shape of the work, which gives three lowering lanes rather than two.
 
 ### Three Lowering Lanes
 
-The unit of analysis is the region, classified by its effect and data dependency rather than by the computation expression keyword. Our [Program Hypergraph](/docs/design/structure-and-performance/coupling-and-cohesion/) carries that classification as a coloring pass over the graph, the same pass that licenses the interaction-net breakout. Three lanes come out of it.
+The unit of analysis is the region, classified by its effect and data dependency rather than by the computation expression keyword. Our [Program Hypergraph](/docs/design/structure-and-performance/coupling-and-cohesion/) records that classification as a coloring pass over the graph, the same pass that licenses the interaction-net breakout. Three lanes come out of it.
 
 - **Sequential effects lower through DCont.** A region whose steps depend on prior results, or that touches the world, captures its continuation at each suspension point and resumes when the result arrives. This is the dependency-carrying lane.
 - **Regular data-parallel work lowers to the tensor path.** Dense, statically shaped, rectangular work, map and filter and reduce and scan over arrays, is SIMD and SIMT data parallelism. It lowers through the standard arithmetic and tensor dialects and the GPU dialect to NVVM for NVIDIA targets and the AMDGPU backend for AMD, with MLIR-AIE carrying NPU targets. Its iterations are independent by construction, so there is no graph rewriting to coordinate.
-- **Irregular higher-order reduction lowers to interaction nets.** Recursive functions over trees and graphs, symbolic reduction, and sharing-sensitive computation whose shape is data-dependent are the genuine interaction-net workload. The Inet graph lowers through MLIR to LLVM, and the LLVM NVPTX and AMDGPU backends generate the GPU code. The actor layer orchestrates the CPU-to-GPU boundary with zero-copy BAREWire transport and re-bootstraps the computation graph as the work demands.
+- **Irregular higher-order reduction lowers to interaction nets.** Recursive functions over trees and graphs, symbolic reduction, and sharing-sensitive computation whose shape is data-dependent are the genuine interaction-net workload. The Inet graph lowers through MLIR to LLVM, and the LLVM NVPTX and AMDGPU backends generate the GPU code. The actor layer orchestrates the CPU-to-GPU boundary with zero-copy BAREWire transport and re-bootstraps the computation graph as new redexes become available.
 
-The flat map-and-filter query is the case that least needs interaction nets. Dense data parallelism falls out as the rectangular, degenerate case and is handled by the tensor path. Interaction nets earn their keep on the irregular reductions where the rewrite shape is not known until the data arrives.
+The flat map-and-filter query is the case that least needs interaction nets. Dense data parallelism falls out as the rectangular, degenerate case and is handled by the tensor path. Interaction nets are the lowering for the irregular reductions where the rewrite shape is not known until the data arrives.
 
-Because the independent side carries an ideal parallel reading and the CPU lowering serializes it, the gap between the two is itself a figure the graph makes available. [Flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) is what reads that gap, quantifying how much of a region's data-flow parallelism a control-flow target gives up.
+Because the independent side admits an ideal parallel reading and the CPU lowering serializes it, the gap between the two is itself a figure the graph makes available. [Flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) is what reads that gap, quantifying how much of a region's data-flow parallelism a control-flow target gives up.
 
 ### Sequential Patterns: The DCont Path
 
@@ -179,7 +179,7 @@ The loop and lane structure comes from the `affine`, `scf`, and `vector` dialect
 
 ### Irregular Reduction: The Inet Path
 
-Interaction nets earn their place on a different kind of work. A recursive reduction over a tree, where the shape of the rewrite is not known until the data arrives, has parallelism that is real but not rectangular. Two redexes in different subtrees can fire at once, and a third opens up only after one of them completes.
+Interaction nets apply to a different kind of work. A recursive reduction over a tree, where the shape of the rewrite is not known until the data arrives, has parallelism that is real but not rectangular. Two redexes in different subtrees can fire at once, and a third opens up only after one of them completes.
 
 ```fsharp
 // Irregular: the reduction shape depends on the data
@@ -191,7 +191,7 @@ let rec eval expr =
  
 ```
 
-This lowers to an interaction net, the model where computation is local graph rewriting and the agents make copying and discarding explicit. Lafont's symmetric interaction combinators give the vocabulary: a constructor agent builds structure, a duplicator agent copies it, and an eraser agent discards it. Coll's Inet dialect carries these agents and their rewrite rules in MLIR:
+This lowers to an interaction net, the model where computation is local graph rewriting and the agents make copying and discarding explicit. Lafont's symmetric interaction combinators give the vocabulary: a constructor agent builds structure, a duplicator agent copies it, and an eraser agent discards it. Coll's Inet dialect encodes these agents and their rewrite rules in MLIR:
 
 ```mlir
 // Inet: an active pair is two agents on the same wire; reducing it is one rule
@@ -204,9 +204,9 @@ inet.rule @add_lit {
 }
 ```
 
-An active pair is two agents connected at their principal ports, and reducing it is the application of one interaction rule. The eraser realizes weakening, and same-symbol annihilation realizes the trace, which places the dialect at the compact-closed level rather than at plain graph rewriting. The model carries no continuation capture, no sequencing, and no central scheduler.
+An active pair is two agents connected at their principal ports, and reducing it is the application of one interaction rule. The eraser realizes weakening, and same-symbol annihilation realizes the trace, which places the dialect at the compact-closed level rather than at plain graph rewriting. The model needs no continuation capture, no sequencing, and no central scheduler.
 
-What licenses running every active pair at once is strong confluence: Lafont's one-step diamond. Any two distinct active pairs are independent, and reducing them in either order yields the same net. That is the theorem behind "all at once," and it holds with no coordination because the rules are local. Confluence is established once over the rule system, in the same character as the abstraction theorem that makes our Tier 1 dimensional content free by parametricity. It is a property of the logic, not an obligation a program carries.
+What licenses running every active pair at once is strong confluence: Lafont's one-step diamond. Any two distinct active pairs are independent, and reducing them in either order yields the same net. That is the theorem behind "all at once," and it holds with no coordination because the rules are local. Confluence is established once over the rule system, in the same character as the abstraction theorem that makes our Tier 1 dimensional content free by parametricity. It is a property of the logic, not an obligation a program incurs.
 
 ## The Pattern Behind the Fork
 
@@ -214,7 +214,7 @@ This is the monad/applicative axis read through the compiler. The classifier is 
 
 **Effectful computations** sequence operations through time. They interact with the world, maintain state, or depend on previous results, which is the monadic case where the second effect can depend on the first value. These map to delimited continuations (DCont). As we explored in [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), these patterns can survive surprisingly deep into the compilation pipeline.
 
-**Independent computations** carry no effects and no sequential dependencies, which is the applicative case where independent effects compose. These parallelize, and the parallel target depends on shape: dense rectangular work to the tensor path, irregular reduction to interaction nets. Our work on [referential transparency](/docs/internals/concepts/seeking-referential-transparency/) shows how the compiler identifies these pure regions.
+**Independent computations** introduce no effects and no sequential dependencies, which is the applicative case where independent effects compose. These parallelize, and the parallel target depends on shape: dense rectangular work to the tensor path, irregular reduction to interaction nets. Our work on [referential transparency](/docs/internals/concepts/seeking-referential-transparency/) shows how the compiler identifies these pure regions.
 
 Computation expressions encode a default classification in their structure, and the coloring pass refines it from the region's actual dependencies:
 
@@ -400,11 +400,11 @@ let! result = operation1() >>= operation2
 
 ### Compact-Closed Structure and Parallel Composition
 
-Interaction nets sit at the compact-closed level, where the symmetric monoidal structure carries a duality: every object has a dual, with the unit and counit morphisms connecting them. In Lafont's combinators the eraser realizes weakening and same-symbol annihilation realizes the trace, which is the Geometry-of-Interaction reading. Our [negative and fractional type work](https://arxiv.org/abs/2606.04352) develops the same compact-closed promotion of the graph semantics from the type side, so the algebra the runtime rewrites and the algebra the types track are the same structure.
+Interaction nets sit at the compact-closed level, where the symmetric monoidal structure exhibits a duality: every object has a dual, with the unit and counit morphisms connecting them. In Lafont's combinators the eraser realizes weakening and same-symbol annihilation realizes the trace, which is the Geometry-of-Interaction reading. Our [negative and fractional type work](https://arxiv.org/abs/2606.04352) develops the same compact-closed promotion of the graph semantics from the type side, so the algebra the runtime rewrites and the algebra the types track are the same structure.
 
-The monoidal laws are bookkeeping that lets the compiler regroup and reorder. Associativity \((a \otimes b) \otimes c \equiv a \otimes (b \otimes c)\) redistributes work across cores, and braiding \(a \otimes b \equiv b \otimes a\) reorders independent operations for locality. They say work can be rearranged; they do not say it can run at once. The crossing this axis leaves out, the observable order when a `bind` threads a spawned result back through what follows, is treated as a proposed non-abelian sheaf in [the braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/), where the abelian reordering here is the free projection and only the crossing carries an obligation.
+The monoidal laws are bookkeeping that lets the compiler regroup and reorder. Associativity \((a \otimes b) \otimes c \equiv a \otimes (b \otimes c)\) redistributes work across cores, and braiding \(a \otimes b \equiv b \otimes a\) reorders independent operations for locality. They say work can be rearranged. They do not say it can run at once. The crossing this axis does not describe, the observable order when a `bind` threads a spawned result back through what follows, is treated as a proposed non-abelian sheaf in [the braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/), where the abelian reordering here is the free projection and only the crossing raises an obligation.
 
-The property that licenses running it at once is strong confluence, Lafont's one-step diamond. If a net contains two distinct active pairs, reducing either one leaves the other available, and the two orders converge on the same net:
+Strong confluence, Lafont's one-step diamond, is the property that permits simultaneous reduction. If a net contains two distinct active pairs, reducing either one leaves the other available, and the two orders converge on the same net:
 
 ```
         N
@@ -422,9 +422,9 @@ Independence is structural, a consequence of the rules being local to a pair of 
 
 ## Two Axes
 
-Lowering and soundness are separate questions, and the post is sharper for keeping them apart. Producing the Inet graph is unconditional codegen on the compilation axis: the region is colored independent, and the rewrite emits. Whether running that graph is correct is verification-axis work, and it divides. Confluence is discharged once at the rule-system level, a property of the logic rather than of any program. The per-program supervision obligations, placement, resource bounds, and non-interference for regions that touch shared state, are Tier 2 and above.
+Lowering and soundness are separate questions. Producing the Inet graph is unconditional codegen on the compilation axis: the region is colored independent, and the rewrite emits. Whether running that graph is correct is verification-axis work, and it divides. Confluence is discharged once at the rule-system level, a property of the logic rather than of any program. The per-program supervision obligations, placement, resource bounds, and non-interference for regions that touch shared state, are Tier 2 and above.
 
-For pure regions the "parallel for free" claim lives on the proof axis at Tier 1: the iterations are independent by referential transparency, and parametricity makes that independence a property of the type and not of the particular function, so the rewrite is correct by construction. For regions that touch shared state the independence is not free, and the obligation is a non-interference property to discharge at Tier 2 or to leave sequential. Naming the axis each claim sits on is what keeps the free case and the discharged case from blurring together.
+For pure regions the "parallel for free" claim lives on the proof axis at Tier 1: the iterations are independent by referential transparency, and parametricity makes that independence a property of the type and not of the particular function, so the rewrite is correct by construction. For regions that touch shared state the independence is not free, and the obligation is a non-interference property to discharge at Tier 2 or to leave sequential.
 
 ## Performance Impact
 
@@ -441,7 +441,7 @@ These improvements compound. A workflow that mixes async I/O with data processin
 
 ## Custom Computation Expressions
 
-The classification extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This carries over to the framework's [intrinsic reactive model](/blog/fidelityrx-native-reactivity/), where multicast observables map to the parallel side and unicast observables map to delimited continuations:
+The classification extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This applies to the framework's [intrinsic reactive model](/blog/fidelityrx-native-reactivity/), where multicast observables map to the parallel side and unicast observables map to delimited continuations:
 
 ```fsharp
 [<CompileTo(ComputationPattern.Parallel)>]
@@ -481,14 +481,14 @@ let pureWorkflow = query<Effects = Pure> {
 }
 ```
 
-The independent side stays deterministic in its operational lowering. Where a computation is genuinely nondeterministic, that outcome is modeled in the verification layer rather than the runtime dynamics. Our [tier architecture](/docs/internals/verification/) carries it as a restricted probabilistic fragment at Tier 3, with the distributions living over the same abelian structure the lower tiers already handle, and as relational judgments at Tier 4 when the property relates two runs. Keeping the lowering deterministic is what lets cut elimination stay execution: the net reduces, and the modeling of chance sits in the proof obligation, not in the reduction.
+The independent side stays deterministic in its operational lowering. Where a computation is genuinely nondeterministic, that outcome is modeled in the verification layer rather than the runtime dynamics. Our [tier architecture](/docs/internals/verification/) represents it as a restricted probabilistic fragment at Tier 3, with the distributions living over the same abelian structure the lower tiers already handle, and as relational judgments at Tier 4 when the property relates two runs. Keeping the lowering deterministic is what lets cut elimination stay execution: the net reduces, and the modeling of chance sits in the proof obligation, not in the reduction.
 
-## Structure Is Compilation Strategy
+## Structural Lowering
 
 The path from computation expressions to machine code rests on recognizing the structure already present in the code. Sequential patterns that thread continuations map to delimited continuations. Independent patterns parallelize, dense rectangular work through the tensor path and irregular reduction through interaction nets.
 
-This approach treats computation expressions as compile-time specifications rather than runtime abstractions that carry overhead. The builder pattern becomes a source of compilation guidance instead of a runtime object model. For the developer, this means writing ordinary Clef code and getting the performance the structure allows. For the library author, it opens up domain-specific languages without runtime penalties.
+This approach treats computation expressions as compile-time specifications rather than runtime abstractions that add overhead. The builder pattern becomes a source of compilation guidance instead of a runtime object model. For the developer, this means writing ordinary Clef code and getting the performance the structure allows. For the library author, it opens up domain-specific languages without runtime penalties.
 
-On the interaction-net side, HVM and [HVM2](https://github.com/HigherOrderCO/HVM) are the prior art for parallel interaction-net runtimes, including on GPU. The difference is where the cost of soundness is paid. HVM pays it dynamically: the scheduling and the bookkeeping that keep parallel reduction correct run in a runtime host. Our design discharges that cost at compile time as a tier obligation and emits lean kernels through the LLVM GPU backends, with the actor layer orchestrating the boundary. The interaction-net evaluation model is shared; the placement of the soundness work is the difference.
+On the interaction-net side, HVM and [HVM2](https://github.com/HigherOrderCO/HVM) are the prior art for parallel interaction-net runtimes, including on GPU. The difference is where the cost of soundness is paid. HVM pays it dynamically: the scheduling and the bookkeeping that keep parallel reduction correct run in a runtime host. Our design discharges that cost at compile time as a tier obligation and emits lean kernels through the LLVM GPU backends, with the actor layer orchestrating the boundary. The interaction-net evaluation model is shared. The placement of the soundness work is the difference.
 
-The patterns we work with in expressive programming, monads for sequencing and applicatives for parallelism, are the same structures that tell the compiler how to lower the code. We are early in building this compilation path. The three-lane split, which routes sequential effects, dense data parallelism, and irregular reduction to different targets off one classification, is one we have found no other representative implementation of in the standing literature we have reviewed. It is the direction we will keep developing as the rest of the Composer compiler comes into place.
+The patterns we work with in expressive programming, monads for sequencing and applicatives for parallelism, are the same structures that tell the compiler how to lower the code. We are early in building this compilation path. The three-lane split routes sequential effects, dense data parallelism, and irregular reduction to different targets off one classification. We have found no other representative implementation of it in the standing literature we have reviewed. It is the direction we will keep developing as the rest of the Composer compiler comes into place.

@@ -118,7 +118,7 @@ Five waypoints, each with a clear state, a clear what's-true, and a clear what's
 
 **State.** Both binding pipelines are functional. F# bindings continue via Xantham → Xantham.Generator → Fable for existing F# users. New Clef code uses Xantham → Clef-binding generator → matched (Clef declaration + Alex witness) pairs → Composer's JSIR back-end → JavaScript. Fidelity.CloudEdge stays on the F# path; new Clef-native projects (or new modules in evolving projects) adopt the JSIR path.
 
-**What's true.** The JSIR path produces JavaScript that runs on Cloudflare Workers identically to Fable's output for the same TS surface. Cross-substrate guarantees (our BAREWire byte-identity between native and edge actors) hold structurally because both serializers derive from the same Alex IR. The witnessing rule library covers the shape categories the bound Cloudflare SDKs use.
+**What's true.** The JSIR path produces JavaScript that runs on Cloudflare Workers identically to Fable's output for the same TS surface. Cross-substrate guarantees (our BAREWire byte-identity between native and edge actors) remain intact structurally because both serializers derive from the same Alex IR. The witnessing rule library covers the shape categories the bound Cloudflare SDKs use.
 
 **What's next.** Additional libraries get bound via the new path. D3 (chained-method-builder pattern), SolidJS (reactive primitives), TanStack Solid family (factory-with-options pattern). Each library characterizes new patterns or reuses existing ones. The Library of Alexandria matures with each round.
 
@@ -154,7 +154,7 @@ This reframes Fidelity.CloudEdge work strategically: every binding shipped today
 ## Cross-references
 
 - [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/): the underlying MLIR architecture
-- [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/): what verification properties hold across both paths
+- [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/): what verification properties apply across both paths
 - [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/): the analysis substrate consumed by both binding pipelines (companion to this document)
 - [Library Binding for C/C++](../../interop/library-binding/): Farscape's pattern, structurally analogous to what TS binding does for the JS target
 - [Atelier docs/10_transcribe.md](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md): the polyglot IDE-side ingestion layer that consumes per-language analysis substrates (Xantham for TS, Farscape for C/C++, others)

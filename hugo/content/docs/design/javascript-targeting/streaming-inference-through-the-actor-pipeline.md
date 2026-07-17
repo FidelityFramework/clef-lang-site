@@ -10,7 +10,7 @@ weight: 50
 
 ## The Streaming Problem in Inference
 
-Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. When that communication is a stream of inference tokens instead of one request and one response, the frame discipline below is what carries it.
+Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. When that communication is a stream of inference tokens instead of one request and one response, the frame discipline below is what sustains it.
 
 Every LLM deployment solves this, and the standard approach is Server-Sent Events with JSON payloads:
 
@@ -79,7 +79,7 @@ In the SSE/JSON pattern, the client must parse each message to determine its typ
 
 In the BAREWire pattern, the discriminated union is the schema. Adding a new case (`| StreamMetrics of latency: float<ms>`, tag 3) produces a new tag. Existing clients that do not know tag 3 reject it at the frame level before any handler code executes. Renaming a field changes nothing on the wire because fields are positional, not named. Removing a case changes the tag mapping, which changes the schema, which breaks the schema identity check. Every structural change is visible at the type level, verified at compile time, and enforced at the wire level.
 
-The [schema identity proxy](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) holds for every frame in the stream, not just the first one. A stream of 500 token frames is 500 independently typed, independently parseable messages, each carrying the same schema guarantee.
+The [schema identity proxy](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) holds for every frame in the stream, not just the first one. A stream of 500 token frames is 500 independently typed, independently parseable messages, each retaining the same schema guarantee.
 
 ## Multiplexing and Correlation
 
@@ -109,7 +109,7 @@ The DTS paper states the principle formally: "Decidability is not a property the
 
 ## Where This Architecture Has Limits
 
-The design-time guarantees cover type safety, schema identity, and dimensional consistency of the streaming path. They do not cover the operational concerns that arise from deploying streams across distributed infrastructure.
+The design-time guarantees cover type safety, schema identity, and dimensional consistency of the streaming path. They do not reach the operational concerns that arise from deploying streams across distributed infrastructure.
 
 ### Backpressure
 
@@ -157,7 +157,7 @@ type InferenceResponse =
  
 ```
 
-The compiler verifies all cases. The BAREWire schema covers all tags. The Worker relays whatever frames arrive. The distinction between streaming and single-response is a property of which tags the container actually sends, not a property of the frame format or the transport layer.
+The compiler verifies all cases. The BAREWire schema admits all tags. The Worker relays whatever frames arrive. The distinction between streaming and single-response is a property of which tags the container actually sends, not a property of the frame format or the transport layer.
 
 ### What Testing Must Cover
 
@@ -169,6 +169,6 @@ The design-time guarantees establish that every frame is typed, every schema is 
 
 **Memory pressure.** Under sustained backpressure, does the Worker stay within its memory budget? Does the container's rate limiting engage before the Worker is evicted?
 
-**Model-specific output.** Does the model produce tokens within the expected size range? Does the response type cover all output cases the model can produce?
+**Model-specific output.** Does the model produce tokens within the expected size range? Does the response type account for all output cases the model can produce?
 
 These are the concerns that the compiler's type system cannot express. They require integration testing, load testing, and operational monitoring. The compiler removed the structural failure modes. Testing validates the operational characteristics that remain.

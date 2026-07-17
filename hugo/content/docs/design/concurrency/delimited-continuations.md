@@ -11,9 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-Every compiler must eventually answer a fundamental question: how do you represent "the rest of the computation"? In imperative languages, this question rarely surfaces explicitly. The call stack handles it through it's own instrumentation, and programmers rarely think about what happens after the current statement. But in languages that embrace computation expressions as Clef does, this question moves from implicit mechanism to explicit design decision.
+Every compiler must eventually represent "the rest of the computation." In imperative languages, this question rarely surfaces explicitly. The call stack handles it through it's own instrumentation, and programmers rarely think about what happens after the current statement. But in languages that embrace computation expressions as Clef does, this question moves from implicit mechanism to explicit design decision.
 
-For the Fidelity framework, this question became a turning point. The realization that delimited continuations form the connective tissue between Clef's async expressions, the actor model, and our native compilation strategy transformed how we approach the entire compiler architecture. What began as an implementation detail became a significant organizing principle.
+For the Fidelity framework, this question became a turning point. Delimited continuations form the connective tissue between Clef's async expressions, the actor model, and our native compilation strategy, and treating them as one primitive reshaped the compiler architecture around them.
 
 ---
 
@@ -52,7 +52,7 @@ reset (fun () ->
 )
 ```
 
-The transformation looks verbose, but it reveals the underlying structure:
+The transformation is verbose, but the structure underneath is simple:
 
 > async expressions are syntax sugar over delimited continuations.
 
@@ -83,11 +83,11 @@ The `let! msg = inbox.Receive()` line captures a continuation: everything that h
 
 This is why [our Unified Actor Architecture](/blog/unified-actor-architecture/) can bridge Fidelity's native Olivier actors with Cloudflare's Durable Objects. Despite radically different runtimes, both are executing the same continuation-based pattern. The actor abstraction is syntactic sugar over delimited continuations with message-driven resumption.
 
-The deeper insight, explored in [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/), is that supervision hierarchies are themselves continuation management structures. When a supervisor spawns a child, it captures a continuation for handling that child's failure. When the child fails, the supervisor's continuation resumes with a decision: restart, escalate, or terminate. Erlang made "let it crash" famous, but in the Fidelity framework it is actually "capture the failure continuation" by another name.
+Supervision hierarchies, explored in [Actors Take Center Stage](https://speakez.tech/blog/actors-take-center-stage/), are themselves continuation management structures. When a supervisor spawns a child, it captures a continuation for handling that child's failure. When the child fails, the supervisor's continuation resumes with a decision: restart, escalate, or terminate. Erlang made "let it crash" famous, but in the Fidelity framework it is actually "capture the failure continuation" by another name.
 
 ## Computation Expressions: The Unifying Syntax
 
-Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) explores, the classifier is the region's effect and data dependency, not the builder keyword. A region that sequences effects lowers through delimited continuations (DCont). A region of independent pure work lowers to a parallel target, and that target splits by shape: dense rectangular work goes to the tensor path, irregular higher-order reduction goes to interaction nets (Inet). The builder picks up the common case, and the dependency structure decides the rest.
+Clef's computation expression mechanism provides the surface syntax that makes all this manageable. As [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) explores, the classifier is the region's effect and data dependency, not the builder keyword. A region that sequences effects lowers through delimited continuations (DCont). A region of independent pure work lowers to a parallel target, and that target splits by shape: dense rectangular work goes to the tensor path, irregular higher-order reduction goes to interaction nets (Inet). The builder covers the common case, and the dependency structure determines the rest.
 
 ```fsharp
 // Sequential: each step depends on previous (DCont pattern)
@@ -167,9 +167,9 @@ Each `dcont.shift` captures "the rest of the computation" at that point. The `dc
 
 The [zipper-based pipeline](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) that correlates Clef's typed tree with the Program Semantic Graph becomes essential when compiling continuations. During type resolution, the compiler identifies continuation points (suspension, capture, and boundary markers) and annotates the PSG accordingly. These annotations then guide code generation, determining where to emit `dcont.shift`, `dcont.resume`, and `dcont.reset` operations.
 
-The coherence between type resolution and code generation ensures that continuation annotations align exactly with MLIR emission. Variables captured across suspension points are stack-allocated; boundary scopes map to reset operations; suspension points become shift operations with appropriate resume types. No scope mismatch, no lost context.
+The coherence between type resolution and code generation ensures that continuation annotations align exactly with MLIR emission. Variables captured across suspension points are stack-allocated. Boundary scopes map to reset operations. Suspension points become shift operations with appropriate resume types. No scope mismatch, no lost context.
 
-This principled front-loading has a significant consequence: the Composer compiler requires far fewer MLIR and LLVM passes than compilers for imperative languages. As Andrew Appel demonstrated in his seminal 1998 paper, [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf): the Static Single-Assignment form at the heart of optimizing compilers is mathematically equivalent to functional programming with lexical scope. When C++ or Rust compile to LLVM, their compilers must *reconstruct* the functional relationships that imperative syntax obscures: analyzing loops, tracking mutations, resolving aliasing. Fidelity's pipeline preserves what those compilers must rediscover. The continuation structure, the type information, the scope boundaries: in our model ***these features survive intact*** from Clef source through the PSG to MLIR. This is the meaning behind the framework's name: fidelity to the original program structure yields faster compilation and more predictable optimization, because MLIR operates on preserved intent rather than speculative reconstructions.
+This principled front-loading means the Composer compiler requires far fewer MLIR and LLVM passes than compilers for imperative languages. As Andrew Appel demonstrated in his seminal 1998 paper, [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf): the Static Single-Assignment form at the heart of optimizing compilers is mathematically equivalent to functional programming with lexical scope. When C++ or Rust compile to LLVM, their compilers must *reconstruct* the functional relationships that imperative syntax obscures: analyzing loops, tracking mutations, resolving aliasing. Fidelity's pipeline preserves what those compilers must rediscover. The continuation structure, the type information, the scope boundaries: in our model ***these features survive intact*** from Clef source through the PSG to MLIR. This is the meaning behind the framework's name: fidelity to the original program structure yields faster compilation and more predictable optimization, because MLIR operates on preserved intent rather than speculative reconstructions.
 
 ## Behind the Scenes
 
@@ -196,7 +196,7 @@ What they don't see:
 
 The compiler handles this translation. When developers use the `Actors` module, they get computation expression builders that produce the right continuation structure. The Composer compiler recognizes these patterns and generates efficient native code.
 
-> This is what we mean by "managing the innovation budget."
+> Developers get familiar syntax; the continuation machinery stays inside the compiler.
 
 Delimited continuations are a sophisticated concept with substantial theoretical depth. But **developers adopting Fidelity *don't need* to understand continuation semantics** to write correct, efficient code. The framework encapsulates that complexity.
 
@@ -204,9 +204,9 @@ Delimited continuations are a sophisticated concept with substantial theoretical
 
 Why do we call this Fidelity's "turning point"? Because recognizing the centrality of delimited continuations reframed our entire approach.
 
-Before this recognition, we treated async, actors, and computation expressions as separate features requiring separate compilation strategies. The async builder was one thing; the actor model was another; computation expressions were a third. Each had its own MLIR lowering path, its own optimization considerations, its own edge cases.
+Before this recognition, we treated async, actors, and computation expressions as separate features requiring separate compilation strategies. The async builder was one thing, the actor model another, computation expressions a third. Each had its own MLIR lowering path, its own optimization considerations, its own edge cases.
 
-After this recognition, we saw unity. Async expressions are delimited continuations with I/O-triggered resumption. Actors are delimited continuations with message-triggered resumption. Computation expressions are syntax sugar for explicit continuation manipulation. All of them will eventually compile through the same DCont dialect, share the same optimization passes, and benefit from similar machine-level continuation representations.
+The three then read as one construct: async expressions are delimited continuations with I/O-triggered resumption, actors the same with message-triggered resumption, and computation expressions the surface syntax for manipulating them. All three compile through the DCont dialect, share its optimization passes, and reach similar machine-level continuation representations.
 
 This unification enables:
 
@@ -218,7 +218,7 @@ This unification enables:
 
 4. **Principled extension**: New computation expression builders automatically benefit from the continuation compilation infrastructure. Library authors can create domain-specific patterns that compile efficiently.
 
-5. **Hardware diversity**: The continuation model maps naturally to dataflow architectures beyond Von Neumann machines. As explored in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) and [Advent of Neuromorphic AI](/blog/advent-of-neuromorphic-ai/), the explicit control flow boundaries that delimited continuations provide align with how CGRAs, neuromorphic processors, and other emerging architectures express computation: as graphs of operations with explicit data dependencies rather than sequential instruction streams.
+5. **Hardware diversity**: The continuation model corresponds to dataflow architectures beyond Von Neumann machines: explicit control-flow boundaries where those machines expect explicit data dependencies. As explored in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) and [Advent of Neuromorphic AI](/blog/advent-of-neuromorphic-ai/), the explicit control flow boundaries that delimited continuations provide align with how CGRAs, neuromorphic processors, and other emerging architectures express computation: as graphs of operations with explicit data dependencies rather than sequential instruction streams.
 
 ## Continuations and Hardware Targets
 
@@ -240,9 +240,9 @@ dcont.shift { ... }
 llvm.switch %state, %continuation_blocks
 ```
 
-The choice between preservation and compilation happens late in the pipeline, based on target capabilities. The PSG carries the continuation structure; the backend decides how to realize it.
+The choice between preservation and compilation happens late in the pipeline, based on target capabilities. The PSG carries the continuation structure. The backend decides how to realize it.
 
-Beyond traditional architectures, continuation structure provides a natural fit for post-Von Neumann hardware. Coarse-Grained Reconfigurable Architectures (CGRAs) from companies like SambaNova and NextSilicon express computation as dataflow graphs, and delimited continuations are precisely dataflow graphs with explicit scheduling boundaries. Neuromorphic processors like Intel's Loihi 2 and BrainChip's Akida operate on spike-based event patterns that mirror continuation-triggered resumption. The explicit "what happens next" structure that DCont preserves maps more directly to these architectures than the implicit control flow of imperative code. This positions Fidelity for hardware targets that barely exist today but will define computing's next decade.
+Beyond traditional architectures, continuation structure provides a natural fit for post-Von Neumann hardware. Coarse-Grained Reconfigurable Architectures (CGRAs) from companies like SambaNova and NextSilicon express computation as dataflow graphs, and delimited continuations are precisely dataflow graphs with explicit scheduling boundaries. Neuromorphic processors like Intel's Loihi 2 and BrainChip's Akida operate on spike-based event patterns that mirror continuation-triggered resumption. The explicit "what happens next" structure that DCont preserves maps more directly to these architectures than the implicit control flow of imperative code. This positions Fidelity for hardware targets that barely exist today.
 
 ## Integration Across the Framework
 
@@ -254,7 +254,7 @@ Delimited continuations touch every part of the Fidelity framework:
 
 **Olivier actors** use continuations for both message receipt and supervision. A supervisor's failure handler is a continuation captured when the child was spawned.
 
-**Async I/O** ([platform-aware continuation compilation](#platform-aware-continuation-compilation)) resumes continuations through the platform's own completion mechanism. On Windows, IOCP callbacks resume continuations; on Linux, io_uring completions do the same.
+**Async I/O** ([platform-aware continuation compilation](#platform-aware-continuation-compilation)) resumes continuations through the platform's own completion mechanism. On Windows, IOCP callbacks resume continuations. On Linux, io_uring completions do the same.
 
 This pervasive use of continuations creates architectural coherence. Different framework components speak the same language at the compilation level, enabling cross-cutting optimizations and uniform semantics.
 
@@ -266,13 +266,13 @@ The centrality of delimited continuations to Fidelity's architecture has implica
 
 **Formal verification**: Continuation semantics are well-studied mathematically. The continuation-based compilation model gives our [four-tier proof architecture](/docs/internals/verification/) a clean structure to verify against: obligations are built from the continuation structure already present in the graph, discharged by Z3 through Tier 3, with the Rocq kernel entering the trusted base only for the relational judgments at Tier 4.
 
-**Novel hardware**: Interaction nets and dataflow architectures benefit from explicit continuation representation. As Fidelity targets post-Von Neumann architectures, the continuation model adapts naturally.
+**Novel hardware**: Interaction nets and dataflow architectures benefit from explicit continuation representation. As Fidelity targets post-Von Neumann architectures, the continuation representation already carries the dataflow structure those machines execute.
 
-The turning point wasn't just recognizing that continuations unify our existing features; it was recognizing that they provide the foundation for features we haven't built yet.
+Recognizing that continuations unify our existing features was the first payoff. The larger one is that they provide the foundation for features we haven't built yet.
 
 ## Continuations as Compilation Philosophy
 
-The deeper lesson from Fidelity's turning point is architectural: choose unifying abstractions carefully, and let them inform the entire system. Delimited continuations could have remained an implementation detail, hidden from developers and compartmentalized in the compiler. Instead, by recognizing their centrality and designing around them explicitly, we achieved coherence that would otherwise require extensive special-casing.
+Fidelity's turning point is a lesson in choosing unifying abstractions carefully and letting them inform the system. Delimited continuations could have remained an implementation detail, hidden from developers and compartmentalized in the compiler. Instead, by recognizing their centrality and designing around them explicitly, we achieved coherence that would otherwise require extensive special-casing.
 
 For developers, this means writing natural Clef code (async expressions, computation expressions, actor behaviors) while benefiting from a unified compilation strategy. For the framework, it means that improvements to continuation handling propagate across all features that use them. For the ecosystem, it demonstrates that programming language abstractions can serve as practical compilation targets, not just mathematical curiosities.
 
