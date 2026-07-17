@@ -20,7 +20,7 @@ $$\frac{\partial ^{2}v}{\partial x^{2}}=LC\frac{\partial ^{2}v}{\partial t^{2}}+
 
 The equation is precise and, at a workbench, ***unusable***: in the time domain there is no practical route from that PDE to the capacitor rating the circuit needs.
 
-Euler's formula changes the domain rather than the physics. In the case of a ring modulator, the opening assumption is that carrier and modulator signals are sinusoidal, so substitute \(e^{j\omega t} = \cos(\omega t) + j\sin(\omega t)\). The derivative of \(e^{j\omega t}\) is \(j\omega \, e^{j\omega t}\), so differentiation becomes multiplication by \(j\omega\), the calculus collapses into algebra, and the capacitor's full behavior reduces to a complex impedance:
+Euler's formula changes the domain rather than the physics. Electrical engineers have worked in the resulting phasor domain since Charles Steinmetz introduced the method for alternating-current analysis in the 1890s. In the case of a ring modulator, the opening assumption is that carrier and modulator signals are sinusoidal, so substitute \(e^{j\omega t} = \cos(\omega t) + j\sin(\omega t)\). The derivative of \(e^{j\omega t}\) is \(j\omega \, e^{j\omega t}\), so differentiation becomes multiplication by \(j\omega\), the calculus collapses into algebra, and the capacitor's full behavior reduces to a complex impedance:
 
 $$Z_{C}=\frac{1}{j\omega C}$$
 
