@@ -1,7 +1,7 @@
 ---
 title: "Another Moog Enters the Conversation"
 linkTitle: "Another Moog Enters the Conversation"
-description: "While Bob Moog informs Houston's foundation, we continue to take lessons from other engineers in the Moog family"
+description: "While Bob Moog informs Houston's foundation, we continue to take lessons from another engineer in the Moog family"
 date: 2026-07-17
 authors:
   - Houston Haynes
