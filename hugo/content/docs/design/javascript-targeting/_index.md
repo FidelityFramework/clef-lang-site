@@ -7,4 +7,4 @@ Fidelity.CloudEdge is the edge computing layer of the Fidelity Framework. It pro
 
 Cloudflare Workers run JavaScript. Today, Fidelity.CloudEdge compiles F# to JavaScript through Fable. But a recent publication of Google's JSIR (JavaScript Intermediate Representation) opens a path to compile through the same MLIR pipeline that native targets use, bringing the full Composer pass infrastructure to JavaScript-built workloads.
 
-These articles cover how that pipeline unification works, how BAREWire is a pivotal realtime verification layer between native and JavaScript substrates, and how the compilation path enables streaming from containers through Workers to clients, both for classical and inference workloads.
+JavaScript becomes an ordinary MLIR backend under this path, subject to the same verification passes as native targets, with BAREWire carrying the type contract across the substrate boundary that JavaScript's own type system does not survive.

@@ -5,13 +5,14 @@ description: "How BAREWire's Frame Format and Tell-First Semantics Enable Token-
 date: 2026-04-06
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
+weight: 50
 ---
 
 ## The Streaming Problem in Inference
 
-Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. This article examines what happens when that communication is a stream of inference tokens rather than a single request/response pair.
+Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. When that communication is a stream of inference tokens instead of one request and one response, the frame discipline below is what carries it.
 
-This is not a novel observation. Every LLM deployment solves it. The standard approach is Server-Sent Events with JSON payloads:
+Every LLM deployment solves this, and the standard approach is Server-Sent Events with JSON payloads:
 
 ```
 data: {"token": " the", "index": 42, "finish_reason": null}\n\n

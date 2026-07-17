@@ -5,11 +5,12 @@ description: "How Composer's JavaScript-emission back-end transitions from Fable
 date: 2026-05-04
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Compilation", "JavaScript", "JSIR", "Design"]
+weight: 30
 ---
 
-[JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/) establishes that Composer's JavaScript-targeting pipeline joins the same MLIR architecture as every other Clef target. [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/) covers what verification properties hold across that unified pipeline. This document covers the **transition arc**: how the back-end emission moves from Fable + npm bundlers (today) to JSIR + MLIR (eventually), while the rest of the toolchain persists across the change. Our .NET-hosted Composer host in particular stays in place.
+Composer's JavaScript-targeting pipeline joins the same MLIR architecture as every other Clef target, established in [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/), with the verification properties that hold across it covered in [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/). The back-end emission changes on a schedule the rest of the toolchain does not: it moves from Fable plus npm bundlers today to JSIR plus MLIR later, while the .NET-hosted Composer host stays in place.
 
-The companion document [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/) covers the analysis-substrate side of the same transition. The two documents together describe the full pipeline arc: ingestion (Xantham, durable) and emission (Fable → JSIR, transitional).
+[TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/) covers the ingestion side of the same transition. Ingestion via Xantham is durable; emission via Fable to JSIR is transitional.
 
 ## The Two-Path Reality
 

@@ -5,13 +5,12 @@ description: "How the Verified Properties in Clef's Middle-End Carry Through to 
 date: 2026-04-06
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Type Systems", "Design"]
+weight: 20
 ---
 
 ## What the Middle-End Verifies
 
-The [JSIR article](../jsir-javascript-as-mlir-backend/) establishes that JavaScript joins the same MLIR pipeline as every other Clef target. Both the native path and the JavaScript path go through Alex. Both consume the same dialect ops. Both are subject to the same pass infrastructure.
-
-This article examines what that shared pipeline verifies, how each verified property behaves after emission to JavaScript, and where the compiler's jurisdiction ends and the runtime contract begins.
+The [JSIR article](../jsir-javascript-as-mlir-backend/) establishes that JavaScript joins the same MLIR pipeline as every other Clef target. The native path and the JavaScript path both go through Alex, consume the same dialect ops, and run the same pass infrastructure. What that shared pipeline verifies, how each verified property behaves after emission to JavaScript, and where the compiler's jurisdiction ends and the runtime contract begins are the subject here.
 
 ## Dimensional Consistency
 
