@@ -35,7 +35,7 @@ and a workbench with a decent array of components would provide a standard \(100
 | DC blocking | Series with input | \(f_c = 1/(2\pi R C)\), \(R = 100\text{ k}\Omega\), \(f_c = 15\text{ Hz}\) | \(100\text{ nF}\) film |
 | Carrier-leak damping | Parallel to ground | Same relation, \(f_c \approx 15\text{ kHz}\) against a \(25\text{ kHz}\) carrier | \(1\) to \(4.7\text{ nF}\) ceramic |
 
-The principle has much greater range asn on object lesson than the blackboard session, and is the reason Houston retells the story. The PDE and the algebra describe the same circuit. In one representation the answer is unreachable at any reasonable cost. In the other it **falls out** figuratively speaking, carrying a derivation any engineer can use for part selection.
+The principle has much greater range as an object lesson than the blackboard session, and is the reason Houston retells the story. The PDE and the algebra describe the same circuit. In one representation the answer is unreachable at any reasonable cost. In the other it **falls out** figuratively speaking, carrying a derivation any engineer can use for part selection.
 
 ![Two Moog Logos](/images/Two_Moogs.png)
 
