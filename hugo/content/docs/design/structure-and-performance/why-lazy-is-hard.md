@@ -14,17 +14,17 @@ params:
 
 There are only two hard things in computer science: cache invalidation and naming things. Phil Karlton's quip has aged well, but the functional programming community might add a corollary: sometimes the name we pick makes things harder than they need to be. "Lazy" is one of those names, and underneath it sits something concrete: a thunk is a flat closure, [null-free by construction](/docs/design/language/null-free-by-construction/) and settled before it is forced.
 
-Consider "lazy evaluation." Henderson and Morris coined the term in their [1976 POPL paper](https://dl.acm.org/citation.cfm?id=811543), and it stuck. But "lazy" may be the least apt term in computing. A lazy evaluator isn't lounging around avoiding work; it's *poised*, ready to spring into action the instant a value is demanded. "Call-by-need" captures this better: computation happens precisely when needed, not before, not after. The lazy evaluator is the most *attentive* mechanism imaginable, tracking exactly which expressions remain unevaluated and responding immediately when circumstances change. That we named this disciplined, demand-driven approach after a vice rather than a virtue tells you something about how we think about work.
+Consider "lazy evaluation." Henderson and Morris coined the term in their [1976 POPL paper](https://dl.acm.org/citation.cfm?id=811543), and it stuck. But "lazy" may be the least apt term in computing. "Call-by-need" names the same strategy more precisely: a value is computed exactly when it is first demanded, and not before. The runtime tracks which expressions remain unevaluated and forces one only when its result is required. Naming a demand-driven mechanism after a vice describes it poorly.
 
-Call-by-need sits in a family of evaluation strategies, and a thunk is a shared value before it is a deferred one. Barbara Liskov's CLU staked out call-by-sharing in the 1970s: an argument is a reference passed by value, so mutation is visible to the caller but rebinding is not.[^clu] Memoization is that discipline read forward in time. A thunk, once forced, presents the same value to every holder of the reference, which is call-by-sharing applied to a computation rather than a datum. The sharing semantics a lazy runtime depends on descend from the position CLU named decades before native compilation raised the problems this article takes up.
+Call-by-need sits in a family of evaluation strategies, and a thunk is a shared value before it is a deferred one. Barbara Liskov's CLU staked out call-by-sharing in the 1970s: an argument is a reference passed by value, so mutation is visible to the caller but rebinding is not.[^clu] Memoization is that discipline read forward in time. A thunk, once forced, presents the same value to every holder of the reference, which is call-by-sharing applied to a computation rather than a datum. The sharing semantics a lazy runtime relies on are the call-by-sharing discipline CLU named decades before native compilation posed the problems this article addresses.
 
-How you choose to be lazy has profound implications for the work you can get done with a computer. Lazy evaluation enables infinite data structures, separates the *description* of computation from its *execution*, and lets you express algorithms that would otherwise require careful manual orchestration. Get it right, and your code becomes more expressive, more composable, more amenable to optimization. Get it wrong, and you're debugging space leaks at 2 AM wondering why your "efficient" program just consumed all available memory.
+How you choose to be lazy has profound implications for the work you can get done with a computer. Lazy evaluation enables infinite data structures, separates the *description* of computation from its *execution*, and lets you express algorithms that would otherwise require careful manual orchestration. Get it right, and your code becomes more expressive, more composable, more amenable to optimization. Get it wrong, and an apparently efficient program leaks space until it exhausts available memory.
 
 Haskell makes laziness seem like an easy choice. Every expression is deferred until needed, memoized automatically, and the programmer writes code as though evaluation order does not matter. This simplicity hides a sophisticated runtime system that manages thunk allocation, blackholing to prevent re-entry, and garbage collection of evaluation chains. Scala offers `lazy val` with similar ergonomics but different tradeoffs. C++ provides `std::function` and manual thunks. Rust developers reach for `OnceCell` or `Lazy<T>` from external crates. Each approach reflects choices about when computation happens, where deferred values live in memory, and what the cost model looks like.
 
-Deferring computation means the computation must be *represented*: closures allocated, pointers followed, cache lines loaded when the bill comes due. A system optimized for lazy evaluation shifts pressure from compute and memory capacity toward memory bandwidth and cache coherence. Whether that trade favors your workload depends on access patterns that a language specification will not likely discuss.
+Deferring computation means the computation must be *represented*: closures allocated, pointers followed, cache lines loaded at the point of forcing. A system optimized for lazy evaluation shifts pressure from compute and memory capacity toward memory bandwidth and cache coherence. Whether that trade favors a given workload depends on its runtime access patterns, which the program fixes and the language specification does not.
 
-The .NET implementation of F# occupies an interesting position in this landscape. It provides `Lazy<'T>` as a library type backed by the .NET runtime. You write `lazy expr` and receive a thunk that the garbage collector manages. Forcing the value is thread-safe. Memoization happens automatically. The API is clean, the semantics are well-defined, and the implementation benefits from decades of runtime engineering.
+The .NET implementation of F# leans on runtime support rather than a library-only construction. It provides `Lazy<'T>` as a library type backed by the .NET runtime. You write `lazy expr` and receive a thunk that the garbage collector manages. Forcing the value is thread-safe. Memoization happens automatically. The API is clean, the semantics are well-defined, and the implementation benefits from decades of runtime engineering.
 
 The question for native compilation is direct: how do you preserve these semantics without a garbage collector, without runtime thread synchronization primitives, without the machinery that makes managed lazy evaluation work transparently?
 
@@ -34,7 +34,7 @@ Before examining implementation strategies, we should be precise about what lazy
 
 This description reveals three distinct concerns:
 
-**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly. Because that closure is settled at construction, a thunk carries no null state even before it is forced, which is [null-free by construction](/docs/design/language/null-free-by-construction/) rather than null-checked, and the same settledness is what lets the value cross substrates unchanged.
+**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly. Because that closure is settled at construction, a thunk carries no null state even before it is forced. It is [null-free by construction](/docs/design/language/null-free-by-construction/) rather than null-checked, and that same settledness lets the value cross substrates unchanged.
 
 **Deferred execution**: Unlike an ordinary closure that executes when called, a thunk execution is controlled by a forcing operation. The thunk must know whether it has been evaluated.
 
@@ -63,7 +63,7 @@ flowchart TD
 
 ## The Language Spectrum
 
-Different languages make different choices about these concerns. Understanding the spectrum clarifies what Fidelity's approach optimizes for.
+Different languages make different choices about these concerns.
 
 ### Haskell: Pervasive Laziness
 
@@ -125,7 +125,7 @@ Our implementation builds directly on the flat closure architecture described in
 | computed: i1 | value: T | code_ptr: ptr | cap_0 | cap_1 ... |
 | [0] | [1] | [2] | [3] | [4] |
 
-The structure is self-contained. No pointers to outer environments. No heap allocation beyond the lazy value itself. No garbage collector involvement.
+The structure is self-contained: no pointers to outer environments, no heap allocation beyond the lazy value itself, and no collector to involve.
 
 ### The Thunk Calling Convention
 
@@ -158,7 +158,7 @@ flowchart TD
 
 A lazy expression may reference variables from multiple scopes: local bindings, function parameters, module-level definitions.
 
-> The most technically demanding aspect of lazy implementation is not the runtime mechanics but the compile-time analysis that determines what to capture.
+> The compile-time analysis that decides what to capture is harder to get right than the runtime mechanics of forcing.
 
 Consider:
 
@@ -185,7 +185,7 @@ else
     Some { Name = name; Type = binding.Type; ... }
 ```
 
-This analysis happens upstream in CCS (Clef Compiler Services), not downstream in code generation. By the time Alex generates MLIR, the semantic graph contains definitive capture information. There is no guessing, no heuristics, no runtime discovery.
+This analysis happens upstream in CCS (Clef Compiler Services), not downstream in code generation. By the time Alex generates MLIR, the semantic graph contains definitive capture information, fixed during analysis. Code generation reads it directly instead of deriving the capture set at runtime.
 
 ## The Coeffect Model
 
@@ -204,9 +204,9 @@ type LazyLayout = {
 }
 ```
 
-When the zipper encounters a lazy expression during code generation, it looks up the `LazyLayout` and emits exactly the operations that layout specifies. No dynamic analysis, no conditional logic based on expression structure, no special cases.
+When the zipper encounters a lazy expression during code generation, it looks up the `LazyLayout` and emits the operations that layout specifies. Emission follows the pre-computed layout the same way for every lazy expression, with no branching on the expression's structure.
 
-This separation has practical benefits beyond architectural cleanliness. Different optimization passes can reason about lazy layouts without understanding MLIR emission. Testing can verify layout computation independently. The compiler stages compose cleanly.
+This separation has practical benefits beyond architectural cleanliness. Optimization passes can reason about lazy layouts without understanding MLIR emission, layout computation can be tested on its own, and the compiler stages stay decoupled.
 
 ## Memoization: Current and Future
 
@@ -243,7 +243,7 @@ Each step produces an SSA value. The final insert operation produces the lazy st
 
 The Fidelity approach computes all SSA assignments in a dedicated [nanopass](/docs/internals/concepts/nanopass-navigation/). Lazy expressions receive SSA slots for each construction step. Thunk bodies receive SSA slots for extracting captures from the struct pointer. Force operations receive SSA slots for the result value. Everything is determined before the zipper begins its traversal.
 
-This is not glamorous work. It is bookkeeping at scale. But it is the bookkeeping that enables clean code generation: the witness layer observes pre-computed coeffects and emits operations without runtime decisions.
+This is bookkeeping at scale, and it is the bookkeeping that makes code generation clean: the witness layer observes pre-computed coeffects and emits operations without runtime decisions.
 
 ## The Developer Experience
 
@@ -264,7 +264,7 @@ let v3 = Lazy.force result  // 40
  
 ```
 
-The syntax is substantially similar to F#. The semantics match expectations. What differs is entirely beneath the surface: stack-allocated flat closures, explicit capture analysis, deterministic memory layout, no runtime dependencies.
+The syntax is substantially similar to F#. The semantics match expectations. What differs sits beneath the surface. The closures are stack-allocated and flat, captures are resolved by explicit analysis, and the memory layout is fixed at compile time with nothing pulled in at runtime.
 
 This continuity is intentional. Fidelity preserves F# idioms at the source level while providing native semantics at the binary level. A developer familiar with F# lazy evaluation can write the same patterns; the compiler handles the translation.
 
@@ -274,7 +274,7 @@ Lazy evaluation is not an isolated feature. It is infrastructure for higher-leve
 
 F# sequences (`seq { }`) are fundamentally lazy. They produce values on demand, maintain state between iterations, and compose through operations like `map`, `filter`, and `take`. Under the hood, sequences are state machines that yield values one at a time.
 
-Our implementation of sequences will build on the lazy machinery established here. The flat closure architecture handles captured state. The coeffect model handles layout computation. The thunk calling convention handles deferred execution. Sequences add iteration control on top of these foundations.
+Our implementation of sequences will build on the lazy machinery established here: flat closures for captured state, the coeffect model for layout computation, and the thunk calling convention for deferred execution. Sequences add iteration control on top.
 
 Similarly, asynchronous workflows involve suspended computations that resume when results are available. The LLVM coroutine infrastructure we plan to leverage shares conceptual territory with thunks: code that pauses and resumes, with state preserved across suspension points.
 
@@ -295,7 +295,7 @@ There is no heap allocation, no garbage collector involvement, no synchronizatio
 
 Compare with managed lazy evaluation, where creating a lazy value may allocate a heap object, forcing may involve thread synchronization, and memory pressure depends on GC behavior. The Fidelity approach trades some runtime sophistication for predictability.
 
-For systems programming contexts, embedded targets, and performance-sensitive applications, this predictability has value. You can reason about the cost of lazy evaluation without carrying the "belt and suspenders" cognitive burden of a managed runtime system. You only "pay" for what you use.
+For systems programming contexts, embedded targets, and performance-sensitive applications, this predictability has value. You can reason about the cost of lazy evaluation directly, without accounting for the allocation, synchronization, and collection behavior a managed runtime adds. You only pay for what you use.
 ## Related Work
 
 The implementation draws from several research traditions:
@@ -308,9 +308,9 @@ Standard ML of New Jersey's closure conversion, documented in Appel's "Compiling
 
 ## A Foundation
 
-Lazy evaluation in Fidelity is not a checkbox feature added for completeness. It is infrastructure that validates architectural decisions and enables future capabilities. The flat closure model scales. The coeffect approach composes. The SSA discipline holds.
+Lazy evaluation in Fidelity is infrastructure that later features build on. The flat closure architecture, the coeffect model, and the SSA accounting all generalize past this one feature.
 
-When sequences arrive, they will build on this foundation. When async workflows arrive, they will build on this foundation. The patterns established here, capture analysis, layout computation, uniform calling conventions, repeat throughout our Fidelity framework.
+Sequences and async workflows will reuse the capture analysis, layout computation, and uniform calling conventions established here.
 
 Composing lazy evaluation with everything else our compiler does is the part we have kept in view from the start, and it is where our work continues as sequences and async workflows come into place.
 

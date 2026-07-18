@@ -18,7 +18,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-The Composer compiler represents a fundamental shift in how Clef code gets compiled to native executables. Unlike traditional F# compilation that relies on pre-compiled assemblies and the .NET runtime, Composer compiles Clef directly to native code through MLIR and connected "back ends", right now primarily LLVM, creating truly dependency-free executables. This architectural choice creates an interesting challenge: how do we handle library dependencies when we can't rely on traditional assembly resolution?
+The Composer compiler compiles Clef to native executables. Unlike traditional F# compilation that relies on pre-compiled assemblies and the .NET runtime, Composer compiles Clef directly to native code through MLIR and connected "back ends", right now primarily LLVM, creating truly dependency-free executables. Compiling to dependency-free native code raises the question of how to handle library dependencies without traditional assembly resolution.
 
 ## Beyond Assembly-Based Dependencies
 
@@ -26,7 +26,7 @@ Traditional F# development uses a well-established pattern where [`open` stateme
 
 In the Fidelity framework ecosystem, CCS (Clef Compiler Services) provides the native type universe that replaces the BCL. When a developer writes `open Fidelity.Platform` in their Composer application, the compiler needs to discover, parse, and include the relevant source files from the library ecosystem — including any Farscape-generated binding libraries.
 
-Consider this simple example that illustrates the complexity:
+A short program pulls in more than its source text shows:
 
 ```fsharp
 module Examples.HelloWorld
@@ -44,7 +44,7 @@ let main argv =
     0
 ```
 
-This innocent-looking program depends on a range of functions across multiple modules, each with their own internal dependencies and platform-specific implementations. CCS and the Composer compiler must discover all these dependencies, parse only what's needed, and weave them together into a coherent compilation unit.
+This program depends on functions across multiple modules, each with its own internal dependencies and platform-specific implementations. CCS and the Composer compiler must discover all these dependencies, parse only what's needed, and weave them together into a coherent compilation unit.
 
 ## Farscape for C/C++ Library Binding
 
@@ -101,7 +101,7 @@ These generated binding packages become first-class citizens in the Fidelity eco
 
 ## Dependency Resolution Architecture
 
-After extensive analysis, we've developed a layered approach to resolving source-level dependencies that leverages CCS and the Fidelity compilation pipeline. The solution operates through several complementary mechanisms.
+We resolve source-level dependencies through a layered approach built on CCS and the Fidelity compilation pipeline. The solution operates through several complementary mechanisms.
 
 ### Package Discovery and Resolution
 
@@ -137,14 +137,14 @@ Where traditional F# uses FCS (F# Compiler Services) targeting the CLR, Fidelity
 
 ### Reachability Analysis
 
-The power of source-based distribution becomes most apparent with reachability analysis. Traditional F# compilation includes entire assemblies even when you only use a single function. Our source-level approach enables surgical precision.
+Reachability analysis prunes the most code from a source-based distribution. Traditional F# compilation includes entire assemblies even when you only use a single function. Our source-level approach compiles in only the code reachable from an entry point.
 
 Starting from entry points like `[<EntryPoint>]` functions, the compiler traces through symbol usage to build a minimal dependency set. For our HelloWorld example, this analysis might discover that we only need:
 - `Console.Write` and `Console.ReadLine` from the platform library
 - A handful of supporting functions for string formatting and I/O
 - The `write` and `read` libc bindings that those platform functions depend on
 
-Everything else — socket operations, threading primitives, file system calls — never enters the compilation graph. This intelligent reachability applies equally to Farscape-generated bindings: only the C/C++ functions actually called in the program receive MLIR function declarations in the final output. This embodies Bjarne Stroustrup's famous quote, "only pay for what you use."
+Everything else — socket operations, threading primitives, file system calls — never enters the compilation graph. This intelligent reachability applies equally to Farscape-generated bindings: only the C/C++ functions actually called in the program receive MLIR function declarations in the final output. Unused code carries no compilation cost: only what the program reaches is compiled in.
 
 ## The Compilation Pipeline
 
@@ -167,7 +167,7 @@ Each step maintains diagnostic information, ensuring that compilation errors pro
 
 ### Binding Strategy Resolution
 
-A critical nanopass in this pipeline is PlatformBindingResolution, which runs before Alex begins witnessing. This nanopass resolves every extern node to a concrete binding strategy:
+The PlatformBindingResolution nanopass runs before Alex begins witnessing, resolving every extern node to a concrete binding strategy:
 
 ```fsharp
 // PlatformBindingResolution resolves all binding decisions before witnessing
@@ -191,11 +191,11 @@ let witnessExternNode (node: PSGNode) : MLIR<Val> = mlir {
 }
 ```
 
-This separation ensures that witnesses remain pure transformations from PSG semantics to MLIR. Alex never queries build configuration — it emits what the pre-resolved extern node tells it to. Binding strategy changes (switching a library from dynamic to static linking) never require modifications to Alex's witnessing logic.
+Witnesses stay pure transformations from PSG semantics to MLIR: Alex reads the strategy off the pre-resolved extern node and emits accordingly, without querying build configuration. Switching a library from dynamic to static linking therefore leaves Alex's witnessing logic untouched.
 
-## BAREWire Integration: Memory Mapping Across Boundaries
+## BAREWire Integration
 
-One of the most exciting aspects of our architecture is the integration with BAREWire, our library for binary serialization, memory mapping, and IPC. When Farscape processes C headers, it generates not only Clef binding declarations for the C/C++ API but also BAREWire memory layout descriptors for relevant structures.
+Our architecture integrates with BAREWire, our library for binary serialization, memory mapping, and IPC. When Farscape processes C headers, it generates not only Clef binding declarations for the C/C++ API but also BAREWire memory layout descriptors for relevant structures.
 
 This enables several critical capabilities:
 
@@ -204,11 +204,11 @@ This enables several critical capabilities:
 - **Consistent memory layouts** across language boundaries
 - **Safe serialization** of complex data structures
 
-BAREWire's integration with Farscape-generated bindings creates a seamless experience for developers, who can write normal Clef code without worrying about the complexities of memory mapping and native interop.
+Because Farscape-generated bindings carry BAREWire layout descriptors, developers write normal Clef code while the bindings handle memory mapping and native interop.
 
 ## Platform-Aware Compilation
 
-One of the most sophisticated aspects of our dependency resolution is platform awareness. Modern software must handle diverse deployment targets, from embedded ARM controllers to desktop Linux to cloud servers. The `.fidproj` configuration drives platform-specific decisions:
+Our dependency resolution is platform-aware. Modern software must handle diverse deployment targets, from embedded ARM controllers to desktop Linux to cloud servers. The `.fidproj` configuration drives platform-specific decisions:
 
 ```toml
 [build]
@@ -226,7 +226,7 @@ When compiling for a freestanding target, CCS intrinsics like `Sys.write` resolv
 
 ## The Developer Experience
 
-A critical aspect of our approach is keeping the complexity minimal for developers. While the architecture is sophisticated, the developer experience aspires to remain straightforward through IDE integration and the Fidelity toolchain.
+Our approach keeps the complexity minimal for developers. The architecture absorbs that complexity so the developer experience stays straightforward, supported by IDE integration and the Fidelity toolchain.
 
 ### Integrated Development Environment
 
@@ -270,7 +270,7 @@ cpk build --target x86_64-linux --release
 
 Packages are distributed as `.fidpkg` archives — compressed source archives containing Clef code, metadata, and any Farscape-generated binding layers. The registry supports both centralized and federated models, with organizational registries for enterprise and air-gapped environments.
 
-The integration between ClefPak, Farscape, and Composer creates a seamless development experience from package discovery to deployment:
+ClefPak, Farscape, and Composer connect package discovery through to deployment:
 
 1. **Discover** libraries through the clefpak.dev registry
 2. **Generate** C/C++ bindings with Farscape from library headers
@@ -278,7 +278,7 @@ The integration between ClefPak, Farscape, and Composer creates a seamless devel
 4. **Build** your application with Composer — CCS compiles all sources together
 5. **Deploy** native binaries to your target platform
 
-This ecosystem approach enables the Fidelity Framework to mature while maintaining the core principles of zero-cost abstractions, type and memory safety and platform adaptability. By building on the foundation of source-level dependency resolution, we're creating a development environment that is centered on performance and flexibility through native compilation.
+This ecosystem approach enables the Fidelity Framework to mature while maintaining the core principles of zero-cost abstractions, type and memory safety and platform adaptability. 
 
 ## Related Reading
 

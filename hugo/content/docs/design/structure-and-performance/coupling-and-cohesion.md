@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Software tools face a recurring tension between waiting to build fast executables and speeding up the workflow at the cost of the end result. Traditional approaches have forced developers to choose: aggressive optimization with long compilation cycles produces efficient code, while rapid compilation cycles often yield code bloat. We are interested in giving the developer the choice that matters when it matters most, and the structure that functional programming already creates is what makes that choice tractable.
+Software tools face a recurring tension between waiting to build fast executables and speeding up the workflow at the cost of the end result. Traditional approaches have forced developers to choose: aggressive optimization with long compilation cycles produces efficient code, while rapid compilation cycles often yield code bloat. We want to give the developer that choice at the point where it counts, and functional programming already imposes the structure a compiler can read to keep the choice practical to offer.
 
 Our Composer compiler is designed to use one aspect of that structure through coupling and cohesion analysis integrated directly into our Program Semantic Graph. By reading the relationships between parts of a program, Composer is meant to assist the developer in deciding compilation boundaries that serve both development velocity and runtime performance.
 
@@ -29,7 +29,7 @@ Traditional compilers treat all code somewhat uniformly during compilation. A C+
 
 Modern languages with more sophisticated type systems and module systems provide richer information that compilers can exploit. However, most compilation strategies still focus primarily on local optimizations within functions or modest inter-procedural analysis within small scopes.
 
-Functional programming languages offer something different: they encourage programming patterns that create natural organizational boundaries. Pure functions don't have hidden dependencies. Immutable data structures create predictable sharing patterns. Higher-order functions create clear abstraction layers. These patterns aren't just good software engineering; they provide hints about program structure that a compiler can use to make optimization decisions.
+Functional programming languages offer something different: they encourage programming patterns that create natural organizational boundaries. Pure functions don't have hidden dependencies. Immutable data structures create predictable sharing patterns. Higher-order functions create clear abstraction layers. These patterns are more than good software engineering practice: each is a hint about program structure a compiler can use in its optimization decisions.
 
 ## Program Semantic Graph as Optimizer
 
@@ -39,7 +39,7 @@ But in that process we also found an opportunity to optimize the compilation pro
 
 ## PS²G as Architectural Map
 
-The Program Semantic Graph in Composer serves as more than an intermediate representation; it functions as an architectural map of your entire program. Think of it like a blueprint: beyond what each room contains, it traces how people move between rooms, which areas are used frequently together, and which sections could be renovated independently.
+The Program Semantic Graph in Composer serves as more than an intermediate representation; it functions as an architectural map of your entire program. Beyond what each unit contains, it records which units are exercised together and which units can be recompiled independently.
 
 ```mermaid
 graph TD
@@ -70,7 +70,7 @@ graph TD
     TRANSFORMER --> EXPORT
 ```
 
-Traditional compiler intermediate representations focus on control flow and data dependencies within relatively small scopes. The PS²G takes a broader view, maintaining semantic information about relationships between modules, types, functions, and data structures throughout the entire program. This global perspective enables analysis techniques that would be impossible with more limited representations.
+Traditional compiler intermediate representations focus on control flow and data dependencies within relatively small scopes. The PS²G takes a broader view, maintaining semantic information about relationships between modules, types, functions, and data structures throughout the entire program. Because the graph spans the program, analysis can follow relationships across module and type boundaries instead of staying inside a single control-flow scope.
 
 As we're still in early design stages with this feature area, we envision that the PS²G represents these relationships through semantic units that align with garden-variety program organization:
 
@@ -82,7 +82,7 @@ type SemanticUnit =
     | TypeCluster of FSharpEntity list
 ```
 
-As the PS²G is constructed from Clef source code, it preserves the rich type information and functional programming patterns that exist in the original source. Module boundaries become first-class entities in the graph. Function composition chains become visible as connected subgraphs. Data transformation pipelines emerge as clear patterns that can be analyzed and optimized as units.
+As the PS²G is constructed from Clef source code, it preserves the rich type information and functional programming patterns that exist in the original source. Module boundaries become first-class entities in the graph, and function composition chains appear as connected subgraphs. Data transformation pipelines form clear patterns that Composer can analyze and optimize as units.
 
 ## Coupling Analysis
 
@@ -119,7 +119,7 @@ graph LR
     end
 ```
 
-This coupling information becomes invaluable for making compilation decisions. Strongly coupled components benefit from being compiled together, enabling aggressive inter-procedural optimization, function inlining, and specialized code generation. Weakly coupled components can be compiled separately, enabling parallel compilation and incremental rebuilds when only some parts of the system change. Preventing the cumulative slow-down of whole-program compilation is a quality-of-life matter for development that often determines a framework's viability.
+This coupling information becomes invaluable for making compilation decisions. Strongly coupled components benefit from being compiled together, enabling aggressive inter-procedural optimization, function inlining, and specialized code generation. Weakly coupled components can be compiled separately, enabling parallel compilation and incremental rebuilds when only some parts of the system change. Preventing the cumulative slow-down of whole-program compilation keeps day-to-day development workable as a codebase grows.
 
 Fortunately MLIR lends itself to this type of approach. Components with strong coupling can be placed in the same MLIR module, where the intermediate representation can preserve high-level relationships while progressively lowering to efficient machine code. Components with weak coupling could be compiled to separate MLIR modules with well-defined interfaces, enabling independent optimization and caching strategies.
 
@@ -140,7 +140,7 @@ type Cohesion = {
 
 In functional programming, high cohesion often emerges naturally from data-driven design. Functions that operate on the same discriminated union type exhibit natural cohesion, since they understand the same data structures and often participate in the same pattern matching logic. Functions in a data transformation pipeline show cohesion through their shared purpose and sequential relationships.
 
-The compiler can exploit this cohesion information in several ways. Highly cohesive function groups become candidates for aggressive inlining and specialization. For instance, memory layout decisions can co-locate data structures that are always used together. Perhaps most importantly, cohesion analysis guides the granularity of compilation units. Functions with high cohesion benefit from being compiled together because the compiler can see their interactions and optimize across function boundaries. Functions with low cohesion can be compiled separately without losing optimization opportunities.
+The compiler can exploit this cohesion information in several ways. Highly cohesive function groups become candidates for aggressive inlining and specialization. For instance, memory layout decisions can co-locate data structures that are always used together. Cohesion analysis also guides the granularity of compilation units. Functions with high cohesion benefit from being compiled together because the compiler can see their interactions and optimize across function boundaries. Functions with low cohesion can be compiled separately without losing optimization opportunities.
 
 ## MLIR Integration and Modular Compilation
 
@@ -186,7 +186,7 @@ When strongly coupled components are compiled into the same MLIR module, the com
 
 ### Preserving Verification
 
-The progressive lowering through MLIR dialects also enables verification at multiple levels. High-level invariants derived from functional programming patterns can be verified at the functional dialect level. Memory safety properties can be verified at intermediate levels. Finally, traditional optimizations can be applied at the LLVM dialect level with confidence that higher-level properties have been preserved.
+The progressive lowering through MLIR dialects also enables verification at multiple levels. High-level invariants derived from functional programming patterns can be verified at the functional dialect level, and memory-safety properties at the intermediate levels. Traditional optimizations then apply at the LLVM dialect level, with the higher-level properties already established and preserved.
 
 ### Cache on Hand
 
@@ -202,18 +202,18 @@ A large application, perhaps a distributed actor system with multiple services a
 
 ## The Architectural Advantage
 
-Functional programming's emphasis on clear abstractions, explicit dependencies, and structured data creates natural architectural boundaries that traditional imperative languages struggle to maintain. These boundaries aren't just helpful for human reasoning about code; they provide information that enables automation around tooling and build processes.
+Functional programming's emphasis on clear abstractions, explicit dependencies, and structured data creates natural architectural boundaries that traditional imperative languages struggle to maintain. The same boundaries that help a person reason about the code hold information that tooling and build processes can automate against.
 
-When functions are 'pure', the compiler can reason about their behavior without worrying about hidden side effects. When data structures are immutable, sharing and caching strategies become more permissive. When module boundaries are respected, compilation units can be optimized independently with confidence. Larger architectures become more manageable, and teams can move faster on them.
+Because pure functions have no hidden side effects, the compiler can reason about their behavior directly. Immutable data structures make more sharing and caching strategies safe, and respected module boundaries let compilation units be optimized independently with confidence. Larger architectures become more manageable, and teams can move faster on them.
 
-> The natural structure that emerges from good functional programming practices becomes the foundation for efficient, scalable compilation strategies. It adapts **to** your program's actual architecture instead of fighting *against* it.
+> The natural structure that emerges from good functional programming practices becomes the foundation for efficient, scalable compilation strategies. It follows your program's actual architecture rather than imposing a fixed compilation shape on it.
 
-This approach changes how we think about compilation. Instead of treating compilation as a burden that forces code through a series of opaque generic optimizations, our Fidelity framework is designed to build through a process that reads a program's architecture and adapts its strategies accordingly. The tooling and visibility into that process are meant to keep the developer in control of the optimization at each step.
+This approach changes how we think about compilation. Our Fidelity framework is designed to read a program's architecture during the build and set its optimization strategy from that structure, rather than pushing all code through one generic set of passes. The tooling and visibility into that process are meant to keep the developer in control of the optimization at each step.
 
 ## The Road Ahead
 
 Even our simplest examples, the hello world programs that validate basic compilation infrastructure, are designed with this broader architectural vision in mind. The Program Semantic Graph construction, the coupling and cohesion analysis, and the MLIR integration strategies are all meant to scale from trivial examples to complex applications.
 
-This represents more than just an engineering optimization. It suggests a new model for how programming languages and compilation systems can work together. When the language encourages patterns that create natural program structure, and the compiler understands and leverages that structure to its advantage, the result is a development experience that provides both rapid iteration during development and efficient execution in production.
+We treat this as a working relationship between language design and compilation, not one more compiler optimization. When the language encourages patterns that create natural program structure, and the compiler understands and leverages that structure to its advantage, the result is a development experience that provides both rapid iteration during development and efficient execution in production.
 
 This is one place where an abstraction from category theory connects to something a developer feels day to day, the time between writing code and running it. We expect that as the coupling and cohesion analysis matures, the same structure that keeps a program readable to a person is the structure our compiler reads to keep builds fast. That is the direction we will keep building toward as the rest of the framework comes into place.

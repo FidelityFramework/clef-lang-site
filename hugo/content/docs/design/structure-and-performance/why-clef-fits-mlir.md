@@ -17,7 +17,7 @@ We read that result as support for the direction we have taken with our Fidelity
 
 ## The Hidden Functional Program
 
-Every imperative program contains a functional program waiting to be discovered. When compilers transform C, Rust, or other imperative languages into SSA form, they're actually reconstructing the functional relationships that were obscured by imperative syntax. This observation applies to Rust as well, despite Rust's emphasis on explicit control and ownership; the compiler still transforms imperative control flow into SSA's functional structure during compilation:
+Every imperative program contains a functional program. When compilers transform C, Rust, or other imperative languages into SSA form, they're actually reconstructing the functional relationships that were obscured by imperative syntax. This observation applies to Rust as well, despite Rust's emphasis on explicit control and ownership. The compiler still transforms imperative control flow into SSA's functional structure during compilation:
 
 > "The SSA community draws pictures of graphs with basic blocks and flow edges, and the functional-language community writes lexically nested functions, but they're both doing exactly the same thing in different notation." - Andrew Appel
 
@@ -86,7 +86,7 @@ The Clef version directly expresses what SSA must construct: function parameters
 
 ## What MLIR Adds
 
-MLIR extends SSA by providing multiple levels of abstraction, each maintaining SSA form at a different semantic level. This is where Clef's heritage in functional design carries through.
+MLIR extends SSA by providing multiple levels of abstraction, each maintaining SSA form at a different semantic level. Clef's functional design maps directly onto these abstraction levels.
 
 ### Traditional Compilation: Loss of Intent
 
@@ -104,7 +104,7 @@ async fn process_data(input: &[u8]) -> Result<Output, Error> {
 ; Complex state machine with no async semantics visible
 ```
 
-The compiler must transform the imperative async code into state machines, losing the high-level control flow information in the process. Rust's ownership model provides compile-time guarantees, but those guarantees are checked before SSA transformation; the ownership information does not flow into LLVM IR where further optimizations occur.
+The compiler must transform the imperative async code into state machines, losing the high-level control flow information in the process. Rust's ownership model provides compile-time guarantees, but those guarantees are checked before SSA transformation. The ownership information does not flow into LLVM IR where further optimizations occur.
 
 ### Clef with MLIR: Preserving Structure
 
@@ -154,7 +154,7 @@ let withDelimitedContinuations data =
     )
 ```
 
-The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. The correspondence is structural: the same mathematical relationship expressed directly at the semantic level, rather than discovered through multiple intermediate transforms. The formal account of how that structure sequences the compiler's lowering passes, with Huet's zipper and Petricek's codata and coeffect formalism carrying grade, escape, and representation annotations through MLIR, is the [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854).
+The `shift` and `reset` operators create explicit continuation boundaries that correspond exactly to SSA's basic block boundaries. The correspondence is structural: the same mathematical relationship expressed directly at the semantic level, rather than discovered through multiple intermediate transforms. The [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854) gives the formal account of how that structure sequences the compiler's lowering passes. Huet's zipper and Petricek's codata and coeffect formalism carry grade, escape, and representation annotations through MLIR.
 
 ### Compilation Advantages
 
@@ -194,7 +194,7 @@ This split exists because dynamic languages can't naturally express the static s
 
 ### Memory Management Without Annotations
 
-Our Clef abstractions are designed to compile efficiently because they already match SSA's structure:
+Our Clef abstractions are designed to compile efficiently because they match SSA's structure directly:
 
 ```fsharp
 // Clef with units of measure and functional composition
@@ -282,17 +282,15 @@ vector<pair<int, double>> processReadings(vector<SensorReading>& readings) {
 
 Clef's operations ***are*** the SSA structure, where no reconstruction is needed.
 
-Rust occupies a middle ground in this comparison. Rust's ownership model shares conceptual similarities with SSA's single-assignment property: each binding owns its value, and ownership transfer is explicit. Some have argued that Rust is therefore also a natural fit for MLIR. We see merit in this perspective; Rust's explicitness about ownership does provide information that compilers can exploit. However, Rust remains imperative in control flow, requiring the same reconstruction that C++ needs. Rust's advantages lie in the safety guarantees it provides before compilation, not in the structure it provides during compilation. Both approaches have value; they optimize for different properties.
+Rust occupies a middle ground in this comparison. Rust's ownership model shares conceptual similarities with SSA's single-assignment property: each binding owns its value, and ownership transfer is explicit. Some have argued that Rust is therefore also a natural fit for MLIR. We see merit in this perspective. Rust's explicitness about ownership does provide information that compilers can exploit. However, Rust remains imperative in control flow, requiring the same reconstruction that C++ needs. Rust's advantages lie in the safety guarantees it provides before compilation, not in the structure it provides during compilation. Both approaches have value. They optimize for different properties.
 
 ## Functional Programming IS Efficient Compilation
 
-Combining Appel's work with MLIR brings out one point:
+> Functional programming is the native structure of efficient compilation, the form optimizing compilers work to recover.
 
-> Functional programming isn't a high-level abstraction that must be compiled away, it's the natural structure of efficient compilation itself.
+Writing Clef code, you are already working in the structure optimizing compilers target: delimited continuations make explicit the control flow SSA must otherwise represent, and composed operations form the relationships MLIR's passes optimize.
 
-When you write Clef code, you're writing in the same structure that optimizing compilers target. When you use delimited continuations, you're making explicit the control flow that SSA must represent. When you compose operations, you're creating the exact relationships that MLIR's passes optimize.
-
-The most efficient compilation representations (SSA within MLIR) are functional in structure, which makes a language rooted in those principles a fitting source for MLIR's lowering strategy. This is a claim about where the structure already lives, not a case for imposing functional programming on systems development.
+The most efficient compilation representations (SSA within MLIR) are functional in structure, which makes a language rooted in those principles a fitting source for MLIR's lowering strategy. This is a claim about where the structure is in the compilation model, not a case for imposing functional programming on systems development.
 
 ## Looking Forward
 
@@ -305,12 +303,12 @@ By starting with Clef and compiling through MLIR, our Fidelity framework is desi
 
 As heterogeneous computing spreads across CPUs, GPUs, TPUs, and custom accelerators, preserving high-level intent through compilation matters more. MLIR's dialect system is built for this, and we design our Clef language as a source for expressing computations that map onto diverse hardware.
 
-MLIR itself is language-agnostic, and projects like Rust-GPU demonstrate that imperative languages can target heterogeneous hardware effectively. The open question is whether functional structure provides advantages in preserving semantic information through the compilation pipeline, rather than whether a language with functional roots is the only path to MLIR. Our experience suggests it does, particularly for the kinds of coordination and memory management patterns that Fidelity emphasizes. Different languages will continue to evolve their MLIR integration strategies, each bringing their own strengths to the heterogeneous computing challenge.
+MLIR itself is language-agnostic, and projects like Rust-GPU demonstrate that imperative languages can target heterogeneous hardware effectively. The open question is whether functional structure provides advantages in preserving semantic information through the compilation pipeline, rather than whether a language with functional roots is required to target MLIR. Our experience suggests it does, particularly for the kinds of coordination and memory management patterns that Fidelity emphasizes. Different languages will continue to evolve their MLIR integration strategies, each bringing their own strengths to the heterogeneous computing challenge.
 
-## Conclusion
+## Structural Alignment
 
 Andrew Appel's result that "SSA is Functional Programming" describes the structure of efficient compilation. We design our Fidelity framework around it, choosing Clef because Clef's design ***matches*** the form that modern optimizing compilers already target.
 
-Clef code aimed at MLIR works with the compilation model rather than against it. The source expresses the SSA structure that other languages must reconstruct. Delimited continuations make explicit the control flow that others have to analyze. Composed operations map onto the optimization opportunities that MLIR's passes act on.
+Clef code aimed at MLIR works with the compilation model rather than against it. Other languages reconstruct the SSA structure that a Clef source expresses directly, and they analyze the control flow that its delimited continuations make explicit. Composed operations map onto the optimization opportunities that MLIR's passes already target.
 
-That alignment is what makes one source map cleanly onto a CPU, a GPU, and an FPGA without three reconstructions, which is the reach our Composer compiler is built to extend.
+Because Clef's structure already aligns with SSA, one source maps cleanly onto a CPU, a GPU, and an FPGA without three reconstructions, the reach our Composer compiler is built to extend.

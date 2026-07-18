@@ -11,17 +11,17 @@ params:
   migration_date: 2026-02-15
 ---
 
-The `inline` keyword began life as a compiler hint in C, suggesting that a function might benefit from inline expansion. Over decades, it evolved into `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each incarnation reflects a different philosophy about who should make optimization decisions: the programmer or the compiler.
+The `inline` keyword started as a compiler hint in C, marking a function as a candidate for inline expansion. Later languages redefined it: `AggressiveInlining` in C#, a performance directive in C++, and a type system requirement in F#. Each definition reflects a different philosophy about who should make optimization decisions, the programmer or the compiler.
 
-For Clef developers working with the Fidelity Framework, `inline` serves dual masters. It's mandatory for [Statically Resolved Type Parameters (SRTP)](/docs/design/types/structural-polymorphism/), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
+For Clef developers working with the Fidelity Framework, `inline` has two separate uses. It's mandatory for [Statically Resolved Type Parameters (SRTP)](/docs/design/types/structural-polymorphism/), enabling generic programming with duck-typed constraints. But it's also cargo-culted as a performance optimization, scattered liberally through codebases under the assumption that if `FSharp.Core` uses it, so should everyone else.
 
 The [F# documentation warns against this pattern](https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/functions/inline-functions):
 
 > "Overuse of inline functions can cause your code to be less resistant to changes in compiler optimizations... you should avoid using inline functions for optimization unless you have tried all other optimization techniques."
 
-Yet the pattern persists. Why? Because the costs remain hidden in the managed runtime. Code bloat gets absorbed by the garbage collector. Compilation slowdowns become part of the background noise. Performance impacts surface only under profiling, and profiling happens rarely.
+Yet the pattern persists. Why? Because the costs remain hidden in the managed runtime. Code bloat gets absorbed by the garbage collector, and compilation slowdowns fold into the background noise. Performance impacts show up only under profiling, which developers run rarely.
 
-In native compilation, these costs become explicit. When targeting MLIR and LLVM without a managed runtime, every optimization decision carries weight. This is the story of how Fidelity's approach to `inline` emerged from fixing a real compiler bug, and why treating it as a semantic tool rather than a performance directive leads to better code on modern architectures.
+In native compilation, these costs become explicit. When targeting MLIR and LLVM without a managed runtime, every optimization decision has a cost. Fidelity's approach to `inline` emerged from fixing a real compiler bug. Treating it as a semantic tool rather than a performance directive leads to better code on modern architectures.
 
 ## The .NET Inline Culture
 
@@ -68,7 +68,7 @@ The Fable compiler (F# to JavaScript) reveals just how complex inline semantics 
 
 This isn't a criticism of Fable. It's an observation about the fundamental challenge: **inline couples your compilation strategy to your execution model**. When .NET compiles F#, it has full type information, JIT compilation, and runtime reflection. When Fable targets JavaScript, it has none of these. The semantic gap makes full inline preservation intractable.
 
-The lesson: inline isn't just a performance hint. It's deeply embedded in the architecture of the compilation pipeline and the assumptions about the target runtime.
+Inline is deeply embedded in the architecture of the compilation pipeline and in the assumptions it encodes about the target runtime.
 
 ## MLIR: A Different Foundation
 
@@ -201,9 +201,9 @@ Investigation revealed a structural problem:
 
 The fix was simple: remove `inline` from `Console.write`.
 
-The insight: `inline` in platform libraries was creating PSG structure violations.
+In platform libraries, `inline` was creating PSG structure violations.
 
-This led to a broader realization. Platform libraries should use real functions unless the specification **mandates** inline for semantic reasons (SRTP or escape analysis). Let's examine both.
+Platform libraries should use real functions unless the specification **mandates** inline for semantic reasons (SRTP or escape analysis). Let's examine both.
 
 ## Mandatory Inline Case 1: SRTP (Type System Requirement)
 
@@ -242,7 +242,7 @@ This is **safety inline**: without it, you get undefined behavior. The pointer e
 
 ### The Long-Term Vision: Automatic Escape Detection
 
-Currently, `[inline` is required for escape analysis](/spec/draft/special-attributes-and-types/#inline-and-optimization-attributes) because CCS doesn't have automatic escape detection. The roadmap includes an EscapeAnalysis nanopass that will:
+Currently, `[inline` is required for escape analysis](/spec/draft/special-attributes-and-types/#inline-and-optimization-attributes) because CCS relies on the manual keyword to mark allocations that escape. The roadmap includes an EscapeAnalysis nanopass that will:
 
 - Detect which allocations escape their scope
 - Generate stack allocation for local-only variables
@@ -343,13 +343,13 @@ let add<'T when 'T :> IAddable<'T>> (x: 'T) (y: 'T) =
 
 ## The Bigger Picture: Trusting the Optimizer
 
-There's a deeper architectural principle at work here: **separation of concerns**. Traditional systems programming conflates two distinct responsibilities, ensuring programs are correct and making them fast. The `inline` keyword exemplifies this conflation, asking the compiler to make optimization decisions during the phase where it should be focused on correctness.
+**Separation of concerns** is the architectural principle here. Traditional systems programming conflates two distinct responsibilities, ensuring programs are correct and making them fast. The `inline` keyword exemplifies this conflation, asking the compiler to make optimization decisions during the phase where it should be focused on correctness.
 
-Consider what the compiler is actually good at. Type checking and inference happen at compile time because that's when you have access to the complete type system and can reason about type relationships. Memory safety guarantees through escape analysis similarly require understanding the full scope and lifetime of allocations. Semantic correctness - verifying that the program means what you intend - demands analyzing the complete structure before execution. The compiler's expertise lies in transforming high-level intent into correct, well-formed intermediate representation.
+Consider what the compiler is actually good at. Type checking and inference belong at compile time, where the complete type system is in view and type relationships can be reasoned about. Escape analysis, which grounds the memory-safety guarantees, needs the full scope and lifetime of every allocation. Verifying that a program means what its author intends requires the complete structure ahead of execution. The compiler's expertise lies in transforming high-level intent into correct, well-formed intermediate representation.
 
 The optimizer operates in a different domain entirely. By the time optimization passes run, correctness has been established. Now the focus shifts to performance: making inlining decisions based on complete call graphs and actual usage patterns, eliminating dead code that provably never executes, propagating constants through the computation, and specializing for specific targets. A function that should inline on a CPU with deep pipelines might need to remain separate on a GPU where minimizing register pressure matters more. These decisions require information the compiler simply doesn't have during initial compilation.
 
-The `inline` keyword forces the compiler to make optimization decisions prematurely. You're asking it to inline code before it knows whether that function gets called once or ten thousand times, before it knows the target architecture's cache characteristics, before it can see the full program structure that might enable better optimizations. It's asking the wrong component to make the decision at the wrong time.
+The `inline` keyword forces the compiler to make optimization decisions prematurely. You're asking it to inline code before it knows whether that function gets called once or ten thousand times, before it knows the target architecture's cache characteristics, before it can see the full program structure that might enable better optimizations.
 
 MLIR's architecture deliberately separates these concerns:
 
@@ -368,15 +368,15 @@ flowchart TD
 
 ```
 
-At each stage of this pipeline, the intermediate representation accumulates information that makes optimization decisions progressively better. When CCS constructs the Program Semantic Graph, it's focused on preserving Clef's semantics - currying, pattern matching, type inference. It has no idea whether you're targeting an x86_64 server, an ARM mobile device, or a GPU compute kernel. Making inlining decisions at this stage means committing to a strategy before knowing the battlefield.
+At each stage of this pipeline, the intermediate representation accumulates information that makes optimization decisions progressively better. When CCS constructs the Program Semantic Graph, it's focused on preserving Clef's semantics - currying, pattern matching, type inference. It has no idea whether you're targeting an x86_64 server, an ARM mobile device, or a GPU compute kernel. Making inlining decisions at this stage commits to a strategy before the target architecture is known.
 
 Alex witnesses the PSG and emits MLIR, but it still operates without complete context. It can see individual functions and their immediate call relationships, but it doesn't know whether this particular function sits in a hot loop that gets called millions of times or appears in error handling code that rarely executes. The calling patterns that determine optimal inlining strategy remain opaque.
 
 By the time MLIR's optimization passes run, the picture clarifies dramatically. The optimizer sees the complete program structure, understands call frequencies through profiling information, and knows the target architecture. It can make informed tradeoffs: inline this small function because it's called in a tight loop, but keep that larger function separate because it's rarely used and inlining would bloat the instruction cache.
 
-LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. It knows cache line sizes, pipeline depths, branch predictor characteristics, and SIMD instruction availability. The optimization decisions at this level can be tuned to the specific CPU model, not just the general architecture family.
+LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. These decisions account for cache line sizes and pipeline depths. They also reflect branch predictor characteristics and SIMD instruction availability. The optimization decisions at this level can be tuned to the specific CPU model, not just the general architecture family.
 
-This progression frames the question: **why would you inline at CCS level** when MLIR has far more information to work with?
+Inlining at the CCS level discards the information that MLIR would otherwise have to work with.
 
 ## The Mathematical Insight: Optimization Windows
 
@@ -460,15 +460,15 @@ Real functions in MLIR preserve **optimization flexibility** across targets. Ear
 
 ## Lessons from the Research
 
-The journey to this policy involved extensive research into .NET patterns, Fable's challenges, OCaml's arity handling, and MLIR's optimization architecture.
+Extensive research into .NET patterns, Fable's challenges, OCaml's arity handling, and MLIR's optimization architecture produced this policy.
 
 To use `inline` correctly, understand what the Fidelity Framework and its compiler are optimizing for.
 
-It's not .NET's managed heap and JIT compilation. It's not JavaScript's dynamic runtime. It's MLIR's multi-target compilation with block arguments and deferred optimization.
+The target is MLIR's multi-target compilation with block arguments and deferred optimization, not the .NET managed heap and JIT or the JavaScript dynamic runtime.
 
 The architectural choice is deliberate: real functions in the PSG, witnessed as `func.func` and `func.call` in MLIR, optimized by backends with full program context. When SRTP requires `inline` for type system correctness, we use it. When escape analysis requires it for memory safety, we use it. Everything else takes advantage of the full gamut that MLIR offers.
 
-The CCS2001 error for platform libraries isn't bureaucracy. It's preventing the PSG structure violations we encountered during the memref transition, where premature inlining created spurious VarRef wrappers that broke SSA assignment. The fix wasn't to patch around inline. It was to remove inline and let the architecture work as designed.
+The CCS2001 error for platform libraries prevents the PSG structure violations we encountered during the memref transition, where premature inlining created spurious VarRef wrappers that broke SSA assignment. Rather than patch around inline, the fix removed it and let the architecture work as designed.
 
 The CCS2002 warning for user code optimization is an invitation to understand the compilation model. You're not targeting a JIT that needs hints about hot paths. You're targeting an optimizer that sees megabytes of IR, knows your hardware architecture, and can make inlining decisions based on actual call graphs and target constraints. For generic code, simply using static abstract members will go a long way toward avoiding unnecessary inline dependencies.
 
