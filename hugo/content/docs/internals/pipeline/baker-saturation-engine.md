@@ -16,13 +16,13 @@ For the .NET developer, the "floor" of abstraction is often the Intermediate Lan
 
 Composer seeks to lower that floor while keeping the ceiling high. SpeakEZ Technologies has take a view to bring the rich, expressive syntax of [the Clef language](https://clef-lang.com), with its pattern matching, higher-order functions (HOFs), and discriminated unions, and translate it into a representation that is not just "executable," but semantically complete. The Fidelity framework is the embodiment of the belief that the future of computing is not just 'full stack', but ***multi-stack***.
 
-Baker's development within the Composer compiler tracks that vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the Clef abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**; it applies semantic meaning using a model of Recipes and Ingredients.
+Baker's development within the Composer compiler tracks that vision. Early iterations relied on a complex "two-tree zipper" to manually correlate the Clef abstract syntax tree (AST) with the typed tree. This architecture has evolved. The manual correlation of trees has been superseded by a native type universe (NTU) and a robust **nanopass infrastructure**. Baker is now our **Saturation Engine**. It applies semantic meaning using a model of Recipes and Ingredients.
 
 ## The Landscape: Elaboration and Saturation
 
-To understand Baker, we must first look at where it sits in the pipeline. In programming language theory (PLT) circles, the venacular often includes talk of "Elaboration", essentially, the process of making implicit semantics explicit.
+In programming language theory (PLT) circles, the venacular often includes talk of "Elaboration", essentially, the process of making implicit semantics explicit.
 
-In Composer, we distinguish between **Elaboration** (handling intrinsics) and **Saturation** (handling language constructs). The saturation element, separate from elaboration, and where Baker really shines. The point of *saturation* is to find those points in the program's semantic graph and determine which sub-graph of composed intrinsics fully express the intent of the higher order function or similar construct.
+In Composer, we distinguish between **Elaboration** (handling intrinsics) and **Saturation** (handling language constructs). Baker operates in the saturation phase, distinct from elaboration. The point of *saturation* is to find those points in the program's semantic graph and determine which sub-graph of composed intrinsics fully express the intent of the higher order function or similar construct.
 
 ```mermaid
 flowchart TD
@@ -48,20 +48,20 @@ flowchart TD
     Baker --> Alex[Alex: Backend Witness]
 ```
 
-Before Baker even wakes up, our **Elaboration** nanopasses have already run. These passes look for "intrinsic" operations, things like platform I/O calls or specific `[<FidelityExtern>]` bindings. They expand these calls into the specific system calls or library bindings required by the target architecture. This is akin to how a C compiler might expand a macro; we are making the external world visible to the graph.
+Before Baker starts its pass, our **Elaboration** nanopasses have already run. These passes look for "intrinsic" operations, things like platform I/O calls or specific `[<FidelityExtern>]` bindings. They expand these calls into the specific system calls or library bindings required by the target architecture. This is akin to how a C compiler might expand a macro. We are making the external world visible to the graph.
 
-**Baker** takes the baton from there. Its job is not to bind to the outside world, but to explain the *internal* world of Clef. When you write a `List.map` or a recursive `match` expression, there is no single machine instruction that performs that task. [Baker must "saturate" the graph with the algorithm that fully implements that feature](/spec/draft/list-operations-representation/#32-higher-order-functions-baker-decomposes) with no user intervention.
+**Baker** begins from there. Its job is to explain the *internal* world of Clef rather than bind to the outside world. When you write a `List.map` or a recursive `match` expression, there is no single machine instruction that performs that task. [Baker must "saturate" the graph with the algorithm that fully implements that feature](/spec/draft/list-operations-representation/#32-higher-order-functions-baker-decomposes) with no user intervention.
 
 ## The Nanopass Infrastructure
 
-One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs and while it serves its purpose it also means that "piercing the veil" is very difficult. Instead, we use a [**nanopass infrastructure**](/docs/internals/concepts/nanopass-navigation/), which is more stratified, more testable and easier to reason through the pipeline. This approach allows us to write focused transformations that are direct to reason about and much easier to test.
+One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs, and while it works it makes following a single transformation through the interwoven recursive passes very difficult. Instead, we use a [**nanopass infrastructure**](/docs/internals/concepts/nanopass-navigation/), which is more stratified, more testable, and easier to follow across the pipeline. Each pass is a focused transformation over one part of the graph, small enough to test on its own.
 
 Baker executes within the PSGSaturation stage using a **Fan-Out / Fold-In** pattern:
 
-1.  **Fan-Out (Discovery):** A specialized zipper, our navigator, traverses the reachable compute graph. It identifies "saturation sites" where things like HOFs (higher order functions), sequence expressions, match statements or similar constructs require expansion. **Saturation:** Baker applies a "Recipe" to each site. This generates a sub-graph of primitives that **compose *up*** to satisfy the inent of the HOF or similar construct. This step occurs in parallel; each decomposition is isolated, therefore is labeled "fan out".
+1.  **Fan-Out (Discovery):** A specialized zipper, our navigator, traverses the reachable compute graph. It identifies "saturation sites" where things like HOFs (higher order functions), sequence expressions, match statements or similar constructs require expansion. **Saturation:** Baker applies a "Recipe" to each site. This generates a sub-graph of primitives that **compose *up*** to satisfy the inent of the HOF or similar construct. This step occurs in parallel. Each decomposition is isolated, so it is labeled "fan out".
 2.  **Fold-In:** The generated sub-graphs merge into the main PSG. This step establishes parent-child relationships and updates references. Because of common/spanning concerns like node ID numbering and graph "edge" connections this must be done serially.
 
-This separation of discovery and application versus 'folding in' is crucial. It means our "Recipes" don't need to know about the global state of the compiler; they just need to know, in keeping with the metaphor, how to cook ***that*** specific dish.
+Separating discovery and application from fold-in keeps our "Recipes" clear of the compiler's global state. A Recipe needs to know only how to cook ***that*** specific dish.
 
 > A nanopass compilation strategy opens the potential for embarrassingly parallel compilation stages.
 
@@ -110,13 +110,13 @@ This code doesn't "run" the map; it generates the graph nodes that *perform* the
 
 ## Only Pay For What You Use
 
-This architecture plays in harmony with our **reachability analysis**. In the .NET ecosystem, pulling in a library often feels like inviting a guest who brings their entire extended family, their pets, and their furniture. A single function call might drag in metadata for hundreds of types you never use, bloating your binary with "everything and the kitchen sink."
+This architecture builds on our **reachability analysis**. In the .NET ecosystem, referencing a library pulls in its transitive dependencies and their type metadata whether or not your code touches them. A single function call can drag in metadata for hundreds of types you never use, bloating the binary.
 
-Composer operates on a Stroustrup style "only pay for what you use" philosophy. Baker runs **post-reachability**, and this timing is everything. We first prune the graph to include *only* the code paths your application actually traverses.
+Composer operates on a Stroustrup style "only pay for what you use" philosophy. Baker runs **post-reachability**. We first prune the graph to include *only* the code paths your application actually traverses.
 
-If your program uses `List.map` but never touches `List.sort`, the logic for sorting is never saturated. It never enters the graph. Baker behaves like a personal chef who cooks only the specific dishes you ordered, rather than catering a generic buffet where most of the food is wasted.
+If your program uses `List.map` but never touches `List.sort`, the logic for sorting is never saturated. It never enters the graph. 
 
-This results in a targeted optimization where **Reachability** removes the dead code, and **Baker** saturates only the living edges of the graph. The final native binaries are concise, containing only the code, memory patterns, and computational logic required for the tasks at hand. This is how we approach the density of C with the expressiveness of Clef, by ensuring that abstraction never carries a cost you didn't agree to pay.
+This results in a targeted optimization where **Reachability** removes the dead code, and **Baker** saturates only the reachable edges of the graph. The final native binaries are concise, containing only the code, memory patterns, and computational logic required for the tasks at hand. This is how we approach the density of C with the expressiveness of Clef: an unused abstraction adds nothing to the binary.
 
 ## Pipeline Evolution
 

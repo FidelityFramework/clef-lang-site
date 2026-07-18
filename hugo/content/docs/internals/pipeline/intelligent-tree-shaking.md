@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce minimal native executables. In traditional .NET development, a "Hello World" application carries the weight of the runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, that overhead is a real cost. Our design takes a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what's actually needed while preserving the type information required by subsequent compiler phases.
+When we set out to design the Composer compiler for the Fidelity Framework, one of our core goals was to produce minimal native executables. In traditional .NET development, a "Hello World" application carries the weight of the runtime and referenced assemblies, resulting in deployments measured in megabytes. For embedded systems, high-frequency trading platforms, or any scenario where every byte matters, that overhead is a real cost. Our design takes a principled approach: semantic reachability analysis that operates on the Program Semantic Graph (PSG), narrowing the compilation scope to only what a program needs while preserving the type information required by subsequent compiler phases.
 
 ## Concrete Example: HelloWorld with CCS Intrinsics
 
@@ -36,7 +36,7 @@ Everything else in the native type system - the `ReadLine` functions, the `stack
 
 ## Tree Shaking Through Type-Preserving Analysis
 
-Tree shaking is a form of dead code elimination that removes unused code from the final executable. The name comes from the mental model of shaking a tree to make dead branches fall off, leaving only the living, connected parts. Composer's approach leverages Clef's type system throughout the reachability analysis, which lets it act on information that call-graph-only dead code elimination does not carry.
+Tree shaking is a form of dead code elimination that removes unused code from the final executable. The name refers to removing unreachable code and keeping only the code the program reaches. Composer's approach leverages Clef's type system throughout the reachability analysis, which lets it act on information that call-graph-only dead code elimination does not carry.
 
 Our type-aware analysis extends traditional dead code elimination in the following way:
 
@@ -112,7 +112,7 @@ The precision comes from where the analysis sits in the pipeline. Composer analy
 
 ## Soft-Delete Reachability: The Nanopass Approach
 
-An architectural element that differentiates Composer from traditional compilation approaches is *soft-delete* reachability rather than hard deletion. When we determine a node is unreachable, we don't remove it from the Program Semantic Graph - we mark it with `IsReachable = false`. This preserves structural integrity for [Baker's two-tree zipper](/docs/internals/pipeline/baker-saturation-engine/) traversal, where unreachable nodes still provide traversal context that keeps analysis aligned during PSG construction. Without this context, the zipper's simultaneous traversal of the AST and typed tree could lose synchronization when encountering nodes that exist in one tree but not the other.
+Composer uses *soft-delete* reachability rather than hard deletion. When we determine a node is unreachable, we don't remove it from the Program Semantic Graph - we mark it with `IsReachable = false`. This preserves structural integrity for [Baker's two-tree zipper](/docs/internals/pipeline/baker-saturation-engine/) traversal, where unreachable nodes still provide traversal context that keeps analysis aligned during PSG construction. Without this context, the zipper's simultaneous traversal of the AST and typed tree could lose synchronization when encountering nodes that exist in one tree but not the other.
 
 ```mermaid
 graph TB
@@ -128,7 +128,7 @@ graph TB
 
 ```
 
-The critical boundary is Phase 3 - reachability analysis. Everything before Phase 3 operates on the full library graph (including all CCS intrinsics, FSharp.Core, and user code). Everything from Phase 3 onward operates on the *narrowed* graph - only the code actually reachable from entry points. This scope narrowing is what makes expensive operations like SRTP resolution and type overlay practical.
+The critical boundary is Phase 3 - reachability analysis. Everything before Phase 3 operates on the full library graph (including all CCS intrinsics, FSharp.Core, and user code). Everything from Phase 3 onward operates on the *narrowed* graph - only the code actually reachable from entry points. Scope narrowing keeps expensive operations like SRTP resolution and type overlay practical.
 
 1. **Type Specialization Tracking**: We trace which generic instantiations are actually used
 2. **Interface Implementation Analysis**: We determine which interface methods are called
@@ -144,7 +144,7 @@ This direct analysis enables cross-cutting optimizations. When we determine a ty
 
 ## Type-Directed Reachability Analysis
 
-Precise reachability analysis carries the weight of effective tree shaking. Our type-preserving approach goes past function-call tracking to reach the type relationships in Clef code:
+Effective tree shaking depends on precise reachability analysis. Our type-preserving approach tracks the type relationships in Clef code, not just function calls:
 
 ```fsharp
 // Semantic reachability context - tracks what's actually used
@@ -237,7 +237,7 @@ type LibraryCategory =
  
 ```
 
-This classification enables targeted optimization strategies. User code receives the most aggressive pruning since we have complete visibility. CCS intrinsic functions can be eliminated with confidence because we understand their semantic contracts. FSharp.Core functions require more conservative analysis due to their foundational role in Clef semantics.
+This classification lets us tune pruning per boundary. User code, where we have complete visibility, takes the most aggressive elimination. We eliminate CCS intrinsics with the same confidence, since we know their semantic contracts, and treat FSharp.Core more conservatively given its foundational role in Clef semantics.
 
 The result is a library-aware pruning analysis:
 
@@ -252,7 +252,7 @@ type LibraryAwareReachability = {
 
 ## Integration with Memory Layout Analysis
 
-One unique aspect of Composer's tree shaking is its deep integration with memory layout analysis. As we eliminate code, we simultaneously optimize memory layouts:
+Composer's tree shaking integrates with memory layout analysis. As we eliminate code, we simultaneously optimize memory layouts:
 
 ```fsharp
 // Before tree shaking
@@ -308,7 +308,7 @@ module Graphics =
  
 ```
 
-When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed. Getting the artifact small enough to flash is what makes the [pure-Clef microcontroller unikernel](/docs/internals/hardware/fidelity-on-mcu/) fit.
+When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed. Trimming the artifact this far brings the [pure-Clef microcontroller unikernel](/docs/internals/hardware/fidelity-on-mcu/) within flash.
 
 ## Developer Experience: Understanding Elimination
 
@@ -394,24 +394,24 @@ type Option<'T> =
  
 ```
 
-## The Road Ahead
+## Pipeline Extensions
 
-Tree shaking in the restructured Composer compiler represents a fundamental shift in how we think about dead code elimination. By preserving type information throughout the compilation pipeline, we enable optimizations that were previously impossible:
+The restructured Composer compiler reworks dead code elimination around type information. By preserving type information throughout the compilation pipeline, we enable optimizations that were previously impossible:
 
 1. **Incremental Compilation**: Type-aware dependency tracking enables precise incremental builds
 2. **Link-Time Type Optimization**: Cross-module type specialization and elimination
 3. **Profile-Guided Type Specialization**: Runtime profiling informs which generic instantiations to optimize
 4. **Formal Verification Integration**: Eliminated code paths reduce the verification burden
 
-The integration with our broader tooling ecosystem leverages this type information. The Fidelity VS Code extension will show which functions are included, and then go finer: which types, which generic instantiations, and which pattern match cases made it into your binary. This visibility transforms tree shaking from a black-box optimization into a transparent, predictable process.
+The integration with our broader tooling ecosystem leverages this type information. The Fidelity VS Code extension will show which functions are included, and then go finer: which types, which generic instantiations, and which pattern match cases made it into your binary.
 
 ## A New Paradigm for Concurrent Functional Compilation
 
-The journey from traditional tree shaking to type-aware elimination represents more than an incremental improvement; it's a fundamental rethinking of how concurrent functional languages can be compiled. For years, the rich type systems that make languages like Clef so expressive have been seen as a compile-time feature that largely disappears during code generation. Composer's approach inverts this, making types the central pillar of our optimization strategy.
+Type-aware elimination changes how concurrent functional languages can be compiled. For years, the rich type systems that make languages like Clef so expressive have been seen as a compile-time feature that largely disappears during code generation. Composer's approach inverts this, making types the central pillar of our optimization strategy.
 
 What we're building goes beyond eliminating unused functions. By tracking type instantiations, interface implementations, and union case usage, we can eliminate entire categories of code that traditional approaches must preserve "just in case." When your embedded system uses only three cases of a twenty-case discriminated union, why should the binary include code for the other seventeen? When your application uses a generic collection only with integers, why preserve the infrastructure for arbitrary type parameters?
 
-This transformation enables Clef in domains where it was previously impractical. Embedded systems with kilobytes of flash storage become viable targets. High-frequency trading systems can eliminate every microsecond of virtual dispatch overhead. WebAssembly modules can achieve sizes competitive with hand-written JavaScript. The same Clef code that expresses your domain elegantly can compile to binaries that meet the strictest size and performance requirements.
+This transformation enables Clef in domains where it was previously impractical. Embedded systems with kilobytes of flash storage become viable targets, and high-frequency trading systems shed every microsecond of virtual dispatch overhead. WebAssembly modules reach sizes competitive with hand-written JavaScript. The same Clef code that expresses your domain compiles to binaries that meet the strictest size and performance requirements.
 
 ## Type-Driven Future
 
@@ -422,9 +422,9 @@ Looking ahead, type-aware tree shaking is just the beginning of what's possible 
 - **Cross-Language Type Optimization**: Eliminating FFI overhead when types align perfectly
 - **Verification-Guided Elimination**: Using formal proofs to enable more aggressive optimization
 
-As we continue developing these capabilities, we're guided by a simple principle: a language's type system should be its greatest optimization asset, not a compile-time burden to be discarded. The Fidelity Framework, with Composer at its heart, demonstrates that Clef's expressive types can drive unprecedented optimization while maintaining the safety and clarity that make concurrent functional programming so powerful.
+As we continue developing these capabilities, we're guided by a simple principle: a language's type system should be its greatest optimization asset, not a compile-time burden to be discarded. The Fidelity Framework, with Composer at its heart, demonstrates that Clef's expressive types can drive unprecedented optimization while maintaining the safety and clarity of concurrent functional programming.
 
-The future we're building is one where choosing Clef means choosing both elegance and efficiency. Tree shaking exemplifies this vision, leveraging every bit of type information to produce binaries that stay correct while running at the optimum. As we realize this vision of type-preserving compilation, we're proving that functional programming's abstractions can be truly zero-cost. The Fidelity Framework represents more than a new compiler; it's a demonstration that type safety and raw performance reinforce each other within a modern compilation strategy, each strengthening what the other can deliver.
+The future we're building is one where choosing Clef means choosing both expressiveness and efficiency. Tree shaking draws on the available type information to produce binaries that stay correct while running at the optimum. As we realize this vision of type-preserving compilation, we're proving that functional programming's abstractions can be truly zero-cost. 
 
 ---
 

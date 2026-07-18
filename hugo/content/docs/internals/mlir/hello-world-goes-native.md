@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Compiler development differs fundamentally from application development. Where application code flows in one direction from input to output, compiler pipelines are multi-stage transformations where decisions at each layer cascade through everything downstream. The Composer compiler has reached a significant milestone: native code generation from Clef source through a nanopass architecture that preserves semantic fidelity at every stage. This article demonstrates what that achievement enables and the architectural vision it unlocks.
+Compiler development differs from application development. Where application code flows in one direction from input to output, compiler pipelines are multi-stage transformations where decisions at each layer cascade through everything downstream. The Composer compiler now generates native code from Clef source through a nanopass architecture that preserves semantic fidelity at every stage.
 
 ## The Sample Under Test
 
@@ -38,7 +38,7 @@ let main argv =
     0
 ```
 
-The code appears straightforward, but it exercises the full range of Clef's expressive power: statically resolved type parameters (SRTP) in the `readInto` function, discriminated union construction for the Result type, stack-allocated buffers with lifetime management, and the transformation of pipe operators into proper function application sequences. With Composer's nanopass architecture now operational, each of these constructs compiles cleanly to native code.
+This sample exercises several Clef constructs: statically resolved type parameters (SRTP) in the `readInto` function, discriminated union construction for the Result type, stack-allocated buffers with lifetime management, and the transformation of pipe operators into proper function application sequences. With Composer's nanopass architecture now operational, each of these constructs compiles cleanly to native code.
 
 ## The Nanopass Pipeline Architecture
 
@@ -52,9 +52,9 @@ Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → N
 
 **The Program Semantic Graph (PSG)** correlates FCS's semantic information with syntactic structure through a series of nanopasses. Each pass does exactly one thing: structural construction, type integration, def-use edge creation, and finalization. This separation enables inspection and validation at every stage, with labeled intermediates emitted for debugging.
 
-**Alex** handles the transformation from PSG to MLIR. As the "Library of Alexandria" for hardware targeting, Alex implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
+**Alex** handles the transformation from PSG to MLIR. Alex implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
 
-The critical architectural principle underlying this pipeline is that each phase should be self-contained and composable. Once FCS completes its work, all subsequent phases read exclusively from the enriched PSG, a principle enabling the bidirectional zipper implementation now central to our [coeffect and codata analysis](/docs/internals/concepts/coeffects-and-codata/).
+Each phase is self-contained and composable. Once FCS finishes, every later phase reads from the enriched PSG alone, which is what lets the bidirectional zipper stay central to our [coeffect and codata analysis](/docs/internals/concepts/coeffects-and-codata/).
 
 ## PSG as Single Source of Truth
 
@@ -81,7 +81,7 @@ func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
 
 Where .NET might use `Span<byte>` or unsafe pointers, MLIR `memref` provides a typed, bounds-aware abstraction that preserves safety properties through the compilation pipeline.
 
-This separation of concerns enables multiple capabilities: coeffect analysis for optimization decisions, def-use analysis for variable tracking, and bidirectional zipper for context-aware transformations, all operating on a stable, validated intermediate representation.
+This separation of concerns supports several downstream passes over one stable, validated intermediate representation. Coeffect analysis makes optimization decisions, def-use analysis tracks variables, and the bidirectional zipper drives context-aware transformations.
 
 ## Def-Use Edges: Making Data Flow Explicit
 
@@ -120,7 +120,7 @@ The PSG construction phase includes a crucial type integration step. After build
 
 This step captures the results of FCS's sophisticated constraint solving, including [SRTP resolution](/docs/design/types/structural-polymorphism/). When FCS determines that a generic parameter `^T` in `readInto` is actually `StackBuffer<byte>`, that resolved type is stored in the PSG node.
 
-What makes this architecture forward-looking is the bidirectional zipper implementation. The zipper provides context-aware navigation through the PSG, enabling sophisticated transformations while preserving graph invariants:
+The bidirectional zipper implementation is the forward-looking piece of this architecture. The zipper provides context-aware navigation through the PSG, enabling sophisticated transformations while preserving graph invariants:
 
 ```fsharp
 module PSGZipper =
@@ -205,7 +205,7 @@ The nanopass architecture codifies several principles that enable functional pro
 
 **Small, composable passes.** Each nanopass does one thing: add def-use edges, propagate coeffects, resolve generics. This separation enables inspection, testing, and validation at every stage. The output of each pass becomes training data for future optimization learning.
 
-**The intermediate representation is the contract.** The PSG serves as the single source of truth between FCS ingestion and code generation. Everything the emitter needs is present in the PSG; if it's not, the fix belongs in PSG construction, not the emitter.
+**The intermediate representation is the contract.** The PSG serves as the single source of truth between FCS ingestion and code generation. Everything the emitter needs is present in the PSG. If it is not, the fix belongs in PSG construction, not the emitter.
 
 **Bidirectional traversal for context-aware decisions.** The zipper enables both producer-driven (data flow) and consumer-driven (demand flow) navigation. This duality directly supports the codata patterns that enable efficient streaming without intermediate allocations.
 
@@ -228,7 +228,7 @@ func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
 
 This MLIR then lowers through mlir-opt and LLVM to native machine code. The emission layer reads from the PSG's `Type` field and produces correct MLIR, with the bidirectional zipper enabling context-aware optimization decisions throughout.
 
-This foundation enables the broader vision: Alex's fan-out architecture can now target multiple platforms from the same PSG. A single CCS intrinsic like `Time.currentTicks()` will fan out to Linux syscalls, Windows kernel calls, macOS mach APIs, or ARM register access depending on the target triple. The coeffect analysis determines whether pure computation allows aggressive optimization or whether async boundaries require continuation machinery.
+On this foundation, Alex's fan-out architecture can now target multiple platforms from the same PSG. A single CCS intrinsic like `Time.currentTicks()` will fan out to Linux syscalls, Windows kernel calls, macOS mach APIs, or ARM register access depending on the target triple. The coeffect analysis determines whether pure computation allows aggressive optimization or whether async boundaries require continuation machinery.
 
 ## Looking Forward: From PSG to PHG
 
@@ -250,4 +250,4 @@ The same PHG structure will enable unified compilation across traditional and no
 
 Native compilation of functional languages has historically required significant compromises, either in the expressiveness of the source language or in the efficiency of the generated code. The Fidelity framework's approach (preserving Clef's full type information through progressive lowering via MLIR to LLVM) aims to avoid these compromises.
 
-The Hello World sample running natively marks a milestone, but it's the architecture that matters. The nanopass pipeline, the bidirectional zipper, the coeffect tracking, and the path toward the temporal PHG all work together to enable functional programming that truly understands the hardware on which it runs. From high-level functional expression to native efficiency.
+The nanopass pipeline, the bidirectional zipper, the coeffect tracking, and the path toward the temporal PHG together compile functional code to native binaries that carry the hardware model through every stage.

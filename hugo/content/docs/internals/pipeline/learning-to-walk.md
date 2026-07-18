@@ -12,13 +12,13 @@ params:
 
 Many programmer's first program prints "Hello, World!" to the console. It's a rite of passage, a proof of life, a single line that says "it's real!"
 
-What that single line conceals holds the key to a new world.
+That single line sits atop the compilation machinery this entry describes.
 
 Beginners often start with procedural or "imperative" thinking; that code executes top to bottom, left to right. We show them that `Console.write "Hello"` does exactly what it says. We don't mention that the compiler many times will read their code in a different order and emit instructions in an arrangement that bears little resemblance to what they typed.
 
 > We don't mention this machinery because most of the time it doesn't matter, at least not ***at first***.
 
-This entry outlines how Fidelity walks its unique Program Semantic Graph to generate MLIR. Parsing, name resolution, and type checking sit upstream of this traversal and are inherited from F# Compiler Services as a deliberate part of our surgical fork; the article picks up below that boundary, where the enriched PSG hands off to MLIR generation. The walk was inspired by Tomas Petricek's work on coeffects, where the requirements a computation places on its environment are tracked alongside what that computation does. The approach draws on Huet's zipper for navigation, MLKit's semantic edge following for dependency resolution, and the nanopass tradition for phase separation. What emerges is a unique traversal that looks nothing like reading code, yet produces the computation exactly as the code intended.
+Fidelity walks its Program Semantic Graph to generate MLIR. Parsing, name resolution, and type checking sit upstream of this traversal, inherited from F# Compiler Services as a deliberate part of our surgical fork. The article picks up below that boundary, where the enriched PSG hands off to MLIR generation. The walk was inspired by Tomas Petricek's work on coeffects, where the requirements a computation places on its environment are tracked alongside what that computation does. The approach draws on Huet's zipper for navigation, MLKit's semantic edge following for dependency resolution, and the nanopass tradition for phase separation. The traversal proceeds in dependency and emission order rather than source order, and produces the computation the code specifies.
 
 ## Four Ways to Say Hello
 
@@ -35,7 +35,7 @@ The first sample compiles in about 20 lines of MLIR. The fourth requires over 10
 
 ## The Four Orders
 
-When you read code, you often will start at the top and work your way down. When you evaluate code, you compute arguments before passing them to functions. When you analyze dependencies, you trace from uses back to definitions. When you emit machine code, you must define values before using them.
+A developer reads code from the top down. Evaluation runs differently, computing arguments before the functions they feed. Dependency analysis traces from each use back to its definition, and machine-code emission carries its own constraint: every value must be defined before it is used.
 
 These four orders rarely align. Evaluation, dependency, and emission generally align with one another by construction in any well-designed compiler. Source order is the asymmetric one, the order our walk reconciles against the others.
 
@@ -64,7 +64,7 @@ flowchart TD
     end
 ```
 
-Source order is how developers read. Dependency order is how the compiler analyzes. Emission order is how MLIR requires definitions to appear. And in a way, our PSG (Program Semantic Graph) traversal must reconcile all three.
+Developers read in source order, the compiler analyzes in dependency order, and MLIR requires definitions to appear in emission order. Our PSG (Program Semantic Graph) traversal must reconcile all three.
 
 ## Reading Sample 3
 
@@ -88,21 +88,21 @@ A human reads this top to bottom: `greet` is defined, then `hello`, then `main`.
 
 > The call graph flows in the opposite direction from source order.
 
-Now consider the pipe expression: `Console.readln() |> greet`. In Clef, `|>` is syntactic sugar. The expression `x |> f` means `f x`. So `Console.readln() |> greet` is actually `greet (Console.readln())`. The pipe obscures the fact that `greet` receives the result of `readln` as its argument.
+Now consider the pipe expression: `Console.readln() |> greet`. In Clef, `|>` is syntactic sugar. The expression `x |> f` means `f x`. So `Console.readln() |> greet` is actually `greet (Console.readln())`. In this surface form `greet` receives the result of `readln` as its argument, written left to right through the pipe.
 
 The compiler cannot emit code in source order. It cannot emit code in reading order. It must emit code in dependency order, which means understanding that `greet` must be defined before `hello` can call it, and that `readln`'s result flows into `greet`'s parameter.
 
-## The Zipper and the Photographer
+## The Passive Zipper
 
-We made the early determination with the Fidelity framework that the Composer compiler shoud traverse a newly enriched PSG using a structure called a "zipper". The zipper, introduced by Gérard Huet in 1997 and explored extensively by Tomas Petricek in the Clef context, provides multi-directional navigation through an immutable structure. You can move down into children, up to parents, left to siblings, right to siblings. At any moment, the zipper has a "focus" on the current node while maintaining the path back to the root. It has, in a way, its own form of 'attention'.
+We made the early determination with the Fidelity framework that the Composer compiler shoud traverse a newly enriched PSG using a structure called a "zipper". The zipper, introduced by Gérard Huet in 1997 and explored extensively by Tomas Petricek in the Clef context, provides multi-directional navigation through an immutable structure. You can move down into children, up to parents, left to siblings, right to siblings. At any moment, the zipper has a "focus" on the current node while maintaining the path back to the root.
 
-Think of the zipper as a photographer walking through a landscape. The photographer can only capture what they've already seen. They cannot photograph a mountain they haven't reached. They cannot include tomorrow's sunset in today's frame.
+The zipper can record only nodes the traversal has already visited. A node the walk has not yet reached stays outside its focus.
 
-This metaphor reveals a crucial property: **the zipper witnesses, it does not decide**.
+**The zipper witnesses. It does not decide.**
 
-As the traversal proceeds, each node is visited and its contribution recorded. When the zipper reaches a variable reference, the definition has already been photographed. When it reaches a function application, the arguments are already in frame. The photograph, the emitted MLIR, is always consistent because the walk ensures consistency.
+As the traversal proceeds, each node is visited and its contribution recorded. When the zipper reaches a variable reference, the definition has already been emitted. When it reaches a function application, its arguments have already been visited. The emitted MLIR stays consistent because the traversal order emits each dependency first.
 
-But here's the key insight: the photographer didn't choose the route. To complete the allegory, the path through the landscape was planned before the walk began.
+The traversal order is fixed during PSG construction, before the walk begins. The zipper follows that order rather than selecting one.
 
 ## Coeffects: Requirements Before Execution
 
@@ -181,7 +181,7 @@ Notice what happened to the pipe operator. In the source, `Console.readln() |> g
 
 This desugaring happens during PSG construction, in a nanopass called `ReducePipeOperators`. By the time the zipper walks the graph, the pipe is gone. What remains is the semantic truth: `greet` is called with the result of `readln`.
 
-This is why [nanopass architecture](/docs/internals/concepts/nanopass-navigation/) matters. Each transformation does one thing. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
+Nanopass architecture ([nanopass-navigation](/docs/internals/concepts/nanopass-navigation/)) confines each transformation to one job. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
 
 ## Sample 4
 
@@ -205,7 +205,7 @@ let main argv =
 
 This innocent-looking code introduces a function that returns a function. When `greet "Hello"` is called, it doesn't print anything. It returns a new function, one that remembers `prefix` is `"Hello"` even though `greet` has returned.
 
-That memory has a name: closure. And closures have implications that ripple through every layer of the compiler.
+That memory is a closure, and closures constrain capture, layout, and allocation decisions across the compiler.
 
 The inner function `fun name -> ...` captures `prefix` from its enclosing scope. Where does that captured value live? How long must it persist? What is the runtime representation of a "function that remembers"?
 
@@ -225,21 +225,21 @@ flowchart TB
     B1 --> B2 --> B3 --> B4 --> B5
 ```
 
-> Closures are where the compiler's walk becomes a climb.
+> Closures are where the walk becomes hardest.
 
-They deserve their own entry. For now, it's worth noting that Sample 4's compilation complexity exceeds the other three combined, and the output is still just "Hello, World."
+They deserve their own entry. For now, Sample 4's compilation complexity exceeds the other three combined, and the output is still just "Hello, World."
 
-The coeffects for closures, capture analysis, escape analysis, environment layout, are computed before the zipper walks. But those coeffects require understanding that `prefix` is captured, that the closure escapes its creation scope, that the environment must outlive the call to `greet`. This is analysis the earlier samples didn't need. Some closure-related lowering decisions, environment-allocation strategy under specific target constraints among them, arrive later in the MLIR pipeline rather than at this traversal.
+The closure coeffects are computed before the zipper walks: capture analysis, escape analysis, and environment layout. But those coeffects require understanding that `prefix` is captured, that the closure escapes its creation scope, that the environment must outlive the call to `greet`. This is analysis the earlier samples didn't need. Some closure-related lowering decisions, environment-allocation strategy under specific target constraints among them, arrive later in the MLIR pipeline rather than at this traversal.
 
 ## Standing Art
 
 None of these techniques are novel in isolation. Post-order traversal is textbook compiler construction. Zippers appear in every functional programming curriculum. Coeffects were formalized by Petricek, Orchard, and Mycroft at ICALP 2013 and ICFP 2014. Semantic edge following comes from the MLKit compiler's decades of work on Standard ML. Nanopass architecture was systematized by Sarkar, Waddell, and Dybvig.
 
-What Fidelity contributes is the distillation of these well-principled ideas into a cohesive construct. Coeffects are intrinsic to graph compilation. The zipper traversal elides to any needed structure. Semantic edges and structural edges follow in unified form. Nanopass decomposition enables each phase to simplify the problem space. Properly fused, these elements exhibit *Gestalt*: the whole becomes greater than the sum of its parts.
+What Fidelity contributes is the distillation of these well-principled ideas into a cohesive construct. Coeffects are intrinsic to graph compilation. The zipper traversal elides to any needed structure. Semantic edges and structural edges follow in unified form. Nanopass decomposition enables each phase to simplify the problem space. Fused together, these four techniques form one traversal design rather than four separate passes.
 
-A good compiler walks so developers can run. They write `Console.readln() |> greet` and the machinery disappears behind the syntax. The code expression should define functions that return functions and the captures should be handled invisibly. The four orders, source and evaluation and dependency and emission, should reconcile without intervention.
+The developer never sees this reordering. They write `Console.readln() |> greet`, and the compiler performs the reordering they would otherwise have to reason about. The code expression should define functions that return functions and the captures should be handled invisibly. The four orders should reconcile without intervention: source, evaluation, dependency, and emission.
 
-That reconciliation is what we call "the walk." What looks like simplicity on the surface demands true skill beneath the surface.
+That reconciliation is what we call "the walk." A direct call and a closure reach the same output through it at very different compilation cost.
 
 ## Related Reading
 

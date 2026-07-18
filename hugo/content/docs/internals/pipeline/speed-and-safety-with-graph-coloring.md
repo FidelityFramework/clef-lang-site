@@ -11,9 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-The Fidelity Framework faces a fascinating challenge: how do we identify opportunities for massive parallelism hidden within sequential-looking Clef code? The answer lies in an elegant application of graph coloring to our Program Hypergraph (PHG), using bidirectional zippers to traverse and analyze control flow and data flow patterns. This approach, inspired by insights from Ramsey graph theory, enables automatic discovery of where async and continuation-based code can be transformed into interaction nets for parallel execution.
+The Fidelity Framework identifies opportunities for massive parallelism hidden within sequential-looking Clef code. We apply graph coloring to our Program Hypergraph (PHG), using bidirectional zippers to traverse and analyze control flow and data flow patterns. This approach, inspired by insights from Ramsey graph theory, enables automatic discovery of where async and continuation-based code can be transformed into interaction nets for parallel execution.
 
-This blog explores how compound graph construction principles from Ramsey theory guide our compilation strategy, helping us identify "purely parallel" regions that can leverage MLIR's interaction net dialect for dramatic performance improvements across diverse hardware.
+Compound graph construction principles from Ramsey theory guide our compilation strategy for identifying "purely parallel" regions, which map to MLIR's interaction net dialect for performance gains across diverse hardware.
 
 ## The Parallelization Discovery Problem
 
@@ -77,7 +77,7 @@ let findParallelRegions (zipper: PSGZipper) =
 
 ## From Async to Interaction Nets
 
-The magic happens when we identify that async operations are actually data-parallel:
+Zipper traversal finds async operations that are actually data-parallel:
 
 ```fsharp
 // Original async code
@@ -347,13 +347,13 @@ This graph coloring approach opens exciting possibilities:
 - **Cross-Function Analysis**: Find parallelism across function boundaries
 - **Speculative Parallelization**: Color optimistically, verify at runtime
 
-## Conclusion
+## Discovered Parallelism
 
-By applying graph coloring to our Program Semantic Graph and using bidirectional zippers for sophisticated traversal, we transform the compiler into a parallelism discovery engine. Ramsey theory enters here as a lens on how simple patterns compound into complex parallel structures, a question of structure rather than verification.
+Graph coloring on our Program Semantic Graph, traversed by bidirectional zippers, turns the compiler into a parallelism-discovery engine. Ramsey theory describes how simple patterns compound into larger parallel structures. That structure carries no verification obligation.
 
-Instead of developers manually identifying parallel regions, the compiler discovers them automatically through mathematical analysis. Sequential-looking async code transforms into massively parallel interaction nets, delivering dramatic performance improvements while maintaining Clef's elegant programming model.
+Instead of developers manually identifying parallel regions, the compiler discovers them automatically through mathematical analysis. Sequential-looking async code transforms into massively parallel interaction nets, raising performance while preserving Clef's programming model.
 
-The beauty is that developers write natural Clef code, and the compiler does the hard work of finding and exploiting parallelism. Graph coloring keeps our parallel execution "on the beam" through intelligent transformation, the coloring itself rather than any verification pass, and that transformation unlocks the full potential of modern hardware.
+Developers write natural Clef code, and the compiler finds and exploits the parallelism. Graph coloring keeps our parallel execution "on the beam" through the coloring transformation itself rather than any verification pass, and that transformation maps the code onto modern hardware.
 
 ## See also
 

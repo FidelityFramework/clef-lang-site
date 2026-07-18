@@ -12,7 +12,7 @@ params:
 
 MLIR's testing infrastructure rests on text matching. While MLIR itself is built on progressive lowering and type-safe compilation, the tools used to verify its correctness, `lit` and `FileCheck`, operate at the level of untyped string matching. That gap is structural rather than aesthetic. For frameworks like Fidelity that need to preserve semantic properties through compilation, text-based testing cannot reach the properties at issue.
 
-This entry examines the structural limitations of mainstream MLIR testing and explains why the Fidelity Framework requires, and is building, a different approach. Using parser combinators, semantic graphs, and proof-carrying hyperedges, Composer's testing infrastructure treats verification as a first-class compilation concern. The aim is a foundation for compiler correctness properties that text-based tools cannot establish, with better ergonomics following from that foundation rather than being the point of it.
+Composer's testing infrastructure uses parser combinators, semantic graphs, and proof-carrying hyperedges to treat verification as a first-class compilation concern. It establishes compiler correctness properties that text-based tools cannot reach. Better ergonomics follow from that foundation.
 
 ## The Current State: lit + FileCheck
 
@@ -40,7 +40,7 @@ func.func @main(%arg0: i32) -> i32 {
 }
 ```
 
-When this test passes, `lit` shows minimal output, silence is success. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic, favoring tests that are fast, simple, and universally applicable.
+When this test passes, `lit` shows minimal output, no failure report means the test passed. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic, favoring tests that are fast, simple, and universally applicable.
 
 ### What lit Does Well
 
@@ -54,9 +54,9 @@ To be fair, `lit` has genuine strengths:
 
 These aren't trivial advantages. `lit`'s simplicity and universality explain its longevity.
 
-## The Cracks in the Foundation
+## Where lit and FileCheck Fall Short
 
-But `lit` + `FileCheck`'s strengths reveal their limitations. The very features that make them simple and universal make them inadequate for semantic verification.
+The features that make `lit` and `FileCheck` simple and universal are the same ones that make them inadequate for semantic verification.
 
 ### Problem 1: Untyped Text Matching
 
@@ -80,7 +80,7 @@ More fundamentally, `FileCheck` can't answer questions like:
 - Is control flow structurally equivalent?
 - Are higher-order structures (continuations, effects) preserved?
 
-These aren't edge cases. For any framework claiming to preserve semantic properties through compilation, these are the central questions.
+For any framework claiming to preserve semantic properties through compilation, these questions are central.
 
 ### Problem 2: No Compile-Time Verification
 
@@ -96,7 +96,7 @@ This test won't fail until runtime. If the pass name is wrong, it surfaces in CI
 
 Compare this to MLIR itself, where passes are strongly typed and verified at compile time.
 
-> The irony is sharp: they use untyped strings to test a type-safe compiler infrastructure.
+> Untyped strings test a type-safe compiler infrastructure.
 
 ### Problem 3: The Tautology Trap
 
@@ -126,7 +126,7 @@ This is automation built to patch the brittleness of regex-based testing, addres
 
 The MLIR testing guide tries to mitigate this with best practices: "tests should be minimal", "don't check unnecessary details", "avoid diff tests". These are guidelines, not guarantees. Nothing in the tooling *prevents* brittle tests. The burden falls on developer discipline across hundreds of contributors.
 
-Test infrastructure that requires dedicated tooling to repair itself after routine refactoring reflects an architectural limit, not a testing one.
+Test infrastructure that requires dedicated tooling to repair itself after routine refactoring locates the problem in the representation the tests match against, upstream of the tests themselves.
 
 ### Problem 5: Dynamically Typed Verification Tooling
 
@@ -134,7 +134,7 @@ Test infrastructure that requires dedicated tooling to repair itself after routi
 
 ## What Fidelity Requires
 
-The Fidelity Framework's architecture demands verification capabilities that `lit` + `FileCheck` cannot provide. These aren't aspirational, they're architectural necessities:
+The Fidelity Framework's architecture requires verification capabilities that `lit` + `FileCheck` cannot provide:
 
 ### Requirement 1: Semantic Preservation
 
@@ -155,7 +155,7 @@ Fidelity aims to prove correctness properties: memory safety, effect isolation, 
 - **Refinement relations**: Proving low-level code refines high-level semantics
 - **Invariant checking**: Verifying properties hold through transformations
 
-> You can't build formal proofs on regex.
+> Regex matching over text cannot express structural induction, refinement relations, or invariant checking, so it cannot carry a formal proof.
 
 ### Requirement 3: Independent Verification
 
@@ -428,7 +428,7 @@ let runTest (test: MLIRTest) : CompilerResult<unit> =
     }
 ```
 
-Notice what we've achieved:
+This test definition delivers:
 - **Type-safe pass names**: `Pass.MathToFuncs` is checked at compile time
 - **Composable rules**: Build complex tests from simple components
 - **Independent execution**: Run real tools, parse real output
@@ -547,16 +547,16 @@ Composer Generator (AST₁) → MLIR Text
                         Typed Verification
 ```
 
-The generator and verifier share no code. They're connected only through:
+The generator and verifier share no code, connected only through:
 1. Real tool execution (external validation)
 2. MLIR textual format (standardized interface)
 3. Semantic properties (mathematical relations, not code)
 
 ## Hypergraph-Driven Test Generation
 
-The approach outlined above addresses test *verification*, checking that transformations preserve semantic properties. But there's a more ambitious possibility worth exploring: what if the hypergraph representation could drive test *generation* itself?
+The approach outlined above addresses test *verification*, checking that transformations preserve semantic properties. A further possibility is whether the hypergraph representation could drive test *generation*, not only its verification.
 
-This is speculative territory. We're not claiming this is solved or even fully designed. But the foundations are intriguing enough to warrant investigation.
+We treat this as speculative. We have not designed it in full or shown that it works.
 
 ### The Multiplying Effect of Hypergraphs
 
@@ -598,7 +598,7 @@ The test harness could interpret these directives by:
 
 ### Proofs vs. Tests
 
-Before exploring test generation, we must clarify a fundamental principle: **proofs are stronger than tests**. Where proofs exist, tests are redundant. This isn't just theoretical, it's architectural.
+**Proofs are stronger than tests.** Where proofs exist, tests are redundant. Composer's pipeline enforces this redundancy at the level of the compilation architecture.
 
 When F* verification proves a function's correctness and those proofs travel through MLIR's SMT dialect, that code doesn't need testing. The proof **is** the verification. Testing proven code wastes resources and creates false confidence (tests might pass while missing edge cases the proof already covers).
 
@@ -615,7 +615,7 @@ This is why the SMT dialect in MLIR is crucial. As transformations occur during 
 3. **Integration logic** - how proven components compose
 4. **Proof boundary correctness** - interfaces between proven and unproven code
 
-The hypergraph's proof hyperedges tell us what **doesn't** need testing, which is just as important as knowing what does.
+The hypergraph's proof hyperedges identify the code that **doesn't** need testing, alongside the code that does.
 
 ### Our Confidence in This Approach
 
@@ -634,7 +634,7 @@ The integration of MLIR's SMT dialect with proof hyperedges creates a foundation
 - **Effect tracking** from coeffect analysis
 - **Type refinements** that constrain valid inputs
 
-When combined with the bidirectional zipper navigation described in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/), these proof hyperedges guide intelligent test placement:
+When combined with the bidirectional zipper navigation described in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/), the harness uses these proof hyperedges to place tests:
 
 1. **Identifying unproven code paths**: The zipper traverses the hypergraph, finding nodes **without** proof hyperedges
 2. **Detecting proof boundaries**: Where proven code interfaces with unproven external systems
@@ -704,7 +704,7 @@ Several hard problems remain unsolved:
 
 ### The Experimental Path
 
-This isn't a feature roadmap, it's a research question. The path forward involves:
+This is a research question, not a feature roadmap. The path forward:
 
 1. **Start simple**: Can we generate basic test inputs from type signatures alone?
 2. **Add structure**: Can graph edge patterns suggest coverage dimensions?
@@ -717,11 +717,11 @@ Treat this as hypothesis-driven experimentation, not predetermined design. Build
 
 It's important to separate two distinct concepts:
 
-- **Self Hosting (Phase 6)**: Compiling the test harness itself with Composer. This is self-hosting, using the compiler to build its own verification tools. Concrete, well-understood, definitely feasible.
+- **Self Hosting (Phase 6)**: Compiling the test harness itself with Composer. This is self-hosting, using the compiler to build its own verification tools. This is concrete, well-understood, and feasible.
 
 - **Hypergraph-driven test generation**: Using semantic graph structure to automatically synthesize test cases. Speculative, research-oriented, success uncertain.
 
-These are orthogonal capabilities. Self Hosting proves the compiler can build real, complex Clef programs (including the test harness). Test generation, if it works, would reduce the manual burden of creating comprehensive test suites.
+The two are orthogonal. Self Hosting proves the compiler can build real, complex Clef programs, the test harness among them, whereas test generation, if it works, would reduce the manual burden of creating comprehensive test suites.
 
 ### Why Explore This?
 
@@ -743,7 +743,7 @@ We might have:
 3. Verify properties automatically
 4. Hand-write tests only for uncovered scenarios
 
-That's a different paradigm. Whether it's achievable remains an open question.
+Whether this is achievable remains an open question.
 
 ## Implementation Roadmap
 
@@ -812,14 +812,14 @@ That's a different paradigm. Whether it's achievable remains an open question.
 
 ## Why This Matters
 
-This isn't academic posturing. The ability to verify semantic preservation through compilation is the difference between:
+Verifying semantic preservation through compilation is the difference between:
 
 - **Hoping** your compiler is correct
 - **Knowing** your compiler is correct
 
 For Fidelity, which aims to preserve delimited continuations, effect handlers, and higher-order structures through compilation, this verification capability is essential.
 
-> The Clef project won't build a production compiler on hope, text and regex.
+> A production compiler needs verification that reasons over typed structure, which text-and-regex matching cannot provide.
 
 Moreover, this approach demonstrates a broader principle: **the tools we use to verify our work should embody the same principles as the work itself**. If your compiler values type safety, progressive lowering, and semantic preservation, your test infrastructure should too.
 
@@ -832,13 +832,13 @@ The ultimate goal is self-hosting: compile the test harness itself with Composer
 3. The verified properties prove the test harness compiled correctly
 4. The loop closes: the system verifies itself
 
-This isn't circular reasoning, it's Self Hosting. The initial test harness (compiled with .NET) verifies Composer. Once verified, Composer compiles its own test harness. The .NET-compiled version and Composer-compiled version must agree, providing cross-validation.
+The loop bottoms out in external validation. The initial test harness (compiled with .NET) verifies Composer. Once verified, Composer compiles its own test harness. The .NET-compiled version and Composer-compiled version must agree, providing cross-validation.
 
 Compiler correctness requires a system that can verify its own compilation process while remaining grounded in external validation.
 
 ## Testing with Teeth
 
-The MLIR ecosystem has settled on regex and string matching, and for most other use cases, that can be seen as sufficient. But the Fidelity Framework requires correctness guarantees that text-based testing cannot provide. The choice between universality (lit) and semantic verification isn't a false dichotomy, it reflects different architectural commitments.
+The MLIR ecosystem has settled on regex and string matching, which suffices for most other use cases. But the Fidelity Framework requires correctness guarantees that text-based testing cannot provide. The choice between universality (lit) and semantic verification follows from different architectural commitments.
 
 With Composer and the Fidelity Framework, we're building a testing infrastructure that achieves both:
 
@@ -858,6 +858,6 @@ The path we're pursuing:
 4. Prove semantic preservation through transformations (SMT-backed verification)
 5. Self-host with Composer for Self Hosting (compiler tests itself)
 
-This isn't just "better testing." It's a fundamentally different approach where verification and compilation are unified concerns. Text-based testing can never provide this because it lacks the semantic foundation that Fidelity's hypergraph architecture provides.
+In this approach, verification and compilation are unified concerns. Text-based testing can never provide this because it lacks the semantic foundation that Fidelity's hypergraph architecture provides.
 
-The Fidelity Framework demands verification with teeth. We're building it.
+The Fidelity Framework requires verification strong enough to check semantic preservation through compilation, and Composer's testing infrastructure is being built to provide it.

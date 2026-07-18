@@ -13,7 +13,7 @@ params:
 
 ## Translation Validation via the MLIR SMT Dialect
 
-After the PSG reaches saturation, with every node stamped with its dimensional proof certificate and its coeffect resolution, the code is lowered to MLIR. Lowering introduces a new risk: optimizations can violate verified properties. The MLIR SMT dialect is designed to close this gap through **translation validation**. The [eBPF target](/blog/building-bulletproof-ebpf-programs/) raises the stakes on exactly this discipline: at load, the Linux kernel's own verifier re-derives admissibility from the delivered bytecode, an external referee for the properties translation validation preserves.
+After the PSG reaches saturation, with every node stamped with its dimensional proof certificate and its coeffect resolution, the code is lowered to MLIR. Lowering introduces a new risk: optimizations can violate verified properties. The MLIR SMT dialect is designed to close this gap through **translation validation**. The [eBPF target](/blog/building-bulletproof-ebpf-programs/) exercises this discipline directly: at load, the Linux kernel's own verifier re-derives admissibility from the delivered bytecode, an independent check of the same properties translation validation preserves.
 
 The approach builds on the work of Fehr et al. (2025), who demonstrated "First-Class Verification Dialects for MLIR," the ability to express verification constraints directly within the IR rather than as external artifacts that can become disconnected from the code. Their work found five miscompilation bugs in upstream MLIR through this approach.
 
@@ -70,11 +70,11 @@ When an optimization pass transforms the MLIR, the SMT dialect validates that th
 smt.check_sat %refines : !smt.bool
 ```
 
-If an optimization would violate a verified property, the SMT solver rejects the transformation. This is designed to ensure that the mathematically verified properties survive the entire journey from the high-level PSG down to the lowest-level hardware dialects (`hw`, `comb`, `rocdl`, or `spirv`).
+If an optimization would violate a verified property, the SMT solver rejects the transformation. This is designed to preserve the mathematically verified properties at every lowering stage, from the high-level PSG down to the lowest-level hardware dialects (`hw`, `comb`, `rocdl`, or `spirv`).
 
 ### Proof Before Lowering
 
-A critical architectural distinction in the Fidelity Framework is *when* these proofs are generated. CCS is designed to perform its rigorous analysis and generate the proof certificate **before** any MLIR lowering occurs. This guarantees that the source of truth is the high-level native AST. By solving the constraints at the highest possible semantic level, the system captures the developer's exact domain intent before it is lowered into control flow graphs and target-specific dialects. The Alex middle-end will embed the Z3 proofs already solved in the PSG directly into the Intermediate Representation.
+CCS is designed to perform its rigorous analysis and generate the proof certificate **before** any MLIR lowering occurs. This guarantees that the source of truth is the high-level native AST. By solving the constraints at the highest possible semantic level, the system captures the developer's exact domain intent before it is lowered into control flow graphs and target-specific dialects. The Alex middle-end will embed the Z3 proofs already solved in the PSG directly into the Intermediate Representation.
 
 ## Platform-Aware Resolution
 
@@ -101,7 +101,7 @@ computeForce: float<kg> -> float<kg> -> float<m> -> float<newtons>
              Fidelity: 1.0 (lossless; float64 range exceeds posit32 range)
 ```
 
-IEEE 754 distributes precision uniformly across its representable range. A `float64` allocates the same number of mantissa bits to values near 1.0 as to values near \(10^{300}\). For computations whose values span a narrow dimensional range, the majority of IEEE 754's precision budget is allocated to ranges the computation will never visit. Gustafson's posit arithmetic uses *tapered precision*, concentrating mantissa bits near 1.0 where most computations cluster. DTS is designed to provide the formal mechanism for what posit arithmetic presupposes: knowledge of which value ranges matter for a given computation. The dimensional annotation constrains the semantic range; the compiler would evaluate how different representations distribute precision across that range and select the one that minimizes worst-case relative error.
+IEEE 754 distributes precision uniformly across its representable range. A `float64` allocates the same number of mantissa bits to values near 1.0 as to values near \(10^{300}\). For computations whose values span a narrow dimensional range, the majority of IEEE 754's precision budget covers ranges outside that span. Gustafson's posit arithmetic uses *tapered precision*, concentrating mantissa bits near 1.0 where most computations cluster. DTS is designed to provide the formal mechanism for what posit arithmetic presupposes: knowledge of which value ranges matter for a given computation. The dimensional annotation constrains the semantic range. The compiler would then evaluate how different representations distribute precision across that range and select the one that minimizes worst-case relative error.
 
 The representation selection is deterministic. Given a value \(v\) with dimension \(d\) and a value range \([a, b]\) inferred from dimensional constraints, and a set of available representations \(R = \{r_1, \ldots, r_k\}\) on target \(T\), the compiler selects:
 
@@ -111,7 +111,7 @@ This is a deterministic function from dimensional constraints and target capabil
 
 ## The Quire: Where DTS and DMM Converge
 
-The posit quire accumulator provides a concrete illustration of how DTS and DMM converge on a single construct. A quire is a fixed-width exact accumulator that holds intermediate results of multiply-add operations without rounding; rounding occurs once when the final result is converted back to a posit value. The Posit Standard (2022) defines the quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32.
+The posit quire is one construct on which DTS and DMM converge. A quire is a fixed-width exact accumulator that holds intermediate results of multiply-add operations without rounding. Rounding occurs once, when the final result is converted back to a posit value. The Posit Standard (2022) defines the quire width as \(n^2/2\) bits for an \(n\)-bit posit, yielding a 512-bit accumulator for posit32.
 
 ```fsharp
 let work (forces: Span<float<newtons>>) (distances: Span<float<meters>>) : float<joules> =
@@ -144,11 +144,11 @@ q: Quire (exact accumulator)
   Lifetime: loop scope (lines 3-5), no escape detected
 ```
 
-The quire is a value with dimensional, allocation, and capability properties that the DTS+DMM framework is designed to handle through its standard inference and coeffect machinery, requiring no special-case compiler support.
+These dimensional, allocation, and capability properties would resolve through the DTS+DMM framework's standard inference and coeffect machinery, with no special-case compiler support.
 
 ## The Cryptographic Release Certificate
 
-The complete pipeline, from DTS inference through DMM coeffect resolution, Z3 proof discharge, PSG saturation, and MLIR translation validation, is designed to culminate in a single artifact: the **cryptographic release certificate**.
+The complete pipeline runs from DTS inference through DMM coeffect resolution, Z3 proof discharge, PSG saturation, and MLIR translation validation. It is designed to culminate in a single artifact: the **cryptographic release certificate**.
 
 The culmination of this architecture occurs when the developer executes `clef build --release`. At this point, the compilation shifts from interactive design-time guidance to immutable, cryptographic certification:
 
@@ -184,7 +184,7 @@ The Fidelity Framework's integrated approach to verification is designed to coll
 
 The PSG is designed to persist as a long-lived data structure maintained by the language server. The elaborated, saturated graph would serve as the data source for all design-time services: hover information, resolution panels, diagnostic overlays, and restructuring suggestions. These feedback categories are all properties of the PSG that the compiler computes as part of normal compilation. Lattice will read the PSG; the design-time tooling is a view over the compilation graph. The approachable statement of this position, framed for readers arriving from the runtime-reflection mindset, is [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
-The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) formalizes why preservation matters. Each compilation stage has strictly more information than its predecessor:
+The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) states the reason to preserve information across compilation stages. Each compilation stage has strictly more information than its predecessor:
 
 \[I_{\text{source}} \subset I_{\text{PSG}} \subset I_{\text{MLIR}} \subset I_{\text{MLIR-opt}} \subset I_{\text{LLVM}} \subset I_{\text{native}}\]
 
@@ -194,7 +194,7 @@ Decisions that can be deferred to later compilation stages should be, because la
 
 SpeakEZ has a patent pending for this innovation: "System and Method for Verification-Preserving Compilation Using Formal Certificate Guided Optimization" (US 63/786,264). This patent application covers the approach to verification-preserving compilation that the Fidelity Framework represents.
 
-As computing evolves toward greater specialization of hardware, the challenge of correctly interfacing with diverse architectures becomes increasingly critical. The patent-pending technology enables hardware/software co-design where verification properties are maintained across the entire compilation pipeline despite aggressive optimizations targeting specialized hardware. This becomes especially important as heterogeneous computing environments with CPUs, GPUs, FPGAs, and domain-specific accelerators become the norm.
+As hardware specializes, correctly interfacing with diverse architectures is a harder engineering problem. The patent-pending technology enables hardware/software co-design where verification properties are maintained across the entire compilation pipeline despite aggressive optimizations targeting specialized hardware. Heterogeneous environments combining CPUs, GPUs, FPGAs, and domain-specific accelerators are becoming the norm, and each added target compounds the interfacing problem.
 
 ---
 

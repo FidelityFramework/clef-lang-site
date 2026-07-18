@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern processors offer substantial parallel execution capacity. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reorganize computation around different execution models. Yet most code harnesses only a fraction of this capacity, because the right parallel execution strategy follows from what a program does together with what it needs from its environment, and a traditional compiler sees only the first half. Coeffect analysis supplies the second half.
+Modern processors offer substantial parallel execution capacity. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reorganize computation around different execution models. Yet most code harnesses only a fraction of this capacity. The right parallel execution strategy follows from both what a program computes and what it requires from its environment. A traditional compiler resolves only the computation; coeffect analysis resolves the environmental requirement.
 
 ## The Parallelism Predicament
 
@@ -24,7 +24,7 @@ let processDataset (data: float[]) =
     |> Array.reduce (+)
 ```
 
-How should this compile? The answer depends on context that traditional compilers can't see:
+How this compiles depends on context a traditional compiler does not have:
 
 - Is `complexTransform` a pure mathematical function or does it access external resources?
 - What is the size of the data array: does it fit in L3 cache or span gigabytes?
@@ -98,11 +98,11 @@ let enrichDataPoints (points: DataPoint[]) = async {
  
 ```
 
-The choice between interaction nets and delimited continuations fundamentally determines what optimizations are possible and which hardware can efficiently execute the code.
+This choice sets which optimizations apply to a region and which hardware can execute it efficiently.
 
 ## Coeffects
 
-Coeffects track what code needs from its environment, and that requirement is the information needed to choose between parallel execution strategies:
+Coeffects track what code requires from its environment, and that requirement is what selects between parallel execution strategies:
 
 ```fsharp
 // Coeffect inference discovers the nature of computation
@@ -139,7 +139,7 @@ let runSimulation (grid: float[,]) =
 
 ## Real Hardware, Real Decisions
 
-Let's see how coeffect analysis guides compilation for different processors:
+
 
 ### Multi-Core CPU: Cache-Aware Parallelism
 
@@ -256,7 +256,7 @@ graph LR
 
 ## Beyond AI: Parallelism Everywhere
 
-While AI workloads grab headlines, coeffect-driven compilation benefits ***any*** parallel computation:
+AI draws most of the attention, but coeffect-driven compilation applies to ***any*** parallel computation:
 
 ### Financial Modeling
 ```fsharp
@@ -301,7 +301,7 @@ let alignSequences (reference: DNA) (samples: DNA[]) =
  
 ```
 
-## Observability Falls Out of the Same Analysis
+## Derived Observability
 
 Coeffect analysis carries a second use: automatic observability. Since the compiler already tracks context requirements, telemetry can be inserted at the boundaries that analysis already identifies:
 
@@ -323,9 +323,9 @@ let processOrder order =
  
 ```
 
-This telemetry falls out of the same analysis that drives optimization. Fidelity's Program Semantic Graph, and the static resolution of interaction nets and delimited continuations, keep all code paths known and traceable, with no opaque allocations or convenience downcasts to obscure data and control flow. The boundary-level telemetry rides on that determinism: because the compute graph tracks it, the observation points are already there to read.
+This telemetry comes from the same analysis that drives optimization. Fidelity's Program Semantic Graph keeps every code path known and traceable through the static resolution of interaction nets and delimited continuations, with no opaque allocations or convenience downcasts to obscure data and control flow. The boundary-level telemetry depends on that determinism: because the compute graph already tracks the context requirements, the observation points sit at boundaries the analysis has identified.
 
-The same determinism reduces the fixed costs of day-over-day development cycles, not only runtime cost. The transparency these designs carry also lowers the ongoing burden of production monitoring and maintenance.
+That determinism reduces the fixed costs of day-over-day development cycles as well as runtime cost, and its transparency lowers the ongoing burden of production monitoring and maintenance.
 
 ## Separate Analysis, Accurate Workloads
 
@@ -368,11 +368,11 @@ Coeffects deliver measurable performance wins:
 
 The choice between interaction nets and delimited continuations follows a clear rule: what your code needs to accomplish on a given server architecture settles it. By making this choice automatically based on coeffect analysis, Fidelity targets the right workload for a given chipset every time.
 
-As we enter an era of increasingly heterogeneous hardware (CPUs, GPUs, TPUs, DPUs, and exotic accelerators), this context-aware compilation becomes essential. Your code expresses intent, this approach to intelligent analysis discovers requirements, and the compiler generates optimal execution strategies. That's the power of coeffects: turning academic insight into real-world performance.
+Heterogeneous hardware (CPUs, GPUs, TPUs, DPUs, and other accelerators) widens the gap between what a program expresses and how it should run. Coeffect analysis closes that gap: it infers a region's requirements and picks an execution strategy for the available hardware.
 
 ## Advanced Implementation: Hybrid BitNet with Compressed KV Cache
 
-To illustrate the transformative power of coeffect-guided compilation, consider a cutting-edge hybrid architecture that combines [BitNet's ternary operations](https://arxiv.org/abs/2406.02528) with DeepSeek-style compressed key-value caching. This exemplifies how coeffects enable optimal workload distribution across heterogeneous hardware.
+To show how coeffect-guided compilation splits a workload, consider a hybrid architecture that combines [BitNet's ternary operations](https://arxiv.org/abs/2406.02528) with DeepSeek-style compressed key-value caching. This exemplifies how coeffects enable optimal workload distribution across heterogeneous hardware.
 
 ### The Architectural Innovation
 
@@ -462,7 +462,7 @@ let processSparseTernary (block: CompressedAttentionBlock) =
 
 ### Performance Implications
 
-This hybrid approach achieves remarkable efficiency by letting each processor do what it excels at:
+Assigning each component to the processor suited to it changes the cost profile:
 
 | Component | Traditional (GPU-only) | Hybrid (CPU+GPU) | Improvement |
 |-----------|----------------------|------------------|-------------|
@@ -501,4 +501,4 @@ let adaptiveHybridInference (model: HybridModel) (stream: TokenStream) =
     }
 ```
 
-In this hybrid BitNet and compressed-KV arrangement, the coeffects a region carries drive where it runs: CPUs take the ternary operations, GPUs take parallel decompression, and the analysis of what each component needs from its environment decides the placement. That is the same purity-and-requirement reading the rest of this document describes, applied across processors instead of within one.
+In this hybrid BitNet and compressed-KV arrangement, the coeffects a region carries decide where it runs: CPUs take the ternary operations, GPUs take parallel decompression, and the analysis of what each component needs from its environment decides the placement. That is the same purity-and-requirement reading the rest of this document describes, applied across processors instead of within one.

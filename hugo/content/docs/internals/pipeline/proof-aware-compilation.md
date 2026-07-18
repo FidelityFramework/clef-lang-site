@@ -11,11 +11,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-Software verification has long forced a choice: accept runtime overhead for safety checks, or trust that an optimizing compiler will not break a critical invariant. Traditional compilers treat proofs as obstacles to optimization, and proof assistants carry a reputation, earned or not, for generating code too conservative for production. The Fidelity Framework's hypergraph architecture is designed to treat this seeming dichotomy as one process, carrying proof obligations as first-class hyperedges that guide optimization rather than presenting an adverse burden.
+Software verification has long forced a choice: accept runtime overhead for safety checks, or trust that an optimizing compiler will not break a critical invariant. Traditional compilers treat proofs as obstacles to optimization, and proof assistants carry a reputation, earned or not, for generating code too conservative for production. The Fidelity Framework's hypergraph architecture is designed to treat this seeming dichotomy as one process, carrying proof obligations as first-class hyperedges that inform optimization.
 
 What's more, there's a feed-forward effect to this approach which allows developers to take advantage of verification "for free" along with application development while keeping the process close to a "standard" [Clef language](https://clef-lang.com) design-time experience. The process and tooling will be fully opt-in, and much of the instrumentation is designed with low-overhead automation built into the compiler internals. So this keeps formalism restrained and approachable, and by the same design developers can leverage the advantages of proofs without becoming experts in them.
 
-Safety and speed are not a binary choice here. Proofs carry information that enables more aggressive optimization: when the compiler knows which properties must be preserved, it can transform everything else with confidence, and the proofs themselves point the way to certain classes of optimization. The hypergraph makes that information explicit and actionable.
+Safety and speed are not a binary choice here. Proofs carry information that enables more aggressive optimization: when the compiler knows which properties must be preserved, it can transform everything else with confidence, and the proofs themselves unlock certain classes of optimization. The hypergraph makes that information explicit and actionable.
 
 ## The Dimensional Nature of Verified Computation
 
@@ -43,16 +43,16 @@ In the hypergraph, proof obligations aren't annotations attached to code; they'r
 
 ## Proofs as Optimization Enablers
 
-The mechanisms in this section describe the designed pipeline: what the hypergraph representation makes possible and how Composer is built to use it. Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must choose between preserving every check (safe but slow) or eliminating them through fragile heuristics (fast but risky). The hypergraph opens a third way: proof-guided ***optimization that is both safe and fast***.
+Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must either preserve every check, which is safe but slow, or eliminate checks through fragile heuristics, which is fast but risky. The hypergraph gives the compiler enough information to do both: proof-guided optimization that keeps a check where it is load-bearing and drops it where safety is already established.
 
-When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler gains crucial information. Past the bare fact that a check exists, it knows WHY it exists, WHAT it protects, and WHEN it can be safely transformed. This knowledge enables sophisticated optimizations:
+When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler has more than the fact that a check exists: it has why the check exists, what it protects, and when it can be safely transformed. That opens the following optimizations:
 
 - **Check hoisting**: Move a single check outside a loop when the proof hyperedge shows all accesses use the same index pattern
 - **Check fusion**: Combine multiple checks into one when proof hyperedges share the same preconditions
 - **Check elimination**: Remove checks entirely when other proof hyperedges already establish safety
 - **Check specialization**: Generate different code paths for proven-safe and potentially-unsafe cases
 
-🔑 Proofs aren't overhead to be minimized; they're information to be cultivated. While the proof elements of Fidelity are opt-in, we expect that the "heat shielding" it provides will see gradual adoption for domains where proof-adjacent coding was considered too burdensome against the benefit. This approach could reduce the overhead of test-based validation, and we expect that as the benefit becomes clearer, proof-aware compilation will settle into broader acceptance.
+🔑 The compiler treats proofs as information that drives optimization, not as cost to strip out. While the proof elements of Fidelity are opt-in, we expect that the "heat shielding" it provides will see gradual adoption for domains where proof-adjacent coding was considered too burdensome against the benefit. This approach could reduce the overhead of test-based validation, and we expect that as the benefit becomes clearer, proof-aware compilation will settle into broader acceptance.
 
 ## MISRA-Style Safety as Hyperedge Libraries
 
@@ -88,15 +88,15 @@ Beyond checking compliance, these rule hyperedges carry optimization information
 
 ## Why This Class of Bug Cannot Form
 
-A bounds-check hyperedge guards some failures at runtime. Others never arise, because the state they depend on cannot be represented, and a proof carries nothing for those: there is nothing left to prove.
+A bounds-check hyperedge guards some failures at runtime. Others never arise, because the state they depend on cannot be represented. Where that state has no representation, no proof obligation exists to carry.
 
-Buffer overruns of the classic kind are in the second category. The failure needs a length that can go out of range and a boundary that silently reinterprets it, and Clef's range-derived representation removes both. A length into a one-kilobyte buffer occupies the interval `[0, KSIZE]`. That interval is non-negative, so the value's representation is unsigned by construction, chosen from the range and not from a type name a caller could substitute. There is no signed form of the length for a negative value to be smuggled through, because a negative value is not something the type can hold. The representation is selected once and carried to the boundary as a fact the later stages still hold, so there is no second, different type at the far end for the value to be reinterpreted against. The reinterpreting boundary is not a boundary this pipeline crosses.
+Buffer overruns of the classic kind are in the second category. The failure needs a length that can go out of range and a boundary that silently reinterprets it, and Clef's range-derived representation removes both. A length into a one-kilobyte buffer occupies the interval `[0, KSIZE]`. Because that interval is non-negative, the value's representation is unsigned by construction, chosen from the range and not from a type name a caller could substitute. There is no signed form of the length in which a negative value could appear, because a negative value is not something the type can hold. The representation is selected once and carried to the boundary as a fact the later stages still hold, so there is no second, different type at the far end for the value to be reinterpreted against. 
 
 This is a Tier 1 property in the [four-tier model](/docs/internals/verification/decidability-sweet-spot/): it follows from the range structure the abelian fragment already carries, decided without an annotation and without a solver query. The unsafe state is not caught and rejected at runtime; it is absent from the space of programs the type discipline can express.
 
 That absence pays twice. A structurally impossible failure needs no guard, so the runtime cost of the defensive check is not deferred or optimized away but never incurred. And the defensive code itself, the clamp, the sign test, the length guard a careful engineer writes and every later contributor has to preserve, leaves the source. Those lines are an adverse burden of their own: they swell a function until the algorithm it expresses is hard to read under the armor around it, and they are the very lines a bug can hide inside. When the bad state cannot form, the developer writes the solution and not the solution wrapped in its vigilance, and the syntax carries the intent instead of the intent plus its defenses.
 
-A real instance is worth more than the abstract statement. [A Lesson in Memory Safety](/blog/a-lesson-in-memory-safety/) walks a resolved FreeBSD kernel bug of exactly this shape, a length that clamps correctly and still overflows because a signed value is reinterpreted as unsigned at a boundary. The check was there and it was correct; the bug lived inside the defensive code, which is why removing the need for that code is worth more than trusting it. The post traces why the same routine has nowhere to fail under a range-derived representation.
+[A Lesson in Memory Safety](/blog/a-lesson-in-memory-safety/) walks a resolved FreeBSD kernel bug of exactly this shape, a length that clamps correctly and still overflows because a signed value is reinterpreted as unsigned at a boundary. The check was there and it was correct. The bug lived inside the defensive code. The post traces why the same routine has nowhere to fail under a range-derived representation.
 
 ## The Three-Layer Optimization Strategy
 
@@ -213,7 +213,7 @@ This navigation pattern supports incremental verification, where each transforma
 
 ## Real-World Impact: Aerospace and Automotive
 
-In safety-critical domains like aerospace and automotive, formal verification isn't optional; it's legally required. Traditional approaches force companies to choose between verified reference implementations (too slow for production) and optimized production code (requiring expensive re-verification).
+In safety-critical domains like aerospace and automotive, formal verification is legally required. Traditional approaches force companies to choose between verified reference implementations that are too slow for production and optimized production code that is expensive to re-verify.
 
 The hypergraph approach eliminates this false choice. The same codebase serves both purposes:
 
