@@ -63,7 +63,7 @@ Flow \(Q\) per unit of drive current \(I\), a flow gain \(K_v\), and a single ti
 
 $$\frac{Q(s)}{I(s)} \approx \frac{K_v\,\omega_{n}^{2}}{s^{2}+2\zeta \omega_{n}\, s+\omega_{n}^{2}}$$
 
-Substitute \(s = j\omega\) and this is the bench lesson again: differential equations exchanged for algebra, with each approximation's range of validity stated so a customer's engineer could check every derivation before an aircraft depended on the part. We take the deeper precedent from the practice itself: a component vendor publishing checkable mathematical models of its own products. 
+Substitute \(s = j\omega\) and this is the bench lesson again: differential equations exchanged for algebra, with each approximation's range of validity stated so a customer's engineer could check every derivation before the valve ever moved a flight surface. We take the deeper precedent from the practice itself: a component vendor publishing checkable mathematical models of its own products.
 
 > The model becomes part of the product, and verification is the customer's **right** rather than the vendor's option.
 
