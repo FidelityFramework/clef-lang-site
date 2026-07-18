@@ -13,17 +13,17 @@ params:
 
 ## The Multi-Target Problem
 
-A computation that spans multiple hardware targets requires the compiler to make representation, allocation, and scheduling decisions that differ per target. A gravitational force calculation that runs on an x86 host, an FPGA accelerator, and a neuromorphic processor needs different numeric representations, different memory strategies, and different execution models on each target. The compiler must select these strategies, verify their consistency at target boundaries, and surface the tradeoffs at design time.
+A computation that spans multiple hardware targets requires the compiler to make representation, allocation, and scheduling decisions that differ per target. A gravitational force calculation that runs on an x86 host, an FPGA accelerator, and a neuromorphic processor needs a different numeric representation and a different memory strategy on each. The execution model differs too. The compiler selects these strategies, then verifies their consistency at target boundaries and surfaces the tradeoffs at design time.
 
 The Fidelity framework addresses this through the Program Semantic Graph (PSG), which carries dimensional annotations, coeffect requirements, and target-specific resolution through multi-stage compilation via MLIR. Each target receives a compilation profile that specifies its capabilities, constraints, and the representation selection criteria appropriate to its architecture.
 
-This entry describes the four target profiles currently in the framework's design, with concrete specifications for what the compiler decides at each target and what the engineer sees at design time.
+Each of the four target profiles below specifies what the compiler decides at that target and what the engineer sees at design time.
 
 ## x86/ARM: Von Neumann Targets
 
 The general-purpose CPU is the default target. Its profile:
 
-**Numeric representation:** IEEE 754 `float64` (or `float32` where precision requirements permit). The representation selection function from [the posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) evaluates IEEE 754 against other candidates; on CPU targets, IEEE 754 typically wins because the hardware provides native support.
+**Numeric representation:** IEEE 754 `float64` (or `float32` where precision requirements permit). The representation selection function from [the posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) evaluates IEEE 754 against other candidates; on CPU targets, it typically settles on IEEE 754 because the hardware provides native support.
 
 **Quire support:** Software emulation. A b-posit32 quire occupies a fixed 800 bits (100 bytes) on the stack; a full-gamut posit32 quire is \(n^2/2 = 512\) bits (64 bytes). Performance cost is approximately 50 cycles per fused multiply-add operation, dominated by the multi-precision integer arithmetic required to maintain exact accumulation without hardware support.
 
@@ -54,7 +54,7 @@ The FPGA target differs from CPU in three ways: numeric representations are conf
 
 **Numeric representation:** Posit arithmetic implemented in DSP48 slices (on Xilinx targets) or equivalent multiply-accumulate blocks. The representation selection function evaluates posit widths against the dimensional range of each value. For posit32 with es = 2, the dynamic range extends to approximately \(10^{\pm 36}\), with best precision near unity.
 
-**Quire support:** Hardware pipeline. The 512-bit quire is a single wide value mapped to FPGA fabric by the synthesis tool; the exact allocation across flip-flops, LUTs, and DSP slices is a synthesis decision, not a compiler concern. Performance is 1 cycle per FMA, matching the throughput of IEEE 754 multiply-accumulate in equivalent DSP fabric.
+**Quire support:** Hardware pipeline. The 512-bit quire is a single wide value mapped to FPGA fabric by the synthesis tool. The exact allocation across flip-flops, LUTs, and DSP slices is a synthesis decision, not a compiler concern. Performance is 1 cycle per FMA, matching the throughput of IEEE 754 multiply-accumulate in equivalent DSP fabric.
 
 **Memory model:** Spatially distributed. Block RAM (BRAM) provides on-chip storage with deterministic latency. The coeffect system tracks BRAM allocation as a capability requirement:
 
@@ -116,7 +116,7 @@ Neuromorphic targets (Intel Loihi 2 is the reference architecture in our analysi
   Available alternatives: x86_64 (software quire), xilinx (hardware quire)
 ```
 
-**Memory model:** Distributed neuron state. Each neuromorphic core maintains local state for its assigned neurons. There is no shared memory in the conventional sense; communication occurs through spike events.
+**Memory model:** Distributed neuron state. Each neuromorphic core maintains local state for its assigned neurons. There is no shared memory in the conventional sense. Communication occurs through spike events.
 
 **Cross-target transfer:** Values cross a USB boundary between the neuromorphic device and the host (for development configurations like the Kapoho Bay USB form factor). This is the highest-latency, lowest-bandwidth boundary in the system, and the coeffect system must account for it when computing transfer costs.
 
@@ -139,9 +139,9 @@ Each boundary has a distinct transfer cost, bandwidth constraint, and precision 
 
 The compiler would resolve these boundaries during MLIR lowering, using the dimensional range analysis to determine whether a specific precision conversion is acceptable for the computation's requirements. The [DTS/DMM paper](/publications/dts-dmm/) formalizes this as cross-target transfer fidelity analysis (Section 4.4), and the [posit arithmetic entry](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/) provides the detailed example for the CPU ↔ FPGA case.
 
-In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and the inverse structure map exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel: information about the source stalk that does not survive into the target stalk, quantified by the dimensional range analysis. The fidelity score is a measure of how much of the source stalk the structure map preserves. This framing makes precise what the score is computing: the kernel size of a specific stalk-to-stalk homomorphism.
+In sheaf-theoretic terms, each transfer boundary is a *structure map* between stalks of the cross-target compilation sheaf. A lossless transfer (posit32 → float64) is an isomorphism: the structure map preserves all the information at the source stalk in the target stalk, and its inverse exists. A lossy transfer (float64 → posit32) is a structure map with a non-trivial kernel, the information at the source stalk that does not survive into the target stalk, which the dimensional range analysis quantifies. The fidelity score measures how much of the source stalk the structure map preserves, so the score is exactly the kernel size of that stalk-to-stalk homomorphism.
 
-Each lowering pass within a single target is itself an application of Hoare's *consequence rule* over the compilation sheaf's annotations. If the precondition (the stalk at the higher-level dialect) is preserved by the lowering pass, and the postcondition (the stalk at the lower-level dialect) is implied by what the higher-level dialect promised, then the lowering is sound and the dual-pass discharge confirms it. The [decidability sweet spot document](/docs/internals/verification/decidability-sweet-spot/) develops this Hoare-logic reading of the dual-pass architecture in detail.
+Each lowering pass within a single target is itself an application of Hoare's *consequence rule* over the compilation sheaf's annotations. If the precondition (the stalk at the higher-level dialect) is preserved by the lowering pass, and the postcondition (the stalk at the lower-level dialect) is implied by the precondition the higher-level dialect established, then the lowering is sound and the dual-pass discharge confirms it. The [decidability sweet spot document](/docs/internals/verification/decidability-sweet-spot/) develops this Hoare-logic reading of the dual-pass architecture in detail.
 
 ## The Information Accrual Principle
 
@@ -155,11 +155,11 @@ The principle: decisions that can be deferred to later stages should be, because
 
 DTS annotations survive through the early stages precisely to enable these late-stage decisions. Had dimensions been erased at the source level (as in F#'s Units of Measure), representation selection and transfer fidelity analysis would be impossible at the point where they can be made with full context.
 
-The information accrual principle is the *monotone sheaf condition* on the compilation poset. A sheaf in which stalks can only grow (or remain the same) as one moves up the base poset is a monotone sheaf, and the structure maps of such a sheaf are inclusions or refinements rather than arbitrary morphisms. The Fidelity compilation sheaf is monotone in this sense: each lowering pass adds annotations rather than removing them, and the structure map at each edge of the compilation poset is an inclusion of the prior stalk into the next. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the dual-pass architecture as the witnessing mechanism for global sections of this monotone sheaf, and the consequence rule applied at every lowering pass is what makes the verification compose across the pipeline.
+The information accrual principle is the *monotone sheaf condition* on the compilation poset. A sheaf in which stalks can only grow (or remain the same) as one moves up the base poset is a monotone sheaf, and the structure maps of such a sheaf are inclusions or refinements rather than arbitrary morphisms. The Fidelity compilation sheaf is monotone in this sense: each lowering pass adds annotations rather than removing them, and the structure map at each edge of the compilation poset is an inclusion of the prior stalk into the next. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the dual-pass architecture as the witnessing mechanism for global sections of this monotone sheaf, and the consequence rule, applied at every lowering pass, composes the verification across the pipeline.
 
 ## Current Status
 
-The x86/ARM target compiles through the full LLVM pipeline. The FPGA target compiles through CIRCT for RTL generation. The XDNA 2 and neuromorphic targets are at the design stage; the MLIR-AIE infrastructure [5] exists for XDNA 2 targeting, and the coeffect profiles described here reflect the architectural specifications from published documentation [4].
+The x86/ARM target compiles through the full LLVM pipeline, and the FPGA target compiles through CIRCT for RTL generation. The XDNA 2 and neuromorphic targets remain at the design stage. The MLIR-AIE infrastructure [5] exists for XDNA 2 targeting, and the coeffect profiles described here reflect the architectural specifications from published documentation [4].
 
 The PHG generalization required for efficient spatial dataflow mapping is deferred to a subsequent paper and implementation cycle. The current PSG handles multi-target compilation through binary edges with per-target reachability bitvectors (Section 4.3 of DTS/DMM), which is sufficient for targets with independent compilation paths but does not natively express the set-constraints that spatial tile mapping requires.
 

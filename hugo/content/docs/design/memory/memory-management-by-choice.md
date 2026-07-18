@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Our Fidelity framework reconsiders how developers interact with memory management in systems programming. The conventional framing presents a choice between two options: take on the ubiquitous memory burdens of Rust, or abdicate all memory concerns and accept the performance penalties of garbage collection. We are working toward a third path.
+Our Fidelity framework reconsiders how developers interact with memory management in systems programming. The conventional framing offers two options: take on the ubiquitous memory burdens of Rust, or abdicate all memory concerns and accept the performance penalties of garbage collection. We are building toward a third.
 
 ## Mandatory vs. Optional Memory Management
 
@@ -97,7 +97,7 @@ Our BAREWire draws on these correspondences to generate efficient memory layouts
 
 ## Recursive Types
 
-Recursive data structures are one area where Clef's notation stays close to the structure itself. Consider a typical linked list definition:
+Recursive data structures show this directly in Clef's notation. Consider a typical linked list definition:
 
 ```fsharp
 type LinkedList<'T> =
@@ -430,7 +430,7 @@ let processDocuments (documents: BARESpan<Document>) (stringPool: StringPool) (r
     groupByFirstKeyword resultArray resultPool
 ```
 
-At this level, the developer takes full control over memory layout, specifying precise field arrangements, alignments, and allocation strategies. Custom memory pools serve different processing stages, and operations are designed to minimize allocations and copies. Clef's concurrent processing model is designed to compose with explicit memory management, keeping batch-level memory regions isolated across concurrent execution contexts.
+At this level, the developer takes full control over memory layout, specifying precise field arrangements, alignments, and allocation strategies. Custom memory pools serve different processing stages, and operations minimize allocations and copies. Clef's concurrent processing model composes with explicit memory management, keeping batch-level memory regions isolated across concurrent execution contexts.
 
 This spectrum allows developers to begin with compiler-generated layouts and invest time in memory optimization only where it delivers meaningful performance benefits, rather than treating it as a constant concern throughout the codebase.
 
@@ -444,15 +444,15 @@ The patent covers the memory mapping aspects discussed above, and extends to:
 2. **Inter-Process Communication**: Enabling efficient communication between separate processes
 3. **Network Messaging**: Extending the same principles to communication across machines
 
-The same core principles apply across a range of settings, with appropriate adaptations. They cover embedded systems with strict memory constraints, and they cover high-performance computing environments processing large datasets.
+The same core principles apply across a range of settings, with appropriate adaptations: embedded systems under strict memory constraints, and high-performance computing environments processing large datasets.
 
-Our BAREWire applies one approach to memory layout and communication across different computing environments. The same code can express intent clearly while the implementation details adapt to the constraints of the target platform. For context on how BAREWire fits into the broader native memory story, see [Native Memory Management]({{< relref "native-memory-management" >}}).
+Our BAREWire applies one approach to memory layout and communication across different computing environments. The same code expresses intent clearly while the compiler adapts the implementation to the constraints of the target platform. For context on how BAREWire fits into the broader native memory story, see [Native Memory Management]({{< relref "native-memory-management" >}}).
 
 We have found no other representative implementations of this approach in the standing literature we have reviewed.
 
 ## Developer Attention as a Resource
 
-Developer attention is a finite resource, and focusing it where it matters most affects both code quality and delivery. Rust requires explicit attention to memory management throughout code. Traditional managed languages abstract it away, which leaves gaps that can lead to errors and critical failures. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
+Developer attention is a finite resource, and focusing it where it matters most affects both code quality and delivery. Rust requires explicit attention to memory management throughout code, while traditional managed languages abstract it away and leave gaps where allocation and reclamation behavior is hard to predict or control. That trade-off is one of the central reasons teams avoid managed runtime environments for mission-critical applications.
 
 Our BAREWire offers a path between these, resolving non-critical memory concerns in the compiler using sensible defaults, while letting developers take these concerns into explicit control when beneficial. The ByRef resolution approach described in [ByRef Resolved]({{< relref "byref-resolved" >}}) complements this by eliminating unnecessary copies at the compiler level, and [Inferring Memory Lifetimes]({{< relref "inferring-memory-lifetimes" >}}) extends the approach to lifetime management itself.
 
@@ -462,7 +462,7 @@ This difference is one of working method as much as implementation. From our des
 
 We want memory management to be an effective choice rather than a constant obligation, which means giving developers the abstractions and tools to engage with memory when it matters and to leave it to the compiler when it does not.
 
-Our Fidelity framework aims to respect both the performance demands of systems programming and the attention budget of the developers writing against it. Our BAREWire is where we are putting that approach into practice: sensible by default, with explicit control available where it yields a measurable performance benefit. We will keep building toward that balance as the rest of the framework comes into place.
+Our Fidelity framework aims to respect both the performance demands of systems programming and the attention budget of the developers writing against it. Our BAREWire is where we are putting that approach into practice: sensible by default, with explicit control available where it yields a measurable performance benefit. We will keep building toward that balance as the rest of the framework is built out.
 
 ---
 *This article is part of our ongoing series on the Composer compiler, Fidelity Framework and native compilation techniques with the Clef language.*

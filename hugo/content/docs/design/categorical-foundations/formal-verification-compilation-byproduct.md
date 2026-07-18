@@ -17,7 +17,7 @@ Formal verification carries a reputation for cost. The perception, grounded in r
 
 The Fidelity framework takes a different position. The compiler already computes properties during normal elaboration that constitute useful verification results: dimensional consistency, escape classification, allocation strategy, lifetime bounds, and target-specific capability requirements. These properties are recorded in the Program Semantic Graph (PSG) as coeffect annotations during compilation, as part of compilation itself.
 
-The question is how far up the verification spectrum this "free" verification extends, and where the transition to explicit annotation begins.
+This "free" verification covers the low end of the spectrum. Explicit annotation takes over higher up, and the four tiers below draw the line between them.
 
 ## What the Compiler Provides for Free
 
@@ -37,7 +37,7 @@ These properties are all computed during normal compilation. The language server
 
 ## The Four Tiers
 
-The verification spectrum in the Fidelity framework divides into four tiers, organized by the logical fragment of the obligations they discharge and the decision procedure that handles them. The tiers also correspond to increasing annotation cost and assurance level, but the logical organization is the load-bearing one: each tier names a specific decidable (or type-checkable) subset of program properties, and the cost ordering follows from the complexity of the corresponding decision procedure.
+The verification spectrum in the Fidelity framework divides into four tiers, organized by the logical fragment of the obligations they discharge and the decision procedure that handles them. The tiers also correspond to increasing annotation cost and assurance level, but the logical organization defines the tiers: each names a specific decidable (or type-checkable) subset of program properties, and the cost ordering follows from the complexity of the corresponding decision procedure.
 
 ```mermaid
 graph TD
@@ -57,7 +57,7 @@ The trusted computing base for Tiers 1 through 3 is Z3 alone. Rocq enters the TC
 
 Every Clef program receives Tier 1 verification. The properties listed above are computed as part of standard compilation. The cost is zero: no annotations, no separate analysis tools, no additional build steps. The engineer writes standard functional code, and the compiler reports dimensional errors, escape promotions, allocation decisions, and capability failures as part of the normal feedback loop.
 
-This tier corresponds roughly to MISRA-C-class safety for the properties it covers. Dimensional consistency prevents unit confusion errors (the Mars Climate Orbiter class of failure). Escape classification prevents use-after-free and dangling pointer errors. Allocation verification prevents memory leaks for arena-scoped values. These are useful guarantees for any codebase, regardless of domain.
+This tier corresponds roughly to MISRA-C-class safety for the properties it covers. Dimensional consistency prevents unit confusion errors, the Mars Climate Orbiter class of failure. Escape classification catches use-after-free and dangling pointers, and allocation verification detects memory leaks for arena-scoped values. These are useful guarantees for any codebase, regardless of domain.
 
 ### Tier 2: Scoped Hoare Assertions
 
@@ -84,17 +84,17 @@ The annotation cost is modest: one attribute per property, attached to the funct
 
 Some verification obligations exceed QF_LIA / QF_BV but remain decidable inside a restricted probabilistic fragment that the framework supports through library-instantiated lemmas. The clearest example is rejection-sampling termination: a rejection-sampling loop's exit is governed by an acceptance probability \(p\) that is computable from Tier 2 facts, the geometric series convergence is a QF_LIA argument over \(p\), and the support equality of uniform distributions over lattice cosets is an abelian-group argument discharged by Gaussian elimination. The lemma that combines these into a single termination guarantee lives in `Fidelity.Lemmas.Mathematics`, proved once and parameterized over its inputs. The compiler instantiates the lemma from the specific values present in the PSG and discharges the resulting obligation through Z3.
 
-This tier is also where conservative findings from Tier 2 range propagation get resolved when the gap requires more than a local annotation. When Tier 2 range analysis returns a conservative bound for a transcendental function or a nonlinear recurrence, the resolution is not a Tier 2 annotation (the engineer cannot honestly assert a tighter range without invoking a real-analysis fact); the resolution is a Tier 3 lemma parameterized over the interval, proved once in Rocq, and instantiated automatically by the compiler. A conservative finding reported today corresponds to a lemma not yet present in `Fidelity.Lemmas.Mathematics`, not to a structural limitation of the analysis. The conservative region shrinks monotonically as the lemma library grows.
+This tier is also where conservative findings from Tier 2 range propagation get resolved when the gap requires more than a local annotation. When Tier 2 range analysis returns a conservative bound for a transcendental function or a nonlinear recurrence, the resolution is a Tier 3 lemma parameterized over the interval, proved once in Rocq, and instantiated automatically by the compiler, because at Tier 2 the engineer cannot honestly assert a tighter range without invoking a real-analysis fact. A conservative finding reported today marks a lemma not yet present in `Fidelity.Lemmas.Mathematics`. The analysis is sound; the conservative region shrinks monotonically as the lemma library grows.
 
-Tier 3 still discharges through Z3 alone. The lemma library provides the *parameterized obligation*; Z3 instantiates and verifies it. Rocq is not in the trusted computing base at this tier.
+Tier 3 still discharges through Z3 alone. The lemma library provides the *parameterized obligation*. Z3 instantiates and verifies it. Rocq is not in the trusted computing base at this tier.
 
 ### Tier 4: Probabilistic Relational Hoare Logic
 
 For cryptographic protocols and other settings, the property of interest shifts from "what value does the program compute" to "are two programs computationally indistinguishable," and the obligations become probabilistic relational. A pRHL judgment of the form \(\{\Phi\}\, C_1 \sim C_2\, \{\Psi\}\) asserts that for any two initial states satisfying \(\Phi\), the executions of \(C_1\) and \(C_2\) produce final states satisfying \(\Psi\) with overwhelming probability. The structural derivation of such judgments is a typed proof term in the pRHL rule language, type-checked by the Composer's pRHL type checker against a foundational rule library proved once in Rocq.
 
-Z3 still handles the arithmetic leaves of each pRHL derivation. The structural pRHL proof itself is verified by the type checker, not by Z3. The Tier 4 lemmas are parameterized over Tier 3 facts (acceptance probability, norm bound, distribution support) and the lemma body is proved in the abstract over the parameter types; the framework instantiates them with the values established at Tier 3.
+Z3 still handles the arithmetic leaves of each pRHL derivation. The structural pRHL proof itself is verified by the type checker, not by Z3. The Tier 4 lemmas are parameterized over Tier 3 facts (acceptance probability, norm bound, distribution support) and the lemma body is proved in the abstract over the parameter types. The framework instantiates them with the values established at Tier 3.
 
-The trusted computing base for Tier 4 includes Rocq's kernel as a foundational library dependency. For Tiers 1 through 3 it does not. This is a load-bearing distinction: a deployment that cares about cryptographic indistinguishability accepts Rocq as part of its TCB, while a deployment that only cares about safety-critical arithmetic, range proofs, and rejection-sampling termination does not.
+The trusted computing base for Tier 4 includes Rocq's kernel as a foundational library dependency. For Tiers 1 through 3 it does not. The distinction reaches procurement: a deployment that cares about cryptographic indistinguishability accepts Rocq as part of its TCB, while a deployment that only cares about safety-critical arithmetic, range proofs, and rejection-sampling termination does not.
 
 ### Certificates
 
@@ -130,7 +130,7 @@ The transition between tiers is granular. A single codebase can have modules at 
 
 A persistent misconception is that verification imposes runtime cost. In the Fidelity framework, the opposite is true: verification *enables* optimizations that would be unsafe without proofs.
 
-When the compiler can prove that an array access is within bounds (from dimensional constraints or explicit assertions), it eliminates the bounds check. When it can prove that a value does not escape its scope, it allocates on the stack and omits the deallocation. When it can prove that a loop invariant holds, it hoists computations out of the loop and vectorizes aggressively.
+A proof that an array access stays within bounds, whether from dimensional constraints or explicit assertions, lets the compiler drop the bounds check. A value the compiler can show never escapes its scope goes on the stack, with no deallocation emitted. When a loop invariant is discharged, the compiler hoists computations out of the loop and vectorizes aggressively.
 
 These optimizations are standard compiler transformations. What the verification infrastructure provides is the *permission* to apply them. A compiler without proofs must be conservative: it inserts bounds checks because the access *might* be out of bounds, allocates on the heap because the value *might* escape, and avoids hoisting because the invariant *might* not hold. A compiler with proofs eliminates the uncertainty and applies the transformation.
 
@@ -175,6 +175,6 @@ Tier 3 verification (restricted probabilistic fragment) requires the same Z3 int
 
 Tier 4 verification (probabilistic relational Hoare logic) requires the pRHL type checker and its Rocq-proved foundational rule library. Certificate generation in standards-compliant formats adds additional engineering surface. This is the most distant layer. The architecture accommodates it; the implementation is future work.
 
-The graduated model is deliberate. Each tier delivers value independently. Tier 1 is useful for every program. Tier 2 is useful for safety-conscious engineering teams. Tier 3 is useful for regulated industries that need range proofs and termination guarantees. Tier 4 is useful for cryptographic protocol implementations that need game-based security proofs. An engineering team can begin with Tier 1 and add tiers as their domain requires, without rewriting their codebase or changing their development workflow.
+The graduated model is deliberate. Each tier delivers value independently. Tier 1 applies to every program. Tier 2 serves safety-conscious engineering teams, Tier 3 the regulated industries that need range proofs and termination guarantees, and Tier 4 the cryptographic protocol implementations that need game-based security proofs. An engineering team can begin with Tier 1 and add tiers as their domain requires, without rewriting their codebase or changing their development workflow.
 
-The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the four tiers as four sheaves over the same compilation poset, distinguished by their stalk categories. The dual-pass architecture is the witnessing mechanism for global sections of each sheaf, and the consequence rule applied at every lowering pass is what makes the verification compose across the pipeline.
+The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the four tiers as four sheaves over the same compilation poset, distinguished by their stalk categories. The dual-pass architecture witnesses global sections of each sheaf, and the consequence rule applied at every lowering pass composes the verification across the pipeline.

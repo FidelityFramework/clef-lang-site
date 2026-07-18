@@ -15,7 +15,7 @@ params:
 
 Reverse-mode automatic differentiation (backpropagation) has a well-known memory cost. To compute gradients during the backward pass, the system must retain intermediate activations from the forward pass. For a network with \(L\) layers and batch size \(B\), this imposes an \(O(L \cdot B)\) auxiliary memory requirement. The activations must persist from their creation during the forward pass until their consumption during the backward pass; their lifetime spans the entire training step.
 
-This is a structural property of reverse-mode AD, not an implementation detail. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation that the computation imposes on its environment.
+This is a structural property of reverse-mode AD, not an implementation detail. The backward pass requires the intermediate values as a contextual resource, which in the Fidelity framework's terminology makes it a coeffect. The activation tape is a memory obligation on the environment: the intermediate values must remain available outside the backward pass's own scope.
 
 Gradient checkpointing and other memory-reduction techniques trade compute for memory, recomputing activations during the backward pass to avoid storing them. These techniques reduce the constant factor but do not change the structure: reverse-mode AD requires either storing or recomputing intermediate values.
 
@@ -25,13 +25,13 @@ Gradient checkpointing and other memory-reduction techniques trade compute for m
 
 \[\nabla_v f(\theta) = \langle \nabla f(\theta), v \rangle\]
 
-This is evaluated in a single forward pass. There is no backward pass. There is no activation tape.
+This is evaluated in a single forward pass, with no backward pass and no activation tape.
 
 The single-tangent gradient estimate is unbiased: its expectation over random perturbation vectors equals the true gradient. The variance scales with parameter count, because the expected cosine similarity between a random direction and the true gradient decays at \(O(1/n)\) in dimension \(n\). Flügel, Coquelin, Weiel, Debus, Streit, and Götz [4] extended the method to \(K\) simultaneous tangents aggregated by orthogonal projection onto their spanned subspace:
 
 \[P_U(\nabla f) = V (V^\top V)^{-1} V^\top \nabla f, \qquad V = [v_1 \mid \cdots \mid v_K]\]
 
-The Gram-matrix inverse \((V^\top V)^{-1}\) corrects for non-orthogonal sampling, yielding the best subspace approximation of \(\nabla f\) in \(\mathrm{span}(V)\). When \(K = n\) the projection recovers the exact gradient; for moderate \(K\) the approximation quality increases monotonically, at a compute cost of \(O(K \cdot \mathrm{ops}(f))\). Perturbing layer activations rather than weights reduces variance further, because activations live in lower-dimensional spaces than the weight tensors upstream of them.
+The Gram-matrix inverse \((V^\top V)^{-1}\) corrects for non-orthogonal sampling, yielding the best subspace approximation of \(\nabla f\) in \(\mathrm{span}(V)\). When \(K = n\) the projection recovers the exact gradient. For moderate \(K\) the approximation quality increases monotonically, at a compute cost of \(O(K \cdot \mathrm{ops}(f))\). Perturbing layer activations rather than weights reduces variance further, because activations live in lower-dimensional spaces than the weight tensors upstream of them.
 
 The tradeoff is statistical: exact gradients via reverse-mode vs. projected estimates via forward-mode. The forward approach eliminates the memory obligation entirely, and \(K\) tunes the quality of the projection at linear compute cost.
 
@@ -46,9 +46,9 @@ In the Fidelity framework's coeffect system, these two approaches have distinct 
 | Activation tape | Required; lifetime spans full backward pass | Not required |
 | Escape analysis | Intermediate values escape layer scope | No intermediate values escape layer scope |
 
-The forward-mode signature is significant for the escape analysis described in [Section 3.2 of the DTS/DMM paper](/publications/dts-dmm/). When no intermediate values escape their creating scope, every allocation is stack-eligible. The escape classification for every intermediate value is *StackScoped*; the allocation strategy is `memref.alloca`; the lifetime bound is the lexical scope of the layer computation.
+Under the escape analysis described in [Section 3.2 of the DTS/DMM paper](/publications/dts-dmm/), the forward-mode signature yields no escaping intermediate values, so every allocation is stack-eligible. The escape classification for every intermediate value is *StackScoped*. The allocation strategy is `memref.alloca`. The lifetime bound is the lexical scope of the layer computation.
 
-This is a verifiable compile-time property. Given a computation graph annotated with AD mode, the Fidelity framework's lifetime analysis can confirm that forward-mode imposes no lifetime obligations beyond the current layer's scope. The coeffect system does not need heuristics or runtime checks; it follows from the structure of forward-mode evaluation.
+This is a verifiable compile-time property. Given a computation graph annotated with AD mode, the Fidelity framework's lifetime analysis can confirm that forward-mode imposes no lifetime obligations beyond the current layer's scope. The coeffect system does not need heuristics or runtime checks. Freedom from them follows from the structure of forward-mode evaluation.
 
 The multi-tangent extension preserves this property. \(K\) tangent vectors propagate alongside each primal value within a layer's forward computation, and the activity-perturbation variant injects fresh tangents at each layer's activation. Each tangent's lifetime is bounded by its layer's scope; none escape, so our stack-eligibility proof is unchanged in structure, widened only by the constant factor \(K\).
 
@@ -64,7 +64,7 @@ The quire's coeffect profile in this context:
 - **Lifetime:** bounded by the forward pass through one layer; no escape
 - **Capability:** available on CPU (software emulation, ~50 cycles/FMA) and FPGA (hardware pipeline, 1 cycle/FMA); unavailable on neuromorphic targets without exact accumulation support
 
-The quire's lifetime aligns with the forward gradient's memory profile. Both are scoped to a single layer's computation. Neither requires persistence beyond the layer boundary. The coeffect system tracks both through the same inference pipeline, and the design-time diagnostic shows them together:
+The quire's lifetime aligns with the forward gradient's memory profile: both are scoped to a single layer's computation, and neither persists beyond the layer boundary. The coeffect system tracks both through the same inference pipeline, and the design-time diagnostic shows them together:
 
 ```
 gradient_estimate: float<loss · param⁻¹>
@@ -78,13 +78,13 @@ gradient_estimate: float<loss · param⁻¹>
 
 ## The Quire as a Tier 2 Loop Invariant
 
-The quire's exactness guarantee has a precise reading in Hoare logic, and stating it that way clarifies what verification can establish at compile time and what it cannot.
+The quire's exactness guarantee has a precise reading in Hoare logic.
 
 The accumulation loop that computes \(\langle \nabla f(\theta), v \rangle\) maintains an invariant at every iteration: the accumulated value occupies at most the quire width (a fixed 800 bits for a b-posit, or \(n^2/2\) for a full-gamut posit). The invariant is the loop's precondition, the loop body preserves it, and the loop's exit delivers a postcondition that the final value is the exact sum of the products with no intermediate rounding. In Hoare's sequential composition rule, the invariant is the assertion \(P\) for which \(\{P \wedge B\}\, C\, \{P\}\) is established locally, and the conclusion \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\) is the proof that the loop achieves the postcondition the next computation depends on.
 
-The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le 800\) for a b-posit (or \(\le n^2/2\) for a full-gamut posit) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property; the framework derives it from the layer's parameter count, the posit width, and the quire width, which are all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
+The invariant is decidable in QF_LIA / QF_BV from the input range and the loop iteration bound. For a layer with \(k\) parameters and a per-product bit-width derived from the chosen posit configuration, the maximum accumulated bit-width is \(k \cdot \text{bits-per-product}\), and the invariant \(k \cdot \text{bits-per-product} \le 800\) for a b-posit (or \(\le n^2/2\) for a full-gamut posit) is a single linear inequality that Z3 discharges at design time. The engineer never declares this property. The framework derives it from the layer's parameter count, the posit width, and the quire width, all known at compile time. The Tier 2 obligation is therefore satisfied automatically for any layer whose dimensions are statically bounded.
 
-The Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) recognizes why the same invariant survives every lowering pass: each lowering acts as a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair the functor carries intact. In sheaf-theoretic language, the quire invariant is a section of our accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the broader compositional story; here it is enough to note that the quire's exactness is verifiable at every stage from PSG to native binary, not only at the high-level mathematical specification.
+The same invariant survives every lowering pass under the Fwd ⊣ Bwd adjunction described in [the categorical deep learning entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/): each lowering acts as a functor that preserves the adjunction, and the quire-width invariant is a property of the adjoint pair the functor carries intact. In sheaf-theoretic language, the quire invariant is a section of our accumulation sheaf over the compilation poset, and the dual-pass discharge at each lowering is the local check that the section restricts correctly to the next stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) develops the broader compositional treatment. The quire's exactness is verifiable at every stage from PSG to native binary, not only at the high-level mathematical specification.
 
 ## Dimensional Consistency Under Differentiation
 
@@ -124,7 +124,7 @@ graph TD
 - **Forward-mode AD** eliminates the activation tape coeffect, making gradient computation stack-eligible
 - **The quire** provides exact accumulation for the inner products that forward-mode computes
 
-Each property is established independently in the literature ([1] for forward gradients, [2] for quire accumulation, [Section 2 of DTS/DMM](/publications/dts-dmm/) for dimensional type systems). Their composition within the PSG is the contribution: a system where gradient computation is simultaneously dimensionally verified, memory-minimal, and numerically exact, with all three properties visible and verifiable at design time.
+Each property is established independently in the literature ([1] for forward gradients, [2] for quire accumulation, [Section 2 of DTS/DMM](/publications/dts-dmm/) for dimensional type systems). We compose these three properties within the PSG: gradient computation is simultaneously dimensionally verified, memory-minimal, and numerically exact, with all three properties visible and verifiable at design time.
 
 ## Representation Selection for Training
 
@@ -132,7 +132,7 @@ The representation selection framework from [the companion entry on posit arithm
 
 Given this range, the compiler's representation selection function can choose posit widths that concentrate precision where the values cluster. The quire provides exact gradient accumulation regardless of the chosen posit width, eliminating the rounding errors that compound across millions of parameters.
 
-This connection between DTS (which provides the dimensional range), posit arithmetic (which provides domain-matched precision), and DMM (which tracks the quire's allocation and lifetime) is an instance of the representation selection framework applied to a specific computational domain. The analysis is the same; the domain is different.
+This connection between DTS (which provides the dimensional range), posit arithmetic (which provides domain-matched precision), and DMM (which tracks the quire's allocation and lifetime) is an instance of the representation selection framework applied to a specific computational domain.
 
 ## Current Status and Limitations
 
@@ -142,7 +142,7 @@ The quire's exact accumulation eliminates one source of numerical error but does
 
 The dimensional verification for physics-informed loss terms is sound but narrow: it catches dimensional inconsistencies in the loss function's definition, not errors in the model's learned representations. A dimensionally consistent loss term can still produce a model that makes incorrect predictions; dimensional correctness is necessary but not sufficient for physical fidelity.
 
-These limitations are real and should inform expectations. The contribution here is that three independently valuable properties (forward gradients, quires, and DTS) compose naturally within the PSG, and the composition can be verified at compile time. The framework does not claim to solve machine learning; it claims that this specific composition is sound and useful for the workloads where the composition's properties matter.
+These limitations are real and should inform expectations. Three independently valuable properties (forward gradients, quires, and DTS) compose within the PSG, and the composition can be verified at compile time. The framework does not claim to solve machine learning; it claims that this specific composition is sound and useful for the workloads where the composition's properties matter.
 
 ## References
 

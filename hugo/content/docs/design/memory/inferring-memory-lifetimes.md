@@ -14,9 +14,9 @@ Type inference is routine in Clef. Writing `let x = 5` lets the compiler determi
 
 From early on we intended to extend this treatment to the Fidelity framework's memory management. The explicit arena-passing code we first wrote was correct, but it sat poorly against the idiomatic Clef design-time experience. Those early experiments carried overhead that existed only to satisfy the compiler.
 
-Our earlier discussions, from the foundational ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) to the technical treatment in ["ByRef Resolved"](/docs/design/types/byref-resolved/), established the architectural direction. Developers engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit. The unifying principle behind this direction is one we set out here.
+Our earlier discussions, from the foundational ["Memory Management by Choice"](/docs/design/memory/native-memory-management/) to the technical treatment in ["ByRef Resolved"](/docs/design/types/byref-resolved/), established the architectural direction. Developers engage with memory concerns at the level appropriate to their needs, from fully automatic to fully explicit.
 
-That principle emerged while implementing Arena allocation for the Fidelity framework: **lifetime management should work like type inference**.
+This principle emerged while we implemented Arena allocation for the Fidelity framework: **lifetime management should work like type inference**.
 
 ## Prior Art
 
@@ -75,7 +75,7 @@ The cost is in the surface syntax. Clef is a concurrent language built for expre
 
 The "ML" in OCaml and F# stands for "Meta Language," and the "CAM" (Categorical Abstract Machine) is often overlooked. The original design included the *machine*, the concrete representation of computation. Managed runtimes abstracted this away over time.
 
-Our Fidelity framework reclaims the machine. Memory layout is a type-carrying quotation: the type system encodes how values are represented in memory. This gives the compiler mechanical efficiency to work with.
+In our Fidelity framework, the machine is back in view. Memory layout is a type-carrying quotation: the type system encodes how values are represented in memory. This gives the compiler mechanical efficiency to work with.
 
 When memory layout decisions are pushed to lower compiler strata, several consequences follow:
 
@@ -95,7 +95,7 @@ The Arena type is one example. Its layout is `NTUCompound(3)`: three platform wo
 
 ## Recognizing the Parallel
 
-The design followed from one observation about how Clef handles types:
+Clef already lets a type annotation be written or inferred:
 
 ```fsharp
 // You CAN write this
@@ -147,7 +147,7 @@ But with the lifetime inference lens, these levels correspond directly to how Cl
 | Level 2 | `let x: int = ...` (guided) | `arena { let! name = ... }` (scoped) |
 | Level 3 | `[<Struct>] type X = ...` (explicit) | `Arena<'lifetime> byref` (declared) |
 
-The levels mark **where inference stops and declaration begins**, not only how much control the developer holds.
+Each level sets where inference stops and declaration begins.
 
 ## What Each Level Requires
 
@@ -163,7 +163,7 @@ let hello (arena: byref<Arena<'lifetime>>) =
 
 The compiler's job is verification: ensure the declared lifetimes are consistent, that `'lifetime` flows correctly through the code, that no pointers escape their declared scope.
 
-This is analogous to requiring type annotations on every binding. Correct, but ceremonious.
+The type-annotation parallel holds: requiring a lifetime declaration on every binding is correct but ceremonious.
 
 ### Level 2: Bounded Inference (Next)
 
@@ -191,7 +191,7 @@ let hello () =
 
 The attribute provides hints. The compiler transforms the signature and call sites.
 
-This is analogous to annotating function signatures while leaving local bindings inferred, a common and comfortable pattern in Clef.
+This mirrors the common Clef pattern of annotating function signatures while leaving local bindings inferred.
 
 ### Level 1: Full Inference (Goal)
 
@@ -206,7 +206,7 @@ let hello () =
 
 The compiler performs escape analysis, determines that `readln`'s result escapes its stack frame, infers the minimum required lifetime (`hello`'s scope), and generates appropriate arena code.
 
-This is analogous to how Clef handles most code today: inference handles the common case, with annotations available when needed.
+Clef works this way for most code today: inference handles the common case, with annotations available when needed.
 
 ## The Inference Algorithm (Sketch)
 
@@ -411,17 +411,17 @@ This also connects to delimited continuations in Prospero (see [Delimited Contin
 
 ## Standing Art
 
-The capabilities we're describing aren't novel in isolation. Type inference has existed for decades. Escape analysis is well-studied. Arena allocation is a known pattern. Even lifetime tracking at the type level isn't new; Rust proved it viable.
+The capabilities we're describing aren't novel in isolation. Type inference has existed for decades, and both escape analysis and arena allocation are established techniques. Even lifetime tracking at the type level isn't new; Rust proved it viable.
 
 What is novel is the *combination* and *application*: bringing these techniques together in a way that preserves Clef's expressiveness while providing the memory determinism native compilation requires. The contribution is in composing standing art from different traditions, not in any single piece.
 
 This is the Fidelity philosophy: respect what works, learn from what doesn't, and invest the innovation budget where it creates genuine new capability rather than reinventing established patterns.
 
-## Conclusion
+## Default Inference
 
 The path from the first realizations behind "ByRef Resolved" to the current implementation in Composer has been one of pattern recognition. We solved the byref problem with explicit arena management, built the type system infrastructure for lifetime tracking, and implemented the intrinsics and operations.
 
-The reframing this document sets out is that lifetime management should work like type inference. That principle unifies our three-level memory management model.
+Lifetime management should work like type inference. That principle unifies our three-level memory management model.
 
 Type inference is already familiar to Clef developers, and it reduces the annotation cost of working with types. We are designing lifetime inference to do the same for systems programming, maintaining the mechanical efficiency and memory safety native compilation requires while preserving Clef's expressiveness.
 

@@ -10,9 +10,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-Every language that supports first-class functions faces the same question: where do captured variables live? Rust closures require explicit lifetime annotations, Go functions capture by reference, and Python lambdas use late binding that creates unexpected state sharing. JavaScript has the classic loop-variable trap; C# generates hidden closure classes. The syntax varies; the underlying tension is common to all of them. Our approach to this problem in Fidelity draws from decades of compiler research, specifically the Standard ML tradition and the MLKit project's "flat closure" representation, to generate native code that is memory-safe, runtime-free, and [null-free by construction](/docs/design/language/null-free-by-construction/). Null-freedom also lets the same closure cross between substrates, a consequence worked out in [Null-Free by Construction](/docs/design/language/null-free-by-construction/).
+Every language that supports first-class functions faces the same question: where do captured variables live? Rust closures require explicit lifetime annotations, Go functions capture by reference, and Python lambdas use late binding that creates unexpected state sharing. JavaScript has the classic loop-variable trap; C# generates hidden closure classes. The syntax varies. The underlying tension is common to all of them. Our approach to this problem in Fidelity draws from decades of compiler research, specifically the Standard ML tradition and the MLKit project's "flat closure" representation, to generate native code that is memory-safe, runtime-free, and [null-free by construction](/docs/design/language/null-free-by-construction/). Null-freedom also lets the same closure cross between substrates, a consequence worked out in [Null-Free by Construction](/docs/design/language/null-free-by-construction/).
 
-When a function captures variables from its enclosing scope, those variables must live somewhere; they often persist beyond the stack frame that created them. In managed runtime environments, this is straightforward: the garbage collector keeps captured variables alive as long as any closure references them. In native compilation without a runtime, the question becomes an architectural one.
+When a function captures variables from its enclosing scope, those variables must live somewhere. They often persist beyond the stack frame that created them. In managed runtime environments, this is straightforward: the garbage collector keeps captured variables alive as long as any closure references them. In native compilation without a runtime, the question becomes an architectural one.
 
 ## The Closure Problem in Native Compilation
 
@@ -28,15 +28,15 @@ let makeCounter (start: int) : (unit -> int) =
 
 This function returns a lambda that captures `count`, a mutable variable. Each call to `makeCounter` should produce an independent counter with its own state. When invoked, each counter should increment its own captured value.
 
-Whether a value becomes a closure at all is decided upstream, by arity analysis: a saturated call compiles to a direct function call and needs no closure, while a partial application or a returned lambda like this one does. [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) covers that decision; this page picks up once it has been made and a closure is required.
+Whether a value becomes a closure at all is decided upstream, by arity analysis: a saturated call compiles to a direct function call and needs no closure, while a partial application or a returned lambda like this one does. [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) covers that decision. This page describes closure representation once arity analysis has decided a closure is required.
 
-In .NET, this works transparently. The runtime allocates a heap object to hold captured variables, and garbage collection ensures that object lives as long as any closure references it. The developer writes the code; the runtime handles memory.
+In .NET, this works transparently. The runtime allocates a heap object to hold captured variables, and garbage collection ensures that object lives as long as any closure references it. The developer writes the code. The runtime handles memory.
 
 Native compilation has no such support. Without garbage collection, the compiler must decide at compile time where captured variables live, how closures reference them, and how memory is reclaimed. This is an architectural decision that affects correctness, performance, and memory safety.
 
 ## Linked and Flat Closure Representations
 
-The academic literature presents two approaches to closure representation. Both clarify why Fidelity uses the flat representation.
+The academic literature presents two approaches to closure representation: linked and flat. Fidelity uses the flat representation, and the two subsections here explain the trade-off.
 
 ### Linked Closures
 
@@ -82,7 +82,7 @@ No pointers to outer environments. No chains to traverse. Each closure is self-c
 
 The trade-off is creation cost: building a flat closure requires copying all captured values rather than storing a single pointer. For closures that capture many large values, this could be expensive. In practice, most closures capture few values, and the flat representation fits in a single cache line. Access is a direct offset rather than a pointer chase.
 
-For Fidelity, the property that matters is that flat closures are "safe for space" in the formal sense defined by Shao and Appel. A closure holds references only to what it actually uses. When the closure becomes unreachable, all captured values become unreachable. There is no hidden retention of environment chains.
+For Fidelity, flat closures are "safe for space" in the formal sense defined by Shao and Appel. A closure holds references only to what it actually uses. When the closure becomes unreachable, all captured values become unreachable. There is no hidden retention of environment chains.
 
 ## The MLKit Heritage
 
@@ -129,7 +129,7 @@ llvm.store %count_ptr, %count_addr : !llvm.ptr, !llvm.ptr
 llvm.store %fn_ptr, %code_addr : !llvm.ptr, !llvm.ptr
 ```
 
-Every field is initialized. The code pointer is never null; it points to the closure's implementation function. Captured value pointers are never null; they point to valid storage. There is no "uninitialized closure" state, no sentinel values, no null checks at call sites.
+Every field is initialized. The code pointer is initialized to the closure's implementation function, and the captured value pointers point to valid storage. No field is left null. The layout carries no "uninitialized closure" state, no sentinel values, no null checks at call sites.
 
 This property is designed to propagate through LLVM lowering to the final native code, so that the emitted binary carries no null pointer checks for closure invocation. Our type system, through CCS and Alex, establishes at compile time that closures are well-formed. The runtime cost of this safety is zero.
 
@@ -147,7 +147,7 @@ The solution is a two-pass architecture in the Alex preprocessing phase.
 
 **Pass 2: Closure Layout** runs after SSA assignment. With SSA identifiers now available, this pass computes the concrete layout of each closure's environment structure: field offsets, struct types, and the synthetic SSA identifiers for environment allocation and field access.
 
-This separation respects our Composer principle that the PSG should be complete before witnessing. The Zipper and witness system observe pre-computed coeffects; they do not compute structure during code generation. Closure layout is data flowing through the pipeline, not logic embedded in MLIR emission.
+This separation conforms to our Composer principle that the PSG should be complete before witnessing. The Zipper and witness system observe pre-computed coeffects; they do not compute structure during code generation. Closure layout is data flowing through the pipeline, not logic embedded in MLIR emission.
 
 ## The Developer-Facing API
 
@@ -167,11 +167,11 @@ We are building Fidelity toward familiar Clef idioms at design time and native p
 
 ## Toward Heterogeneous Futures
 
-The flat closure architecture positions our work in Fidelity for the heterogeneous computing landscape that we explored in "The Return of the Compiler," where managed runtimes built in the 1990s struggle to address modern accelerator architectures.
+The flat closure architecture equips Fidelity for the heterogeneous computing landscape that we explored in "The Return of the Compiler," where managed runtimes built in the 1990s struggle to address modern accelerator architectures.
 
-Flat closures have deterministic size and layout. They can be serialized without runtime metadata. They can be copied between memory spaces without GC coordination. These properties matter when targeting GPUs, FPGAs, or specialized accelerators where managed runtime assumptions do not hold.
+Flat closures have deterministic size and layout. That determinism lets them be serialized without runtime metadata and copied between memory spaces without GC coordination. These properties matter when targeting GPUs, FPGAs, or specialized accelerators where managed runtime assumptions do not hold.
 
-The MLKit research that informs our approach was itself motivated by similar concerns: how to bring functional programming to environments where garbage collection is impractical or impossible. Three decades later, that research finds new relevance as computation moves beyond the CPU-centric model that managed runtimes assume.
+The MLKit research that informs our approach was itself motivated by similar concerns: how to bring functional programming to environments where garbage collection is impractical or impossible. Three decades later, that research is again relevant as computation increasingly runs on hardware beyond the CPU-centric model that managed runtimes assume.
 
 ## Basis in Proven Research
 
@@ -193,7 +193,7 @@ Our current ramp-up of the Fidelity framework exercises closures across a set of
 
 Closures are a foundation that the rest of the language builds on. Higher-order functions build on closures. Sequences and lazy evaluation depend on them. The concurrent async machinery we have initially planned, using LLVM coroutines rather than managed task infrastructure, will use closures for callback representation.
 
-The flat closure architecture supports this progression. Its space efficiency means that closure-heavy code patterns (common in functional programming) do not incur memory pressure. Its null-free representation means that closure-based APIs do not require defensive coding. Its deterministic layout means that closures integrate cleanly with the region-based memory model we will adopt in Fidelity for more involved scenarios.
+The flat closure architecture supports this progression. Its space efficiency keeps closure-heavy code patterns, common in functional programming, under low memory pressure. Because the representation is null-free, closure-based APIs need no defensive coding. The deterministic layout carries closures cleanly into the region-based memory model we will adopt in Fidelity for more involved scenarios.
 
 With the closure foundation correct, our attention turns next to the higher-order machinery that builds on it.
 

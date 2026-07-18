@@ -15,7 +15,7 @@ params:
 
 A personal note is warranted here. When I encountered the position paper ["Categorical Deep Learning is an Algebraic Theory of All Architectures"](https://arxiv.org/pdf/2402.15332) by Gavranović et al., the experience was one of recognition. The mathematical foundations for design decisions I had been making in the Fidelity framework already existed, formalized in a language I had been approaching from the engineering side.
 
-A significant credit belongs to [Paul Snively](https://www.youtube.com/watch?v=Cq_IstGhUv4), whose decades of experience with functional programming and formal verification served as a force multiplier. Paul's [polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557) accelerated many of the connections between practical framework design and formal category theory. The synthesis described in this entry owes much to those conversations; mistakes and omissions remain my own.
+A significant credit belongs to [Paul Snively](https://www.youtube.com/watch?v=Cq_IstGhUv4), whose decades of experience with functional programming and formal verification served as a force multiplier. Working from Paul's [polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557), we made many of the connections between practical framework design and formal category theory faster than we would have alone. The synthesis described in this entry owes much to those conversations; mistakes and omissions remain my own.
 
 ## The CDL Thesis
 
@@ -25,11 +25,11 @@ Gavranović et al. make a specific claim: neural networks are morphisms in a 2-c
 - **1-morphisms** are learners (functions from parameter spaces to loss landscapes)
 - **2-morphisms** are updates and reparameterizations (gradient transformations that modify the learning process)
 
-Backpropagation, in this framing, is the canonical 2-cell: the morphism that transforms forward computation into parameter updates via the chain rule. This is not a metaphor. The composition laws, associativity conditions, and naturality constraints of 2-categories describe the algebraic structure that backpropagation must satisfy.
+Backpropagation, in this framing, is the canonical 2-cell: the morphism that transforms forward computation into parameter updates via the chain rule. The composition laws, associativity conditions, and naturality constraints of 2-categories describe the algebraic structure that backpropagation must satisfy.
 
 ## The Adjoint Correspondence
 
-The CDL paper's deepest insight is that every differentiable function gives rise to an adjunction. For a function \(f: A \to B\), there exists a forward functor Fwd and a backward functor Bwd such that:
+The CDL paper shows that every differentiable function gives rise to an adjunction. For a function \(f: A \to B\), there exists a forward functor Fwd and a backward functor Bwd such that:
 
 \[\text{Fwd} \dashv \text{Bwd} : \text{Para}(A) \rightleftarrows \text{Para}(B)\]
 
@@ -59,13 +59,13 @@ In high-performance computing, the adjoint method computes sensitivities of simu
 
 In quantum mechanics, every unitary operator \(U\) has a conjugate \(U^\dagger\) such that \(UU^\dagger = U^\dagger U = I\). This is the quantum instance of the adjoint correspondence: forward evolution paired with its inverse, constrained by unitarity (the quantum analogue of the triangle identities).
 
-Across these three domains the adjoint structure is the same algebraic object; what changes is the substrate on which it runs.
+Across these three domains the adjoint structure is the same algebraic object. What differs is the substrate that realizes it.
 
 ## What This Means for Fidelity
 
 The Fidelity framework's Program Semantic Graph (PSG) already tracks forward and backward relationships as coeffect pairs. When a value is created (forward), the escape analysis determines where and how long it persists (the "backward" constraint that flows from use sites to creation sites). When dimensional annotations propagate through the compilation graph, they follow the same chain-rule composition that governs gradient flow.
 
-This alignment is not accidental, but it was not originally designed from categorical first principles either. The PSG was designed to carry semantic information through multi-stage compilation, and the coeffect discipline was designed to unify dimensional correctness with memory management. The CDL paper provides the algebraic justification for why this design works: the PSG's structure is an instance of the parameterized category construction that the CDL paper formalizes.
+This alignment is not accidental, but it was not originally designed from categorical first principles either. The PSG was designed to carry semantic information through multi-stage compilation, and the coeffect discipline was designed to unify dimensional correctness with memory management. The CDL paper explains, in algebraic terms, why this design works: the PSG's structure is an instance of the parameterized category construction that the CDL paper formalizes.
 
 Concretely, the DTS/DMM paper ([arXiv, forthcoming](/publications/dts-dmm/)) establishes three properties that map directly to the CDL framework:
 
@@ -91,10 +91,10 @@ What it does provide is a principled design framework that ensures the component
 
 The CDL paper's 2-categorical formalization opens several specific directions for Fidelity:
 
-**Verified composition of heterogeneous morphisms.** When a computation spans CPU, FPGA, and NPU targets, each target implements a different instance of the forward/backward pair. The categorical framework provides the composition laws that govern how these instances interact at target boundaries. The [DTS/DMM paper's future work](/publications/dts-dmm/) identifies this as the motivation for the Program Hypergraph (PHG) generalization.
+**Verified composition of heterogeneous morphisms.** When a computation spans CPU, FPGA, and NPU targets, each target implements a different instance of the forward/backward pair. The categorical framework fixes the composition laws that govern how these instances interact at target boundaries. The [DTS/DMM paper's future work](/publications/dts-dmm/) identifies this as the motivation for the Program Hypergraph (PHG) generalization.
 
 **Differentiable programming as a first-class coeffect.** Section 6.7 of the DTS/DMM paper identifies forward-mode automatic differentiation as a specific coeffect signature. The CDL framework provides the 2-categorical context for extending this to a general differentiable programming discipline, where the compiler tracks gradient flow as a structural property of the compilation graph.
 
-**Domain-specific categorical structures.** Physics-informed neural networks, digital twins, and hybrid HPC/AI systems all exhibit domain-specific categorical structure (conservation laws as natural transformations, symmetry groups as equivariance constraints). The CDL framework provides the vocabulary for expressing these constraints in the type system and verifying them at compile time.
+**Domain-specific categorical structures.** Physics-informed neural networks, digital twins, and hybrid HPC/AI systems all exhibit domain-specific categorical structure (conservation laws as natural transformations, symmetry groups as equivariance constraints). The CDL framework gives these constraints a categorical vocabulary, which the type system expresses and verifies at compile time.
 
-These directions are research objectives, not shipping features. The foundational work described in the DTS/DMM paper, dimensional type systems, deterministic memory management, semantic preservation through MLIR, establishes the infrastructure on which categorical composition will be built. The CDL paper provides the mathematical assurance that the infrastructure is pointed in the right direction.
+These directions are research objectives, not shipping features. The foundational work described in the DTS/DMM paper establishes the infrastructure on which categorical composition will be built: dimensional type systems, deterministic memory management, and semantic preservation through MLIR. The CDL paper gives the mathematical account of why that infrastructure supports categorical composition.

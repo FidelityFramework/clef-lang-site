@@ -17,21 +17,21 @@ Rust made its choice early: ownership and borrowing, enforced at compile time, w
 
 {{< youtube 1iPWt1gvT_w >}}
 
-James Faure's analysis of Rust's architectural decisions bears on this question. His critique of the borrow checker's complexity is well-founded, though his proposed solutions remain speculative. The underlying problem this document addresses is how a systems language should handle streaming when the hardware landscape includes not just CPUs, but CGRAs, NPUs, FPGAs, and spatial dataflow accelerators.
+James Faure's analysis of Rust's architectural decisions bears on this question. His critique of the borrow checker's complexity is well-founded, though his proposed solutions remain speculative. A systems language must handle streaming across a hardware landscape that now includes CGRAs, NPUs, FPGAs, and spatial dataflow accelerators alongside CPUs.
 
 ## Three Models of Streaming
 
-The conventional framing presents streaming as a binary choice: materialize everything (the "eager" approach) or defer everything (the "lazy" approach). This framing obscures a third option that becomes critical for heterogeneous compute: spatial streaming through dataflow pipelines.
+The conventional framing presents streaming as a binary choice: materialize everything (the "eager" approach) or defer everything (the "lazy" approach). This framing obscures a third model for heterogeneous compute: spatial streaming through dataflow pipelines.
 
 ### Materialized: The Cartesian Product
 
-When data materializes, the compiler knows its shape completely. An array of 1024 floats occupies exactly 4096 bytes. Every element has an address. Random access costs O(1). The tradeoff is memory consumption: all data exists simultaneously.
+When data materializes, the compiler knows its shape completely. An array of 1024 floats occupies exactly 4096 bytes. Because every element has an address, random access costs O(1). The tradeoff is memory consumption: all data exists simultaneously.
 
 \[
 \text{Memory}_{materialized} = |D| \times \text{sizeof}(T)
 \]
 
-This model works well for data that fits comfortably in cache hierarchies. It enables vectorization through SIMD instructions. It provides the predictable memory access patterns that CPUs optimize for.
+This model works well for data that fits comfortably in cache hierarchies, where it enables SIMD vectorization and gives CPUs the predictable memory access patterns they optimize for.
 
 ### Demand-Driven: The Lazy Thunk
 
@@ -45,7 +45,7 @@ Haskell pioneered this model, demonstrating how it expresses infinite data struc
 
 ### Spatial: The Dataflow Pipeline
 
-The third model treats streaming as physical data movement through processing stages. Data flows from producer to consumer through explicit channels. Each stage processes elements as they arrive, with bounded buffering between stages. The cost of running such a pipeline on a CPU instead, where the stages collapse onto one instruction stream, is what [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) quantifies as a delta the graph exposes directly.
+The third model treats streaming as physical data movement through processing stages. Data flows from producer to consumer over explicit channels, and each stage processes elements as they arrive with bounded buffering between stages. Running such a pipeline on a CPU instead collapses the stages onto one instruction stream. [Flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) quantifies the resulting delta directly from the graph.
 
 \[
 \text{Memory}_{spatial} = \sum_{i=1}^{n} \text{buffer}(stage_i) \ll |D| \times \text{sizeof}(T)
@@ -61,7 +61,7 @@ Rust's ownership model encodes a specific memory semantics: every value has exac
 
 **Spatial dataflow** requires values that flow between processing stages without clear ownership boundaries. When data moves from producer to consumer through a bounded channel, who "owns" it during transit? Rust's channel implementations work, but the ownership model provides no special support for expressing spatial relationships.
 
-Beyond ownership, Rust's type system erases dimensional information that spatial compilation requires. The type `f32` carries no units. The type `[f32; 1024]` carries no semantic about whether this is a time series, a frequency spectrum, or a spatial image row. When targeting FPGAs or CGRAs, this missing information forces the compiler to make conservative choices.
+Beyond ownership, Rust's type system erases dimensional information that spatial compilation requires. The type `f32` records no units, and `[f32; 1024]` fixes only a length, saying nothing about whether the data is a time series, a frequency spectrum, or a spatial image row. When targeting FPGAs or CGRAs, this missing information forces the compiler to make conservative choices.
 
 ## Our Position: Tiered Abstraction
 
@@ -273,7 +273,7 @@ The streaming architecture decisions we make today determine what hardware we ca
 
 **Intel's Habana Gaudi** combines tensor cores with configurable dataflow. Dimensional annotations directly inform the tensor operation decomposition.
 
-A language that erases streaming semantics before code generation cannot target these architectures efficiently. This is not a criticism of Rust's choices; it is a recognition that those choices were made for a different hardware landscape.
+A language that erases streaming semantics before code generation cannot target these architectures efficiently. This is not a criticism of Rust's choices. Those choices were made for a different hardware landscape.
 
 ## The Three Models in Concert
 
@@ -284,7 +284,7 @@ Our tiered approach provides this capability:
 - **Dimensional types** carry physical and memory semantics through compilation
 - **Refinement types** enable verification for critical paths
 
-The result is a compilation pathway where streaming semantics survive from source to silicon.
+The result is a compilation pathway where streaming semantics remain intact from source code to hardware generation.
 
 ### Current Foundations
 
@@ -292,17 +292,17 @@ This is not yet a finished implementation. What exists today is foundational wor
 
 What remains unfinished is the full integration: the analysis passes that automatically select between materialized, spatial, and demand-driven representations; the CIRCT backend that generates synthesizable hardware descriptions; the runtime support for bounded channels between spatial stages; the verification infrastructure that proves safety properties across heterogeneous boundaries.
 
-This gap between foundation and completion is intentional. We are building for a hardware landscape that is still emerging. The architectures described here (Groq's LPU, Tenstorrent's mesh NoC, Intel's configurable dataflow) represent the leading edge of commercially available spatial compute. The generation after them will likely introduce new constraints and opportunities we cannot yet anticipate.
+We have left this gap deliberately, because we are building for a hardware landscape that is still emerging. The architectures described here (Groq's LPU, Tenstorrent's mesh NoC, Intel's configurable dataflow) represent the leading edge of commercially available spatial compute. The generation after them will likely introduce new constraints and opportunities we cannot yet anticipate.
 
 By establishing the mechanisms now (the type system extensions, the IR representations, the analysis frameworks) we create the capacity to adapt as hardware evolves. Our dimensional type system does not hard-code assumptions about specific architectures. The coeffect analysis does not privilege CPU execution models. The MLIR dialect selection remains extensible to new targets. Retargeting to systems other than MLIR remains open to us.
 
 ### Spatial Mechanics as System Architecture
 
-The term "spatial mechanics" names more than optimizing sequential code for parallel execution. It treats data movement through processing stages as a first-class concern, equivalent to computation itself.
+Spatial mechanics treats data movement through processing stages as a first-class concern, co-equal with computation, not as sequential code optimized for parallel execution.
 
-In traditional compilation, data movement is incidental. The compiler focuses on operations such as additions, multiplications, and comparisons, and data arrives in registers as needed. Memory hierarchies are implicit. Cache effects are emergent. This model worked well when CPUs were monolithic and memory was uniform.
+In traditional compilation, data movement is incidental. The compiler focuses on operations such as additions, multiplications, and comparisons, and data arrives in registers as needed. The memory hierarchy stays implicit and cache effects fall out of execution. This model worked well when CPUs were monolithic and memory was uniform.
 
-The heterogeneous compute landscape inverts this assumption. On an FPGA, wiring between processing elements is as significant as the processing elements themselves. On a CGRA, the reconfigurable routing fabric determines what computations are even expressible. On a spatial accelerator, the data movement pattern is the program.
+The heterogeneous compute landscape inverts this assumption. On an FPGA, wiring between processing elements is as significant as the processing elements themselves. A CGRA's reconfigurable routing fabric determines what computations are even expressible. For a spatial accelerator, the data movement pattern is the program.
 
 Our approach acknowledges this reality through its type system. When a dimensional type annotation specifies `array<float<samples>, 48000>`, it declares not just element type and count, but the semantic structure of the data. The compiler reads this as time-series audio data sampled at 48kHz. This information determines buffering strategies, influences hardware mapping, and enables verification that transformations preserve signal properties.
 
@@ -333,9 +333,9 @@ The spatial mechanics described here represent one piece of a larger design dire
 
 > We are advancing a design model where dimensional types are semantic contracts enforced through compilation rather than annotations for documentation, where streaming models emerge from program structure rather than manual optimization, and where the compiler serves as a bridge between functional specification and spatial implementation.
 
-We are building the foundations. The full structure will take time, as hardware continues to evolve and new targets emerge. Each piece reinforces the others, building toward a compilation pathway from Clef source to heterogeneous silicon.
+We are building the foundations. The full structure will take time, as hardware continues to evolve and new targets emerge. The layers compose into a compilation pathway from Clef source to heterogeneous hardware.
 
-The abstractions we are settling now preserve semantics, enable progressive disclosure, and stay agnostic to specific hardware implementations. That gives us room to meet targets the technology landscape has yet to specify. We will keep refining the analysis, the lowering, and the verification as the spatial mechanics take shape, and as the hardware we are designing for comes into view.
+The abstractions we are settling now preserve semantics, enable progressive disclosure, and stay agnostic to specific hardware implementations. That gives us room to meet targets the technology landscape has yet to specify. We will keep refining the analysis, the lowering, and the verification as this work develops and as the target hardware matures.
 
 ---
 
