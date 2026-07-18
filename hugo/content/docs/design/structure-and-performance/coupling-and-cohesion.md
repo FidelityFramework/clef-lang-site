@@ -39,7 +39,7 @@ But in that process we also found an opportunity to optimize the compilation pro
 
 ## PS²G as Architectural Map
 
-The Program Semantic Graph in Composer serves as more than an intermediate representation; it functions as an architectural map of your entire program. Beyond what each unit contains, it records which units are exercised together and which units can be recompiled independently.
+The Program Semantic Graph in Composer serves as more than an intermediate representation; it functions as an architectural map of your entire program. Beyond what each unit contains, it records which are exercised together and which can be recompiled independently.
 
 ```mermaid
 graph TD

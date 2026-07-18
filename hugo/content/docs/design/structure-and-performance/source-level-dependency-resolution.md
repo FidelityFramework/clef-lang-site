@@ -137,7 +137,7 @@ Where traditional F# uses FCS (F# Compiler Services) targeting the CLR, Fidelity
 
 ### Reachability Analysis
 
-Reachability analysis prunes the most code from a source-based distribution. Traditional F# compilation includes entire assemblies even when you only use a single function. Our source-level approach compiles in only the code reachable from an entry point.
+Reachability analysis is where source-based distribution removes the most unused code. Traditional F# compilation includes entire assemblies even when you only use a single function. Our source-level approach compiles in only the code reachable from an entry point.
 
 Starting from entry points like `[<EntryPoint>]` functions, the compiler traces through symbol usage to build a minimal dependency set. For our HelloWorld example, this analysis might discover that we only need:
 - `Console.Write` and `Console.ReadLine` from the platform library

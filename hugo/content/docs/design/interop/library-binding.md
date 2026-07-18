@@ -14,13 +14,13 @@ Our Fidelity framework sits at the intersection of two computing approaches that
 
 We treat that trade as a design choice rather than a law. Our Fidelity framework brings Clef's type system, pattern matching, and functional composition directly to native code through MLIR with no runtime dependency. Where existing cross-compilation approaches force compromises, we are building toward a few capabilities we have not found together in either ecosystem: a region-based memory management system that provides memory safety without garbage collection, our BAREWire zero-copy serialization with compile-time verification, and platform-specific optimization through functional composition rather than conditional compilation.
 
-This document covers one part of that work: the hybrid library binding architecture. Through Farscape, the binding generator, and Alex, the MLIR transformation, we intend a path from Clef to native code that keeps the language's functional model while giving systems-level control over library integration. The aim is to let developers make intentional choices about static and dynamic linking while keeping a consistent development experience, across diverse computing environments and their differing hardware constraints.
+Through Farscape, the binding generator, and Alex, the MLIR transformation, we intend a path from Clef to native code that keeps the language's functional model while giving systems-level control over library integration. The aim is to let developers make intentional choices about static and dynamic linking while keeping a consistent development experience, across diverse computing environments and their differing hardware constraints.
 
 ## Clef as a Systems Programming Language
 
 The computing world has split into specialized territories, and the split often follows historical accident more than technical necessity. Embedded systems developers write in C, server developers gravitate to Java or C#, data scientists use Python, and mobile developers work with Swift or Kotlin. The result forces teams to master several languages, or to accept compromises that are not technically required.
 
-We start our Fidelity framework from a different question. Can a single language target the whole computing spectrum without that compromise? Our answer is not a lowest-common-denominator language. It is an adaptive compilation strategy that carries functional programming to every deployment target.
+We start our Fidelity framework from a different question. Can a single language target the whole computing spectrum without that compromise? Our answer is an adaptive compilation strategy that carries functional programming to every deployment target, not a lowest-common-denominator language.
 
 Clef gives us the foundation for that work. Descended from F#, it draws on ML, OCaml, and related lineages, and it offers:
 
@@ -70,7 +70,7 @@ This moves library integration from monolithic, project-wide decisions to fine-g
 
 ### Core Components
 
-Our hybrid binding architecture is built around a pipeline that transforms Clef code into native executables while carrying binding intent through every stage. The pipeline bridges existing technologies, and it also reworks how a compilation pipeline adapts to diverse deployment requirements.
+Our hybrid binding architecture is built around a pipeline that transforms Clef code into native executables while carrying binding intent through every stage. The pipeline bridges existing technologies, and it also reworks how compilation adapts to diverse deployment requirements.
 
 ```mermaid
 flowchart TB
@@ -130,7 +130,7 @@ flowchart TB
 
 Our Farscape generates bindings for native libraries. Where conventional tools produce mechanical translations, Farscape generates idiomatic Clef interfaces that read naturally to Clef developers while keeping fidelity with the underlying C/C++ APIs.
 
-Named in homage to the science fiction series about traversal between worlds, Farscape builds bridges between disparate programming models. It uses clang's two-pass parsing strategy (JSON AST extraction plus macro extraction) with XParsec parser combinators for post-processing, and the part we have not seen elsewhere is how it transforms these into Clef code that respects both languages' idioms.
+Named in homage to the science fiction series about traversal between worlds, Farscape builds bridges between disparate programming models. It uses clang's two-pass parsing strategy (JSON AST extraction plus macro extraction) with XParsec parser combinators for post-processing, then transforms these into Clef code that respects both languages' idioms, an approach we have not found elsewhere in the literature we have reviewed.
 
 Consider the challenge of mapping C's error-code-based error handling to Clef's more expressive result types:
 
@@ -154,7 +154,7 @@ Farscape's generated bindings use the Platform.Bindings pattern (BCL-free), whic
 
 ### The Role of Our Alex Library
 
-If Farscape builds the bridge between languages, our Alex is the part that transforms how those bridges function at compile time. Named after the drawing that reads as either a duck or a rabbit depending on the viewer, Alex carries a central role in our compilation pipeline: it transforms the Clef Compiler Services (CCS) AST into MLIR representations that lower to native code.
+Where Farscape generates the language bindings, our Alex determines how they compile. Named after the drawing that reads as either a duck or a rabbit depending on the viewer, Alex is central to our compilation pipeline: it turns the Clef Compiler Services (CCS) AST into MLIR representations that lower to native code.
 
 Alex's approach draws on LicenseToCIL's type-safe operation composition, extended to direct MLIR generation. The transformation preserves the semantic intent of Clef code while enabling platform-specific optimizations.
 
@@ -188,7 +188,7 @@ let witnessExternCall (node: PSGNode) : MLIR<Val> = mlir {
 }
 ```
 
-The PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration. It emits what the resolved extern node tells it to emit. Witnesses stay pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
+The PlatformBindingResolution nanopass resolves all platform decisions *before* Alex begins witnessing. Alex never queries configuration; it emits the MLIR the resolved extern node specifies. Witnesses stay pure transformations from PSG semantics to MLIR, with no runtime-mode branching.
 
 Alex's witnessing extends beyond binding strategies to the full range of Clef features, from closures to pattern matching to computation expressions. Each translates into MLIR that preserves its semantic intent while enabling native code generation.
 
@@ -236,7 +236,7 @@ These advantages make static binding particularly valuable for specific categori
 
 #### Implementation Approach
 
-Our static binding departs from traditional approaches in one way: it keeps the same developer experience regardless of the binding strategy. The process works as follows:
+Our static binding keeps the same developer experience regardless of the binding strategy. The process works as follows:
 
 1. Farscape generates `[<FidelityExtern>]` attributed binding declarations that carry library name and symbol metadata, so developers work with an idiomatic Clef API.
 
@@ -354,7 +354,7 @@ This declarative approach moves binding strategy from implementation detail embe
 
 ### Farscape Binding Generation
 
-The binding generation process is the foundation of our hybrid binding architecture. Farscape generates a single set of bindings that work identically with both static and dynamic linking. The binding strategy is resolved downstream in the compilation pipeline, not in the generated code.
+Farscape generates a single set of bindings that work identically with both static and dynamic linking. The binding strategy is resolved downstream in the compilation pipeline, not in the generated code.
 
 Farscape's Moya project system organizes library decompositions through `.moya.toml` files that declare headers, namespace groupings, and function assignments. A single Moya project can reference multiple C headers (e.g., `unistd.h` and `fcntl.h` for IO operations), with Farscape merging and deduplicating declarations across headers automatically. This produces clean, non-overlapping Clef modules from the natural structure of the C library.
 
@@ -396,7 +396,7 @@ Farscape's binding generation goes beyond mere function mapping to address the f
 
 ### From Extern Node to MLIR
 
-The center of our hybrid binding architecture is how binding intent flows through the nanopass pipeline and arrives at Alex already resolved. By the time Alex witnesses an extern node, the PlatformBindingResolution nanopass has attached a concrete `ExternCall` coeffect, so Alex's job is to emit the corresponding MLIR.
+Binding intent flows through the nanopass pipeline and arrives at Alex already resolved. By the time Alex witnesses an extern node, the PlatformBindingResolution nanopass has attached a concrete `ExternCall` coeffect, so Alex's job is to emit the corresponding MLIR.
 
 ```fsharp
 let witnessExternNode (node: PSGNode) : MLIR<Val> = mlir {
@@ -417,7 +417,7 @@ let witnessExternNode (node: PSGNode) : MLIR<Val> = mlir {
 - For dynamic binding, Alex emits an external function declaration with `fidelity.binding_strategy` and `fidelity.library_name` MLIR attributes. The platform's dynamic linker resolves the symbol at load time.
 - For static binding, Alex emits a direct function reference that LLVM's link-time optimizer can inline across module boundaries.
 
-The separation between resolution (nanopass) and emission (Alex) matters for the design. Alex never queries build configuration. It witnesses what the PSG tells it. This keeps witnesses pure and composable, and binding strategy changes never require modifications to Alex's witnessing logic.
+The separation between resolution (nanopass) and emission (Alex) shapes the design. Because the extern node arrives already resolved, Alex emits from PSG semantics alone, never from build configuration. Its witnesses stay pure and composable, and a change in binding strategy leaves the witnessing logic untouched.
 
 Alex's witnessing preserves the semantic intent of the original code, ensuring that error handling, resource management, and other aspects of the API contract remain consistent regardless of the binding strategy.
 
@@ -455,7 +455,7 @@ By carrying binding intent through the MLIR representation, our compilation proc
 
 ### Platform Library Handling
 
-Our binding architecture handles platform-native libraries with care: the standard C library (libc, libSystem, ucrt), system services, and hardware abstraction layers that form the foundation of every target platform. These components are intrinsic to the platform and need their own treatment in the binding strategy.
+Our binding architecture treats platform-native libraries as a distinct category: the standard C library (libc, libSystem, ucrt), system services, and hardware abstraction layers that form the foundation of every target platform. These components are intrinsic to the platform and need their own treatment in the binding strategy.
 
 ```fsharp
 // platform library classification, resolved during PlatformBindingResolution
@@ -882,15 +882,15 @@ Work is ongoing to improve standards compatibility and integration with existing
 
 These integration efforts would make Fidelity's binding architecture more accessible to developers across different ecosystems, enabling broader adoption and integration with existing workflows.
 
-## Conclusion
+## Dissolved Boundaries
 
 Our approach to library binding moves the linking decision out of the source and into configuration. By separating binding intent from implementation, it lets developers make fine-grained decisions about binding strategy while keeping a consistent programming model.
 
 The approach takes the performance and security of static binding where they matter most, and the flexibility and resource sharing of dynamic binding where those matter more. The result is an architecture that adapts to diverse deployment requirements while holding the developer experience steady.
 
-The part we keep returning to is the effect on the development process. By removing the boundary between "systems programming" and "high-level programming," the same Clef code reaches across the computing spectrum, from embedded devices to distributed systems, without rewriting for each target.
+By removing the boundary between "systems programming" and "high-level programming," the same Clef code reaches across the computing spectrum, from embedded devices to distributed systems, without rewriting for each target.
 
-The binding architecture stays a cornerstone of where we are taking our Fidelity framework. We will keep building it toward dissolving the boundaries between deployment environments while preserving the precision and expressiveness of Clef, and we will report what we learn as the work continues.
+We will keep building this binding architecture toward dissolving the boundaries between deployment environments while preserving the precision and expressiveness of Clef, and we will report what we learn as the work continues.
 
 ---
 

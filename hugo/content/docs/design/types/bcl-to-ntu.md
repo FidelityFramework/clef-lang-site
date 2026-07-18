@@ -13,9 +13,9 @@ params:
 
 When we began designing the Fidelity framework, we encountered a fundamental architectural question that would shape every subsequent decision: how do you build a type system that serves both the embedded developer programming a Cortex-M0 with 32 kilobytes of RAM and the systems architect deploying across a cluster of 64-bit servers? The conventional answer has been to accept fragmentation, to maintain separate type representations for each target, or to impose a lowest-common-denominator abstraction that satisfies neither scenario well.
 
-We chose a different path. The Native Type Universe (NTU) represents our answer to this challenge, a type architecture where platform awareness flows through the compilation pipeline as structured metadata, where type identity and type width are separated by design, and where the compiler retains full control over memory layout decisions until the final lowering stage.
+The Native Type Universe (NTU) is our answer to this challenge, a type architecture where platform awareness flows through the compilation pipeline as structured metadata, where type identity and type width are separated by design, and where the compiler retains full control over memory layout decisions until the final lowering stage.
 
-This document traces the evolution from BCL-based type assumptions to the NTU architecture, explaining why this transformation was necessary, how it was accomplished, and what it enables for hardware-software co-design across the computing spectrum. The normative treatment is in the spec's type-universe chapters: the [Native Type Universe](/spec/draft/native-type-universe/) itself, the [NTU type nomenclature](/spec/draft/ntu-types/), the [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) that layers units of measure onto it, and [types and type constraints](/spec/draft/types-and-type-constraints/).
+This document covers the evolution from BCL-based type assumptions to the NTU architecture and what its separation of type identity from type width makes possible for hardware-software co-design across the computing spectrum. The normative treatment is in the spec's type-universe chapters: the [Native Type Universe](/spec/draft/native-type-universe/) itself, the [NTU type nomenclature](/spec/draft/ntu-types/), the [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) that layers units of measure onto it, and [types and type constraints](/spec/draft/types-and-type-constraints/).
 
 ## The BCL Assumption
 
@@ -47,7 +47,7 @@ The affected code included the core type inference machinery:
 - `CheckExpressions.fs`, `CheckPatterns.fs`, and `CheckDeclarations.fs` for type checking
 - Supporting infrastructure including `infos.fs`, `TypeHierarchy.fs`, and `AccessibilityLogic.fs`
 
-The IL import assumption was not a surface-level configuration. It was a load-bearing wall.
+The IL import assumption ran through that inference infrastructure, so no edit confined to the boundary could contain it.
 
 ```mermaid
 flowchart TD
@@ -120,7 +120,7 @@ The native representation uses a tag byte followed by the payload:
 └──────────┴─────────┴────────────────────────────────────┘
 ```
 
-This follows the algebraic data type tradition from ML and OCaml, with one refinement of our own: the tag is a compile-time case index assigned in declaration order (0, 1, 2, ...). Under the BCL a union case is a managed object whose type the runtime resolves on access; here the case is settled in the layout before the program runs, so the generated code reads a known position rather than asking what it is holding. That index is what BAREWire carries across a process or hardware boundary as a typed contract both endpoints are built to read, so a value arrives as the same native union it started as. The native layout is specified in [Discriminated Union Representation](/spec/draft/discriminated-union-representation/); the boundary contract is §7 of that document.
+This follows the algebraic data type tradition from ML and OCaml, with one refinement of our own: the tag is a compile-time case index assigned in declaration order (0, 1, 2, ...). Under the BCL a union case is a managed object whose type the runtime resolves on access; here the case is settled in the layout before the program runs, so the generated code reads a known offset instead of resolving the case at access time. That index is what BAREWire carries across a process or hardware boundary as a typed contract both endpoints are built to read, so a value arrives as the same native union it started as. The native layout is specified in [Discriminated Union Representation](/spec/draft/discriminated-union-representation/); the boundary contract is §7 of that document.
 
 ### Functions
 
@@ -245,13 +245,13 @@ flowchart LR
 
 ## From Erased Width to Inferred Width and Representation
 
-Separating type identity from width does more than let `int` resolve to the target's word size. Once width is metadata resolved late rather than a property fixed at the keyboard, the resolution itself can be *inferred* from what the program does with a value, not merely read from a platform table. This is the through-line from NTU to the rest of the type system, and it runs in three steps.
+Separating type identity from width does more than let `int` resolve to the target's word size. Once width is metadata resolved late rather than a property fixed in the source, the resolution itself can be *inferred* from what the program does with a value, not merely read from a platform table. The same separation between type identity and width governs width inference and representation selection further down the type system, in three places.
 
 The first is **arbitrary integer width**. A value's range is a fact the compiler can read off the program graph, and the minimal width that holds that range is a function of it. A counter bounded to roughly four hundred million needs 29 bits, not the 64 a host register would spend; on a fixed-instruction target the inferred width rounds up to the nearest native size, but on an FPGA every bit is gate count, and the narrower width is the smaller circuit. NTU makes this expressible because the width was never part of the type's identity to begin with. [Width inference](/docs/design/types/dimensional-type-safety/) is the integer realization of this, and it lowers to fabric today.
 
-The second is **real representation**. The same range that selects an integer width selects, for a real-valued quantity, a *representation*: IEEE-754, a posit, or fixed-point, whichever preserves the most accuracy across the range the value actually occupies. The dimensional type carries the kind, a units-of-measure annotation that survives compilation; the analyzed range carries the choice. [Numeric selection](/spec/draft/numeric-selection/) specifies this as the real-valued sibling of width inference, with the dimensional range as its principal input. Our preliminary designs lean toward inferring it through the same coeffect machinery that carries width.
+The second is **real representation**. The same range that selects an integer width selects, for a real-valued quantity, a *representation*: IEEE-754, a posit, or fixed-point, whichever preserves the most accuracy across the range the value actually occupies. The dimensional type carries the kind, a units-of-measure annotation that survives compilation. The analyzed range carries the choice of representation. [Numeric selection](/spec/draft/numeric-selection/) specifies this as the real-valued sibling of width inference, with the dimensional range as its principal input. Our preliminary designs lean toward inferring it through the same coeffect machinery that carries width.
 
-The third is the arithmetic the chosen representation brings with it. A [posit](/docs/design/types/posit-arithmetic/) tapers precision toward magnitude one, where natural-unit values cluster, and pairs with the quire, a wide accumulator that holds a sum of products exactly and rounds once at the end. The representation choice in turn settles a [rounding](/docs/design/types/rounding-on-real-hardware/) discipline, which is no longer carried implicitly by a shared IEEE platform once representation varies per target. Each of these rides the same separation NTU established at the start: the type names the quantity, and the representation, the width, and the rounding are facts resolved against the target rather than committed in the source.
+The third is the arithmetic the chosen representation brings with it. A [posit](/docs/design/types/posit-arithmetic/) tapers precision toward magnitude one, where natural-unit values cluster, and pairs with the quire, a wide accumulator that holds a sum of products exactly and rounds once at the end. The representation choice in turn settles a [rounding](/docs/design/types/rounding-on-real-hardware/) discipline, which is no longer carried implicitly by a shared IEEE platform once representation varies per target. All three follow from the same separation NTU established at the start: the type names the quantity, and the representation, the width, and the rounding are facts resolved against the target rather than committed in the source.
 
 ```mermaid
 flowchart LR
@@ -328,7 +328,7 @@ This approach borrows from the F* programming language, where platform-dependent
 
 ## Memory Regions
 
-Native compilation requires explicit attention to where data resides in memory. The managed runtime provides a uniform heap with garbage collection. Native environments expose a heterogeneous memory landscape: stack, heap, memory-mapped peripherals, DMA-accessible regions, flash storage. The `Peripheral` region below is what the [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) register handles ride on, down to a Cortex-M part.
+Native compilation requires explicit attention to where data resides in memory. The managed runtime provides a uniform heap with garbage collection. Native environments expose a heterogeneous memory landscape: stack, heap, memory-mapped peripherals, DMA-accessible regions, flash storage. The `Peripheral` region below is the region type the [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) register handles are built on, down to a Cortex-M part.
 
 NTU extends the type parameter system to track memory regions:
 
@@ -336,7 +336,7 @@ NTU extends the type parameter system to track memory regions:
 type Ptr<'T, 'Region, 'Access>
 ```
 
-This is not a new syntax; it leverages Clef's existing type parameter mechanism. What changes is the semantic interpretation. The `'Region` and `'Access` parameters carry compile-time information about memory placement and access permissions.
+This is not a new syntax. It reuses Clef's existing type parameter mechanism. What changes is the semantic interpretation. The `'Region` and `'Access` parameters carry compile-time information about memory placement and access permissions.
 
 ### Built-in Memory Regions
 
@@ -493,7 +493,7 @@ This representation is:
 - Length-prefixed (no null terminator)
 - Zero-copy sliceable (substrings reference original data)
 
-The UTF-8 encoding aligns with web standards, Unix conventions, and interoperability requirements. The fat pointer representation enables efficient slicing without allocation. The explicit length avoids the security issues and performance costs of null-terminated strings.
+The UTF-8 encoding matches what Unix tooling and web transports already use. The fat pointer slices without allocating, since a substring is a new pointer and length into the same bytes. A length prefix in place of a null terminator removes both the out-of-bounds read risk and the cost of scanning to find the string's end.
 
 ### API Consequences
 
@@ -506,7 +506,7 @@ The null-free philosophy, stated in full under [Null-Free by Construction](/docs
 | `s[i]` throws on out-of-bounds | `String.tryItem i s` returns `voption<char>` |
 | `String.IsNullOrEmpty(s)` | `String.isEmpty s` (no null possible) |
 
-The shift from exceptions and sentinel values to option types makes error handling explicit in the type signature. This is not merely a stylistic preference; it enables the compiler to verify exhaustive handling of failure cases.
+The shift from exceptions and sentinel values to option types makes error handling explicit in the type signature, and that explicit encoding is what lets the compiler verify exhaustive handling of failure cases.
 
 ## The Option Type
 
@@ -533,11 +533,11 @@ Key properties:
 - Deterministic layout for serialization
 - No garbage collection overhead
 
-For performance-sensitive code paths, this transformation eliminates allocation pressure. A loop that creates millions of option values no longer creates millions of heap objects. The type system continues to enforce safe usage; the representation changes.
+For performance-sensitive code paths, this transformation eliminates allocation pressure. A loop that creates millions of option values no longer creates millions of heap objects. The type system continues to enforce safe usage. Only the representation changes.
 
 ## The `obj` Elimination
 
-Perhaps the most significant philosophical departure is the elimination of `obj` (System.Object).
+A further departure from the BCL model is the elimination of `obj` (System.Object).
 
 In managed runtimes, `obj` serves as:
 - Universal base type for inheritance
@@ -554,9 +554,9 @@ In native compilation without garbage collection, these use cases require differ
 | Runtime reflection | Compile-time metaprogramming |
 | SRTP via runtime dispatch | SRTP resolved statically at compile time |
 
-The absence of `obj` is not a limitation but a design choice. Every type in NTU has a known size and layout at compile time. There is no "any type" escape hatch because native compilation requires deterministic memory representation.
+We removed `obj` by design, a direct consequence of native compilation. Every type in NTU has a known size and layout at compile time. There is no "any type" escape hatch because native compilation requires deterministic memory representation.
 
-This has practical consequences. Code that relies on boxing or dynamic type tests must be restructured. SRTP constraints must resolve statically. The benefit is that the resulting code is amenable to ahead-of-time compilation, aggressive inlining, and precise memory management.
+Code that relies on boxing or dynamic type tests has to be restructured, and SRTP constraints resolve statically rather than through runtime dispatch. The benefit is that the resulting code is amenable to ahead-of-time compilation, aggressive inlining, and precise memory management.
 
 ## Statically Resolved Type Parameters
 
@@ -724,9 +724,9 @@ Teams developing custom accelerators can define their platform bindings early, e
 
 ## A New Universe
 
-The journey from BCL-based type assumptions to the Native Type Universe represents more than a technical migration. It reflects a fundamental rethinking of how type systems can serve diverse deployment targets, and how the Clef language is uniquely positioned to deliver on this vision.
+The move from BCL-based type assumptions to the Native Type Universe changed how our type system serves diverse deployment targets, and it is the type machinery the Clef language builds on to reach them.
 
-The key insights that emerged:
+Four conclusions settled out of this work:
 
 **Type identity and type width are separable concerns.** By treating width as erased metadata, NTU enables type-safe cross-platform development without conditional compilation clutter.
 

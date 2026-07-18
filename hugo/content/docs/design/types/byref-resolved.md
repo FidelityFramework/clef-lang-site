@@ -11,27 +11,25 @@ params:
   migration_date: 2026-02-15
 ---
 
-Memory safety in systems programming has three established homes: in a runtime tracker (garbage collection), in developer-supplied lifetime annotations (Rust), or in the developer's own discipline (manual management). The Clef compiler places it in a fourth: in the compiled artifact itself, with compile-time structural analysis producing the commitments and MLIR lowering preserving them through to the binary.
+Systems programming locates memory safety in three established places: a runtime tracker (garbage collection), developer-supplied lifetime annotations (Rust), or the developer's own discipline (manual management). The Clef compiler adds a fourth: the compiled artifact itself, with compile-time structural analysis producing the commitments and MLIR lowering preserving them through to the binary.
 
-The article's title points to one familiar instance of the runtime-tracker pattern's limitations. The byref restrictions in .NET exist because the CLR cannot track interior pointers across heap-allocated state machines, which means F# byrefs cannot be captured in async closures. That restriction is a specific case of a broader pattern: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. Our contribution is not a workaround for .NET specifically; it is an alternative position for where memory safety can live, with the structural commitments carried by the artifact rather than mediated by a runtime.
-
-The rest of this document describes the architectural commitments that produce this position, the intellectual lineage they draw on, how the approach compares to the established alternatives, and what the practical infrastructure (BAREWire, Reference Sentinels, RAII actor memory) contributes within the architecture.
+The .NET byref problem is one familiar instance of the runtime-tracker pattern's limitations. The byref restrictions in .NET exist because the CLR cannot track interior pointers across heap-allocated state machines, which means F# byrefs cannot be captured in async closures. That restriction is a specific case of a broader pattern: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. Our contribution is not a workaround for .NET specifically. It is an alternative position for memory safety, with the structural commitments carried by the artifact rather than mediated by a runtime.
 
 ## Architectural Commitments
 
-Our approach rests on commitments that interact rather than layer. They are presented separately below for clarity, but each depends on the others to produce our framework's value.
+Our approach rests on commitments that depend on one another. They are presented separately below for clarity, but each contributes to our framework's value only in combination with the others.
 
 **Flat closures with explicit capture.** Every closure in Clef carries its captured environment as a structurally-visible value rather than as an opaque heap allocation. The capture relationships are part of the program's compile-time structure, available to the analysis that places the closure in a region and that determines its lifetime. A closure exists here in the first place because [arity analysis](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) could not prove the call saturated; the escaping partial application it produces is exactly the case this article resolves.
 
 **Region-based memory management informed by escape classification.** Allocations are placed in regions whose lifetimes are determined by where the allocated values escape to. A value that does not escape its creating scope lives in the scope's region and is reclaimed at scope exit. A value that escapes to a longer-lived region lives there. The escape classification is performed at compile time and produces concrete region placement decisions in the lowered code.
 
-**Joint constraint reasoning over our program hypergraph.** The PHG carries hyperedge structure connecting values, captured environments, region annotations, and lifetime coeffects. Our compile-time analysis reasons over these hyperedges as joint constraints, with a flat closure's region, its captured environment's region, and the function's parameter regions all participating in a single constraint. This is what makes our approach compositional.
+**Joint constraint reasoning over our program hypergraph.** The PHG carries hyperedge structure connecting values, captured environments, region annotations, and lifetime coeffects. Our compile-time analysis reasons over these hyperedges as joint constraints, with a flat closure's region, its captured environment's region, and the function's parameter regions all participating in a single constraint. Solving those regions together rather than in isolation is what lets the analysis compose across the program.
 
 **Verification certificate that describes the artifact's memory behavior structurally.** Our compilation pipeline emits a certificate alongside the binary describing which structural properties the binary realizes. The certificate's contents include dimensional types, region annotations, escape classifications, and lifetime coeffects. The certificate is the structural audit trail for what the binary commits to.
 
-**Native compilation through MLIR.** The lowering through MLIR preserves the structural commitments as concrete code generation decisions. The commitments are built into how the binary lays out and accesses memory. This is what we mean when we say the safety lives in the artifact.
+**Native compilation through MLIR.** The lowering through MLIR preserves the structural commitments as concrete code generation decisions. The commitments are built into how the binary lays out and accesses memory.
 
-These commitments compose. The flat closure representation supports the joint constraint reasoning that the region inference depends on. The escape classification informs the region placement that the verification certificate records. The MLIR lowering preserves the structural commitments that the joint constraint analysis established. A developer who writes ML-family code gets a binary whose memory behavior is described by a structural certificate that survives compilation.
+These commitments compose. The flat closure representation supports the joint constraint reasoning that region inference depends on. Escape classification feeds the region placement that the verification certificate records, and each MLIR lowering pass then preserves the structural commitments the joint constraint analysis established. A developer who writes ML-family code gets a binary whose memory behavior is described by a structural certificate that survives compilation.
 
 ## Where the Architecture Comes From
 
@@ -41,15 +39,15 @@ Our intellectual lineage runs through several identifiable contributions, each o
 
 **Appel and Shao's flat closures** [2] introduced the representation of closures as structurally-explicit values carrying their captured environment, replacing the traditional implementation as opaque heap-allocated pairs of code pointer and environment pointer. We take the flat closure specifically; we do not adopt the broader compilation strategy of Standard ML of New Jersey, only the closure representation that makes capture relationships visible to compile-time analysis.
 
-**MLKit's region inference and Standard ML compilation** demonstrated over decades that an ML-family language can be compiled to native code with region-based memory management at production quality. We took flat closures from MLKit's contribution, not MLKit's full architectural approach. The careful bounding here matters: MLKit's many design decisions reflect Standard ML's specific semantics; our design decisions reflect Clef's semantics.
+**MLKit's region inference and Standard ML compilation** demonstrated over decades that an ML-family language can be compiled to native code with region-based memory management at production quality. We took flat closures from MLKit's contribution, not MLKit's full architectural approach. We bounded that borrowing narrowly: MLKit's many design decisions reflect Standard ML's specific semantics; our design decisions reflect Clef's semantics.
 
 **Perconti and Ahmed's logical relations for compositional compilation** [3] established the formal foundation for reasoning about compilation as preserving structural properties through lowering passes. Our verification certificate depends on this kind of compositional reasoning: the certificate's claims hold because each lowering pass preserves the relevant structural property, and the composition of preserving passes preserves the composition of properties.
 
-The careful framing of these references is part of our intellectual posture: each contribution gives us a specific element, and the elements compose into a system whose behavior is informed by but not derived from any single source.
+Each contribution gives us a specific element, and the elements compose into a system whose behavior is informed by but not derived from any single source.
 
 ## How the Approach Compares
 
-Our approach occupies a position none of the established approaches fully occupies.
+Our approach combines properties that none of the established approaches offers together.
 
 **Rust's ownership system** provides compile-time memory safety through lifetime annotations that thread through every function signature. The safety is real and the annotation burden is real; Rust developers spend significant effort threading lifetimes through their code. Our approach achieves comparable compile-time safety without per-function lifetime annotations, with the analysis driven by the program's structural properties rather than by developer-supplied annotations.
 
@@ -57,9 +55,9 @@ Our approach occupies a position none of the established approaches fully occupi
 
 **Manual memory management** in C and C++ provides maximum control with maximum correctness burden. Our approach provides control comparable to manual management (the developer can reason about region placement, escape classification, and lifetime structure) with the correctness burden carried by the compile-time analysis instead of by the developer.
 
-**Managed runtime restrictions**, of which the .NET byref problem is one instance, illustrate the cost of running memory safety through a runtime tracker. The CLR cannot track interior pointers across heap-allocated state machines, which is why F# byrefs cannot be captured in async closures. The pattern generalizes: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. When memory safety lives in compile-time structural analysis, the analysis's reach is what determines the language's expressive power.
+**Managed runtime restrictions**, of which the .NET byref problem is one instance, illustrate the cost of running memory safety through a runtime tracker. The CLR cannot track interior pointers across heap-allocated state machines, which is why F# byrefs cannot be captured in async closures. The pattern generalizes: when memory safety lives in a runtime tracker, the tracker's limitations become the language's limitations. When memory safety lives in compile-time structural analysis, the language's expressive power is bounded by the reach of that analysis.
 
-The framework's approach has its own reach. The compile-time analysis covers the structural properties the analysis can express, and programs whose properties exceed that expressivity produce conservative findings rather than clean verdicts. Our verification architecture treats these conservative findings as honest acknowledgments of what is not yet covered, with lemma library extensions tracked as part of the verification roadmap.
+The compile-time analysis covers the structural properties it can express, and programs whose properties exceed that expressivity produce conservative findings rather than clean verdicts. Our verification architecture treats these conservative findings as honest acknowledgments of what is not yet covered, with lemma library extensions tracked as part of the verification roadmap.
 
 ## BAREWire and In-Process Capability Access
 
@@ -92,13 +90,13 @@ let processLargeData () =
     }
 ```
 
-The buffer's lifetime is determined by the region containing it. The capability can be passed around, stored, and used in async contexts; our compile-time analysis confirms that the capability's use respects the buffer's region without requiring the developer to annotate the capability's lifetime.
+The buffer's lifetime is determined by the region containing it. The capability can be passed around, stored, and used in async contexts. Our compile-time analysis confirms that its use respects the buffer's region without requiring the developer to annotate the capability's lifetime.
 
 Our zero-copy claim has specific scope. Within a single process, BAREWire avoids the defensive copying that managed runtimes require for safety. Across process boundaries on the same machine, memory mapping can extend zero-copy operation to inter-process communication where the representations are compatible. Across network boundaries, serialization happens at some point; we reduce but do not eliminate copying in distributed scenarios. The architecture supports zero-copy where it is achievable.
 
 ## Reference Sentinels for Cross-Process Reference State
 
-Where BAREWire handles in-process memory access, Reference Sentinels handle cross-process reference state. Distributed systems carry references whose target processes might terminate, restart, or become unreachable; sentinels provide rich state information about why a reference might be invalid:
+Where BAREWire handles in-process memory access, Reference Sentinels handle cross-process reference state. Distributed systems carry references whose target processes might terminate, restart, or become unreachable. Sentinels provide rich state information about why a reference might be invalid:
 
 ```fsharp
 let callActorWithSentinel (actorRef: ActorRef) message =
@@ -142,11 +140,11 @@ let efficientApproach actors messages =
             | _ -> handleFailedDelivery actor message
 ```
 
-The verification scope distinction matters for sentinels in particular. Our compile-time verification confirms that the binary correctly implements sentinel-based reference handling: the sentinel's state machine is realized faithfully, the batch verification protocol composes, and the dispatch to the appropriate handler follows the structural rules. The compile-time verification does not confirm that any particular runtime invocation produces a valid sentinel state, because the sentinel's state depends on what other processes do at runtime. The sentinel's verification state, the last-verified timestamp, and the batch verification infrastructure all carry runtime information that compile-time analysis cannot determine in advance.
+Sentinels sit exactly on the verification scope boundary. Our compile-time verification confirms that the binary correctly implements sentinel-based reference handling: the sentinel's state machine is realized faithfully, the batch verification protocol composes, and the dispatch to the appropriate handler follows the structural rules. The compile-time verification does not confirm that any particular runtime invocation produces a valid sentinel state, because the sentinel's state depends on what other processes do at runtime. The sentinel's verification state, the last-verified timestamp, and the batch verification infrastructure all carry runtime information that compile-time analysis cannot determine in advance.
 
 This structural-vs-operational division has precedent in distributed-system verification. McErlang [4], the model checker for Erlang programs developed at KTH, made the same architectural decision: verify the program's structural properties (state-machine correctness, message-handling protocol, supervisor-tree composition) rather than attempting to verify runtime outcomes (which messages arrive in what order, which processes fail when, what the network does). The Erlang community accepted that scope because the alternative produces both an intractable state space and a verification claim too narrow to act on; any specific runtime trace might satisfy or violate any specific property depending on conditions outside the program. Our framework makes the same choice for the same reason, with sentinels as the locus where the structural-vs-operational boundary sits inside the framework's own verification certificate.
 
-The framework's certificate marks this boundary explicitly. The structural commitments hold for the binary's implementation of the sentinel protocol; the operational outcomes of any specific cross-process call depend on conditions outside the artifact's scope. This clarification is part of what verification means for distributed system concerns rather than a limitation of the verification architecture.
+The framework's certificate marks this boundary explicitly. The structural commitments hold for the binary's implementation of the sentinel protocol; the operational outcomes of any specific cross-process call depend on conditions outside the artifact's scope. For distributed system concerns, this structural boundary defines what the verification covers.
 
 ## RAII Actor Memory
 
@@ -202,13 +200,13 @@ The configuration informs how regions are sized and when they reclaim, but the s
 
 Our compilation pipeline emits a certificate alongside the binary that describes the structural commitments the binary realizes. The certificate's contents include the region annotations, the escape classifications, the dimensional types, and the lifetime coeffects that the compile-time analysis confirmed.
 
-The certificate is what makes our verification claim concrete. A reader can audit which structural properties the binary commits to. The certificate's confirmation is structural: the binary correctly implements the analyzed program. The structural commitments hold for any invocation; the values produced by a specific invocation depend on the inputs the binary processes. Properties that depend on runtime conditions (network availability, the order in which other processes write to shared memory, hardware fault behavior) sit in different parts of our architecture; the certificate marks the boundary between structural and operational commitments rather than blurring it.
+The certificate puts our verification claim in concrete form. A reader can audit which structural properties the binary commits to. The certificate's confirmation is structural: the binary correctly implements the analyzed program. The structural commitments hold for any invocation. The values produced by a specific invocation depend on the inputs the binary processes. Properties that depend on runtime conditions (network availability, the order in which other processes write to shared memory, hardware fault behavior) sit in different parts of our architecture. The certificate marks the boundary between structural and operational commitments rather than blurring it.
 
 For the broader verification context, see [Building Proofs for the Real World](/blog/proofs-for-the-real-world/) for how the verification architecture treats range-propagation tier obligations, and the [compilation sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/) design notes for the categorical reading of the four-tier proof architecture into which memory safety properties fit.
 
 ## Closing
 
-Memory safety as architecture means the safety is a property of the artifact. Our compile-time analysis runs once. The structural certificate records what the analysis confirmed. The binary realizes the commitments through its layout and access patterns, with the structural decisions baked into the code generation. The position sits between Rust and garbage collection: compile-time safety comparable to Rust's, annotation freedom comparable to GC's, and a cost profile different from both. The intellectual lineage from Tofte and Talpin, Appel and Shao, MLKit, and Perconti and Ahmed gives the architecture its specific shape; the joint constraint reasoning over our program hypergraph is what makes the components compose. The displacement argument this document opens with has a companion piece for program metadata in [Opining Upon Reflection](/blog/opining-upon-reflection/).
+Memory safety as architecture means the safety is a property of the artifact. Our compile-time analysis runs once, and the structural certificate records what it confirmed. From there the binary realizes those commitments through its layout and access patterns, with the structural decisions baked into code generation. The position sits between Rust and garbage collection: compile-time safety comparable to Rust's, annotation freedom comparable to GC's, and a cost profile different from both. The intellectual lineage from Tofte and Talpin, Appel and Shao, MLKit, and Perconti and Ahmed gives the architecture its specific shape; the joint constraint reasoning over our program hypergraph is what makes the components compose. The displacement argument this document opens with has a companion piece for program metadata in [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
 ## References
 

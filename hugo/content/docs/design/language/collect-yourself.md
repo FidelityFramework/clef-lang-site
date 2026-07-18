@@ -12,9 +12,9 @@ params:
 
 Every .NET developer knows collections. `List<T>`, `Dictionary<K,V>`, arrays. They are the bread and butter of everyday programming. You iterate, filter, map, and fold without thinking twice. Underneath these ordinary operations sits a structure that supports automatic parallelization and SIMD vectorization, with no template metaprogramming or `std::enable_if` involved.
 
-That is the property our Composer compiler reads from Clef collections. Each collection operation reduces to pure lambda calculus, and that purity is what the compiler accelerates.
+That is the property our Composer compiler reads from Clef collections. Each collection operation reduces to pure lambda calculus, and the compiler accelerates that purity.
 
-## The Purity Hiding in Plain Sight
+## Purity in Ordinary Collection Code
 
 Consider this ordinary Clef code:
 
@@ -26,11 +26,11 @@ let results =
     |> List.fold (+) 0
 ```
 
-To most .NET developers, this is just a collection pipeline. Filter some things, transform the rest, sum them up. Nothing special.
+To most .NET developers this reads as a collection pipeline: filter, transform, and sum a sequence of values.
 
-But look closer. Each of these operations is **referentially transparent**. Given the same inputs, they always produce the same outputs with no side effects. The `filter` doesn't mutate `data`. The `map` creates new values. The `fold` accumulates without touching external state.
+Each of these operations is **referentially transparent**: given the same inputs, they always produce the same outputs with no side effects. The `filter` doesn't mutate `data`. The `map` creates new values. The `fold` accumulates without touching external state.
 
-This is lambda calculus in disguise, and it follows from how the operations are defined rather than from any incidental property of the code.
+This is lambda calculus, and it follows from how the operations are defined rather than from any incidental property of the code.
 
 ## Why Purity Matters: The Graph Coloring Connection
 
@@ -159,7 +159,7 @@ flowchart LR
     end
 ```
 
-The difference shows in what the analysis is for. Where Rust's borrow checker tracks ownership and .NET tracks references for safety, our compile-time analysis reads **referential transparency** and uses it to find optimization opportunities.
+Where Rust's borrow checker tracks ownership and .NET tracks references for safety, our compile-time analysis reads **referential transparency** and uses it to find optimization opportunities.
 
 ## Structural Sharing: Immutability Without the Cost
 
@@ -183,13 +183,13 @@ graph TD
     end
 ```
 
-This **structural sharing** means immutability doesn't require full copies. You pay only for the path that changes. And crucially, because the original is never modified, `m1` remains pure. This enables all the parallel and vectorized optimizations we discussed.
+This **structural sharing** means immutability doesn't require full copies. You pay only for the path that changes. Because the original is never modified, `m1` remains pure, and that purity is what the parallel and vectorized optimizations require.
 
 This is the "only pay for what you use" philosophy applied to functional data structures. The same principle that drives [Baker's approach to memory management](/docs/internals/pipeline/baker-saturation-engine/) applies here: don't pay for what you don't need.
 
 ## The C++ Contrast: Complexity vs. Clarity
 
-To achieve similar optimization potential in C++, you'd venture into template metaprogramming territory:
+Achieving similar optimization potential in C++ requires template metaprogramming:
 
 ```cpp
 template<typename InputIt, typename OutputIt, typename UnaryOperation,
@@ -336,10 +336,10 @@ The pedestrian collection code written for WREN stack apps will some day automat
 
 ## Collect Yourself
 
-When you write a `map`, `filter`, or `fold`, you are expressing pure lambda calculus in everyday clothing. Each operation is a building block the compiler can analyze, parallelize, and vectorize, given a framework and hardware that carry that structure through.
+When you write a `map`, `filter`, or `fold`, you are writing ordinary code that is already pure lambda calculus. The compiler can analyze each operation, then parallelize and vectorize it, on a framework and hardware built to carry that structure to the target.
 
-Three threads converge here. [Graph coloring](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](/docs/internals/concepts/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
+[Graph coloring](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/) is how we discover which operations can run simultaneously. [Referential transparency](/docs/internals/concepts/seeking-referential-transparency/) is the property that makes a transformation *provably correct*, since a pure operation yields the same result wherever it runs. [Baker's incremental approach](/docs/internals/pipeline/baker-saturation-engine/) shapes how we think about paying only for what we actually use, from heap copying down to which collection operations get emitted.
 
-These foundations become engineering decisions. The design that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code, and the structural sharing that makes immutable collections practical is the same sharing that preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
+The purity that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code. Structural sharing does double duty: it makes immutable collections practical and it preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
 
 This is the design we will keep building toward as the dialect work and the saturation engine come together: collection code that reads as ordinary, and a compiler that treats it as the pure lambda calculus it already is.

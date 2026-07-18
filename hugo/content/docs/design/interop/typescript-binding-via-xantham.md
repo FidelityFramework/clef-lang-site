@@ -9,7 +9,7 @@ tags: ["Architecture", "Interop", "TypeScript", "Design"]
 
 [Library Binding for C/C++](../library-binding/) describes how Farscape generates Clef bindings for native libraries. This document describes the analogous concern for TypeScript surfaces. The analysis layer ingests `.d.ts` files and produces the structural type information consumer generators turn into bindings. Today that analysis layer is **Xantham**, a schema-driven extractor maintained by Shayan Habibi at [shayanhabibi/Xantham](https://github.com/shayanhabibi/Xantham). The SpeakEZ fork is at [speakeztech/Xantham](https://github.com/speakeztech/Xantham).
 
-What Xantham contributes *persists* across changes in the rest of the toolchain. The current binding pipeline (Xantham → F# generator → Fable → JavaScript) and the eventual pipeline ([Xantham → Clef-via-JSIR](../../javascript-targeting/from-fable-to-jsir/)) consume the same analysis substrate. The downstream pieces change; Xantham's role does not.
+What Xantham contributes *persists* across changes in the rest of the toolchain. The current binding pipeline (Xantham → F# generator → Fable → JavaScript) and the eventual pipeline ([Xantham → Clef-via-JSIR](../../javascript-targeting/from-fable-to-jsir/)) consume the same analysis substrate. The downstream stages differ across the two pipelines; the analysis substrate is common to both.
 
 ## What Xantham Analyzes, and Where It Stops
 
@@ -21,7 +21,7 @@ Xantham is a schema-driven TypeScript analyzer. It separates concerns into three
 
 Xantham stops short of generation. The author has been explicit on this point: *"the generators are supposed to be the consumer libraries... I want to just give a reference generator. The encoder and decoder are what I want to try and maintain myself. Anyone can use the information how they want."* The reference generator (`Xantham.Generator`) exists as an example consumer; it produces F# bindings via Fabulous.AST. Other consumers can produce other targets.
 
-Xantham's encoder and decoder are designed to serve multiple consumer generators that all consume the same JSON schema and decoder API. Today's consumer is the F# binding pipeline. Tomorrow's consumer is the Clef binding pipeline ([described in From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/)). Both consume the same upstream.
+Xantham's encoder and decoder are designed to serve multiple consumer generators that all consume the same JSON schema and decoder API. The F# binding pipeline consumes it today, and the Clef binding pipeline ([described in From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/)) will do so once JSIR lands. Neither reaches past the shared JSON schema and decoder API.
 
 ## The Analysis Schema as Stable Contract
 
@@ -35,11 +35,11 @@ Xantham's encoder and decoder are designed to serve multiple consumer generators
 | `LibEsExports` set | The set of TypeScript standard library exports, distinguishable from user types so consumers can route lib.es references to external resolvers rather than re-binding them. |
 | Source path metadata | The originating `.d.ts` file and position, available for diagnostics and (eventually) explicit package-boundary identification. |
 
-The schema's stability is what makes multi-consumer architecture viable. A consumer written today against the schema continues to work as long as the schema's compatibility commitments hold; consumers written for new target languages don't need to negotiate with the encoder, only against the same schema.
+A stable schema is what holds the multi-consumer architecture together. A consumer written today against the schema keeps working as long as the schema's compatibility commitments hold. Consumers written for new target languages negotiate against that schema, never with the encoder directly.
 
 Two related concerns are tracked as open work in the upstream repo:
 
-- **Decoder behavior on `MISSREF` keys.** The encoder logs `[MISSREF]` diagnostics during ingestion when it can't bind a referenced TypeKey to a type definition, then writes the key into the JSON anyway; the decoder's compression pass then crashes. Fixing this contract (whether by encoder stub-emission, decoder substitution, or refusing to write dangling JSON) is an open issue with consumer impact.
+- **Decoder behavior on `MISSREF` keys.** The encoder logs `[MISSREF]` diagnostics during ingestion when it can't bind a referenced TypeKey to a type definition, then writes the key into the JSON anyway. The decoder's compression pass then crashes. Fixing this contract (whether by encoder stub-emission, decoder substitution, or refusing to write dangling JSON) is an open issue with consumer impact.
 - **Explicit package-boundary information.** Currently consumers parse `Source` paths to recover npm package identity; surfacing this explicitly in the schema would let consumer generators produce clean module names without ad hoc parsing.
 - **Stable lib.es reference policy.** Sometimes lib.es references survive cleanly to consumers; sometimes they become unresolvable `MISSREF` keys. A consistent policy ("lib.es references always emit by external name, never inlined") would let consumers wire a single resolver.
 
@@ -49,7 +49,7 @@ These concerns are filed upstream and informed by current consumer experience. T
 
 Today's primary consumer is `Xantham.Generator`, which produces F# bindings rendered via Fabulous.AST and Fantomas. Fidelity.CloudEdge depends on this pipeline for its Cloudflare runtime SDK bindings (workers-types, agents, dynamic-workflows; see [Fidelity.CloudEdge docs/12](https://github.com/speakeztech/Fidelity.CloudEdge/blob/main/docs/12_xantham_glutinum_replacement_assessment.md) for the operational details).
 
-The eventual second consumer, described in [From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/), produces Clef extern declarations paired with Alex-side witnessing rules. Same JSON input from Xantham; different output artifacts.
+The eventual second consumer, described in [From Fable to JSIR](../../javascript-targeting/from-fable-to-jsir/), reads the identical Xantham JSON but produces Clef extern declarations paired with Alex-side witnessing rules rather than F# bindings.
 
 The downstream contract from Xantham's perspective:
 
@@ -69,17 +69,17 @@ A consumer takes that `XanthamTree`, walks it through whatever rendering or emis
 
 The current Fidelity.CloudEdge work is in production. The eventual Clef-via-JSIR work is in design. Across that transition, three things about Xantham don't change:
 
-**The analysis substrate**. The encoder reads TypeScript, walks the type graph, distinguishes lib.es from user types, handles cycles, merges overloads, captures brand symbols. The accumulated knowledge in this layer is the corner cases Shayan has worked through over the project's evolution. That knowledge is hard-won and target-agnostic, and none of it has to be redone for a new consumer.
+**The analysis substrate**. The encoder reads TypeScript, walks the type graph, distinguishes lib.es from user types, handles cycles, merges overloads, captures brand symbols. The accumulated knowledge in this layer is the corner cases Shayan has worked through over the project's evolution. That knowledge is target-agnostic, and none of it has to be redone for a new consumer.
 
 **The schema vocabulary**. `Common.Types.fs`'s discriminated unions are how TypeScript shapes are represented for downstream consumption. The vocabulary is consumed by the F# generator today and would be consumed by a Clef generator tomorrow. Improvements to the vocabulary (the open issues mentioned above) compound for all consumers.
 
-**The maintenance domain**. Shayan maintains the encoder/decoder; consumers maintain their generators. This separation is what makes a multi-consumer architecture viable long-term. Our Clef-targeting binding work doesn't need to take ownership of Xantham. It needs to consume Xantham reliably and contribute upstream where consumer experience reveals encoder/decoder concerns.
+**The maintenance domain**. Shayan maintains the encoder/decoder; consumers maintain their generators. This split of maintenance ownership is what lets a multi-consumer architecture hold up long-term. Our Clef-targeting binding work doesn't need to take ownership of Xantham. It needs to consume Xantham reliably and contribute upstream where consumer experience reveals encoder/decoder concerns.
 
 ## Supply Chain Boundary
 
 Xantham's encoder runs in Node and uses the TypeScript Compiler API to walk `.d.ts` files. That's the toolchain's only npm dependency on the binding-generation side. Everything downstream operates outside the npm ecosystem: the decoder, the F# generator (today), the Clef generator (tomorrow), our Composer MLIR pipeline, and the deployed JavaScript artifact.
 
-The boundary is structural. `.d.ts` files are *data*, not executable code; the encoder reads them, but no npm package's runtime logic executes during ingestion in a way that affects downstream artifacts. The arbitrary-code-execution risk that npm supply chain attacks exploit is contained to the read-only ingestion step and bounded by the TypeScript Compiler API's surface (a Microsoft-maintained package with strong audit posture).
+The boundary is structural. `.d.ts` files are *data*, not executable code. The encoder reads them, but no npm package's runtime logic executes during ingestion in a way that affects downstream artifacts. The arbitrary-code-execution risk that npm supply chain attacks exploit is contained to the read-only ingestion step and bounded by the TypeScript Compiler API's surface (a Microsoft-maintained package with strong audit posture).
 
 The .NET-hosted side of the toolchain (decoder, generator, Composer host) operates in the NuGet ecosystem, which has materially better supply-chain hygiene than npm. The MLIR/LLVM tooling is C++ in the LLVM ecosystem. None of these are npm-resident.
 
@@ -87,13 +87,13 @@ For comparison, the current full pipeline (Xantham + F# generator + Fable + npm 
 
 ## Connection to the Library of Alexandria
 
-The Clef-via-JSIR pipeline introduces a curated catalog of witnessing rules, what we informally call the "Library of Alexandria" inside our Alex middle-end in Composer. Each rule characterizes how a TypeScript shape category elides through the compilation pipeline to the right JSIR ops and ultimately the right JavaScript AST.
+The Clef-via-JSIR pipeline introduces a curated catalog of witnessing rules, what we informally call the "Library of Alexandria" inside our Alex middle-end in Composer. Each rule characterizes how the compilation pipeline lowers a given TypeScript shape category to the right JSIR ops and ultimately the right JavaScript AST.
 
-Xantham's analysis output is what those rules are characterized *from*. The encoder doesn't write witnessing rules; that's consumer territory. The structural information it provides (a function returns `Promise<T>`; this class extends another generic class with type-arg passthrough; this interface has overloaded methods, etc.) is exactly what the consumer needs to identify which Pattern from the Library applies.
+Those rules are characterized *from* Xantham's analysis output. The encoder doesn't write witnessing rules; that's consumer territory. The structural information it provides (a function returns `Promise<T>`; this class extends another generic class with type-arg passthrough; this interface has overloaded methods, etc.) is exactly what the consumer needs to identify which Pattern from the Library applies.
 
-As more libraries are bound via the Clef-via-JSIR pipeline, the Library of Alexandria matures: D3's chained-method-builder pattern, SolidJS's reactive primitives, TanStack's hook-with-options pattern. The patterns recur across libraries; the Library accumulates them. Xantham provides the source material; the consumer maps source to pattern; the rule library grows with each new library characterized.
+As more libraries are bound via the Clef-via-JSIR pipeline, the Library of Alexandria matures: D3's chained-method-builder pattern, SolidJS's reactive primitives, TanStack's hook-with-options pattern. The patterns recur across libraries; the Library accumulates them. Xantham provides the source material. The consumer maps that source to a pattern, and the rule library grows with each new library characterized.
 
-Every binding shipped via the F# pipeline carries compounding value beyond shipping. The deterministic Fable output produced from a Xantham-analyzed TypeScript surface is the **executable specification** for what the JSIR pipeline must produce when that surface is bound through the Clef path. Each binding fix today characterizes a pattern that enters the Library tomorrow.
+The deterministic Fable output produced from a Xantham-analyzed TypeScript surface is the **executable specification** for what the JSIR pipeline must produce when that surface is bound through the Clef path. Each binding fix today characterizes a pattern that enters the Library tomorrow.
 
 ## Practical Considerations
 
@@ -101,14 +101,14 @@ For the medium-term horizon (months through end of year and beyond), Xantham's r
 
 - **Track upstream stability**. The encoder/decoder API is published and consumed. Breaking changes need to be coordinated. Issues with consumer impact are filed in the upstream repo.
 - **Pin versions per binding**. Each Fidelity.CloudEdge binding (workers-types, agents, dynamic-workflows) pins to a specific Cloudflare SDK version and is regenerated as that source changes. Xantham analysis is reproducible against pinned inputs.
-- **Contribute back where the contract is being defined**. The decoder MISSREF behavior, package-boundary metadata, and lib.es policy are all best resolved upstream so consumers benefit uniformly. SpeakEZ's role is to surface consumer experience as filed issues; Shayan's role is to maintain the encoder/decoder; both depend on the discipline of the maintenance boundary.
-- **The Fable+F# consumer continues**. Fidelity.CloudEdge ships against the F# binding pipeline today and through the JSIR transition. The eventual rename to FSharp.CloudEdge (when that lands) doesn't affect Xantham consumption; the F# binding pipeline serves F# users indefinitely.
+- **Contribute back where the contract is being defined**. The decoder MISSREF behavior, package-boundary metadata, and lib.es policy are all best resolved upstream so consumers benefit uniformly. SpeakEZ surfaces consumer experience as filed issues, and Shayan maintains the encoder/decoder. That division holds only where the maintenance boundary is respected.
+- **The Fable+F# consumer continues**. Fidelity.CloudEdge ships against the F# binding pipeline today and through the JSIR transition. The eventual rename to FSharp.CloudEdge (when that lands) doesn't affect Xantham consumption. The F# binding pipeline serves F# users indefinitely.
 
 ## The Long Arc
 
-The analysis capability described in this document has further forms beyond the document's planning horizon. Our Atelier IDE anticipates a polyglot ingestion feature called Transcribe (see [Atelier docs/10_transcribe.md](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md)) that would handle many source languages (F#, Python, Rust, Go, TypeScript / JavaScript, C / C++) as a unified IDE workflow producing matched (Clef binding + Alex lowering witness) pairs. Xantham is the analysis substrate Transcribe consumes for the TypeScript / JavaScript case; Farscape plays the same role for C / C++; other substrates plug in for other languages.
+The analysis capability described in this document has further forms beyond the document's planning horizon. Our Atelier IDE anticipates a polyglot ingestion feature called Transcribe (see [Atelier docs/10_transcribe.md](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md)) that would handle many source languages (F#, Python, Rust, Go, TypeScript / JavaScript, C / C++) as a unified IDE workflow producing matched (Clef binding + Alex lowering witness) pairs. Xantham is the analysis substrate Transcribe consumes for the TypeScript / JavaScript case. Farscape covers C / C++, and other substrates cover their own languages.
 
-We name Transcribe and Atelier here to mark where the analysis-substrate framing points, while leaving the destination's details for that work to settle. The current plan sets up the long arc without committing to its specifics: Xantham as standalone tool, multi-consumer architecture, supply-chain isolation, schema-as-stable-contract. Xantham continues being maintained as a standalone analysis tool by Shayan Habibi for the medium-term horizon; how the eventual IDE-side coordination layer consumes it (and how the parallel substrates for other languages do the equivalent thing) is Atelier's territory to design and document.
+Transcribe and Atelier are where the analysis-substrate framing points; their details belong to that work to settle. The current plan sets up the long arc without committing to its specifics: Xantham as standalone tool, multi-consumer architecture, supply-chain isolation, schema-as-stable-contract. Xantham continues being maintained as a standalone analysis tool by Shayan Habibi for the medium-term horizon. How the eventual IDE-side coordination layer consumes it (and how the parallel substrates for other languages do the equivalent thing) is Atelier's territory to design and document.
 
 ## Cross-references
 

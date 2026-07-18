@@ -12,7 +12,7 @@ params:
 
 We just hit a milestone in the Composer compiler: mutable variables work in simple loops. Three console samples compile and execute correctly. Many more don't, and this is the third time we've reached this point along different design paths.
 
-Those three working samples carry an architectural pattern that composes cleanly and fails visibly. The failures locate where the architecture is incomplete, and they do it precisely. What follows is how we built managed mutability this way, why honest accounting serves the design better than inflated claims, and how our compositional patterns hold up under pressure.
+Those three working samples share an architectural pattern that composes cleanly and fails visibly. Each failure marks a point where the architecture is incomplete, and marks it precisely. The sections below cover how we built managed mutability this way, and why honest accounting of what works and what still fails serves the design better than inflated claims.
 
 ## The Irreducible Complexity Behind One Line
 
@@ -74,7 +74,7 @@ Expected output: `"Hello, Alice!"`
 
 Actual output: `"Hello, <garbage characters>"`
 
-The compiler worked. The binary ran. But somewhere between reading stdin and printing the greeting, we were handing off the wrong string. Not a crash. Not a type error. Just silent corruption that produced visually obvious garbage at runtime.
+The compiler worked. The binary ran. But somewhere between reading stdin and printing the greeting, we were handing off the wrong string. There was no crash and no type error, only silent corruption that produced obvious garbage at runtime.
 
 In a [nanopass compiler](/docs/internals/concepts/nanopass-navigation/), bugs have addresses. Tracing execution through discrete transformation stages pinpoints exactly which component mishandled the data. This one involved three components:
 
@@ -82,18 +82,18 @@ In a [nanopass compiler](/docs/internals/concepts/nanopass-navigation/), bugs ha
 - String interpolation
 - Substring extraction
 
-Each component has an explicit contract about what it receives and what it promises to return. The debugging process was revealing. The PSG (semantic graph) was correct. [Baker](/docs/internals/pipeline/baker-saturation-engine/) (our "front end" saturation component for the semantic graph) decomposed the interpolation properly. The bug lived in Alex (our "middle end" Library of Alexandria): the code responsible for translating high-level string operations into low-level memory operations.
+Each component has an explicit contract about what it receives and what it promises to return. The PSG (semantic graph) was correct. [Baker](/docs/internals/pipeline/baker-saturation-engine/) (our "front end" saturation component for the semantic graph) decomposed the interpolation properly. The bug lived in Alex (our "middle end" Library of Alexandria): the code responsible for translating high-level string operations into low-level memory operations.
 
-Here's what we found. The witness for `NativeStr.fromPointer` took two arguments - a buffer and a length - and was supposed to extract a substring of the specified length. But the implementation was returning the full 256-byte buffer. **The length parameter was discarded.** The CCS (Clef Compiler Service) contract explicitly states:
+The witness for `NativeStr.fromPointer` took two arguments - a buffer and a length - and was supposed to extract a substring of the specified length. But the implementation was returning the full 256-byte buffer. **The length parameter was discarded.** The CCS (Clef Compiler Service) contract explicitly states:
 
 > "create a NEW memref<?xi8> with SPECIFIED LENGTH"
 
-The witness was taking a shortcut. It used a type cast operation to return the static buffer without extracting the substring.
+The witness used a type cast operation to return the static buffer without extracting the substring.
 
 - No new allocation
 - No length enforcement
 
-Just a contract violation that compiled successfully and produced garbage at runtime. That was surprising, at first. Then it became instructive. The architecture had enough integrity to show us exactly where the contract violation occurred.
+Just a contract violation that compiled successfully and produced garbage at runtime. The staged transformations surfaced the contract violation at the exact component responsible.
 
 ## The Fix
 
@@ -126,7 +126,7 @@ let pStringFromPointerWithLength (nodeId: NodeId) (bufferSSA: SSA) (lengthSSA: S
     }
 ```
 
-This pattern composes **7 Element operations** across **4 MLIR dialects** (MemRef, Index, Arith, Func) without a single line of witness complexity. Element/Pattern/Witness stratification works. The code which performs the witness to MLIR becomes trivial:
+This pattern composes **7 Element operations** across **4 MLIR dialects** (MemRef, Index, Arith, Func) at the Pattern tier, adding no new Witness-tier code. That is the Element/Pattern/Witness stratification in effect: Patterns build from Elements without dropping to the Witness tier. The code which performs the witness to MLIR becomes trivial:
 
 ```fsharp
 | IntrinsicModule.NativeStr, "fromPointer", [bufferSSA; lengthSSA] ->
@@ -136,7 +136,7 @@ This pattern composes **7 Element operations** across **4 MLIR dialects** (MemRe
 
 Result: `"Hello, Alice!"`
 
-The pattern is a handful of lines of code. It's reusable and testable in isolation, and it holds the compositional architecture together under real-world constraints.
+The pattern is a handful of lines of code, reusable and testable in isolation.
 
 ## The Other Bug: Infinite Loops and Mutable Indices
 
@@ -153,9 +153,9 @@ Expected: Loop terminates when user presses Enter.
 
 Actual: **Infinite loop.** The position never advances.
 
-The binary compiled without errors. The loop condition evaluated correctly. The buffer received input from stdin. But `pos` remained stubbornly at zero no matter how many times the loop executed. The increment operation `pos <- pos + 1` appeared to do nothing.
+The binary compiled without errors. The loop condition evaluated correctly. The buffer received input from stdin. But `pos` stayed at zero no matter how many times the loop executed. The increment operation `pos <- pos + 1` had no effect.
 
-> This is where a nanopass compiler earns its complexity budget.
+> A nanopass pipeline splits work into discrete stages, so the instructions it generates stay directly inspectable.
 
 When code compiles successfully but behaves incorrectly, the diagnosis needs visibility into the instructions the compiler *actually* generated, set against what it *should* have generated. The generated MLIR, a product of nanopass layered processing, showed the issue immediately:
 
@@ -177,7 +177,7 @@ scf.while : () -> () {
 
 The VarRef witness was forwarding the memref **address** (`%v7`) instead of loading the value. VarRef is context-agnostic: it doesn't distinguish a caller that needs the address (for `Set` operations) from one that needs the value (for expressions).
 
-> This is the classic **lvalue vs rvalue** distinction that every compiler must handle.
+The two caller contexts are the lvalue and rvalue uses of the same reference.
 
 We needed a solution that didn't break the monadic composition model.
 
@@ -202,17 +202,17 @@ match offsetTy with
 | _ -> (offsetSSA, [])
 ```
 
-This pattern appears in three critical places: MemRef.store offset handling, NativeStr.fromPointer length extraction, and String.concat2 length computations. Same pattern. Different contexts. Zero duplication.
+This pattern appears in three critical places: MemRef.store offset handling, NativeStr.fromPointer length extraction, and String.concat2 length computations. The same pattern applies in all three, with no duplication.
 
 The principle is straightforward: when `TMemRef` is used where a value type is expected, compose load operations via SSA retrieval from Coeffects.
 
-> This handles the **lvalue/rvalue** distinction automatically at the type level.
+> The type discrimination resolves the lvalue/rvalue distinction automatically.
 
 Early attempts at auto-loading used parameter passing (PUSH model). The witness would load values and push them downstream to patterns. This "broke monadic composition" - not in the sense of compilation failure, but in destroying the computational railway that makes nanopass architectures work. Patterns became stateful receivers instead of pure transformations. They had to track which values had been pushed to them and in what order. Witnesses accumulated logic about *when* to load and *what* to pass. The clean separation between "what to compute" (Pattern) and "how to emit it" (Witness) collapsed into imperative spaghetti where both sides needed to know about each other's internal state.
 
 It was a mess.
 
-A more idiomatic type-driven approach (PULL model) restores the structured carriage of computation. In the Alex component, Patterns pull data from Coeffects state when they need it. They detect `TMemRef` via pattern matching and compose load operations at the point of use. No parameter threading means no order dependencies. No mutable accumulation means no state synchronization. Each Pattern remains a 'pure' transformation: "given these types and this context, produce these operations." The monadic bind operator (`let!`) threads the computational context through without any component needing to manage it explicitly. The architecture stays compositional: each Pattern can be understood in isolation because it carries no hidden dependencies from earlier stages.
+A more idiomatic type-driven approach (PULL model) keeps that separation intact. In the Alex component, Patterns pull data from Coeffects state when they need it. They detect `TMemRef` via pattern matching and compose load operations at the point of use. No parameter threading means no order dependencies. No mutable accumulation means no state synchronization. Each Pattern remains a 'pure' transformation: "given these types and this context, produce these operations." The monadic bind operator (`let!`) threads the computational context through, so no component manages it explicitly. The architecture stays compositional: each Pattern can be understood in isolation because it carries no hidden dependencies from earlier stages.
 
 Result: Infinite loop fixed. Position advances correctly. Sample executes.
 
@@ -220,7 +220,7 @@ Result: Infinite loop fixed. Position advances correctly. Sample executes.
 
 After this structural repositioning, we have three samples working in a way we knew would scale. The passing samples share a pattern: mutable variables that stay within their lexical scope. The failing samples we haven't gotten to, yet, share a different pattern: mutables that escape via closures, returns, or byref parameters.
 
-This split isn't accidental. It's signal intelligence. The failures tell us exactly what's missing: escape analysis integration.
+The split is diagnostic: the failing samples locate what is missing, which is escape analysis integration.
 
 ### The Working Pattern
 
@@ -268,11 +268,11 @@ func @createCounter() -> closure {
 }
 ```
 
-The closure holds a dangling pointer. The compiler doesn't reject it; it generates code that compiles and crashes unpredictably. This is the problem escape analysis will solve.
+The closure holds a dangling pointer. The compiler doesn't reject it. It generates code that compiles and crashes unpredictably. Escape analysis is the missing check that would reject this case at compile time.
 
 ## Partial Escape Analysis
 
-Here's the interesting part: we already have closure capture detection from the flat closure structure (MLKit-inspired):
+We already have closure capture detection from the flat closure structure (MLKit-inspired):
 
 ```fsharp
 let makeAdder x =
@@ -283,7 +283,7 @@ let greeter name =
  
 ```
 
-This **is** escape analysis, just for immutable closures. The machinery exists. What's missing is integration with mutable allocation strategy. Consider three cases:
+This **is** escape analysis, just for immutable closures. The detection machinery exists. The remaining work integrates it with the mutable allocation strategy. Consider three cases:
 
 ```fsharp
 // Case 1: Local mutable (SAFE - already works)
@@ -333,7 +333,7 @@ The pattern: semantic annotations where mandatory (SRTP, mutability), automatic 
 
 From our earlier writing on lifetime inference: "Lifetime management should work like type inference. Developers write idiomatic code. The compiler ensures safety. The optimizer ensures performance."
 
-When escape analysis lands, the compiler will detect which mutables escape scope, annotate PSG nodes with lifetime bounds, generate stack allocation for local mutables, generate arena allocation for escaping mutables, and ensure cleanup at scope exit through region-based memory management. All automatically. From `let mutable x = 0`.
+When escape analysis is in place, the compiler will detect which mutables escape scope and annotate PSG nodes with lifetime bounds. It will allocate local mutables on the stack and escaping mutables in an arena, then clean up at scope exit through region-based memory management, all inferred from `let mutable x = 0`.
 
 ## What We Learned: Composition Over Complexity
 
@@ -341,29 +341,29 @@ This latest iteration in reaching this milestone *again* taught us lessons that 
 
 ### Architectural Integrity Under Stress
 
-When string corruption appeared, we could have patched Alex to "just make it work," added special-case handling for Console.readln, or hacked the witness. And well - we *tried* some of those shortcuts, and know they all lead to places we don't want to be. Instead, this time we solidified the CCS contract. This required creating a new Pattern that composed 7 Element operations across 4 dialects. It's a testament to principled design *leading* compiler optimization.
+When string corruption appeared, we could have patched Alex to "just make it work," added special-case handling for Console.readln, or hacked the witness. And well - we *tried* some of those shortcuts, and know they all lead to places we don't want to be. Instead, this time we solidified the CCS contract. This required creating a new Pattern that composed 7 Element operations across 4 dialects. Here the principled design drove the compiler optimization rather than being shaped by it.
 
-The pattern is a few lines of code. It's reusable. It's testable in isolation. It demonstrates that "the Library of Alexandria" tiered structure of Element/Pattern/Witness scales under composition pressure. When the architecture is under stress, you learn whether it's built on solid foundations or convenient shortcuts.
+In a few lines of code, reusable and testable in isolation, the pattern demonstrates that the "Library of Alexandria" tiered structure of Element/Pattern/Witness scales under composition pressure. When the architecture is under stress, you learn whether it's built on solid foundations or convenient shortcuts.
 
-> These foundations have shown their worth.
+
 
 ### Types Over Parameters
 
-Our early attempts at guiding the compilation pipeline intermingled parameter passing. Processing would push loaded values to patterns. This approach broke monadic composition, which sounds like an arbitrary choice ***until you see the costs compound***. Code became stateful. Process blocks accumulated logic. Recursion crept in. The implementation tangled.
+Our early attempts at guiding the compilation pipeline intermingled parameter passing. Processing would push loaded values to patterns. This approach broke monadic composition, and the cost was concrete. The code became stateful, process blocks accumulated logic and recursion, and the implementation tangled.
 
-The type-driven approach flips the model. Patterns pull data from Coeffects state. They detect `TMemRef` via pattern matching. They compose load operations when needed. No parameter threading. No mutable accumulation. Monadic composition throughout.
+The type-driven approach flips the model. Patterns pull data from Coeffects state. They detect `TMemRef` via pattern matching and compose load operations at the point of use, with no parameter threading and no mutable accumulation, so monadic composition holds throughout.
 
-Then something interesting happened. While reviewing the implementation, we realized the pattern had become a catamorphism - a systematic way of tearing down structure while preserving invariants. We weren't aiming for that. It emerged from choosing composition over construction. Turns out those "academic" programming concepts aren't abstract theories. They're descriptions of patterns that naturally arise when you design for their emergent properties.
+Then something interesting happened. While reviewing the implementation, we realized the pattern had become a catamorphism - a systematic way of tearing down structure while preserving invariants. We weren't aiming for that. It emerged from choosing composition over construction. Those "academic" programming concepts describe patterns that arise naturally when you design for their emergent properties.
 
 The result is an architectural principle: when you have a choice between push and pull, and you're working in a compositional context, pull usually composes better.
 
 ### Principled Failures Are Progress
 
-Many of our current slate of test "samples" fail because they need full escape analysis. They don't fail because the architecture is broken, the type system is unsound, memory management is ad-hoc, or we took shortcuts. They fail because we haven't finished implementing the architecture ***in this principled form***. So we're excited to close those gaps and watch the tests "light up" once again, but this time with a more scalable base.
+Many of our current slate of test "samples" fail because they need full escape analysis. They do not fail because the architecture is broken or the type system is unsound: escape analysis is simply not yet fully implemented in this principled form. The architecture is sound, the type system holds, memory management stays principled, and no shortcuts were taken. So we intend to close those gaps and get the failing samples passing again, this time against a more scalable base.
 
 Compare to the alternative where all samples "work" via manual `stackalloc` with dangling pointers, implicit heap allocation everywhere, runtime lifetime tracking (reference counting), or escape hatches (`unsafe`, `Unchecked.defaultof`). Those approaches "work" by giving up on compile-time safety. We considered some of those choices early on to get our footing; to understand 'the lay of the land'. But to our eyes these were all real, material dead-ends relative to the goals of the Fidelity Framework.
 
-So the larger goal holds. We'd much rather have principled failures than unsafe successes. And as a happy consequence, principled failures validate our approach. They tell us exactly what's missing. That's architectural integrity, even if it delays the dopamine hit one might get from a crufty leetcode exercise masquerading as integrity.
+So the larger goal stands. We'd much rather have principled failures than unsafe successes. And as a happy consequence, principled failures validate our approach. They pinpoint the one gap that remains. That is architectural integrity, even when it forgoes the quick satisfaction of a throwaway leetcode exercise dressed up as rigor.
 
 ## The Roadmap
 
@@ -433,7 +433,7 @@ For simple cases like this, the compiler infers stack allocation. But when a mut
 
 ## The Measurement That Matters
 
-Three samples pass in the new compiler infrastructure. Many more fail, *today*. But here's the measurement that actually matters:
+Three samples pass in the new compiler infrastructure. Many more fail, *today*. The metrics we hold ourselves to are these:
 
 | Metric | Value | Meaning |
 |--------|-------|---------|
@@ -444,9 +444,9 @@ Three samples pass in the new compiler infrastructure. Many more fail, *today*. 
 | Lines of pattern complexity | ~30 | Per-pattern (composable) |
 | Root causes for failures | 1 | Escape analysis integration |
 
-The failures cluster around a single architectural gap. When escape analysis integration lands, they will resolve because they share the same root cause. That's architectural integrity. That's why we're celebrating the "early wins" of three working samples in a new principled model.
+The failures cluster around a single architectural gap, and escape analysis integration will resolve them together because they share one root cause. We count three working samples in a new principled model as a genuine early win.
 
-The title of this post uses "managed mutability," but "measured mutability" might be more accurate. We're measuring lifetime bounds (when does this mutable become invalid?), escape scope (does this mutable outlive its lexical scope?), allocation strategy (stack for locals, arena for escaping), and safety guarantees (no dangling pointers, deterministic cleanup).
+The title of this post uses "managed mutability," but "measured mutability" might be more accurate. We measure four properties: the lifetime bounds after which a mutable becomes invalid, whether a mutable outlives its lexical scope, whether it takes stack or arena allocation, and the safety guarantees of no dangling pointers and deterministic cleanup.
 
 The compiler measures these properties at compile time. It generates code that's ***provably safe*** within those bounds. Mutable variables aren't "managed" by a runtime. They're **measured** by the compiler and **bound** to a deterministic compute graph.
 
@@ -454,7 +454,7 @@ When you write `let mutable pos = 0` in a loop, the compiler measures: "This mut
 
 > Different measurements with correct allocation strategy.
 
-Escape analysis is the next waypoint. We have mutable variable support (TMemRef with alloca + load/store), compositional auto-loading, and Element/Pattern/Witness stratification that held up under pressure. We have closure analysis. We're building escape analysis and lifetime inference, and we'll keep working those gaps until the failing samples light up against a base we trust to scale.
+Escape analysis is the next component to build. We have mutable variable support (TMemRef with alloca + load/store), compositional auto-loading, and Element/Pattern/Witness stratification that held up under pressure. We have closure analysis. We're building escape analysis and lifetime inference, and we'll keep closing those gaps until the failing samples pass on a base that scales.
 
 ---
 

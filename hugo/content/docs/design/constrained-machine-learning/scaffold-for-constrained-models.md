@@ -28,11 +28,11 @@ For the language case, where construction is unavailable, convergence toward a d
 
 ## Why the arithmetic has to be precise
 
-The white-box guarantees are real, and they are soft. The subspaces the objective separates are orthogonal at convergence in exact arithmetic. Trained in IEEE-754 floating point, they are approximately orthogonal, and the rate-reduction objective that drives the separation is built on log-determinant and covariance terms that are numerically delicate, the long accumulations where floating-point cancellation accumulates error. The separation degrades from exact toward approximate orthogonality, which is the objective's expected behavior: exactness was never claimed for it.
+The white-box guarantees are real, and they are soft. The subspaces the objective separates are orthogonal at convergence in exact arithmetic. Trained in IEEE-754 floating point, they are approximately orthogonal, and the rate-reduction objective that drives the separation is built on log-determinant and covariance terms that are numerically delicate, the long accumulations where floating-point cancellation compounds error. The separation degrades from exact toward approximate orthogonality, which is the objective's expected behavior: exactness was never claimed for it.
 
 For interpretability that blur is tolerable. For a component meant to sit adjacent to the ADM constellation it is the wrong tradeoff, and it is avoidable. The substrate the ADM work already uses, [b-posit arithmetic](https://arxiv.org/abs/2603.01615) with quire accumulation, is built for the operations the white-box objective stresses. The quire carries a long accumulation without intermediate rounding, which is what the log-det and covariance terms need. That cause is removable: keep the derived architecture, and run its sensitive operations on b-posit arithmetic, which holds the convergence sharp.
 
-Running its sensitive operations in b-posit puts the language-model component on the same numeric substrate as the rest of the framework, in place of a separate floating-point format.
+That puts the language-model component on the same numeric substrate as the rest of the framework, in place of a separate floating-point format.
 
 There is an honest hazard here. Posit precision is not uniform; it is densest near magnitude one and tapers toward the extremes. Whether that taper aligns with where the rate-reduction objective places its numerical stress during training is an empirical question about the interaction of two specific designs, and it is one of the experiments this program must run before the synthesis can be called real.
 

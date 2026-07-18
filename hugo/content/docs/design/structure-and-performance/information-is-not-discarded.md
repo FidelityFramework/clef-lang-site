@@ -10,13 +10,13 @@ weight: 15
 
 Most compilers throw information away as they lower. The front end proves something, uses it to make a decision, and discards the proof; the middle end sees the decision but not the reason for it; the back end sees neither. By the time code reaches the target, the facts that made the source safe or fast are gone, and a later pass, with no record of them, can undo the structure they depended on.
 
-Fidelity does not lower this way. A design-time fact the compiler establishes is carried forward as an annotation later stages hold across a pass, not a value they spend on one and discard. Each stage of lowering has strictly more information than the one before it, never less. This is the mechanical discipline behind several guarantees that would otherwise require a runtime, and it carries those guarantees all the way to native code.
+Fidelity does not lower this way. A design-time fact the compiler establishes is carried forward as an annotation later stages hold across passes, not a value they consume at one and discard. Each stage of lowering has strictly more information than the one before it, never less. This is the mechanical discipline behind several guarantees that would otherwise require a runtime, and it carries those guarantees all the way to native code.
 
 ## What "Carried" Means
 
 When escape analysis decides where a closure's environment lives, or when dimensional inference fixes a value's units, that result is attached to the [Program Semantic Graph](/spec/draft/program-semantic-graph/) as codata, structural data that persists with the value through every pass that does not touch it. At the MLIR stage the same facts become attributes on operations. At the boundary between dialects they are preserved, not dropped. A pass that would perturb a carried fact either preserves it by construction or re-establishes it, and a fact silently lost is a defect the pipeline is built to catch.
 
-The alternative, recomputing a fact at the stage that needs it, often fails outright. Once information is erased, a later stage cannot in general reconstruct it. The "arity curtain" is the canonical case: a function's argument count, discarded early, cannot in general be reconstructed once the function passes through an abstraction. Carrying the fact forward is not an optimization over recomputing it; it is the only way the fact is available at all.
+The alternative, recomputing a fact at the stage that needs it, often fails outright. Once information is erased, the stage that needs it back may have no way to recover it. The "arity curtain" is the canonical case: a function's argument count, discarded early, cannot in general be reconstructed once the function passes through an abstraction. Carrying the fact forward is not an optimization over recomputing it; it is the only way the fact is available at all.
 
 ## Where the Discipline Shows
 

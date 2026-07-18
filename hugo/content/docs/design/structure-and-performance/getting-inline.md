@@ -374,7 +374,7 @@ Alex witnesses the PSG and emits MLIR, but it still operates without complete co
 
 By the time MLIR's optimization passes run, the picture clarifies dramatically. The optimizer sees the complete program structure, understands call frequencies through profiling information, and knows the target architecture. It can make informed tradeoffs: inline this small function because it's called in a tight loop, but keep that larger function separate because it's rarely used and inlining would bloat the instruction cache.
 
-LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. These decisions account for cache line sizes and pipeline depths. They also reflect branch predictor characteristics and SIMD instruction availability. The optimization decisions at this level can be tuned to the specific CPU model, not just the general architecture family.
+LLVM's backend optimization goes further still, with detailed knowledge of the target microarchitecture. It knows cache line sizes and pipeline depths. It also knows branch predictor characteristics and SIMD instruction availability. The optimization decisions at this level can be tuned to the specific CPU model, not just the general architecture family.
 
 Inlining at the CCS level discards the information that MLIR would otherwise have to work with.
 

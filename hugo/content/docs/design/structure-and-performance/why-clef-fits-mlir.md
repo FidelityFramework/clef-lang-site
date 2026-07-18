@@ -309,6 +309,6 @@ MLIR itself is language-agnostic, and projects like Rust-GPU demonstrate that im
 
 Andrew Appel's result that "SSA is Functional Programming" describes the structure of efficient compilation. We design our Fidelity framework around it, choosing Clef because Clef's design ***matches*** the form that modern optimizing compilers already target.
 
-Clef code aimed at MLIR works with the compilation model rather than against it. Other languages reconstruct the SSA structure that a Clef source expresses directly, and they analyze the control flow that its delimited continuations make explicit. Composed operations map onto the optimization opportunities that MLIR's passes already target.
+Clef code aimed at MLIR works with the compilation model rather than against it. Other languages reconstruct the SSA structure that a Clef source expresses directly, and they analyze the control flow that its delimited continuations make explicit. Composed operations map onto the optimization opportunities that MLIR's passes act on.
 
-Because Clef's structure already aligns with SSA, one source maps cleanly onto a CPU, a GPU, and an FPGA without three reconstructions, the reach our Composer compiler is built to extend.
+Because Clef's structure aligns with SSA, one source maps cleanly onto a CPU, a GPU, and an FPGA without three reconstructions, the reach our Composer compiler is built to extend.

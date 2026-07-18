@@ -17,7 +17,7 @@ The NaN (Not a Number) encoding illustrates this legacy. The 1985 standard left 
 
 That said, IEEE 754 achieved its primary goal: portable numerical code across vendors. Different applications have different needs, and for workloads where values cluster within a few orders of magnitude of 1.0, IEEE 754's uniform precision allocates bits to extreme ranges that may never be used. The special value semantics, while portable, can complicate reasoning about numerical correctness when NaN values propagate through long computation chains with no standard way to trace their origin.
 
-John Gustafson's posit arithmetic explores a different set of trade-offs. Posits use *tapered precision*: more bits where values cluster (near 1.0), fewer bits at extremes where exact representation matters less than order of magnitude. This article explores how posit arithmetic could fit into the Fidelity framework, from Clef type design through native compilation.
+John Gustafson's posit arithmetic explores a different set of trade-offs. Posits use *tapered precision*: more bits where values cluster (near 1.0), fewer bits at extremes where exact representation matters less than order of magnitude. Posit arithmetic could fit into the Fidelity framework across Clef type design and native compilation.
 
 ---
 
@@ -41,7 +41,7 @@ Posits make a different trade-off. A posit is parameterized by two values: `nbit
   1    variable   es      remaining
 ```
 
-The key innovation is the *regime field*. Rather than a fixed-width exponent, the regime uses run-length encoding:
+The *regime field* replaces the fixed-width exponent with run-length encoding:
 - A run of k ones followed by a zero encodes regime value k-1
 - A run of k zeros followed by a one encodes regime value -k
 
@@ -51,7 +51,7 @@ Tapered precision matches how values actually distribute in most computations.
 
 ## Posits in Clef
 
-The Fidelity framework provides native types without BCL dependencies. Posit types fit naturally into this architecture:
+The Fidelity framework provides native types without BCL dependencies. Posit types slot directly into this architecture:
 
 ```fsharp
 [<Struct>]
@@ -164,9 +164,9 @@ module MixedPrecision =
         Quire16.toPosit q
 ```
 
-This pattern (small storage types, exact accumulation, explicit conversions) emerges naturally from posit arithmetic. The quire eliminates the need for Kahan summation or other error-compensation tricks. The type system ensures precision transitions are intentional.
+The mixed-precision design produces this pattern: small storage types, exact accumulation through the quire, explicit conversions at every boundary. The quire eliminates the need for Kahan summation or other error-compensation tricks. The type system ensures precision transitions are intentional.
 
-The mixed-precision story reveals a structural advantage over existing posit implementations. Consider a more complete inference pipeline:
+A more complete inference pipeline shows the structural advantage over existing posit implementations:
 
 ```fsharp
 module Inference =
@@ -191,7 +191,7 @@ module Inference =
         ) input
 ```
 
-Every precision transition is visible in the type signature. The compiler rejects `forwardLayer weights weights` because Posit8 and Posit16 are distinct types; accidental precision loss requires an explicit narrowing call. The quire accumulation is visible in the loop body, not hidden behind a library call that might or might not use exact arithmetic internally.
+Every precision transition is visible in the type signature. The compiler rejects `forwardLayer weights weights` because Posit8 and Posit16 are distinct types. Accidental precision loss requires an explicit narrowing call. The quire accumulation is visible in the loop body, not hidden behind a library call that might or might not use exact arithmetic internally.
 
 ### Concrete Types vs Parameterized Generics
 
@@ -236,13 +236,13 @@ The template approach achieves generality but pays for it in several ways that C
 
 **Mixed-precision conversions.** Stillwater Universal provides conversion operators between template instantiations, but they typically round-trip through a double-precision intermediate. The Clef approach can implement `widen8to16` as direct bit manipulation: decode the Posit8 regime, exponent, and fraction fields, then re-encode at Posit16 width. This preserves exactness where the C++ conversion introduces rounding.
 
-**Error diagnostics.** C++ template errors are notoriously opaque. A type mismatch between `posit<8,0>` and `posit<16,1>` produces error messages that reference template instantiation chains. Clef's type checker produces "This expression was expected to have type Posit16 but here has type Posit8." One line. Immediately actionable.
+**Error diagnostics.** C++ template errors are notoriously opaque. A type mismatch between `posit<8,0>` and `posit<16,1>` produces error messages that reference template instantiation chains. Clef's type checker produces "This expression was expected to have type Posit16 but here has type Posit8," a single line that names the fix.
 
 **Compilation model.** Each `posit<N,ES>` instantiation generates a complete copy of the arithmetic code in C++. For the four standard sizes, that's four copies of every operation. Clef's SRTP resolves at compile time but the concrete types can share algorithmic structure through `inline` helper functions, with only the bit-width-specific constants varying.
 
 **Quire integration.** The relationship between a posit type and its quire is implicit in Stillwater Universal; the programmer must know that `quire<32,2>` matches `posit<32,2>`. In Clef, `Quire32.fma` takes `Posit32` arguments by definition. The types enforce the correspondence.
 
-Stillwater Universal proved that posit arithmetic works in practice, and the algorithms it published informed the field. The comparison here concerns *expression* rather than capability. Clef's type system makes mixed-precision posit workflows readable, safe, and self-documenting in ways that C++ template metaprogramming structurally disagrees. More importantly, the compilation model differs fundamentally: Stillwater is a library linked into applications; Fidelity compiles posit operations through the same MLIR pipeline as every other type, targeting CPU, GPU, NPU, and FPGA from a single source.
+Stillwater Universal proved that posit arithmetic works in practice, and the algorithms it published informed the field. The comparison here concerns *expression* rather than capability. Clef's type system makes mixed-precision posit workflows readable, safe, and self-documenting where C++ template metaprogramming forces the configuration into integer parameters and routes conversions through a double-precision intermediate. More importantly, the compilation model differs fundamentally: Stillwater is a library linked into applications; Fidelity compiles posit operations through the same MLIR pipeline as every other type, targeting CPU, GPU, NPU, and FPGA from a single source.
 
 ## SRTP Integration
 
@@ -350,7 +350,7 @@ flowchart LR
     MLIR --> LLVM
 ```
 
-This diagram oversimplifies the implementation. Posit arithmetic is not simple bit manipulation. A single `Posit32.add` operation requires:
+A single `Posit32.add` operation runs through several stages, more involved than plain bit manipulation. It requires:
 
 1. **Decode both operands**: Extract sign, regime (variable-length), exponent, and fraction from each
 2. **Align fractions**: Compute combined scale from regime and exponent, shift fractions to align
@@ -364,9 +364,9 @@ The optimistic view: Clef inline functions would expand to integer operations th
 
 The realistic view: scalar software posit operations will be slower than hardware IEEE 754. This is inherent to the absence of dedicated posit hardware on current CPUs, not a deficiency in implementation language. The same integer operations that Stillwater Universal emits in C++ are the same integer operations that LLVM emits from Clef source through MLIR. The compiler sees `Posit32.add` as integer bit manipulation on a uint32 struct; LLVM's instruction selection, constant propagation, and loop optimization apply identically. Where Clef provides structural advantages is in the layers above scalar arithmetic: type-safe mixed-precision workflows where the compiler enforces correctness at every precision boundary, SRTP-based generic algorithms that specialize without code duplication, and a compilation path that targets not just CPUs but FPGAs and custom hardware through the same MLIR pipeline.
 
-The broader Universal Numbers ecosystem carries two interval constructs alongside the posit: a *valid*, an interval bounded by two posits that brackets the true value, and a *ubound*, a tagged form guaranteed to contain it. Our earlier framing treated these as redundant with the quire, on the grounds that the quire already delivers exact accumulation. That framing was too broad. The quire eliminates *accumulation* error, the compounding of rounding across a long sum of products, and it does so completely. It does nothing for two other error sources: the single catastrophic cancellation `qᵢ − qⱼ` when `qᵢ ≈ qⱼ`, where the significant digits are gone in one subtraction before any accumulation begins, and the epistemic gap of a numerical integration step, where a coordinate that swept an interval over the step was never evaluated at the path it actually took. These are exactly the cases a runtime interval is built to carry.
+The broader Universal Numbers ecosystem carries two interval constructs alongside the posit: a *valid*, an interval bounded by two posits that brackets the true value, and a *ubound*, a tagged form guaranteed to contain it. Our earlier framing treated these as redundant with the quire, on the grounds that the quire already delivers exact accumulation. That framing was too broad. The quire eliminates *accumulation* error, the compounding of rounding across a long sum of products, and it does so completely. It does nothing for two other error sources: the single catastrophic cancellation `qᵢ − qⱼ` when `qᵢ ≈ qⱼ`, where the significant digits are gone in one subtraction before any accumulation begins, and the epistemic gap of a numerical integration step, where the coordinate ranges over an interval across the step but is evaluated only at the sampled points, never at the true trajectory. These are exactly the cases a runtime interval is built to carry.
 
-So the quire and a runtime interval divide the labor rather than duplicate it. The quire makes accumulation exact, so an interval is never needed to *bound* a sum. The interval makes the unknown explicit, so it carries what the quire cannot reach: the lone cancelling subtraction and the unobserved trajectory. The two compose directly, a force accumulating exactly in the quire while the position it reads is carried as an interval.
+So the quire and a runtime interval divide the labor rather than duplicate it. The quire makes accumulation exact, so an interval is never needed to *bound* a sum. The interval makes the unknown explicit, so it carries what the quire cannot reach: the lone cancelling subtraction and the unobserved trajectory. The two compose directly: the force accumulates exactly in the quire while the position it depends on is carried as an interval.
 
 The spec will specify interval arithmetic as a runtime representation, `Interval<r>` over `r ∈ { Posit, BPosit, Fixed }`, on the same struct-wrapping path that already lowers the multi-field quire to native code and to FPGA fabric. A valid is that posit-pair; no external type system is imported. The container is reachable on the existing lowering today. The one capability it depends on is *directed rounding*: the lower bound must round toward negative infinity and the upper bound toward positive infinity at every operation, or the pair stops being a sound enclosure. The framework has no per-operation rounding-mode control yet, so directed rounding is the tracked gap. It joins the same three-valued capability gate selection already uses, `Native | Emulated | Unavailable`, and a target that cannot round outward reports a capability failure rather than a silently unsound interval. On an FPGA the rounding direction is laid into the datapath as a design property rather than switched at runtime, which suits the fabric target well.
 
@@ -451,13 +451,13 @@ The smaller posit sizes (8, 16) fit within word-at-a-time operations and are via
 
 *SIMD on Commodity Hardware*: The dedicated hardware paths above are promising but not yet ubiquitous. What about acceleration on hardware that exists today, in machines developers already own?
 
-This question led to an interesting exploration. Consider AMD's Strix Halo architecture: Zen 5 cores with AVX-512, RDNA 3.5 GPU, and XDNA 2 NPU, all sharing unified memory. At first glance, this heterogeneous design seems promising for posit acceleration. The AVX-512 registers are 512 bits wide, exactly matching a full-gamut Quire32. The GPU offers massive parallelism. The NPU handles INT8 matrix operations, matching Posit8's bit width.
+Consider AMD's Strix Halo architecture: Zen 5 cores with AVX-512, RDNA 3.5 GPU, and XDNA 2 NPU, all sharing unified memory. At first glance, this heterogeneous design seems promising for posit acceleration. The AVX-512 registers are 512 bits wide, exactly matching a full-gamut Quire32. The GPU offers massive parallelism. The NPU handles INT8 matrix operations, matching Posit8's bit width.
 
-A b-posit quire changes this picture in a useful way. At a fixed 800 bits (25 32-bit integers, [arXiv:2603.01615](https://arxiv.org/abs/2603.01615)), it does not fit one register; it carries across two AVX-512 registers, 1024 bits with 224 bits of slack, as vectorized shift-add over the 25 lanes. The trade is deliberate: one accumulator width for every b-posit precision, in exchange for the second register. Because the quire lives in the register file backed by unified memory, its value is coherent to the GPU and NPU without a copy, so an accumulator produced on the CPU is readable by the other two agents across the same coherent address space. The FPGA sits outside that unified-memory domain, across the link, and carries its own b-posit quire in fabric where many 800-bit accumulators bank in parallel across the LUT budget. Where the quire should live is then a placement decision: co-locate the accumulator with the ALUs that feed it and move one rounded result across the slow boundary, or place it on the far side and move every operand.
+A b-posit quire changes this picture in a useful way. At a fixed 800 bits (25 32-bit integers, [arXiv:2603.01615](https://arxiv.org/abs/2603.01615)), it does not fit one register; it carries across two AVX-512 registers, 1024 bits with 224 bits of slack, as vectorized shift-add over the 25 lanes. The trade is deliberate: one accumulator width for every b-posit precision, in exchange for the second register. Because the quire lives in the register file backed by unified memory, its value is coherent to the GPU and NPU without a copy, so an accumulator produced on the CPU is readable by the other two agents across the same coherent address space. The FPGA sits outside that unified-memory domain, across the link, and carries its own b-posit quire in fabric, with many 800-bit accumulators laid out in parallel across the LUT budget. Where the quire should live is then a placement decision: co-locate the accumulator with the ALUs that feed it and move one rounded result across the slow boundary, or place it on the far side and move every operand.
 
 Not all AVX-512 implementations are equal. AMD's Zen 5 family includes variations: desktop and server parts feature full-width 512-bit datapaths with 4x512-bit execution, while some mobile variants use 4x256-bit execution. Even the narrower implementation provides meaningful acceleration over scalar code, and the unified memory architecture remains valuable regardless. A mobile platform capable of useful posit acceleration opens development possibilities that dedicated server hardware would not: rapid iteration, power-efficient experimentation, and accessibility to labs that lack data center resources.
 
-The reality differs from whiteboard math. Working through the details shows what acceleration actually requires.
+The reality differs from whiteboard math.
 
 The GPU and NPU turn out to be less immediately applicable than they appear. Their fixed-function units expect IEEE float or integer formats. You cannot feed them posit-encoded bits and expect correct results. The decode/compute/encode overhead would likely eliminate any acceleration benefit. The unified memory architecture helps with data movement in heterogeneous pipelines, but that's efficiency, not acceleration.
 
@@ -479,11 +479,11 @@ vpsrlvd  zmm4, zmm0, zmm_positions  ; variable shift to extract exponent
  
 ```
 
-The critical insight emerges when estimating actual speedup. Scalar posit32 addition requires roughly 60-100 cycles of bit manipulation. An AVX-512 implementation processing 16 values might take 150-250 cycles total. That's 4-8x speedup, not the theoretical 16x. The variable-width regime extraction serializes part of the work despite SIMD parallelism. Half the theoretical throughput is lost to data-dependent field positions.
+Estimating the actual speedup starts from the scalar cost. Scalar posit32 addition requires roughly 60-100 cycles of bit manipulation. An AVX-512 implementation processing 16 values might take 150-250 cycles total. That's 4-8x speedup, not the theoretical 16x. The variable-width regime extraction serializes part of the work despite SIMD parallelism. Half the theoretical throughput is lost to data-dependent field positions.
 
 But 4-8x is still meaningful. For a neural network inference pass with thousands of posit operations, that's the difference between acceptable and impractical. For scientific computing kernels where posit's exact accumulation matters, that speedup could make posits viable where pure software emulation would not be.
 
-This line of reasoning leads to a deeper question: what would Clef need to enable this acceleration?
+Enabling this acceleration depends on Clef supporting vector types.
 
 The scalar posit types throughout this article follow a consistent pattern:
 
@@ -506,9 +506,9 @@ module Posit32x16 =
 
 If Clef supported `Vector512<'T>` as a primitive type that lowers to MLIR's vector dialect, the same compilation pipeline that handles `Posit32` would handle `Posit32x16`. No special cases for posits. No separate code generation paths. The struct contains a vector instead of a scalar; operations use vector intrinsics instead of scalar arithmetic; MLIR generation emits vector operations; LLVM selects AVX-512 instructions.
 
-This realization connects the acceleration story back to the type design. The article's `Posit32` with its `Bits: uint32` field isn't arbitrary. It's a pattern that scales across SIMD widths: `Posit32x8` for AVX2 (256-bit), `Posit32x16` for AVX-512 (512-bit), `Posit32x4` for ARM NEON (128-bit). The struct wrapper provides type safety and API consistency; the underlying primitive determines what hardware can accelerate it.
+The acceleration path traces back to the type design. The `Posit32` struct with its `Bits: uint32` field is not arbitrary. It's a pattern that scales across SIMD widths: `Posit32x8` for AVX2 (256-bit), `Posit32x16` for AVX-512 (512-bit), `Posit32x4` for ARM NEON (128-bit). The struct wrapper provides type safety and API consistency; the underlying primitive determines what hardware can accelerate it.
 
-What could we realize with this capability? Consider a mixed-precision neural network where accuracy matters more than raw throughput. Training converged with Posit16 weights, but inference on edge hardware needs Posit8 for memory efficiency. The quire guarantees that accumulation doesn't introduce drift. With AVX-512 acceleration, the posit overhead becomes manageable. With Clef vector types, developers write:
+Consider a mixed-precision neural network where accuracy matters more than raw throughput. Training converged with Posit16 weights, but inference on edge hardware needs Posit8 for memory efficiency. The quire guarantees that accumulation doesn't introduce drift. With AVX-512 acceleration, the posit overhead becomes manageable. With Clef vector types, developers write:
 
 ```fsharp
 let inference (weights: Posit8x64 array) (input: Posit16x32 array) =
@@ -520,7 +520,7 @@ let inference (weights: Posit8x64 array) (input: Posit16x32 array) =
 
 Type-safe, vectorized, exact accumulation. The code expresses intent; Clef handles the lowering; AVX-512 provides the throughput. Where IEEE 754 would accumulate rounding errors across thousands of operations, the quire preserves mathematical exactness. Where scalar posit code would be prohibitively slow, vector operations make it practical.
 
-The work required is substantial. Clef needs vector primitive support in its type system. Correct vectorized posit algorithms must be written and validated against the posit standard. Architecture detection must select appropriate vector widths at compile time. But the architectural path is clear: it does not require special compiler magic for posits. It requires Clef to understand vectors. Once that capability exists, posit acceleration falls out naturally from the same primitive type pattern used throughout this article.
+The work required is substantial. Clef needs vector primitive support in its type system. Correct vectorized posit algorithms must be written and validated against the posit standard. Architecture detection must select appropriate vector widths at compile time. But the architectural path is clear: it does not require special compiler magic for posits. It requires Clef to understand vectors. With that capability in place, the vector posit types follow the same primitive-type pattern this article applies to scalar types, and need no posit-specific compiler support.
 
 *Direct Kernel Generation: A Speculative Path*
 
@@ -629,11 +629,11 @@ A posit fused multiply-add that takes dozens of integer operations on a CPU beco
 
 The DSP48E1 slices available on Xilinx 7-series FPGAs (like the Artix-7 in the Arty A7-100T development board) are particularly relevant. Each slice contains a 25x18 multiplier and 48-bit accumulator, well-matched to posit fraction multiplication. With 240 DSP slices available, there is room for meaningful pipeline depth: multiple posit multiply-accumulate units operating concurrently, each processing the next pair as the previous result flows downstream.
 
-This is where the posit story becomes qualitatively different from IEEE 754. You cannot build a *better* IEEE FPU on an FPGA than what exists in a modern CPU; the CPU's floating-point unit has decades of optimization in dedicated silicon. But you *can* build a posit arithmetic unit that has no CPU equivalent at all. The FPGA isn't competing with existing hardware; it's providing arithmetic that doesn't exist anywhere else.
+An FPGA changes the comparison with IEEE 754. You cannot build a *better* IEEE FPU on an FPGA than what exists in a modern CPU; the CPU's floating-point unit has decades of optimization in dedicated silicon. But you *can* build a posit arithmetic unit that has no CPU equivalent at all. It supplies arithmetic that exists nowhere else in fixed silicon.
 
 A demonstration is planned that will exercise this pipeline end-to-end: Clef posit arithmetic compiled through CIRCT to run on the Arty A7-100T, with the CPU handling orchestration and the FPGA handling the precision-critical computation. The intent is to make the case for FPGA-accelerated posit arithmetic through a workload where quire-exact accumulation produces qualitatively better results than any IEEE 754 path could, with benchmarks as secondary confirmation.
 
-The compilation pipeline for this FPGA path requires no changes to FCS, PSG, nanopasses, or the zipper traversal. Alex's target-aware Bindings select the appropriate MLIR dialect emission, and the CIRCT toolchain handles the transposition from control flow to hardware. The design carries one Clef function through the same compiler to four targets: CPU (sequential), GPU (SIMT parallel), NPU (spatial dataflow), and FPGA (custom arithmetic pipeline). That is the "same compiler, four targets" story we are building toward. Posit arithmetic is the use case that makes the FPGA target necessary rather than optional.
+The compilation pipeline for this FPGA path requires no changes to FCS, PSG, nanopasses, or the zipper traversal. Alex's target-aware Bindings select the appropriate MLIR dialect emission, and the CIRCT toolchain handles the transposition from control flow to hardware. The design carries one Clef function through the same compiler to four targets: CPU (sequential), GPU (SIMT parallel), NPU (spatial dataflow), and FPGA (custom arithmetic pipeline). Posit arithmetic is the use case that makes the FPGA target necessary rather than optional.
 
 ## Where Posits Excel
 
@@ -719,7 +719,7 @@ What makes this feasible in Clef is the combination of:
 - **SRTP** for type-safe generic algorithms across the posit family
 - **Concrete types** that map directly to hardware registers, SIMD lanes, and FPGA datapaths
 
-This is the Fidelity approach: express posit arithmetic in idiomatic Clef, compile to native code through the standard MLIR pipeline, and target the same source to CPU (scalar or SIMD), GPU, NPU, and FPGA. Each target receives the compilation path appropriate to its architecture. There is no external library dependency, no link-time binding, no special-case compilation. Posit operations are integer bit manipulation on structs; that is what the compiler already handles. The type system provides the safety and mixed-precision orchestration; the MLIR pipeline provides the optimization and target selection; CIRCT provides the hardware synthesis path. The entire stack is intrinsic.
+This is the Fidelity approach: express posit arithmetic in idiomatic Clef, compile to native code through the standard MLIR pipeline, and target the same source to CPU (scalar or SIMD), GPU, NPU, and FPGA. Each target receives the compilation path appropriate to its architecture. There is no external library dependency, no link-time binding, no special-case compilation. Posit operations are integer bit manipulation on structs, which the compiler already handles. The type system carries the safety and mixed-precision orchestration, the MLIR pipeline handles optimization and target selection, and CIRCT synthesizes the hardware path. Every part of the stack goes through the standard compilation route.
 
 ---
 

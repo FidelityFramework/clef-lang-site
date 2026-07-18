@@ -57,7 +57,7 @@ A contract at the boundary holds this surface stable. The grammar-constrained de
 
 ## Rung one: adapt what exists now
 
-At the first rung the organization integrates the model that exists today and puts it to work at once. It integrates a standing model at the boundary and holds the constraint in the interface above the weights, the same boundary-integration posture our own [Furnace](https://github.com/fsprojects/Furnace) work took toward the ML ecosystem: take the capability that exists, bind it at a clean edge, and keep the option to replace it later. The rung runs today, in two deployment variants that satisfy the identical interface.
+At the first rung the organization takes up the model that exists today and puts it to work at once. It integrates a standing model at the boundary and holds the constraint in the interface above the weights, the same boundary-integration posture our own [Furnace](https://github.com/fsprojects/Furnace) work took toward the ML ecosystem: take the capability that exists, bind it at a clean edge, and keep the option to replace it later. The rung runs today, in two deployment variants that satisfy the identical interface.
 
 The API variant reaches a frontier or hosted model through a gateway. Using the Cloudflare AI Gateway, through the Fidelity.CloudEdge bindings, the gateway gives caching, rate limiting, and observability over the model call, and the domain models run as Workers or Durable Objects reached over BAREWire on a websocket.
 
@@ -178,7 +178,7 @@ The four rungs are stages of one substitution, the same shape as the compiler's 
 
 A fully closed flywheel is the unit Ma calls closed-loop transcription: a model that goes on revising its own representation against feedback instead of freezing when a training run ends. It is closed by the same forward-mode loop and verifiable signal that drive each earlier stage.
 
-An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and substitutes as far as the value warrants, with each step behind the interface a substitution rather than a rebuild. The constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model proceeds in small substitutions behind a stable interface.
+An organization does not have to choose its rung in advance. It starts where it can start today, often the API variant of rung one, and moves as far as the value warrants, with each step behind the interface a substitution rather than a rebuild. The constellation is something you can run now with what exists, and the path from there to the fully built, fully sovereign model is a graded migration behind that boundary.
 
 ## Open questions
 
