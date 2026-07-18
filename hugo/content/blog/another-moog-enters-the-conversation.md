@@ -39,11 +39,11 @@ The same algebra explains what the instrument does to the ear. A ring modulator 
 
 $$\cos(\omega_c t)\,\cos(\omega_m t)=\tfrac{1}{2}\big[\cos(\omega_c-\omega_m)t+\cos(\omega_c+\omega_m)t\big]$$
 
-Both source frequencies vanish from the output. Only their sums and differences remain. The mathematics suppresses the carrier completely. The diode ring does not, which is why the second capacitor in the table exists. Feed the circuit harmonically rich sources and every harmonic pairs with the carrier into bands that are no longer harmonically related. The phase terms, carried in the imaginary component of each product, set how those bands beat against one another. That interaction is why a ring modulator sounds so much richer than its parts, and why, with judicious amplitude shaping of carrier and modulator, a convincing gong comes out of very simple waveforms.
+Both source frequencies vanish from the output. Only their sums and differences remain. The mathematics suppresses the carrier completely. The diode ring does not, which is why the second capacitor in the table exists. Feed the circuit harmonically rich sources and every harmonic pairs with the carrier into bands that are no longer harmonically related. The phase terms, carried in the imaginary component of each product, set how those bands beat against one another. That interaction is why a ring modulator sounds so much richer than its parts, and why, with judicious amplitude shaping of carrier and modulator, a convincing "gong" tone emerges from very simple waveforms.
 
 The difference terms carry one more effect, and it is the one that most enriched the calculation when Houston worked these spectra by hand. When a modulator harmonic exceeds the carrier, the difference frequency computes to a negative number. No real output holds a negative frequency. 
 
-![Frequency-axis diagram of ring modulator fold-back: a suppressed 500 Hz carrier with sum and difference bands from a 200 Hz modulator and its harmonics; the 500 minus 600 band computes to −100 Hz, folds about 0 Hz, and arrives phase-inverted on the 100 Hz band, and an orange stem shows the reduced band that remains after the subtraction](/images/blog/Ring_Mod_Foldback.svg)
+![Frequency-axis diagram of ring modulator fold-back](/images/blog/Ring_Mod_Foldback.svg)
 
 The band folds back across \(0\text{ Hz}\) into the audible range, and the fold inverts its phase. A folded band can land directly on a band that is already there and add to it in opposite phase. In the figure above, the third harmonic's difference term computes to \(-100\text{ Hz}\) and folds back onto the \(100\text{ Hz}\) band the second harmonic already produced. The orange band shows what remains after the two combine.
 
