@@ -43,9 +43,9 @@ In the hypergraph, proof obligations aren't annotations attached to code; they'r
 
 ## Proofs as Optimization Enablers
 
-Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must either preserve every check, which is safe but slow, or eliminate checks through fragile heuristics, which is fast but risky. The hypergraph gives the compiler enough information to do both: proof-guided optimization that keeps a check where it is load-bearing and drops it where safety is already established.
+Consider array bounds checking, the canonical example of safety overhead. Traditional compilers must either preserve every check, which is safe but slow, or eliminate checks through fragile heuristics, which is fast but risky. The hypergraph gives the compiler enough information to be selective: proof-guided optimization that keeps a check where it is load-bearing and drops it where safety is already established.
 
-When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler has more than the fact that a check exists: it has why the check exists, what it protects, and when it can be safely transformed. That opens the following optimizations:
+When a bounds check exists as a proof hyperedge connecting an array and its access patterns, the compiler has more than the check's existence: it has why the check exists, what it protects, and when it can be safely transformed. That opens the following optimizations:
 
 - **Check hoisting**: Move a single check outside a loop when the proof hyperedge shows all accesses use the same index pattern
 - **Check fusion**: Combine multiple checks into one when proof hyperedges share the same preconditions
@@ -88,9 +88,9 @@ Beyond checking compliance, these rule hyperedges carry optimization information
 
 ## Why This Class of Bug Cannot Form
 
-A bounds-check hyperedge guards some failures at runtime. Others never arise, because the state they depend on cannot be represented. Where that state has no representation, no proof obligation exists to carry.
+A bounds-check hyperedge guards some failures at runtime. Others never arise, because the state they depend on cannot be represented, and for those no proof obligation exists to carry.
 
-Buffer overruns of the classic kind are in the second category. The failure needs a length that can go out of range and a boundary that silently reinterprets it, and Clef's range-derived representation removes both. A length into a one-kilobyte buffer occupies the interval `[0, KSIZE]`. Because that interval is non-negative, the value's representation is unsigned by construction, chosen from the range and not from a type name a caller could substitute. There is no signed form of the length in which a negative value could appear, because a negative value is not something the type can hold. The representation is selected once and carried to the boundary as a fact the later stages still hold, so there is no second, different type at the far end for the value to be reinterpreted against. 
+Buffer overruns of the classic kind are in the second category. The failure needs a length that can go out of range and a boundary that silently reinterprets it, and Clef's range-derived representation removes both. A length into a one-kilobyte buffer occupies the interval `[0, KSIZE]`. Because that interval is non-negative, the value's representation is unsigned by construction, chosen from the range and not from a type name a caller could substitute. There is no signed form of the length in which a negative value could appear, because a negative value is not something the type can hold. The representation is selected once and carried to the boundary as a fact the later stages still hold, so there is no second, different type at the far end for the value to be reinterpreted against.
 
 This is a Tier 1 property in the [four-tier model](/docs/internals/verification/decidability-sweet-spot/): it follows from the range structure the abelian fragment already carries, decided without an annotation and without a solver query. The unsafe state is not caught and rejected at runtime; it is absent from the space of programs the type discipline can express.
 
@@ -213,7 +213,7 @@ This navigation pattern supports incremental verification, where each transforma
 
 ## Real-World Impact: Aerospace and Automotive
 
-In safety-critical domains like aerospace and automotive, formal verification is legally required. Traditional approaches force companies to choose between verified reference implementations that are too slow for production and optimized production code that is expensive to re-verify.
+In safety-critical domains like aerospace and automotive, formal verification is legally required. Traditional approaches force companies to choose between verified reference implementations, too slow for production, and optimized production code that is expensive to re-verify.
 
 The hypergraph approach eliminates this false choice. The same codebase serves both purposes:
 

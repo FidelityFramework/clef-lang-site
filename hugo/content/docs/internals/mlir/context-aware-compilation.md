@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern processors offer substantial parallel execution capacity. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reorganize computation around different execution models. Yet most code harnesses only a fraction of this capacity. The right parallel execution strategy follows from both what a program computes and what it requires from its environment. A traditional compiler resolves only the computation; coeffect analysis resolves the environmental requirement.
+Modern processors offer substantial parallel execution capacity. A typical server CPU offers dozens of cores, each capable of executing multiple instructions per cycle through SIMD operations. GPUs push this further with thousands of cores organized in warps and thread blocks. Emerging accelerators like NextSilicon's Maverick or Graphcore's IPU reorganize computation around different execution models. Yet most code harnesses only a fraction of this capacity. The right parallel execution strategy follows from both what a program computes and what it requires from its environment. A traditional compiler resolves only the computation. Coeffect analysis resolves the environmental requirement.
 
 ## The Parallelism Predicament
 
@@ -102,7 +102,7 @@ This choice sets which optimizations apply to a region and which hardware can ex
 
 ## Coeffects
 
-Coeffects track what code requires from its environment, and that requirement is what selects between parallel execution strategies:
+Coeffects track what code requires from its environment, and that requirement determines the choice between parallel execution strategies:
 
 ```fsharp
 // Coeffect inference discovers the nature of computation
@@ -138,8 +138,6 @@ let runSimulation (grid: float[,]) =
 ```
 
 ## Real Hardware, Real Decisions
-
-
 
 ### Multi-Core CPU: Cache-Aware Parallelism
 
@@ -323,9 +321,9 @@ let processOrder order =
  
 ```
 
-This telemetry comes from the same analysis that drives optimization. Fidelity's Program Semantic Graph keeps every code path known and traceable through the static resolution of interaction nets and delimited continuations, with no opaque allocations or convenience downcasts to obscure data and control flow. The boundary-level telemetry depends on that determinism: because the compute graph already tracks the context requirements, the observation points sit at boundaries the analysis has identified.
+This telemetry comes from the same analysis that drives optimization. Fidelity's Program Semantic Graph keeps every code path known and traceable through the static resolution of interaction nets and delimited continuations, with no opaque allocations or convenience downcasts to obscure data and control flow. The boundary-level telemetry depends on that determinism: because the compute graph tracks the context requirements, the observation points are known in advance.
 
-That determinism reduces the fixed costs of day-over-day development cycles as well as runtime cost, and its transparency lowers the ongoing burden of production monitoring and maintenance.
+That determinism reduces the fixed costs of day-over-day development cycles as well as runtime cost, and the transparency of these designs lowers the ongoing burden of production monitoring and maintenance.
 
 ## Separate Analysis, Accurate Workloads
 
@@ -501,4 +499,4 @@ let adaptiveHybridInference (model: HybridModel) (stream: TokenStream) =
     }
 ```
 
-In this hybrid BitNet and compressed-KV arrangement, the coeffects a region carries decide where it runs: CPUs take the ternary operations, GPUs take parallel decompression, and the analysis of what each component needs from its environment decides the placement. That is the same purity-and-requirement reading the rest of this document describes, applied across processors instead of within one.
+In this hybrid BitNet and compressed-KV arrangement, the coeffects a region carries determine where it runs: CPUs take the ternary operations, GPUs take parallel decompression, and the analysis of what each component needs from its environment decides the placement. That is the same purity-and-requirement reading the rest of this document describes, applied across processors instead of within one.

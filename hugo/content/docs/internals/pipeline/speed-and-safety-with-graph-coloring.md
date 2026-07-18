@@ -349,11 +349,11 @@ This graph coloring approach opens exciting possibilities:
 
 ## Discovered Parallelism
 
-Graph coloring on our Program Semantic Graph, traversed by bidirectional zippers, turns the compiler into a parallelism-discovery engine. Ramsey theory describes how simple patterns compound into larger parallel structures. That structure carries no verification obligation.
+Graph coloring on our Program Semantic Graph, traversed by bidirectional zippers, turns the compiler into a parallelism-discovery engine. Ramsey theory describes how simple patterns compound into larger parallel structures, a question of structure rather than verification.
 
 Instead of developers manually identifying parallel regions, the compiler discovers them automatically through mathematical analysis. Sequential-looking async code transforms into massively parallel interaction nets, raising performance while preserving Clef's programming model.
 
-Developers write natural Clef code, and the compiler finds and exploits the parallelism. Graph coloring keeps our parallel execution "on the beam" through the coloring transformation itself rather than any verification pass, and that transformation maps the code onto modern hardware.
+Developers write natural Clef code, and the compiler finds and exploits the parallelism. The coloring transformation itself, rather than any verification pass, keeps our parallel execution "on the beam" and maps the code onto modern hardware.
 
 ## See also
 

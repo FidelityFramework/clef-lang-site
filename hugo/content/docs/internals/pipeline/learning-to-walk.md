@@ -35,7 +35,7 @@ The first sample compiles in about 20 lines of MLIR. The fourth requires over 10
 
 ## The Four Orders
 
-A developer reads code from the top down. Evaluation runs differently, computing arguments before the functions they feed. Dependency analysis traces from each use back to its definition, and machine-code emission carries its own constraint: every value must be defined before it is used.
+A developer reads code from the top down. Evaluation runs differently, computing arguments before passing them to the functions they feed. Dependency analysis traces from each use back to its definition, and machine-code emission carries its own constraint: every value must be defined before it is used.
 
 These four orders rarely align. Evaluation, dependency, and emission generally align with one another by construction in any well-designed compiler. Source order is the asymmetric one, the order our walk reconciles against the others.
 
@@ -88,7 +88,7 @@ A human reads this top to bottom: `greet` is defined, then `hello`, then `main`.
 
 > The call graph flows in the opposite direction from source order.
 
-Now consider the pipe expression: `Console.readln() |> greet`. In Clef, `|>` is syntactic sugar. The expression `x |> f` means `f x`. So `Console.readln() |> greet` is actually `greet (Console.readln())`. In this surface form `greet` receives the result of `readln` as its argument, written left to right through the pipe.
+Now consider the pipe expression: `Console.readln() |> greet`. In Clef, `|>` is syntactic sugar. The expression `x |> f` means `f x`. So `Console.readln() |> greet` is actually `greet (Console.readln())`. In this surface form the application reads left to right: `greet` receives the result of `readln` through the pipe.
 
 The compiler cannot emit code in source order. It cannot emit code in reading order. It must emit code in dependency order, which means understanding that `greet` must be defined before `hello` can call it, and that `readln`'s result flows into `greet`'s parameter.
 
@@ -100,7 +100,7 @@ The zipper can record only nodes the traversal has already visited. A node the w
 
 **The zipper witnesses. It does not decide.**
 
-As the traversal proceeds, each node is visited and its contribution recorded. When the zipper reaches a variable reference, the definition has already been emitted. When it reaches a function application, its arguments have already been visited. The emitted MLIR stays consistent because the traversal order emits each dependency first.
+As the traversal proceeds, each node is visited and its contribution recorded. When the zipper reaches a variable reference, the definition has already been emitted. When it reaches a function application, its arguments have already been visited. The emitted MLIR stays consistent because the traversal emits each dependency first.
 
 The traversal order is fixed during PSG construction, before the walk begins. The zipper follows that order rather than selecting one.
 
@@ -181,7 +181,7 @@ Notice what happened to the pipe operator. In the source, `Console.readln() |> g
 
 This desugaring happens during PSG construction, in a nanopass called `ReducePipeOperators`. By the time the zipper walks the graph, the pipe is gone. What remains is the semantic truth: `greet` is called with the result of `readln`.
 
-Nanopass architecture ([nanopass-navigation](/docs/internals/concepts/nanopass-navigation/)) confines each transformation to one job. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
+[Nanopass architecture](/docs/internals/concepts/nanopass-navigation/) confines each transformation to one job. Pipe reduction happens once, early, and every downstream phase sees the simplified form. The traversal doesn't need to understand `|>`. It only needs to understand function application.
 
 ## Sample 4
 
@@ -235,9 +235,9 @@ The closure coeffects are computed before the zipper walks: capture analysis, es
 
 None of these techniques are novel in isolation. Post-order traversal is textbook compiler construction. Zippers appear in every functional programming curriculum. Coeffects were formalized by Petricek, Orchard, and Mycroft at ICALP 2013 and ICFP 2014. Semantic edge following comes from the MLKit compiler's decades of work on Standard ML. Nanopass architecture was systematized by Sarkar, Waddell, and Dybvig.
 
-What Fidelity contributes is the distillation of these well-principled ideas into a cohesive construct. Coeffects are intrinsic to graph compilation. The zipper traversal elides to any needed structure. Semantic edges and structural edges follow in unified form. Nanopass decomposition enables each phase to simplify the problem space. Fused together, these four techniques form one traversal design rather than four separate passes.
+What Fidelity contributes is the distillation of these well-principled ideas into a cohesive construct. Coeffects are intrinsic to graph compilation. The zipper traversal elides to any needed structure. Semantic edges and structural edges follow in unified form. Nanopass decomposition enables each phase to simplify the problem space. Fused together, these four techniques form one traversal design.
 
-The developer never sees this reordering. They write `Console.readln() |> greet`, and the compiler performs the reordering they would otherwise have to reason about. The code expression should define functions that return functions and the captures should be handled invisibly. The four orders should reconcile without intervention: source, evaluation, dependency, and emission.
+The developer never sees any of this. They write `Console.readln() |> greet`, and the compiler performs the reordering they would otherwise have to reason about. The code expression should define functions that return functions and the captures should be handled invisibly. The four orders should reconcile without intervention: source, evaluation, dependency, and emission.
 
 That reconciliation is what we call "the walk." A direct call and a closure reach the same output through it at very different compilation cost.
 

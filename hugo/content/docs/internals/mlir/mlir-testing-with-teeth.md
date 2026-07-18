@@ -12,7 +12,7 @@ params:
 
 MLIR's testing infrastructure rests on text matching. While MLIR itself is built on progressive lowering and type-safe compilation, the tools used to verify its correctness, `lit` and `FileCheck`, operate at the level of untyped string matching. That gap is structural rather than aesthetic. For frameworks like Fidelity that need to preserve semantic properties through compilation, text-based testing cannot reach the properties at issue.
 
-Composer's testing infrastructure uses parser combinators, semantic graphs, and proof-carrying hyperedges to treat verification as a first-class compilation concern. It establishes compiler correctness properties that text-based tools cannot reach. Better ergonomics follow from that foundation.
+Composer's testing infrastructure is being built on parser combinators, semantic graphs, and proof-carrying hyperedges to treat verification as a first-class compilation concern. It is designed to establish compiler correctness properties that text-based tools cannot reach. Better ergonomics follow from that foundation.
 
 ## The Current State: lit + FileCheck
 
@@ -40,7 +40,7 @@ func.func @main(%arg0: i32) -> i32 {
 }
 ```
 
-When this test passes, `lit` shows minimal output, no failure report means the test passed. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic, favoring tests that are fast, simple, and universally applicable.
+When this test passes, `lit` shows minimal output: no failure report means the test passed. This design reflects LLVM's heritage: thousands of tests running in CI, where verbosity is the enemy. The philosophy is pragmatic, favoring tests that are fast, simple, and universally applicable.
 
 ### What lit Does Well
 
@@ -547,14 +547,14 @@ Composer Generator (AST₁) → MLIR Text
                         Typed Verification
 ```
 
-The generator and verifier share no code, connected only through:
+The generator and verifier share no code and are connected only through:
 1. Real tool execution (external validation)
 2. MLIR textual format (standardized interface)
 3. Semantic properties (mathematical relations, not code)
 
 ## Hypergraph-Driven Test Generation
 
-The approach outlined above addresses test *verification*, checking that transformations preserve semantic properties. A further possibility is whether the hypergraph representation could drive test *generation*, not only its verification.
+The approach outlined above addresses test *verification*, checking that transformations preserve semantic properties. A further question is whether the hypergraph representation could drive test *generation* as well.
 
 We treat this as speculative. We have not designed it in full or shown that it works.
 
@@ -598,7 +598,7 @@ The test harness could interpret these directives by:
 
 ### Proofs vs. Tests
 
-**Proofs are stronger than tests.** Where proofs exist, tests are redundant. Composer's pipeline enforces this redundancy at the level of the compilation architecture.
+**Proofs are stronger than tests.** Where proofs exist, tests are redundant. Composer's pipeline is designed to exempt proven code from testing.
 
 When F* verification proves a function's correctness and those proofs travel through MLIR's SMT dialect, that code doesn't need testing. The proof **is** the verification. Testing proven code wastes resources and creates false confidence (tests might pass while missing edge cases the proof already covers).
 
@@ -717,11 +717,11 @@ Treat this as hypothesis-driven experimentation, not predetermined design. Build
 
 It's important to separate two distinct concepts:
 
-- **Self Hosting (Phase 6)**: Compiling the test harness itself with Composer. This is self-hosting, using the compiler to build its own verification tools. This is concrete, well-understood, and feasible.
+- **Self Hosting (Phase 6)**: Compiling the test harness itself with Composer. This is self-hosting, using the compiler to build its own verification tools. It is concrete, well-understood, and feasible.
 
 - **Hypergraph-driven test generation**: Using semantic graph structure to automatically synthesize test cases. Speculative, research-oriented, success uncertain.
 
-The two are orthogonal. Self Hosting proves the compiler can build real, complex Clef programs, the test harness among them, whereas test generation, if it works, would reduce the manual burden of creating comprehensive test suites.
+The two are orthogonal. Self Hosting proves the compiler can build real, complex Clef programs, the test harness among them. Test generation, if it works, would reduce the manual burden of creating comprehensive test suites.
 
 ### Why Explore This?
 
@@ -832,7 +832,7 @@ The ultimate goal is self-hosting: compile the test harness itself with Composer
 3. The verified properties prove the test harness compiled correctly
 4. The loop closes: the system verifies itself
 
-The loop bottoms out in external validation. The initial test harness (compiled with .NET) verifies Composer. Once verified, Composer compiles its own test harness. The .NET-compiled version and Composer-compiled version must agree, providing cross-validation.
+The loop bottoms out outside the system. The initial test harness (compiled with .NET) verifies Composer. Once verified, Composer compiles its own test harness. The .NET-compiled version and Composer-compiled version must agree, providing cross-validation.
 
 Compiler correctness requires a system that can verify its own compilation process while remaining grounded in external validation.
 

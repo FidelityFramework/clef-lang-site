@@ -144,11 +144,11 @@ q: Quire (exact accumulator)
   Lifetime: loop scope (lines 3-5), no escape detected
 ```
 
-These dimensional, allocation, and capability properties would resolve through the DTS+DMM framework's standard inference and coeffect machinery, with no special-case compiler support.
+The DTS+DMM framework's standard inference and coeffect machinery would handle these properties, with no special-case compiler support.
 
 ## The Cryptographic Release Certificate
 
-The complete pipeline runs from DTS inference through DMM coeffect resolution, Z3 proof discharge, PSG saturation, and MLIR translation validation. It is designed to culminate in a single artifact: the **cryptographic release certificate**.
+The complete pipeline comprises DTS inference, DMM coeffect resolution, Z3 proof discharge, PSG saturation, and MLIR translation validation. It is designed to culminate in a single artifact: the **cryptographic release certificate**.
 
 The culmination of this architecture occurs when the developer executes `clef build --release`. At this point, the compilation shifts from interactive design-time guidance to immutable, cryptographic certification:
 
@@ -184,7 +184,7 @@ The Fidelity Framework's integrated approach to verification is designed to coll
 
 The PSG is designed to persist as a long-lived data structure maintained by the language server. The elaborated, saturated graph would serve as the data source for all design-time services: hover information, resolution panels, diagnostic overlays, and restructuring suggestions. These feedback categories are all properties of the PSG that the compiler computes as part of normal compilation. Lattice will read the PSG; the design-time tooling is a view over the compilation graph. The approachable statement of this position, framed for readers arriving from the runtime-reflection mindset, is [Opining Upon Reflection](/blog/opining-upon-reflection/).
 
-The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) states the reason to preserve information across compilation stages. Each compilation stage has strictly more information than its predecessor:
+The [information accrual principle](/docs/design/structure-and-performance/information-is-not-discarded/) states the reason to preserve information across the pipeline. Each compilation stage has strictly more information than its predecessor:
 
 \[I_{\text{source}} \subset I_{\text{PSG}} \subset I_{\text{MLIR}} \subset I_{\text{MLIR-opt}} \subset I_{\text{LLVM}} \subset I_{\text{native}}\]
 
@@ -194,7 +194,7 @@ Decisions that can be deferred to later compilation stages should be, because la
 
 SpeakEZ has a patent pending for this innovation: "System and Method for Verification-Preserving Compilation Using Formal Certificate Guided Optimization" (US 63/786,264). This patent application covers the approach to verification-preserving compilation that the Fidelity Framework represents.
 
-As hardware specializes, correctly interfacing with diverse architectures is a harder engineering problem. The patent-pending technology enables hardware/software co-design where verification properties are maintained across the entire compilation pipeline despite aggressive optimizations targeting specialized hardware. Heterogeneous environments combining CPUs, GPUs, FPGAs, and domain-specific accelerators are becoming the norm, and each added target compounds the interfacing problem.
+As hardware specializes, correctly interfacing with diverse architectures becomes a harder engineering problem. The patent-pending technology enables hardware/software co-design where verification properties are maintained across the entire compilation pipeline despite aggressive optimizations targeting specialized hardware. Heterogeneous environments combining CPUs, GPUs, FPGAs, and domain-specific accelerators are becoming the norm, and each added target compounds the interfacing problem.
 
 ---
 

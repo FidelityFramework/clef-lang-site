@@ -22,7 +22,7 @@ Baker's development within the Composer compiler tracks that vision. Early itera
 
 In programming language theory (PLT) circles, the venacular often includes talk of "Elaboration", essentially, the process of making implicit semantics explicit.
 
-In Composer, we distinguish between **Elaboration** (handling intrinsics) and **Saturation** (handling language constructs). Baker operates in the saturation phase, distinct from elaboration. The point of *saturation* is to find those points in the program's semantic graph and determine which sub-graph of composed intrinsics fully express the intent of the higher order function or similar construct.
+In Composer, we distinguish between **Elaboration** (handling intrinsics) and **Saturation** (handling language constructs). Baker operates in the saturation phase. The point of *saturation* is to find those points in the program's semantic graph and determine which sub-graph of composed intrinsics fully express the intent of the higher order function or similar construct.
 
 ```mermaid
 flowchart TD
@@ -54,7 +54,7 @@ Before Baker starts its pass, our **Elaboration** nanopasses have already run. T
 
 ## The Nanopass Infrastructure
 
-One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs, and while it works it makes following a single transformation through the interwoven recursive passes very difficult. Instead, we use a [**nanopass infrastructure**](/docs/internals/concepts/nanopass-navigation/), which is more stratified, more testable, and easier to follow across the pipeline. Each pass is a focused transformation over one part of the graph, small enough to test on its own.
+One of the major architectural decisions that have led to many hard-forked projects in the Clef ecosystem is a move away from recursive patterns that weave many compiler pipeline. This is a vestige of older designs, and while it works, it makes following a single transformation through the interwoven recursive passes very difficult. Instead, we use a [**nanopass infrastructure**](/docs/internals/concepts/nanopass-navigation/), which is more stratified, more testable, and easier to follow across the pipeline. Each pass is a focused transformation over one part of the graph, small enough to test on its own.
 
 Baker executes within the PSGSaturation stage using a **Fan-Out / Fold-In** pattern:
 
@@ -116,7 +116,7 @@ Composer operates on a Stroustrup style "only pay for what you use" philosophy. 
 
 If your program uses `List.map` but never touches `List.sort`, the logic for sorting is never saturated. It never enters the graph. 
 
-This results in a targeted optimization where **Reachability** removes the dead code, and **Baker** saturates only the reachable edges of the graph. The final native binaries are concise, containing only the code, memory patterns, and computational logic required for the tasks at hand. This is how we approach the density of C with the expressiveness of Clef: an unused abstraction adds nothing to the binary.
+This results in a targeted optimization where **Reachability** removes the dead code, and **Baker** saturates only the edges that remain in the graph. The final native binaries are concise, containing only the code, memory patterns, and computational logic required for the tasks at hand. This is how we approach the density of C with the expressiveness of Clef: an unused abstraction adds nothing to the binary.
 
 ## Pipeline Evolution
 

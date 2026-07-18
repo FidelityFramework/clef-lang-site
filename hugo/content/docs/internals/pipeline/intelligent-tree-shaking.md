@@ -36,7 +36,7 @@ Everything else in the native type system - the `ReadLine` functions, the `stack
 
 ## Tree Shaking Through Type-Preserving Analysis
 
-Tree shaking is a form of dead code elimination that removes unused code from the final executable. The name refers to removing unreachable code and keeping only the code the program reaches. Composer's approach leverages Clef's type system throughout the reachability analysis, which lets it act on information that call-graph-only dead code elimination does not carry.
+Tree shaking is a form of dead code elimination that removes unused code from the final executable. Composer's approach leverages Clef's type system throughout the reachability analysis, which lets it act on information that call-graph-only dead code elimination does not carry.
 
 Our type-aware analysis extends traditional dead code elimination in the following way:
 
@@ -308,7 +308,7 @@ module Graphics =
  
 ```
 
-When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed. Trimming the artifact this far brings the [pure-Clef microcontroller unikernel](/docs/internals/hardware/fidelity-on-mcu/) within flash.
+When compiling for an embedded target, the OpenGL and Metal renderers are eliminated before MLIR generation even begins. This platform-aware elimination combines with type analysis - if the embedded platform never uses certain types, their definitions and all associated code are removed. Trimming the artifact this far lets the [pure-Clef microcontroller unikernel](/docs/internals/hardware/fidelity-on-mcu/) fit in flash.
 
 ## Developer Experience: Understanding Elimination
 
@@ -396,7 +396,7 @@ type Option<'T> =
 
 ## Pipeline Extensions
 
-The restructured Composer compiler reworks dead code elimination around type information. By preserving type information throughout the compilation pipeline, we enable optimizations that were previously impossible:
+The restructured Composer compiler reworks dead code elimination around type information. By preserving that information throughout the compilation pipeline, we enable optimizations that were previously impossible:
 
 1. **Incremental Compilation**: Type-aware dependency tracking enables precise incremental builds
 2. **Link-Time Type Optimization**: Cross-module type specialization and elimination
@@ -411,7 +411,7 @@ Type-aware elimination changes how concurrent functional languages can be compil
 
 What we're building goes beyond eliminating unused functions. By tracking type instantiations, interface implementations, and union case usage, we can eliminate entire categories of code that traditional approaches must preserve "just in case." When your embedded system uses only three cases of a twenty-case discriminated union, why should the binary include code for the other seventeen? When your application uses a generic collection only with integers, why preserve the infrastructure for arbitrary type parameters?
 
-This transformation enables Clef in domains where it was previously impractical. Embedded systems with kilobytes of flash storage become viable targets, and high-frequency trading systems shed every microsecond of virtual dispatch overhead. WebAssembly modules reach sizes competitive with hand-written JavaScript. The same Clef code that expresses your domain compiles to binaries that meet the strictest size and performance requirements.
+This transformation enables Clef in domains where it was previously impractical. Embedded systems with kilobytes of flash storage become viable targets, and high-frequency trading systems can shed every microsecond of virtual dispatch overhead. WebAssembly modules can reach sizes competitive with hand-written JavaScript. The same Clef code that expresses your domain can compile to binaries that meet the strictest size and performance requirements.
 
 ## Type-Driven Future
 

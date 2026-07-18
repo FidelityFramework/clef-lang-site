@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-The industry is investing on the order of \$4 billion to move past the 80-year-old Harvard/Von Neumann design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Compiler intermediate representations, by contrast, still force multi-way relationships into artificial constructions, obscuring the alignment with dataflow patterns those architectures depend on. Recognizing that programs are hypergraphs by nature lets traditional and dataflow targets fall out of the same representation. The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) changes the representation, not just the name: the PHG preserves the multi-way relationships programs have by nature, which is what lets Fidelity produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors.
+The industry is investing on the order of \$4 billion to move past the 80-year-old Harvard/Von Neumann design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Compiler intermediate representations, by contrast, still force multi-way relationships into artificial constructions, obscuring the alignment with dataflow patterns those architectures depend on. Recognizing that programs are hypergraphs by nature lets traditional and dataflow targets fall out of the same representation. The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) changes the representation itself: the PHG preserves those multi-way relationships directly, and is designed to let Fidelity produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors.
 
 Our design also treats the hypergraph as a candidate learning system. Over a temporal graph, the compiler could refine its compilation strategies across applications, or across iterations of the same application. This follows from combining recursion schemes, bidirectional zippers, and event-sourced compilation telemetry, all well-established algorithmic tools that map onto the current diversification of compute hardware. Within the Fidelity framework the same principled representation addresses efficiency and safety on the older architectures while profiling and targeting the newer ones.
 
@@ -66,7 +66,7 @@ Each of these algorithmic frameworks has natural affinities that have existed fo
 
 ### Hypergraph Partitioning with Learning
 
-The formula, rooted in graph theory work from the 1970s, describes how to split a complex program into chunks that different processors can handle efficiently, and here it gains an adaptive learning component.
+The formula, rooted in graph theory work from the 1970s, describes how to split a complex program into chunks that different processors can handle efficiently, and here it becomes adaptive.
 
 \[
 \text{cut}_t(P) = \sum_{e \in E} w_t(e) \cdot |\{V_i : V_i \cap e \neq \emptyset\}|
@@ -100,7 +100,7 @@ Translating a document and then formatting it yields the same result as formatti
 
 ### Why These Tested Concepts Matter Now
 
-These mathematical frameworks are tested results that broad-based systems development can now put to use:
+These mathematical frameworks are tested results that broad-based systems development can put to use:
 
 - **Hypergraph partitioning** has been used in VLSI chip design since the 1970s
 - **Coeffect systems** emerged from decades of research in context-aware computing
@@ -108,7 +108,7 @@ These mathematical frameworks are tested results that broad-based systems develo
 
 The math is decades old. What changed is the hardware, which now embodies the structure these algorithms were designed to exploit. With MLIR providing a common compilation framework, we can bring these time-tested approaches together in a practical system.
 
-**The bottom line for developers**: You write normal Clef code. The compiler uses these mathematical frameworks - refined over decades by some of the brightest minds in computer science - to transform your code into highly optimized executables. You don't need to understand the math any more than you need to understand semiconductor physics to use a computer. These foundations are established results, so the compiler builds on algorithms whose behavior is already well understood.
+**The bottom line for developers**: You write normal Clef code. The compiler uses these mathematical frameworks - refined over decades by some of the brightest minds in computer science - to transform your code into highly optimized executables. You don't need to understand the math any more than you need to understand semiconductor physics to use a computer. The compiler builds on algorithms whose behavior is already well understood.
 
 ## The PHG as a Learning System
 
@@ -171,7 +171,7 @@ let rec cataHypergraph (f: PHGHyperedge -> 'a list -> 'a) (phg: ProgramHypergrap
 
 ### The Temporal Zipper
 
-The bidirectional zipper can traverse both the current graph and its temporal projections:
+The bidirectional zipper would traverse both the current graph and its temporal projections:
 
 ```fsharp
 type TemporalZipper<'a, 'b> = {

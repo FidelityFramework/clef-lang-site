@@ -38,7 +38,7 @@ let main argv =
     0
 ```
 
-This sample exercises several Clef constructs: statically resolved type parameters (SRTP) in the `readInto` function, discriminated union construction for the Result type, stack-allocated buffers with lifetime management, and the transformation of pipe operators into proper function application sequences. With Composer's nanopass architecture now operational, each of these constructs compiles cleanly to native code.
+Several Clef constructs are at work here: statically resolved type parameters (SRTP) in the `readInto` function, discriminated union construction for the Result type, stack-allocated buffers with lifetime management, and the transformation of pipe operators into proper function application sequences. With Composer's nanopass architecture now operational, each of these constructs compiles cleanly to native code.
 
 ## The Nanopass Pipeline Architecture
 
@@ -52,9 +52,9 @@ Clef Source → FCS → PSG Nanopasses → Alex/Emission → MLIR → LLVM → N
 
 **The Program Semantic Graph (PSG)** correlates FCS's semantic information with syntactic structure through a series of nanopasses. Each pass does exactly one thing: structural construction, type integration, def-use edge creation, and finalization. This separation enables inspection and validation at every stage, with labeled intermediates emitted for debugging.
 
-**Alex** handles the transformation from PSG to MLIR. Alex implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
+**Alex** handles the transformation from PSG to MLIR. It implements a fan-out architecture where a single CCS abstraction can emit different code patterns based on target architecture, operating system, and hardware capabilities.
 
-Each phase is self-contained and composable. Once FCS finishes, every later phase reads from the enriched PSG alone, which is what lets the bidirectional zipper stay central to our [coeffect and codata analysis](/docs/internals/concepts/coeffects-and-codata/).
+Each phase is self-contained and composable. Once FCS finishes, every later phase reads from the enriched PSG alone, which keeps the bidirectional zipper central to our [coeffect and codata analysis](/docs/internals/concepts/coeffects-and-codata/).
 
 ## PSG as Single Source of Truth
 
@@ -81,7 +81,7 @@ func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
 
 Where .NET might use `Span<byte>` or unsafe pointers, MLIR `memref` provides a typed, bounds-aware abstraction that preserves safety properties through the compilation pipeline.
 
-This separation of concerns supports several downstream passes over one stable, validated intermediate representation. Coeffect analysis makes optimization decisions, def-use analysis tracks variables, and the bidirectional zipper drives context-aware transformations.
+This separation of concerns supports several downstream consumers over one stable, validated intermediate representation. Coeffect analysis makes optimization decisions, def-use analysis tracks variables, and the bidirectional zipper drives context-aware transformations.
 
 ## Def-Use Edges: Making Data Flow Explicit
 
@@ -250,4 +250,4 @@ The same PHG structure will enable unified compilation across traditional and no
 
 Native compilation of functional languages has historically required significant compromises, either in the expressiveness of the source language or in the efficiency of the generated code. The Fidelity framework's approach (preserving Clef's full type information through progressive lowering via MLIR to LLVM) aims to avoid these compromises.
 
-The nanopass pipeline, the bidirectional zipper, the coeffect tracking, and the path toward the temporal PHG together compile functional code to native binaries that carry the hardware model through every stage.
+The nanopass pipeline, the bidirectional zipper, and the coeffect tracking together compile functional code to native binaries. The temporal PHG we are building toward would carry the hardware model through the full lowering.
