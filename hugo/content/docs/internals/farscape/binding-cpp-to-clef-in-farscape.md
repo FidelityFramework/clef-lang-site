@@ -10,15 +10,15 @@ params:
   migration_date: 2026-03-12
 ---
 
-The challenge of binding [the Clef language](https://clef-lang.com) to C++ libraries has historically forced developers into compromising positions: accept the limitations of C-style APIs, manually write error-prone binding code, or rely on runtime marshaling that imposes performance penalties. Farscape generates these bindings against the [FFI boundary semantics](/spec/draft/ffi-boundary/) the specification defines, where null handling and pointer validity are isolated to the interface with external code. Farscape's design targets Plugify's C++ ABI intelligence, extending the broader binding vision [The Farscape Bridge]({{< ref "the-farscape-bridge" >}}) introduces. Enabling automatic generation of type-safe Clef bindings that compile away to zero-cost abstractions through LLVM's Link-Time Optimization.
+Binding [the Clef language](https://clef-lang.com) to C++ libraries has historically meant one of three compromises: accepting the limitations of C-style APIs, writing error-prone binding code by hand, or relying on runtime marshaling that imposes performance penalties. Farscape generates these bindings against the [FFI boundary semantics](/spec/draft/ffi-boundary/) the specification defines, where null handling and pointer validity are isolated to the interface with external code. Farscape's design targets Plugify's C++ ABI intelligence, extending the broader binding vision [The Farscape Bridge]({{< ref "the-farscape-bridge" >}}) introduces. Farscape generates type-safe Clef bindings automatically, and those bindings compile away to zero-cost abstractions through LLVM's Link-Time Optimization.
 
-This architectural roadmap outlines how Farscape will evolve from its current [C-focused binding generation](/docs/internals/farscape/farscape-modular-entry-points/) to comprehensive C++ support by leveraging Plugify's battle-tested understanding of C++ ABIs. The result will be a tool that generates safe, idiomatic Clef bindings for any C++ library, with those bindings compiling through the Fidelity framework to native code that's as efficient as hand-written C++.
+Farscape will evolve from its current [C-focused binding generation](/docs/internals/farscape/farscape-modular-entry-points/) to comprehensive C++ support by building on Plugify's accumulated knowledge of C++ ABIs. The result will be a tool that generates safe, idiomatic Clef bindings for any C++ library, with those bindings compiling through the Fidelity framework to native code that's as efficient as hand-written C++.
 
 ## Architectural Foundation
 
 ### Plugify As Semantic Interpreter
 
-Plugify's years of development have produced a comprehensive understanding of C++ ABI complexities across platforms. This knowledge base becomes the foundation for Farscape's C++ binding capabilities, providing critical intelligence about:
+Plugify encodes how C++ ABIs vary across platforms, knowledge built up over years of development. That model supplies Farscape's C++ binding generation with the platform-specific facts it depends on:
 
 ```mermaid
 graph LR
@@ -55,25 +55,25 @@ graph LR
     GENERATOR --> LAYOUT
 ```
 
-The integration architecture builds on Farscape's existing clang two-pass parsing (JSON AST + macro extraction) with XParsec post-processing, augmenting it with Plugify's deep ABI understanding. This hybrid approach combines the comprehensive header parsing capabilities of clang with the runtime-proven ABI knowledge from Plugify.
+The integration architecture builds on Farscape's existing clang two-pass parsing (JSON AST + macro extraction) with XParsec post-processing, augmenting the header parse with the runtime-proven ABI knowledge from Plugify.
 
 ### Core Architectural Components
 
-The enhanced Farscape architecture consists of several interconnected components that work together to transform C++ headers into optimizable Clef bindings:
+Four components transform C++ headers into optimizable Clef bindings:
 
-**ABI Analysis Engine**: A new component that ingests clang's parsed AST and enriches it with Plugify's ABI knowledge. This engine understands platform-specific variations, compiler quirks, and the subtle differences between C++ standards that affect binary interfaces.
+**ABI Analysis Engine**: A new component that ingests clang's parsed AST and enriches it with Plugify's ABI knowledge. This engine models platform-specific variations, compiler quirks, and the differences between C++ standards that affect binary interfaces.
 
-**Type Mapping System**: An extended type mapper that goes beyond simple primitive conversions to handle complex C++ constructs including templates, inheritance hierarchies, and RAII patterns, translating them into idiomatic Clef representations.
+**Type Mapping System**: An extended type mapper that goes beyond primitive conversions to handle templates, inheritance hierarchies, and RAII patterns. It translates each construct into an idiomatic Clef representation.
 
-**Code Generation Pipeline**: A sophisticated generator that produces complete Clef modules with `[<FidelityExtern>]` attributed binding declarations, proper lifetime management, error handling, and optimization metadata for LLVM LTO.
+**Code Generation Pipeline**: A generator that produces complete Clef modules built around `[<FidelityExtern>]` attributed binding declarations. The generated modules carry lifetime management and error handling, along with optimization metadata for LLVM LTO.
 
 **Metadata Preservation Layer**: Mechanisms to preserve ABI information through the compilation pipeline, enabling LLVM to make informed optimization decisions during link-time optimization.
 
 ## Virtual Method Handling
 
-### Understanding C++ Virtual Tables
+### C++ Virtual Table Layouts
 
-C++ virtual methods represent one of the most challenging aspects of cross-language interop. Plugify's existing infrastructure provides deep insights into virtual table layouts across different compilers and platforms. Farscape will leverage this knowledge to generate Clef bindings that correctly interact with C++ virtual methods.
+C++ virtual methods are among the harder interop surfaces because virtual table layouts differ across compilers and platforms. Plugify's infrastructure records those layouts in detail, and Farscape will draw on that record to generate Clef bindings that call C++ virtual methods correctly.
 
 The virtual method binding strategy follows a three-tier approach:
 
@@ -115,13 +115,13 @@ Different platforms and compilers implement virtual tables differently. Farscape
 - **Linux GCC/Clang**: Itanium C++ ABI with different virtual table layouts
 - **Embedded Systems**: Simplified virtual tables for space-constrained environments
 
-The generated code adapts to these variations transparently, with platform-specific code paths selected at build time based on the target triple.
+The generator selects platform-specific code paths at build time based on the target triple.
 
 ## Template Instantiation Strategy
 
 ### Mapping C++ Templates to Clef Generics
 
-C++ templates present unique challenges because they're instantiated at compile time with potentially infinite variations. Farscape will employ a selective instantiation strategy informed by actual usage patterns:
+Because C++ templates are instantiated at compile time with potentially infinite variations, Farscape will instantiate selectively, informed by actual usage patterns:
 
 ```fsharp
 // C++ template: template<typename T> class Vector { ... }
@@ -168,7 +168,7 @@ For more complex template patterns that don't map cleanly to Clef generics, Fars
 
 ### C++ Exception to Clef Result Types
 
-C++ exceptions crossing language boundaries represent a significant challenge. Farscape will generate exception-safe wrappers that translate C++ exceptions into Clef Result types:
+Farscape will generate exception-safe wrappers that translate C++ exceptions into Clef Result types before they cross the language boundary:
 
 ```fsharp
 // Generated exception-safe wrapper using Plugify's ABI-aware exception shim
@@ -191,7 +191,7 @@ let callCppFunction (args: nativeint) : Result<nativeint, CppException> =
         }
 ```
 
-This approach ensures that C++ exceptions never propagate uncaught into Clef code, maintaining stability while providing detailed error information.
+C++ exceptions therefore never propagate uncaught into Clef code, and the Result value preserves the exception's type name and message.
 
 ### RAII and Resource Management
 
@@ -311,7 +311,7 @@ These declarations, combined with LLVM LTO, enable the optimizer to:
 
 ### Profile-Guided Optimization Support
 
-The generated bindings carry metadata through MLIR attributes that LLVM's profile-guided optimization can leverage:
+The generated bindings carry metadata through MLIR attributes that LLVM's profile-guided optimization consumes:
 
 ```fsharp
 // Rendering hot path -- MLIR attributes guide LLVM PGO
@@ -327,7 +327,7 @@ When compiled with PGO instrumentation enabled, LLVM automatically identifies ho
 
 ### Zero-Copy Serialization
 
-Farscape's C++ bindings will integrate seamlessly with BAREWire for zero-copy operations between Clef and C++:
+Farscape's C++ bindings will integrate with BAREWire for zero-copy operations between Clef and C++:
 
 ```fsharp
 // C++ struct that matches BAREWire schema -- layout verified at compile time
@@ -345,13 +345,13 @@ let processPacket (packetPtr: nativeptr<NetworkPacket>) =
     NativePtr.set packetPtr 0 { packet with checksum = checksum }
 ```
 
-This integration enables efficient data exchange between Clef and C++ components without serialization overhead.
+
 
 ## Testing and Validation Strategy
 
 ### ABI Compatibility Testing
 
-Farscape will include comprehensive test generation to validate ABI compatibility:
+Farscape will generate tests that validate ABI compatibility:
 
 ```fsharp
 // Generated test module (runs in Farscape's test harness)
@@ -397,13 +397,13 @@ Because Fidelity compiles through MLIR to LLVM IR, the resulting native binaries
 
 Farscape's C++ support will evolve through progressive enhancement phases:
 
-**Foundation Phase**: Basic C++ class binding with simple inheritance and virtual methods. This establishes the core infrastructure for ABI analysis and code generation.
+**Foundation Phase**: Basic C++ class binding with simple inheritance and virtual methods, providing the core infrastructure for ABI analysis and code generation.
 
-**Template Support Phase**: Common template patterns and STL container bindings. This addresses the majority of real-world C++ library usage.
+**Template Support Phase**: Common template patterns and STL container bindings, which cover the majority of real-world C++ library usage.
 
-**Advanced Features Phase**: Complex inheritance hierarchies, multiple inheritance, and template metaprogramming. This completes the support for sophisticated C++ libraries.
+**Advanced Features Phase**: Complex inheritance hierarchies, multiple inheritance, and template metaprogramming, extending support to sophisticated C++ libraries.
 
-**Optimization Phase**: Profile-guided binding generation and cross-language optimization hints. This maximizes the performance benefits of static linking with LTO.
+**Optimization Phase**: Profile-guided binding generation and cross-language optimization hints to draw the most performance from static linking with LTO.
 
 ### Extensibility Architecture
 
@@ -433,10 +433,10 @@ type QtSignalSlotGenerator() =
 
 Eventually there could be automatic generation of performance benchmarks comparing different binding strategies. These benchmarks would validate choices in using the zero-cost abstraction promise, and ensure those promises are kept across different optimization levels and binding strategies.
 
-## Conclusion
+## Ecosystem Reach
 
-The integration of Plugify's C++ ABI intelligence into Farscape represents a fundamental advancement in cross-language interoperability. Much work remains to be done in order to create a truly comprehensive ABI analysis with sophisticated code generation and LLVM optimization. Plugify will provide significant leverage to Farscape and the Fidelity framework toward this goal. This is one of the keys to Clef becoming a true systems programming language capable of seamlessly integrating with any C++ library.
+Integrating Plugify's C++ ABI intelligence gives Farscape a foundation of cross-language knowledge built over years of Plugify's development. Much work remains before the ABI analysis and code generation reach the scope described here, and Plugify shortens that path for the Fidelity framework. We consider that integration one of the things Clef needs to serve as a systems programming language able to bind to any C++ library.
 
-The roadmap outlined here provides a clear path from Farscape's current C-focused designs to future C++ support, all while maintaining the zero-cost abstraction principle that makes the Fidelity framework compelling for systems programming. Through careful architectural design and progressive enhancement, Farscape will evolve into the definitive solution for Clef and C++ interoperability, enabling developers to leverage the vast ecosystem of C++ libraries without sacrificing the elegance and safety of Clef.
+Each phase, from the current C-focused designs to full C++ support, holds to the same zero-cost abstraction principle. As these phases complete, Clef developers will be able to bind existing C++ libraries without giving up type safety at the boundary.
 
-This transformation isn't just about technical capability; it's about expanding the horizons of what's possible with Clef in systems contexts. While we have many tracks of work that focus on new architectures and processor types, we're also committed to ensuring that the many investments companies have made in existing technologies have the best performance available with the Fidelity framework.
+While we have many tracks of work that focus on new architectures and processor types, we're also committed to ensuring that the many investments companies have made in existing technologies have the best performance available with the Fidelity framework.

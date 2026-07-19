@@ -10,15 +10,15 @@ params:
   migration_date: 2026-02-15
 ---
 
-Modern computing systems present a fundamental paradox: while processor speeds have increased exponentially, memory latency improvements have been modest, creating an ever-widening performance gap. This disparity manifests most acutely in the cache hierarchy, where the difference between an L1 cache hit (approximately 4 cycles) and main memory access (200+ cycles) represents a fifty-fold performance penalty. For systems pursuing native performance without runtime overhead, understanding and exploiting cache behavior rises past the level of a discretionary optimization to become an architectural imperative.
+Processor speeds have increased exponentially while memory latency improvements have been modest, creating an ever-widening performance gap. This disparity manifests most acutely in the cache hierarchy, where the difference between an L1 cache hit (approximately 4 cycles) and main memory access (200+ cycles) represents a fifty-fold performance penalty. For a system pursuing native performance without runtime overhead, cache behavior has to be accounted for at the architectural level rather than treated as a discretionary optimization.
 
-The Fidelity framework's Prospero orchestration layer is designed to address this challenge through what we term "cache-conscious memory management," a systematic approach that extends beyond traditional memory awareness to encompass the full memory hierarchy from L1 cache through main memory. This design philosophy recognizes that effective cache utilization cannot be achieved through OS-level allocation alone, but requires coordinated effort across compilation, memory management, and actor placement strategies.
+The Fidelity framework's Prospero orchestration layer is designed to address this challenge through what we term "cache-conscious memory management," a systematic approach that extends beyond traditional memory awareness to encompass the full memory hierarchy from L1 cache through main memory. Effective cache utilization requires coordinated effort across compilation, memory management, and actor placement. OS-level allocation alone cannot deliver it.
 
 ## Developer Spectrum of Control
 
-The Fidelity framework embraces progressive disclosure in developer experience. As explored in our previous article on [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
+The Fidelity framework's developer experience follows a progressive-disclosure design. As explored in our previous article on [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/), we believe developers should have access to low-level control when needed without being burdened by complexity when it's not required.
 
-The detailed memory layout annotations and cache-specific optimizations presented in this document represent the full spectrum of control available to developers who need maximum performance. However, these represent the exception rather than the rule. Most Clef code written for Fidelity will use standard Clef syntax, with the Composer compiler inferring appropriate memory layouts and cache strategies. Library authors may leverage explicit annotations to provide optimized implementations that application developers consume through clean, idiomatic APIs. This layered approach ensures that complexity appears only where performance demands it, maintaining Clef's elegance for the vast majority of application code.
+The detailed memory layout annotations and cache-specific optimizations presented in this document represent the full spectrum of control available to developers who need maximum performance. However, these represent the exception rather than the rule. Most Clef code written for Fidelity will use standard Clef syntax, with the Composer compiler inferring appropriate memory layouts and cache strategies. Library authors may leverage explicit annotations to provide optimized implementations that application developers consume through clean, idiomatic APIs. This layered approach ensures that complexity appears only where performance demands it. The vast majority of application code stays in standard Clef syntax.
 
 ## Operating System Allocation Challenges
 
@@ -28,11 +28,11 @@ Consider the fundamental mismatch: operating systems manage memory at page granu
 
 Furthermore, cache associativity introduces another layer of complexity invisible to standard allocation. Modern processors employ set-associative caches where memory addresses map to specific cache sets. Two frequently accessed data structures that happen to map to the same cache set will evict each other repeatedly, a phenomenon known as conflict misses, despite ample cache capacity elsewhere. The operating system's allocator, unaware of these hardware-specific mappings, cannot prevent such pathological behaviors.
 
-This challenge has long troubled C and C++ developers. The language standards offer no direct support for cache-aware allocation; developers must manually calculate alignments, insert padding bytes, and hope that compiler optimizations don't undo their careful arrangements. The C++17 introduction of `std::hardware_destructive_interference_size` acknowledges this gap, providing a portable way to query cache line size, but places the burden of using this information correctly on the developer. Our designs lead us toward a different approach: the compiler should reason about cache behavior based on semantic information, not leave developers to manually insert padding and pray.
+This challenge has long troubled C and C++ developers. The language standards offer no direct support for cache-aware allocation. Developers must manually calculate alignments and insert padding bytes, and compiler optimizations can still undo those arrangements. The C++17 introduction of `std::hardware_destructive_interference_size` acknowledges this gap, providing a portable way to query cache line size, but places the burden of using this information correctly on the developer. Our designs lead us toward a different approach: the compiler reasons about cache behavior from semantic information rather than leaving developers to calculate padding by hand.
 
-## The Deterministic Foundation: BAREWire's Role
+## BAREWire's Deterministic Foundation
 
-Before examining how Prospero achieves cache consciousness, we must understand the foundation that makes such analysis possible. Traditional systems face a fundamental obstacle to cache optimization: memory layout uncertainty. A managed runtime might reorder object fields for packing efficiency, insert metadata headers of varying sizes, or relocate objects during garbage collection. Even systems languages like C++ offer limited guarantees about where allocators place objects in memory. This uncertainty renders compile-time cache analysis effectively impossible - one cannot predict cache line usage without knowing where data resides.
+BAREWire is the foundation that makes cache analysis possible. Traditional systems face a fundamental obstacle to cache optimization: memory layout uncertainty. A managed runtime might reorder object fields for packing efficiency, insert metadata headers of varying sizes, or relocate objects during garbage collection. Even systems languages like C++ offer limited guarantees about where allocators place objects in memory. This uncertainty renders compile-time cache analysis effectively impossible - one cannot predict cache line usage without knowing where data resides.
 
 BAREWire eliminates this uncertainty through deterministic, compile-time memory layouts. Every field offset, structure size, and alignment requirement becomes statically known and guaranteed:
 
@@ -46,33 +46,33 @@ type OrderBook = {
 }
 ```
 
-This determinism transforms cache analysis from speculation to calculation. When the Composer compiler encounters an actor processing OrderBook messages, it will know precisely which cache lines each field access will touch. The semantic graph we're developing records exact access patterns over deterministic layouts, carrying more than the data types alone and enabling the cache-aware optimizations that follow.
+Because layouts are fixed at compile time, cache analysis becomes a calculation over known offsets rather than an estimate. When the Composer compiler encounters an actor processing OrderBook messages, it will know precisely which cache lines each field access will touch. The semantic graph we're developing records exact access patterns over deterministic layouts, carrying more than the data types alone and enabling the cache-aware optimizations that follow.
 
 ## Prospero's Hierarchical Memory Architecture
 
-Building on BAREWire's deterministic foundation, our vision for Prospero transcends simple memory awareness to embrace cache consciousness as a first-class architectural concern.
+Building on BAREWire's deterministic foundation, our design for Prospero rests on four observations about how actors use memory.
 
 First, actors exhibit predictable memory access patterns that remain stable across message processing cycles. A high-frequency trading actor consistently accesses price data and order books, while a logging actor sequentially writes to buffers. These patterns, discoverable through static analysis, inform optimal cache tier placement.
 
-Second, cache locality benefits compound when related actors share cache domains. Two actors engaged in producer-consumer communication benefit enormously from L3 cache sharing, as messages pass between them without traversing main memory. This observation drives our actor placement strategies.
+Second, cache locality benefits compound when related actors share cache domains. Two actors engaged in producer-consumer communication benefit from L3 cache sharing, as messages pass between them without traversing main memory. We exploit this co-location in our actor placement strategies.
 
 Third, not all memory accesses benefit from caching. Streaming data that will be processed once and discarded pollutes cache with data that will never be reused, evicting potentially valuable cached content. Recognizing and segregating these access patterns prevents cache thrashing.
 
-Fourth, and perhaps most consequentially: per-actor arenas eliminate false sharing by construction, not by discipline. When each actor's mutable state resides in its own arena, no other actor can address that memory. The problem of independent data sharing cache lines simply cannot arise across actor boundaries.
+Fourth, per-actor arenas eliminate false sharing by construction, not by discipline. When each actor's mutable state resides in its own arena, no other actor can address that memory. The problem of independent data sharing cache lines simply cannot arise across actor boundaries.
 
-This structural guarantee emerges from Fidelity's capability-based ownership model. Each actor holds exclusive capability to its arena. Messages transfer ownership through well-structured channels; the sender relinquishes access when sending, the receiver gains exclusive access upon receipt. This capability model supersedes the Rust borrow checker's approach to memory safety. Where Rust tracks lifetimes through lexical scope and reference annotations, Fidelity tracks ownership through actor boundaries and message passing. The result is more powerful: Rust's borrow checker cannot reason about cache behavior or false sharing, while Fidelity's capability model makes cache isolation a structural consequence of the ownership rules.
+This structural guarantee emerges from Fidelity's capability-based ownership model. Each actor holds exclusive capability to its arena. Messages transfer ownership through well-structured channels. The sender relinquishes access when it sends, and the receiver gains exclusive access on receipt. This capability model supersedes the Rust borrow checker's approach to memory safety. Where Rust tracks lifetimes through lexical scope and reference annotations, Fidelity tracks ownership through actor boundaries and message passing. Rust's borrow checker does not reason about cache behavior or false sharing. Fidelity's capability model makes cache isolation a structural consequence of the ownership rules.
 
-Consider the implications for concurrent programming. In Rust, avoiding false sharing requires manual padding with `#[repr(align(64))]` or wrapper types like `CachePadded<T>`. Developers must remember to apply these annotations; the compiler cannot detect their absence. In Fidelity, actors that don't share memory cannot share cache lines. The type system enforces what Rust leaves to programmer discipline.
+In Rust, avoiding false sharing requires manual padding with `#[repr(align(64))]` or wrapper types like `CachePadded<T>`. Developers must remember to apply these annotations; the compiler cannot detect their absence. In Fidelity, actors that don't share memory cannot share cache lines. The type system enforces what Rust leaves to programmer discipline.
 
-The contrast with C++ is starker still. C++ developers face false sharing as a perpetual hazard, discoverable only through profiling after the fact. The language provides `alignas` for explicit alignment and `std::atomic` for memory ordering, but no mechanism to verify that these tools have been applied correctly. A structure might lack the `alignas(64)` annotation that would prevent contention; nothing in the type system catches this omission. The developer must remember to pad, remember to align, remember to profile, and remember to fix what profiling reveals. We anticipate that Fidelity's structural approach will prove not merely safer but more productive: developers focus on application logic while the compiler handles cache considerations.
+The contrast with C++ is starker still. C++ developers face false sharing as a perpetual hazard, discoverable only through profiling after the fact. The language provides `alignas` for explicit alignment and `std::atomic` for memory ordering, but no mechanism to verify that these tools have been applied correctly. A structure might lack the `alignas(64)` annotation that would prevent contention; nothing in the type system catches this omission. The developer must apply padding and alignment by hand, profile to confirm they worked, and fix what profiling reveals. We anticipate that Fidelity's structural approach raises productivity alongside safety: developers focus on application logic while the compiler handles cache considerations.
 
-This architectural choice reflects a broader principle: the right abstractions eliminate entire categories of bugs rather than detecting them. The actor model, combined with capability-based ownership, eliminates false sharing between actors. It eliminates data races. It eliminates use-after-free across actor boundaries. These guarantees hold at compile time; no runtime checking is required.
+Our preference is for abstractions that eliminate a category of bugs rather than detect them. The actor model, combined with capability-based ownership, eliminates false sharing between actors, and the same actor boundaries rule out data races and use-after-free. These guarantees hold at compile time and require no runtime checking.
 
 Prospero's cache management operates through three channels: compile-time analysis of access patterns, arena configuration for spatial optimization, and runtime placement based on load.
 
 ### Compile-Time Cache Behavior Analysis
 
-The Composer compiler's sophisticated cache analysis will become possible through BAREWire's deterministic memory layouts. Where traditional compilers must make conservative assumptions about memory access patterns, Composer is designed to operate with complete knowledge of data placement.
+The Composer compiler's cache analysis will become possible through BAREWire's deterministic memory layouts. Where traditional compilers must make conservative assumptions about memory access patterns, Composer is designed to operate with complete knowledge of data placement.
 
 Consider how the compiler analyzes a market data processing actor:
 
@@ -123,7 +123,7 @@ let configureArena (actor: ActorProfile) =
           Strategy = L2Optimized }
 ```
 
-Cache line alignment prevents false sharing with surgical precision. BAREWire's field-level offset control enables Prospero to ensure that frequently modified fields begin on cache line boundaries. The `[<CacheLineAligned>]` attribute automates this padding:
+Cache line alignment prevents false sharing. BAREWire's field-level offset control enables Prospero to ensure that frequently modified fields begin on cache line boundaries. The `[<CacheLineAligned>]` attribute automates this padding:
 
 ```fsharp
 [<BAREStruct>]
@@ -160,9 +160,9 @@ Dynamic load balancing will incorporate cache effects into migration decisions. 
 
 Cache-conscious layout addresses spatial concerns: where data resides relative to cache line boundaries. Concurrent mutable access introduces a second dimension: temporal coordination. When multiple cores modify shared state, the order in which writes become visible matters for program correctness.
 
-Modern processors reorder memory operations for performance. A write to one location may become visible before a logically prior write to another location. This reordering, invisible to single-threaded code, can cause subtle bugs in concurrent programs. The C++ memory model introduced `memory_order_relaxed`, `memory_order_acquire`, `memory_order_release`, and `memory_order_seq_cst` to address this; these are not language abstractions but direct mappings to hardware capabilities.
+Modern processors reorder memory operations for performance. A write to one location may become visible before a logically prior write to another location. This reordering, invisible to single-threaded code, can cause subtle bugs in concurrent programs. The C++ memory model introduced `memory_order_relaxed`, `memory_order_acquire`, `memory_order_release`, and `memory_order_seq_cst` to address this. Each maps directly to a hardware capability rather than a language abstraction.
 
-The C++ memory model, standardized in C++11 and refined since, represents a necessary response to the realities of modern hardware. Yet its complexity burdens every developer who touches concurrent code. The distinction between `memory_order_acquire` and `memory_order_consume`, the subtleties of release sequences, the interaction between atomics and non-atomic accesses; these require expertise that most application developers cannot reasonably acquire. Our designs lead us to a layered model where this complexity exists but remains contained. Library implementers who need fine-grained control have it. Application developers who use actors see sequential consistency without effort. The complexity matches the need.
+The C++ memory model, standardized in C++11 and refined since, represents a necessary response to the realities of modern hardware. Yet its complexity burdens every developer who touches concurrent code. The distinction between `memory_order_acquire` and `memory_order_consume`, the subtleties of release sequences, and the interaction between atomics and non-atomic accesses all require expertise that most application developers cannot reasonably acquire. Our designs lead us to a layered model where this complexity exists but remains contained. Library implementers who need fine-grained control have it, while application developers who use actors see sequential consistency without effort.
 
 Clef provides atomic operations with defined ordering semantics through CCS intrinsics:
 
@@ -179,15 +179,15 @@ Atomic.Release.store lockPtr 0
 Atomic.Relaxed.fetchAdd counterPtr 1L
 ```
 
-The actor model largely eliminates the need for explicit atomics in application code. Actors communicate through messages; they do not share mutable state. This design choice provides sequential consistency semantics without the complexity of memory ordering decisions. Library implementers building lock-free data structures have access to the full spectrum of ordering control, but application developers rarely need it.
+The actor model largely eliminates the need for explicit atomics in application code. Actors communicate through messages. They do not share mutable state. This design choice provides sequential consistency semantics without the complexity of memory ordering decisions. Library implementers building lock-free data structures have access to the full spectrum of ordering control, but application developers rarely need it.
 
-This layered approach reflects a broader principle in Fidelity: complexity appears only where performance demands it. Most code uses actors and sees sequential consistency automatically. The rare code that requires fine-grained ordering control can access it through clearly marked APIs.
+Most code uses actors and sees sequential consistency automatically. Code that requires fine-grained ordering control reaches it through clearly marked APIs.
 
 ## Processor-Specific Optimization
 
 The effectiveness of cache optimization strategies varies significantly across processor architectures. Intel and AMD processors, while supporting the same instruction set architecture, exhibit distinct cache hierarchies, prefetching behaviors, and performance characteristics. We're designing Prospero to leverage LLVM's target triple mechanism to generate processor-specific optimizations.
 
-This is where Composer's processor-specific optimization capabilities become essential. The Composer compiler maintains a comprehensive repository of processor-specific optimization patterns, cache characteristics, and lowering strategies. Like the ancient Library of Alexandria that sought to collect all human knowledge, Composer catalogues the quirks, optimizations, and performance characteristics of diverse processor architectures. When encountering a target triple, Composer retrieves the optimal lowering strategies for that specific processor's cache hierarchy, instruction scheduling preferences, and memory subsystem behavior.
+The Composer compiler maintains a comprehensive repository of processor-specific optimization patterns, cache characteristics, and lowering strategies. Composer catalogues the quirks, optimization patterns, and performance characteristics of diverse processor architectures. When encountering a target triple, Composer retrieves the optimal lowering strategies for that specific processor's cache hierarchy, instruction scheduling preferences, and memory subsystem behavior.
 
 ### Target Triple Architecture
 
@@ -219,7 +219,7 @@ AMD processors, identified through triples like `x86_64-amd-linux-gnu`, employ a
 
 The mlir-opt tool and LLVM backend handle architecture-specific decisions. For AMD targets, non-temporal load hints can be applied for data that will not be reused, minimizing cache pollution.
 
-As new processor architectures emerge (ARM's sophisticated cache hierarchies, RISC-V implementations, or specialized AI processors), Composer's optimization library will expand to encompass their optimization patterns. This architectural knowledge repository ensures that Fidelity applications benefit from processor-specific optimizations without requiring developers to understand the intricacies of each target platform.
+As new processor architectures emerge (ARM's sophisticated cache hierarchies, RISC-V implementations, or specialized AI processors), Composer's optimization library will expand to encompass their optimization patterns. This architectural knowledge repository applies processor-specific optimizations to Fidelity applications without requiring developers to understand each target platform.
 
 ### Instruction Selection for Cache Efficiency
 
@@ -244,9 +244,9 @@ High-performance systems frequently operate on datasets exceeding cache capacity
 
 ### Explicit Page Management
 
-Translation Lookaside Buffer (TLB) misses represent a hidden performance cost in systems with extensive memory usage. Each memory access requires virtual-to-physical address translation; TLB misses necessitate expensive page table walks. Large pages (2MB or 1GB versus standard 4KB) dramatically reduce TLB pressure by covering more memory with fewer TLB entries.
+Translation Lookaside Buffer (TLB) misses represent a hidden performance cost in systems with extensive memory usage. Each memory access requires virtual-to-physical address translation. A TLB miss forces an expensive page table walk. Large pages (2MB or 1GB versus standard 4KB) dramatically reduce TLB pressure by covering more memory with fewer TLB entries.
 
-We envision Prospero intelligently selecting huge page allocation for actors based on their memory access patterns. Actors with large, contiguous memory regions will benefit from huge pages, while actors with sparse access patterns may suffer from memory waste. The selection process is designed to consider both actor characteristics and system-wide memory availability:
+We envision Prospero selecting huge page allocation for actors based on their memory access patterns. Actors with large, contiguous memory regions will benefit from huge pages, while actors with sparse access patterns may suffer from memory waste. The selection process is designed to consider both actor characteristics and system-wide memory availability:
 
 ```fsharp
 let selectPageSize (actor: ActorProfile) (systemMemory: MemoryState) =
@@ -289,11 +289,11 @@ This separation ensures that pointer traversal operations benefit from cache loc
 
 ## Advanced Cache Bypass Strategies
 
-While caching generally improves performance, certain access patterns benefit from deliberately bypassing cache hierarchy. Our planned Prospero implementation will incorporate sophisticated strategies for identifying and optimizing these patterns.
+While caching generally improves performance, certain access patterns benefit from deliberately bypassing cache hierarchy. Our planned Prospero implementation will incorporate strategies for identifying and optimizing these patterns.
 
 ### Late Binding and Lazy Evaluation
 
-Functional programming's lazy evaluation naturally creates opportunities for cache optimization. Data structures that may or may not be accessed shouldn't pollute cache until actually needed. We're designing Prospero to leverage LLVM's metadata system to mark potentially-unused allocations:
+Functional programming's lazy evaluation naturally creates opportunities for cache optimization. Data structures that may or may not be accessed shouldn't pollute cache until actually needed. We're designing Prospero to use LLVM's metadata system to mark potentially-unused allocations:
 
 ```llvm
 ; Allocation for lazy evaluation
@@ -318,7 +318,7 @@ This approach prevents speculative caching of data that may never be accessed, p
 
 ### Copy-on-Write and Cache Coherency
 
-Copy-on-write (COW) semantics present interesting cache optimization opportunities. Initially shared data shouldn't trigger cache coherency traffic until actual modification occurs. Our approach with Prospero will generate code that maintains read-only copies in shared cache levels until write access forces privatization:
+Copy-on-write (COW) semantics defer cache coherency traffic until a write occurs. Initially shared data shouldn't trigger cache coherency traffic until actual modification occurs. Our approach with Prospero will generate code that maintains read-only copies in shared cache levels until write access forces privatization:
 
 ```fsharp
 module COWOptimization =
@@ -346,7 +346,7 @@ module COWOptimization =
 
 ### Prefetching Distance Calibration
 
-Hardware prefetchers excel at detecting sequential access patterns but struggle with irregular patterns. Our vision for Prospero includes generating explicit prefetch instructions calibrated to processor-specific characteristics and access patterns, with Composer maintaining a detailed database of prefetcher behaviors across architectures:
+Hardware prefetchers detect sequential access patterns reliably but perform poorly on irregular ones. Our vision for Prospero includes generating explicit prefetch instructions calibrated to processor-specific characteristics and access patterns, with Composer maintaining a detailed database of prefetcher behaviors across architectures:
 
 ```fsharp
 let calculatePrefetchDistance (pattern: AccessPattern) (processor: ProcessorInfo) =
@@ -371,7 +371,7 @@ let calculatePrefetchDistance (pattern: AccessPattern) (processor: ProcessorInfo
 
 ## Integration with Zero-Copy Architecture
 
-Cache consciousness becomes particularly crucial when combined with Fidelity's zero-copy architecture. The efficiency gains from eliminating memory copies can be negated by poor cache behavior if not carefully managed. BAREWire's deterministic layouts ensure that zero-copy operations preserve cache efficiency rather than destroying it.
+The efficiency gains from eliminating memory copies can be negated by poor cache behavior if not carefully managed. BAREWire's deterministic layouts ensure that zero-copy operations preserve cache efficiency rather than destroying it.
 
 ### Cache-Line Aligned Transfers
 
@@ -426,13 +426,13 @@ let optimizeZeroCopy (source: ActorRef) (dest: ActorRef) (msg: BAREMessage) =
         ZeroCopyStrategy.PrefetchAssisted(lines * 64)
 ```
 
-The synergy between BAREWire's memory mapping and Prospero's cache management is designed to create a system where zero-copy truly means zero overhead - no unexpected cache misses, no coherency storms, no hidden costs.
+BAREWire's memory mapping and Prospero's cache management are designed to work together so that zero-copy transfers incur no unexpected cache misses and no additional coherency traffic.
 
 ## Performance Verification and Adaptation
 
-Fidelity makes compile-time claims about cache behavior: arena isolation prevents false sharing, `[<CacheLineAligned>]` types occupy distinct cache lines, working sets fit within predicted cache tiers. These claims derive from BAREWire's deterministic layouts and Composer's static analysis. Runtime verification confirms that actual hardware behavior matches these predictions.
+Fidelity makes compile-time claims about cache behavior: arena isolation prevents false sharing; `[<CacheLineAligned>]` types occupy distinct cache lines; and working sets fit within predicted cache tiers. These claims derive from BAREWire's deterministic layouts and Composer's static analysis. Runtime verification confirms that actual hardware behavior matches these predictions.
 
-This verification cycle distinguishes Fidelity from approaches that rely solely on runtime heuristics or developer discipline. The compiler produces verifiable guarantees; profiling tools confirm them.
+This verification cycle distinguishes Fidelity from approaches that rely solely on runtime heuristics or developer discipline. The compiler produces verifiable guarantees. Profiling tools confirm them.
 
 ### Hardware Performance Counter Integration
 
@@ -507,7 +507,7 @@ let adaptCacheStrategy (actor: ActorRef) (metrics: CacheMetrics) =
         recolorArena actor.Arena
 ```
 
-## Migration Path: From .NET to Fidelity
+## Migration Path from .NET to Fidelity
 
 An important consideration in our design is providing a viable migration path for existing F# codebases currently running on .NET. While the full viability of migration depends heavily on the specific .NET dependencies and runtime features used by each project, we're designing Fidelity to minimize the friction of transition where possible.
 
@@ -532,7 +532,7 @@ module DomainModel =
         |> List.sumBy (fun o -> o.Total)
 ```
 
-This standard F# code would compile directly under Fidelity, with the Composer compiler making intelligent default choices: Guid becomes a 16-byte value type with appropriate alignment, strings map to BAREString with efficient length-prefix encoding, and lists transform to BAREArrays with growth strategies inferred from usage patterns. The DateTime type would map to a 64-bit timestamp, maintaining semantic compatibility while optimizing representation.
+This standard F# code would compile directly under Fidelity, with the Composer compiler selecting default representations: Guid becomes a 16-byte value type with appropriate alignment, strings map to BAREString with efficient length-prefix encoding, and lists transform to BAREArrays with growth strategies inferred from usage patterns. The DateTime type would map to a 64-bit timestamp, maintaining semantic compatibility while optimizing representation.
 
 ### Gradual Optimization Opportunities
 
@@ -556,7 +556,7 @@ These hints guide the compiler's optimization strategies while maintaining sourc
 
 ### Library Ecosystem Considerations
 
-The most significant challenge in migration is library dependencies, where language features present far less friction. Projects heavily dependent on .NET-specific libraries like Entity Framework, ASP.NET Core, or Windows Forms would require more substantial rework. However, for domains where Fidelity excels - high-performance computing, embedded systems, real-time processing - many .NET dependencies could be replaced with Fidelity-native alternatives that provide better performance characteristics.
+The most significant challenge in migration is library dependencies, where language features present far less friction. Projects heavily dependent on .NET-specific libraries like Entity Framework, ASP.NET Core, or Windows Forms would require more substantial rework. However, in Fidelity's target domains - high-performance computing, embedded systems, real-time processing - many .NET dependencies could be replaced with Fidelity-native alternatives that provide better performance characteristics.
 
 We're particularly focused on ensuring that core F# idioms and patterns translate cleanly:
 - Discriminated unions compile to Clef's native sum-type representation, which BAREWire carries across a boundary as a typed contract
@@ -593,20 +593,20 @@ This transformation preserves business logic while enabling the cache-locality a
 
 ### Realistic Expectations
 
-We recognize that not all .NET codebases are suitable for migration to Fidelity. Applications deeply integrated with the .NET ecosystem, relying heavily on runtime reflection, or dependent on specific CLR behaviors may be better served remaining on .NET. Our goal is not to replace .NET wholesale but to provide a compelling alternative for scenarios where predictable performance, minimal runtime overhead, and explicit control over memory layout provide significant value.
+We recognize that not all .NET codebases are suitable for migration to Fidelity. Applications deeply integrated with the .NET ecosystem, relying heavily on runtime reflection, or dependent on specific CLR behaviors may be better served remaining on .NET. We aim to provide a compelling alternative for scenarios where predictable performance, minimal runtime overhead, and explicit control over memory layout provide significant value, without replacing .NET wholesale.
 
 The migration path represents one possible entry point to the Fidelity ecosystem, allowing teams to leverage existing F# expertise and codebases while gaining access to the performance benefits of native compilation and cache-conscious memory management. As the framework matures, we expect the migration tools and compatibility layers to evolve based on real-world usage patterns and community feedback.
 
-## A Holistic Approach to Memory Hierarchy
+## Hierarchical Coordination
 
-Cache-conscious memory management in Prospero represents a fundamental shift from treating memory as a flat resource to acknowledging and exploiting its hierarchical nature. This achievement rests on the deterministic foundation provided by BAREWire's compile-time memory mapping, which transforms cache optimization from a runtime heuristic into compile-time engineering.
+Our design for Prospero manages memory as a hierarchy rather than as a flat resource. The design rests on BAREWire's compile-time memory mapping, which moves cache optimization from runtime heuristics into compile-time engineering.
 
-By coordinating compile-time analysis, runtime orchestration, and hardware-specific optimization, we envision Prospero achieving performance levels that simple OS-level allocation cannot attain. BAREWire's guaranteed layouts will enable the Composer compiler to reason precisely about cache behavior, generating code that respects cache boundaries, minimizes coherency traffic, and maximizes locality.
+By coordinating compile-time analysis, runtime orchestration, and hardware-specific optimization, we are designing Prospero to reach performance levels that simple OS-level allocation cannot attain. BAREWire's guaranteed layouts will enable the Composer compiler to reason precisely about cache behavior, generating code that respects cache boundaries, minimizes coherency traffic, and maximizes locality.
 
-This approach acknowledges that modern system performance depends more on cache behavior than raw computational throughput. A cache miss costing 200 cycles negates the benefit of dozens of optimized instructions. By making cache consciousness a first-class architectural concern - and by providing the deterministic memory layouts necessary to make such consciousness meaningful - our design for Prospero aims to ensure that Fidelity applications achieve their full performance potential.
+Modern system performance depends more on cache behavior than on raw computational throughput. A cache miss costing 200 cycles negates the benefit of dozens of optimized instructions. Prospero's design uses these deterministic memory layouts to reason about cache behavior at compile time, so cache-conscious placement carries into the runtime performance of Fidelity applications.
 
-The planned integration of cache awareness with actor-based concurrency and zero-copy communication creates a synergistic system where each component reinforces the others. Actors provide natural boundaries for cache optimization, BAREWire's deterministic layouts make cache behavior predictable, and zero-copy operations preserve cache locality. The result is a system design where memory placement decisions made at compile time translate directly into runtime performance benefits.
+The planned integration of cache awareness with actor-based concurrency and zero-copy communication draws on three reinforcing structures. Actors provide natural boundaries for cache optimization. Within those boundaries, BAREWire's deterministic layouts make cache behavior predictable, and zero-copy operations preserve locality.
 
 As processor architectures continue evolving with deeper cache hierarchies, novel coherency protocols, and heterogeneous memory systems, the combination of BAREWire's determinism and Prospero's orchestration is designed to provide the flexibility to adapt. The semantic graph maintained by the Composer compiler will capture program logic alongside the exact memory access patterns that determine cache behavior, enabling optimizations that would be impossible in systems with dynamic memory layouts.
 
-This cache-conscious design philosophy, combined with RAII-based deterministic memory management and the BAREWire zero-copy protocol, positions Fidelity to deliver the promise of concurrent programming with the performance of hand-tuned systems code. Composer's optimization repository - our "Library of Alexandria" of architectural knowledge - ensures that processor-specific optimizations remain manageable and extensible as new architectures emerge. Predictable memory layouts enable predictable performance - and BAREWire's compile-time guarantees, combined with Composer's architectural knowledge, provide exactly the predictability needed for true cache consciousness.
+This cache-conscious design philosophy, combined with RAII-based deterministic memory management and the BAREWire zero-copy protocol, positions Fidelity to make concurrent programming attainable at the performance of hand-tuned systems code. Composer's optimization repository keeps processor-specific optimizations manageable and extensible as new architectures emerge. 

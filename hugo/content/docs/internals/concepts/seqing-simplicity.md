@@ -22,21 +22,21 @@ params:
   migration_date: 2026-02-15
 ---
 
-There is a peculiar satisfaction in watching complex machinery disappear behind a simple interface. The best APIs feel inevitable, as though any other design would have been wrong. Clef's sequence expressions belong to this category. You write `seq { yield 1; yield 2; yield 3 }` and receive something that walks and talks like a list but evaluates dynamically. You write `seq { for x in xs do yield f x }` and transformation happens on demand. The syntax is declarative; the semantics are [lazy](/docs/design/structure-and-performance/why-lazy-is-hard/); the implementation is invisible.
+Clef's sequence expressions hide complex machinery behind a simple interface. You write `seq { yield 1; yield 2; yield 3 }` and receive a value you can consume like a list, but each element computes only when requested. You write `seq { for x in xs do yield f x }` and transformation happens on demand. The syntax is declarative and the semantics are [lazy](/docs/design/structure-and-performance/why-lazy-is-hard/). The implementation is invisible.
 
-That invisibility is precisely the point. Simon Peyton Jones once observed that the measure of a good abstraction is how much it lets you forget. Sequence expressions let you forget about iteration state, about memory allocation patterns, about the machinery of resumption. You describe what values to produce; the language handles when and how.
+Simon Peyton Jones once observed that the measure of a good abstraction is how much it lets you forget. Sequence expressions let you forget about iteration state and memory allocation patterns. The machinery of resumption never surfaces in the code you write. You describe what values to produce; the language handles when and how.
 
-But "handles" is doing considerable work in that sentence. On .NET, sequence expressions compile to state machines that implement `IEnumerable<T>`. The runtime manages memory. Garbage collection reclaims unreachable iterators. Thread safety comes from the platform. These are capabilities [the Clef language](https://clef-lang.com) developers take for granted because the infrastructure is already there. And within the realm of how it handles its business, it's quite elegant.
+On .NET, that handling is substantial. Sequence expressions compile to state machines that implement `IEnumerable<T>`, the runtime manages memory, garbage collection reclaims unreachable iterators, and thread safety comes from the platform. These are capabilities [the Clef language](https://clef-lang.com) developers take for granted because the infrastructure is already there.
 
 For native compilation, every one of those capabilities becomes a question. Where does iteration state live? How do you resume computation after a yield? What ensures memory safety when there is no garbage collector?
 
 > The surface simplicity of `seq { }` conceals an iceberg of implementation concerns.
 
-This is the story of how Fidelity implements sequence expressions for native targets. The approach extends patterns established in [Gaining Closure](/docs/design/memory/gaining-closure/) and [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. What emerges is a design where the API remains idiomatic Clef while the implementation is native state machinery.
+Fidelity implements sequence expressions for native targets by extending patterns established in [Gaining Closure](/docs/design/memory/gaining-closure/) and [Why Lazy Is Hard](/docs/design/structure-and-performance/why-lazy-is-hard/): flat closures, explicit state, deterministic memory. The API remains idiomatic Clef while the implementation is native state machinery.
 
-## What Makes Sequences Challenging
+## Suspended Computation
 
-Sequence expressions occupy an unusual position in language design. They look like list comprehensions but behave like coroutines. They appear to be data but function as suspended computation. Understanding this duality clarifies the implementation challenge.
+Sequence expressions look like list comprehensions but behave like coroutines: the syntax describes data, while the semantics denote a suspended computation.
 
 Consider a simple sequence:
 
@@ -77,20 +77,20 @@ flowchart TD
 
 ## Composing Up
 
-Fidelity's approach to sequences did not emerge from first principles. It composed from patterns established in earlier work, what we call "standing art" in the compiler architecture. Each prior feature contributed a piece of the puzzle.
+Fidelity's approach to sequences did not emerge from first principles. It draws on patterns established in earlier work, what we call "standing art" in the compiler architecture.
 
 [Closures](/docs/design/memory/gaining-closure/) established flat closure representation: captured variables stored directly in the struct, no environment pointers, no null fields.[^2][^3] This created a foundation where closures are self-contained values with deterministic layout.
 
 [Lazy values](/docs/design/structure-and-performance/why-lazy-is-hard/) extended that foundation with memoization state: a flat closure plus a `computed` flag and a `value` slot.[^6] The thunk calling convention, where the thunk receives a pointer to its containing struct and extracts its own captures, proved essential.
 
-Sequences extend the pattern once more. [A sequence is a flat closure with state machine fields and internal mutable state](/spec/draft/seq-representation/#41-seq-structure):
+Sequences extend the flat closure once more. [A sequence is a flat closure with state machine fields and internal mutable state](/spec/draft/seq-representation/#41-seq-structure):
 
 | Seq‹T› | | | | | | |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | state: i32 | current: T | code_ptr: ptr | cap₀ | cap₁ ... | state₀ | state₁ ... |
 | [0] | [1] | [2] | [3+] | | [3+n] | |
 
-The progression is deliberate:
+Each row extends the structure above it:
 
 | Feature | Structure | What It Adds |
 |---------|-----------|--------------|
@@ -98,11 +98,11 @@ The progression is deliberate:
 | Lazy | `{computed, value, code_ptr, captures...}` | Memoization prefix |
 | Seq | `{state, current, code_ptr, captures..., internal...}` | State machine + internal state suffix |
 
-This compositional approach creates a positive ripple effect. Getting closures right meant lazy values could extend them naturally. Getting lazy values right meant sequences could extend them in turn. Each layer builds on proven foundations.
+Getting closures right let lazy values extend them naturally, and getting lazy values right let sequences extend them in turn.
 
 ## Captures vs Internal State
 
-One architectural distinction required careful thought: [the difference between captured variables and internal state](/spec/draft/seq-representation/#32-captures-vs-internal-state).
+Sequences separate [captured variables from internal state](/spec/draft/seq-representation/#32-captures-vs-internal-state).
 
 **Captures** are variables from the enclosing scope that the sequence references. They are computed once, at sequence creation time, and remain immutable throughout iteration. A sequence like `seq { for i in 1..n do yield i * factor }` captures `n` and `factor` from its environment.
 
@@ -131,11 +131,11 @@ flowchart TD
     end
 ```
 
-This architecture answers a question that tripped us up during implementation. Early prototypes stored internal state in SSA registers, which worked for simple cases but failed when the state needed to survive across yields. We eventually landed on  the fact that internal state must live in the struct, not in function-local storage, which resolved the issue and aligned with the base mechanics of how the .NET implementation works.
+This architecture answers a question that tripped us up during implementation. Early prototypes stored internal state in SSA registers, which worked for simple cases but failed when the state needed to survive across yields. We concluded that internal state must live in the struct rather than in function-local storage. That placement resolved the issue and matches the base mechanics of the .NET implementation.
 
 ## The MoveNext State Machine
 
-[The heart of sequence implementation is the `MoveNext` function](/spec/draft/seq-representation/#5-movenext-calling-convention). Each call advances the iterator, either producing the next value and returning `true`, or signaling completion with `false`. The state field tracks where computation should resume.
+[The `MoveNext` function](/spec/draft/seq-representation/#5-movenext-calling-convention) advances the iterator on each call, either producing the next value and returning `true`, or signaling completion with `false`. The state field tracks where computation should resume.
 
 For a while-based sequence, MoveNext implements a two-state model:
 
@@ -213,7 +213,7 @@ The control flow graph mirrors how a human might implement an iterator by hand. 
 
 ## Conditional Yields
 
-Simple sequences that yield on every iteration are straightforward. Complexity emerges when yields are conditional:
+A sequence that yields on every iteration compiles to the two-state model above. Conditional yields add branching to the state machine:
 
 ```fsharp
 let evenNumbersUpTo max = seq {
@@ -245,7 +245,7 @@ flowchart TD
     YIELD -->|"MoveNext()"| S1
 ```
 
-The key insight is that when the yield condition is false, the iterator should not return. Instead, it should execute the post-yield code and loop back to check the while condition. Only when the condition is true does MoveNext actually yield and return.
+When the yield condition is false, the iterator executes the post-yield code and loops back to check the while condition without returning. Only when the condition is true does MoveNext yield and return.
 
 Nested conditionals add another layer:
 
@@ -271,13 +271,13 @@ Fidelity's compiler uses [coeffects](/docs/internals/concepts/coeffects-and-coda
 3. **Internal state detection**: Finds all `let mutable` bindings inside the sequence body
 4. **Conditional analysis**: Tracks which yields are guarded by conditions
 
-Anyone who has spent time in a kitchen knows the value of ***mise-en-place***: the vegetables chopped, the spices measured, the pans at temperature before the ingredients touch a cooking surface. The flow in the kitchen becomes fluid and efficient when you are not stopping to hunt for ingredients or utensils. Compilation works the same way. The coeffect pass prepares everything the code generator will need: yield indices, internal state slots, conditional guards. When MLIR emission begins, it never pauses to ask "what is the state index for this yield?" The answer is already at hand, measured and waiting.
+The coeffect pass computes everything the code generator will need before emission begins: yield indices, internal state slots, conditional guards. During MLIR emission, the state index for each yield is a direct lookup into that precomputed data.
 
-The approach aligns with the [nanopass architecture](/docs/internals/concepts/nanopass-navigation/) pioneered at Indiana University.[^4] Each pass does one thing well. Information flows through explicit intermediate representations as opposed to being computed repeatedly or stored in mutable state. This is a deliberate departure from .NET compilation, where passes tend to be larger and information often lives in mutable structures threaded through the compiler. Fidelity is progressing toward a pure nanopass graph compiler; currently, CCS (Clef Compiler Services) handles the early phases, segmenting the typed tree and aligning it to our native type universe, while Composer applies nanopass principles fully in the MLIR lowering strata. The architectural distance between these two worlds is one reason CCS (Clef Compiler Services) exists as a hard fork. We started with "shadown types" in early experiments but quickly realized that we wouldn't get far as a patch atop an upstream F# Compiler Service. So while we didn't start from *first* principles, the fact remains that for efficiency **principles *still* apply.**
+The approach aligns with the [nanopass architecture](/docs/internals/concepts/nanopass-navigation/) pioneered at Indiana University.[^4] Each pass does one thing well. Information flows through explicit intermediate representations as opposed to being computed repeatedly or stored in mutable state. This is a deliberate departure from .NET compilation, where passes tend to be larger and information often lives in mutable structures threaded through the compiler. Fidelity is progressing toward a pure nanopass graph compiler. Currently, CCS (Clef Compiler Services) handles the early phases, segmenting the typed tree and aligning it to our native type universe, while Composer applies nanopass principles fully in the MLIR lowering strata. The architectural distance between these two worlds is one reason CCS (Clef Compiler Services) exists as a hard fork. We started with "shadow types" in early experiments but quickly realized that we wouldn't get far as a patch atop an upstream F# Compiler Service.
 
 ## Dead Code and Empty Sequences
 
-An edge case revealed an architectural decision point. Consider:
+Consider a sequence whose only yield is guarded by a literal `false` condition:
 
 ```fsharp
 let emptySeq = seq {
@@ -290,11 +290,11 @@ Semantically, this sequence produces no values. The yield is inside a condition 
 
 Early implementations generated a MoveNext that would execute the yield on its first call, storing 0 and returning true. This was incorrect: the sequence should be empty.
 
-The fix was straightforward once we recognized the pattern. During yield collection, the compiler checks whether a yield is guarded by a literal `false` condition. Such yields are excluded from the yield list entirely. A sequence with zero yields generates a MoveNext that immediately returns false.
+We recognized the guarded yield as dead code. During yield collection, the compiler checks whether a yield is guarded by a literal `false` condition. Such yields are excluded from the yield list entirely. A sequence with zero yields generates a MoveNext that immediately returns false.
 
-The distinction matters: `seq { yield 0 }` produces a sequence containing the value zero, while `seq { if false then yield 0 }` produces an empty sequence. The question is not *what* a yield produces but *whether* it executes at all. This is compile-time dead code elimination applied to sequence bodies. The Clef developer writes `if false then yield 0` and gets an empty sequence, matching both intuition and the behavior of the .NET implementation.
+The distinction matters: `seq { yield 0 }` produces a sequence containing the value zero, while `seq { if false then yield 0 }` produces an empty sequence. What decides the outcome is whether the yield can execute at all. This is compile-time dead code elimination applied to sequence bodies. The Clef developer writes `if false then yield 0` and gets an empty sequence, matching both intuition and the behavior of the .NET implementation.
 
-## ForEach: The Consumption Side
+## ForEach Lowering
 
 Sequences are produced by `seq { }` and consumed by `for x in s do`. The consumption side requires its own machinery:
 
@@ -332,7 +332,7 @@ cf.br ^loop
  
 ```
 
-The pattern is familiar to anyone who has implemented iterators manually. The compiler generates what you would write by hand, but does so from the high-level `for x in s do` syntax.
+This is the loop a developer writes when implementing an iterator manually. The compiler generates it from the high-level `for x in s do` syntax.
 
 ## The Fidelity.Closures Dialect
 
@@ -359,35 +359,33 @@ Such a dialect would enable:
 - **Semantic optimization**: Fusion of adjacent sequence operations, elimination of intermediate structures
 - **Verification**: Proving properties about iteration patterns at the MLIR level
 
-This remains forward-looking work. The current implementation prioritizes correctness and compatibility with existing Clef semantics. But the architectural choices made today, flat closures, explicit state, deterministic memory, create a foundation that can support richer intermediate representations as the project matures.
+The current implementation prioritizes correctness and compatibility with existing Clef semantics. But the architectural choices made today (flat closures, explicit state, deterministic memory) create a foundation that can support richer intermediate representations as the project matures.
 
 ## Shared Edges
 
-During this implementation work, we found ourselves arriving at solutions that echo patterns in other systems. The flat closure representation that Shao and Appel developed for [Standard ML of New Jersey](https://flint.cs.yale.edu/shao/papers/escc.html) addresses the same space-safety concerns we faced. The state machine transformation that C# uses for iterators solves the same resumption problem. The coeffect model that [Petricek, Orchard, and Mycroft formalized](https://www.doc.ic.ac.uk/~dorchard/publ/coeffects-icfp14.pdf) describes the same pattern of pre-computing context requirements.
+During this implementation work, we found ourselves arriving at solutions that echo patterns in other systems. The flat closure representation that Shao and Appel developed for [Standard ML of New Jersey](https://flint.cs.yale.edu/shao/papers/escc.html) addresses the same space-safety concerns we faced. The C# compiler resolves resumption for its iterators with a comparable state machine transformation, and the coeffect model that [Petricek, Orchard, and Mycroft formalized](https://www.doc.ic.ac.uk/~dorchard/publ/coeffects-icfp14.pdf) captures the pre-computation of context requirements that our `YieldStateIndices` coeffect performs.
 
-These are not influences so much as shared edges: places where independent paths through design space converge on similar solutions because the underlying constraints point that way. When you need closures without garbage collection, flat representations emerge naturally. When you need resumable computation, state machines emerge naturally. When you need deterministic compilation, pre-computed metadata emerges naturally.
+We read these as shared edges rather than influences: designers working under the same constraints reach similar solutions independently. Closures without garbage collection lead to flat representations, resumable computation to state machines, and deterministic compilation to pre-computed metadata.
 
-The academic literature provides vocabulary and proof techniques. The engineering provides working code. Both arrive at the same destination through different routes.
+The academic literature provides vocabulary and proof techniques. The engineering provides working code.
 
-## Understanding In Depth
+## Invisible Machinery
 
-Sequence expressions exemplify what we often refer to as "an iceberg". On the surface, `seq { yield x }`, is minimal. The implementation below the figurative 'waterline' is substantial: state machine generation, capture analysis, internal state tracking, conditional yield handling, dead code elimination, ForEach lowering.
+The surface of a sequence expression, `seq { yield x }`, is minimal. Underneath, the compiler generates a state machine, analyzes captures, and tracks internal state. It also compiles conditional yields, eliminates dead ones, and lowers the consuming `for` loop.
 
-The measure of success is not how much machinery exists but how little of it the developer needs to think about. Write `seq { for i in 1..n do yield i * i }` and you get lazy squares. Write `seq { while condition do yield value }` and you get a resumable loop.
+The measure of success is how little of that machinery the developer needs to think about. Write `seq { for i in 1..n do yield i * i }` and you get lazy squares. Write `seq { while condition do yield value }` and you get a resumable loop.
 
 > The complexity is real, but it's the compiler's complexity, not yours.
 
-Types flow from Clef through the entire compilation pipeline to native code. Memory is managed deterministically without runtime overhead. The API surface remains idiomatic Clef while the implementation exploits every optimization opportunity that native compilation affords.
+Types flow from Clef through the compilation pipeline to native code, and memory is managed deterministically without runtime overhead. The API surface remains idiomatic Clef while the implementation uses the optimizations native compilation affords.
 
-## What Comes Next
+## Sequence Operations Ahead
 
 Simple sequences are a waypoint, not a destination. The `Seq` module in Clef provides dozens of operations: `map`, `filter`, `take`, `skip`, `collect`, and more. Each represents a transformation on sequences that should compose efficiently.
 
-Our next feature area will address sequence operations, building on the foundation established here. The flat closure architecture means a `Seq.map` can wrap an inner sequence without pointer chasing. The state machine model means composed sequences can potentially fuse into single-pass iterations. The coeffect infrastructure means optimization decisions can be made with full knowledge of the computation structure.
+Our next feature area will address sequence operations, building on the foundation established here. The flat closure architecture lets a `Seq.map` wrap an inner sequence without pointer chasing. Under the state machine model, composed sequences can potentially fuse into single-pass iterations, and the coeffect infrastructure supplies the full computation structure such optimization decisions require.
 
-Beyond sequences lie async workflows and computation expressions more broadly.[^8] The patterns established here, explicit state, flat representation, deterministic memory,[^7] provide a template for features that involve suspended computation and resumption.
-
-The journey continues. Each step reveals the next.
+Beyond sequences lie async workflows and computation expressions more broadly.[^8] Explicit state, flat representation, and deterministic memory[^7] give later features that involve suspended computation and resumption a template to build on.
 
 ## Related Reading
 

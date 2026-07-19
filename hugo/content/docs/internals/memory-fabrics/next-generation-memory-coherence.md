@@ -16,11 +16,11 @@ SpeakEZ's Fidelity framework and its [BAREWire native memory management](/docs/d
 
 BAREWire and CXL enable distributed model training by eliminating traditional memory management boundaries that have constrained AI workloads.
 
-The CXL hardware is the settled part; the software abstractions available to leverage it are where the challenge sits. C++ CXL libraries expose raw pointers and require manual tracking of which memory regions reside in which pools. The programmer maintains a mental model of coherence domains that the type system cannot verify. Rust improves memory safety, but its ownership model assumes a single coherent address space, and CXL's multiple memory pools with different latency characteristics fall outside what the borrow checker can express. In our design, Fidelity's type system [encodes memory pool residency directly](https://arxiv.org/abs/2603.16437), making pool-aware allocation verifiable at compile time instead of debuggable at runtime.
+The CXL hardware is settled. The open problem is the software abstraction for programming it. C++ CXL libraries expose raw pointers and require manual tracking of which memory regions reside in which pools. The programmer maintains a mental model of coherence domains that the type system cannot verify. Rust improves memory safety, but its ownership model assumes a single coherent address space, and CXL's multiple memory pools with different latency characteristics fall outside what the borrow checker can express. In our design, Fidelity's type system [encodes memory pool residency directly](https://arxiv.org/abs/2603.16437), making pool-aware allocation verifiable at compile time instead of debuggable at runtime.
 
 ## BAREWire and CXL for Zero-Copy Computing
 
-BAREWire's premise of unified memory abstractions maps onto CXL's hardware-level coherent memory access. Here is how Fidelity would leverage CXL:
+BAREWire's premise of unified memory abstractions maps onto CXL's hardware-level coherent memory access. Allocation queries the sysfs interface for CXL.mem availability and falls back to standard unified memory when the hardware is absent:
 
 ```fsharp
 module BAREWire.CXL =
@@ -64,13 +64,13 @@ module BAREWire.CXL =
             }
 ```
 
-This implementation adapts dynamically to the presence of CXL hardware, using it when available but gracefully side-stepping when not. BAREWire's memory abstraction model already prepares applications for the kind of unified memory that CXL provides at the hardware level.
+Applications written against BAREWire's memory abstraction model are already structured for the kind of unified memory that CXL provides at the hardware level.
 
-Compare this with the C++ approach using libcxlmem or similar libraries. The C++ programmer calls `cxl_malloc()` and receives a void pointer with no type-level indication of which memory pool it came from. When the allocation fails, the programmer checks errno and hopes they remembered to handle all the failure modes. The Fidelity approach encodes pool information in the type: `SharedBuffer<'T, unified>` vs `SharedBuffer<'T, cxl_mem>` vs `SharedBuffer<'T, cpu_mem>`. The compiler prevents passing a CPU-local buffer to code expecting CXL-coherent memory. This is structural correctness rather than defensive programming, and it lies outside what C++ can express.
+Compare this with the C++ approach using libcxlmem or similar libraries. The C++ programmer calls `cxl_malloc()` and receives a void pointer with no type-level indication of which memory pool it came from. When the allocation fails, the programmer checks errno and hopes they remembered to handle all the failure modes. The Fidelity approach encodes pool information in the type: `SharedBuffer<'T, unified>` vs `SharedBuffer<'T, cxl_mem>` vs `SharedBuffer<'T, cpu_mem>`. The compiler prevents passing a CPU-local buffer to code expecting CXL-coherent memory. The type system enforces the constraint at compile time, where C++ leaves the same check to programmer discipline.
 
 ### Hardware Coherency and Memory Models
 
-CXL Type 2 devices provide full bidirectional coherency, but leveraging this capability safely requires toolchain support that C++ and Rust currently lack. The hardware ensures cache coherence; the software must ensure that access patterns respect coherence domain boundaries. A C++ programmer might allocate from a CXL pool, pass the pointer to GPU code, and discover at runtime that the GPU cannot access CXL memory directly. The pointer type provided no indication; the failure manifests as a segfault or silent corruption.
+CXL Type 2 devices provide full bidirectional coherency, but C++ and Rust currently lack the toolchain support to use this capability safely. The hardware ensures cache coherence. The software must ensure that access patterns respect coherence domain boundaries. A C++ programmer might allocate from a CXL pool, pass the pointer to GPU code, and discover at runtime that the GPU cannot access CXL memory directly. The pointer type gives no indication. The failure manifests as a segfault or silent corruption.
 
 When using CXL Type 2 devices, BAREWire can eliminate the need for explicit synchronization in many cases:
 
@@ -86,7 +86,7 @@ let createGPUView<'T> (buffer: SharedBuffer<'T, unified>) =
         { buffer with MemSpace = typedefof<gpu_mem>; CoherencyModel = CoherencyModel.Software }
 ```
 
-## Developer-Friendly: From Primitives to Patterns
+## Developer Abstractions
 
 While the core BAREWire implementation deals with hardware-specific details, Clef developers don't always have to wrestle with these lower-level abstractions. As conventions emerge, the framework will provide a constellation of supporting libraries that encapsulate these primitives into idiomatic Clef patterns familiar to application developers:
 
@@ -121,15 +121,15 @@ let modelTraining() =
     let output = Furnace.matmul weights input
 ```
 
-This approach allows Clef developers to work with familiar functional patterns while the underlying system handles the complexity of optimal memory placement and hardware acceleration.
 
-The abstraction layer that Fidelity provides is qualitatively different from what C++ or Rust libraries can offer. A C++ tensor library might detect CXL at runtime and allocate appropriately, but the type signature of `matmul` remains unchanged: it accepts pointers and returns pointers. The programmer has no compile-time assurance that the tensors reside in compatible memory pools. A Rust tensor library might add lifetime annotations, but lifetimes track temporal validity, not spatial residency. When CXL introduces multiple memory pools with different access characteristics, neither language's type system can express the constraints.
 
-Fidelity's actor model maps onto CXL architectures. Each memory pool corresponds to an actor domain. Actors own their memory regions and communicate through message passing with explicit capabilities. When an actor in the CPU domain shares a tensor with an actor in the GPU domain, it sends a capability that encodes both ownership transfer and residency requirements. The receiving actor knows at compile time whether the buffer is CXL-coherent and can access it accordingly. This capability-based ownership model expresses multi-pool memory constraints that fall outside what Rust's borrow checker can track.
+A C++ tensor library might detect CXL at runtime and allocate appropriately, but the type signature of `matmul` remains unchanged: it accepts pointers and returns pointers. The programmer has no compile-time assurance that the tensors reside in compatible memory pools. A Rust tensor library might add lifetime annotations, but lifetimes track temporal validity, not spatial residency. When CXL introduces multiple memory pools with different access characteristics, neither language's type system can express the constraints.
+
+Fidelity's actor model maps onto CXL architectures: each memory pool corresponds to an actor domain. Actors own their memory regions and communicate through message passing with explicit capabilities. When an actor in the CPU domain shares a tensor with an actor in the GPU domain, it sends a capability that encodes both ownership transfer and residency requirements. The capability's type records whether the buffer is CXL-coherent, and the compiler checks the receiving actor's accesses against that property. This capability-based ownership model expresses multi-pool memory constraints that fall outside what Rust's borrow checker can track.
 
 ### Memory Access Patterns Library
 
-Another developer-friendly abstraction is the Memory Access Patterns library, which provides high-level constructs for common memory access scenarios:
+The Memory Access Patterns library provides constructs for common memory access scenarios:
 
 ```fsharp
 module MemoryPatterns =
@@ -158,11 +158,11 @@ module MemoryPatterns =
         [producerTask; consumerTask] |> Async.Parallel |> Async.Ignore
 ```
 
-A library such as this would allow developers to express common communication patterns without worrying about the underlying memory management details.
+
 
 ## NUMA-Aware Memory Management
 
-Fidelity's platform configuration can include NUMA topology awareness, enabling optimal memory placement. NUMA-aware programming in C++ typically involves libnuma calls scattered throughout the codebase, with no type-level connection between where memory was allocated and where it is accessed. The programmer might allocate on NUMA node 0 and accidentally schedule the accessing thread on node 3; the code runs correctly but performs poorly, and nothing in the type system warns of the mismatch. Rust's type system cannot express NUMA affinity at all; memory is memory.
+Fidelity's platform configuration can include NUMA topology awareness, enabling optimal memory placement. NUMA-aware programming in C++ typically involves libnuma calls scattered throughout the codebase, with no type-level connection between where memory was allocated and where it is accessed. The programmer might allocate on NUMA node 0 and accidentally schedule the accessing thread on node 3. The code runs correctly but performs poorly, and nothing in the type system warns of the mismatch. Rust's type system cannot express NUMA affinity: an allocation's type carries no information about which node backs it.
 
 Fidelity encodes NUMA topology in the platform configuration and carries allocation hints through the type system:
 
@@ -198,7 +198,7 @@ let allocateNuma<'T> (size: int<bytes>) (config: PlatformConfig) =
 
 ### High-Level NUMA Abstractions
 
-Developers can leverage NUMA awareness without directly interacting with topology details:
+Application code can be NUMA-aware without interacting directly with topology details:
 
 ```fsharp
 type NumaAwareCollection<'T> =
@@ -220,7 +220,7 @@ type NumaAwareCollection<'T> =
 
 ## Resizable BAR for GPU Memory Access
 
-Resizable BAR allows the CPU to map the entire GPU framebuffer into its address space, enabling direct access without staging buffers. C++ CUDA code can use Resizable BAR through unified memory APIs, but the programmer must still track whether a pointer refers to CPU memory, GPU memory, or unified memory; the type is always `void*` or `T*`. A function that expects GPU-resident data might receive a CPU pointer and fail silently or crash. Rust's gpu-allocator crate improves matters somewhat, but the ownership model still cannot distinguish memory residency.
+Resizable BAR allows the CPU to map the entire GPU framebuffer into its address space, enabling direct access without staging buffers. C++ CUDA code can use Resizable BAR through unified memory APIs, but the programmer must still track whether a pointer refers to CPU memory, GPU memory, or unified memory. The type is always `void*` or `T*`. A function that expects GPU-resident data might receive a CPU pointer and fail silently or crash. Rust's gpu-allocator crate improves matters somewhat, but the ownership model still cannot distinguish memory residency.
 
 Our BAREWire technology can take advantage of Resizable BAR to enable zero-copy operations with GPU memory, with residency encoded in the type:
 
@@ -262,9 +262,9 @@ module BAREWire.GPU =
             }
 ```
 
-### Making Hardware Acceleration Transparent
+### Transparent Hardware Acceleration
 
-Developers can access GPU capabilities through high-level APIs that hide the complexity of Resizable BAR and memory management:
+The `Accelerate` module wraps Resizable BAR handling and memory management behind array-level operations:
 
 ```fsharp
 module Accelerate =
@@ -292,11 +292,11 @@ let processImage (image: Image) =
         |> Image.fromPixelArray image.Width image.Height
 ```
 
-This abstraction allows developers to express computations in natural Clef style, while the system handles the complexity of GPU acceleration and memory management.
+
 
 ## Unified Platform for Heterogeneous Memory
 
-The power of Fidelity's approach comes from its functional composition model for platform configuration, which can be extended to include CXL, NUMA, and PCIe capabilities:
+Fidelity's platform configuration is a functional composition model that can be extended to include CXL, NUMA, and PCIe capabilities:
 
 ```fsharp
 type MemoryInterconnectCapabilities = {
@@ -361,11 +361,11 @@ let startApplication() =
     Application.start customConfig
 ```
 
-This approach allows application developers to remain in Clef's high-level, functional programming paradigm while still benefiting from advanced hardware capabilities.
+
 
 ## ML Tensor Operations with CXL
 
-Here's a practical example of how Fidelity would leverage CXL for machine learning workloads:
+In model training, parameter buffers need GPU access while the CPU modifies them, so they are candidates for CXL-coherent allocation:
 
 ```fsharp
 let trainModelWithCXL (model: MLModel) (dataset: Dataset) (config: PlatformConfig) =
@@ -393,9 +393,9 @@ let trainModelWithCXL (model: MLModel) (dataset: Dataset) (config: PlatformConfi
     }
 ```
 
-### ML Frameworks: Clef Idioms for Deep Learning
+### Clef Idioms for Deep Learning
 
-For data scientists and ML engineers, Fidelity provides high-level, Clef-idiomatic libraries that hide the memory management complexity:
+For data scientists and ML engineers, Fidelity provides Clef-idiomatic libraries that keep memory management out of model code:
 
 ```fsharp
 module DeepLearning =
@@ -436,11 +436,11 @@ let recognizeDigits() =
     printfn "Test accuracy: %.2f%%" (accuracy * 100.0)
 ```
 
-This high-level API allows data scientists to focus on model architecture and training logic while the framework handles all memory and hardware optimization details.
+
 
 ## BAREWire and CXL Memory Pooling
 
-The pooling story sharpens across CXL versions. CXL 2.0 pools memory so a region can be assigned to one host at a time, which BAREWire can leverage for dynamic resource allocation. CXL 3.0 goes further with hardware-coherent memory sharing, where a single region is simultaneously accessible to multiple hosts and every host sees the most current data, and CXL 3.1 refined the fabric manageability around it. That multi-host coherent share is the hardware realization of the virtual shared-memory space our [RDMA note](/docs/internals/memory-fabrics/rdma-accelerating-network-comms/) builds in software, and it recasts distributed model training as a memory-topology problem, where the data already sits where every host can reach it:
+CXL 2.0 pools memory so a region can be assigned to one host at a time, which BAREWire can use for dynamic resource allocation. CXL 3.0 goes further with hardware-coherent memory sharing, where a single region is simultaneously accessible to multiple hosts and every host sees the most current data. CXL 3.1 refined the fabric manageability around it. That multi-host coherent share is the hardware realization of the virtual shared-memory space our [RDMA note](/docs/internals/memory-fabrics/rdma-accelerating-network-comms/) builds in software, and it makes distributed model training a memory-topology problem, with the data already resident where every host can reach it:
 
 ```fsharp
 module BAREWire.MemoryPool =
@@ -496,13 +496,13 @@ module BAREWire.MemoryPool =
             }
 ```
 
-The pooling case has now been measured on production silicon. Samsung's [CXL memory-pooling study](https://semiconductor.samsung.com/news-events/tech-blog/breaking-ai-memory-limits-with-cxl-memory-pooling/) (July 2026) aggregated CMM-D modules through a CXL switch into a 1 TB shared pool fronting NVIDIA Blackwell GPUs, and offloaded the LLM inference KV cache to it through vLLM and LMCache. The pool held approximately 92% of DRAM performance across eight GPUs while scaling capacity far past what host DRAM could hold, and a DRAM-only baseline degraded once the KV cache outgrew it, paying recompute overhead the pool avoided. The result settles the open question these designs were written against: a coherent CXL pool can carry memory-intensive AI state at near-DRAM latency and past DRAM capacity.
+The pooling case has now been measured on production silicon. Samsung's [CXL memory-pooling study](https://semiconductor.samsung.com/news-events/tech-blog/breaking-ai-memory-limits-with-cxl-memory-pooling/) (July 2026) aggregated CMM-D modules through a CXL switch into a 1 TB shared pool fronting NVIDIA Blackwell GPUs, and offloaded the LLM inference KV cache to it through vLLM and LMCache. The pool held approximately 92% of DRAM performance across eight GPUs while scaling capacity far past what host DRAM could hold. A DRAM-only baseline degraded once the KV cache outgrew it, paying recompute overhead the pool avoided. The result settles the open question these designs were written against: a coherent CXL pool can carry memory-intensive AI state at near-DRAM latency and past DRAM capacity.
 
-That measured result also sharpens where our contribution sits. Samsung's stack decides KV-cache placement at runtime, through LMCache's eviction and offload heuristics over an untyped pool. In our design the cache block's pool residency is a compile-time coeffect, `SharedBuffer<'T, cxl_mem>` against `unified`, so which blocks live in the pool against GPU memory would be a placement the compiler proves against the value's dimensional range rather than a policy the cache layer guesses at each step. The [KV cache as a shared fabric region]({{< ref "the-kv-cache-as-a-shared-fabric-region" >}}) develops that inversion, and the agentic weave it opens.
+Samsung's stack decides KV-cache placement at runtime, through LMCache's eviction and offload heuristics over an untyped pool. In our design the cache block's pool residency is a compile-time coeffect, `SharedBuffer<'T, cxl_mem>` against `unified`, so which blocks live in the pool against GPU memory would be a placement the compiler proves against the value's dimensional range rather than one the cache layer's heuristics select at each step. The [KV cache as a shared fabric region]({{< ref "the-kv-cache-as-a-shared-fabric-region" >}}) develops that inversion and its consequences for multi-agent inference.
 
-### Resource Library: High-Level Memory Pools
+### Resource Pool Library
 
-Developers interact with these capabilities through high-level resource management APIs:
+Application developers use these pooling capabilities through the Resources library:
 
 ```fsharp
 module Resources =
@@ -540,11 +540,11 @@ let processRequests() =
         )
 ```
 
-This abstraction allows developers to efficiently manage large resources without concerning themselves with the underlying memory technology details.
+
 
 ## Integration with the Olivier Actor Model
 
-Fidelity's Olivier actor model can be extended to leverage CXL and NUMA for optimal process placement:
+Fidelity's Olivier actor model can be extended to derive process placement from CXL and NUMA topology:
 
 ```fsharp
 module Olivier.Actors =
@@ -567,7 +567,7 @@ module Olivier.Actors =
 
 ### Erlang-Inspired Concurrency with Clef Idioms
 
-Developers interact with the actor system through high-level, Clef-idiomatic APIs:
+The developer-facing API for the actor system is idiomatic Clef:
 
 ```fsharp
 module Olivier =
@@ -652,7 +652,7 @@ let distributedProcessing() =
     )
 ```
 
-This high-level API allows developers to express concurrent programs using familiar Clef patterns while the system handles the complexity of optimal process placement and efficient communication.
+
 
 ## Fidelity and Next-Generation Memory Architectures
 
@@ -662,13 +662,13 @@ The integration of Fidelity and our BAREWire technology with CXL, NUMA, and PCIe
 2. **Optimal Memory Placement**: Intelligent allocation across NUMA nodes including CXL memory
 3. **Adaptive Memory Management**: Graceful degradation when advanced hardware features aren't available
 4. **Type-Safe Memory Access**: Units of measure ensuring memory safety without runtime overhead
-5. **Platform-Specific Optimization**: Functional composition driving memory strategies based on hardware capabilities
+5. **Platform-Specific Optimization**: Memory strategies composed functionally to match hardware capabilities
 
-The contrast with existing toolchains is stark. C++ provides raw access to CXL through vendor libraries, but the type system offers no help in tracking which pointers refer to which memory pools, which coherence domains apply, or which access patterns are valid. The burden falls entirely on the programmer to maintain mental models of memory topology that grow increasingly complex as CXL deployments scale. Rust improves memory safety within a single coherent address space, but its ownership model predates multi-pool architectures; the borrow checker verifies lifetimes but cannot verify residency.
+C++ provides raw access to CXL through vendor libraries, but the type system does not record which memory pool a pointer refers to. Coherence domains and valid access patterns are equally untracked. The burden falls entirely on the programmer to maintain mental models of memory topology that grow increasingly complex as CXL deployments scale. Rust improves memory safety within a single coherent address space, but its ownership model predates multi-pool architectures. The borrow checker verifies lifetimes but cannot verify residency.
 
-Fidelity's approach anticipates the memory architectures that CXL makes possible. The actor model maps naturally to coherence domains; each actor owns its memory region and communicates through capabilities that encode both ownership and residency. The PSG captures semantic information about data flow that enables automatic optimization of memory placement. Units of measure distinguish pool types at the type level. When the hardware provides multiple memory pools with different latency and bandwidth characteristics, Fidelity is prepared to leverage them safely; we anticipate this will give our users a significant advantage over projects constrained by toolchains designed for simpler memory models.
+Fidelity's approach anticipates the memory architectures that CXL makes possible. The actor model maps naturally to coherence domains: each actor owns its memory region and communicates through capabilities that encode both ownership and residency. Our PSG captures semantic information about data flow that enables automatic optimization of memory placement, and units of measure distinguish pool types at the type level. When the hardware provides multiple memory pools with different latency and bandwidth characteristics, Fidelity is prepared to use them safely. We anticipate this will give our users a significant advantage over projects constrained by toolchains designed for simpler memory models.
 
-For application developers, these capabilities will eventually be exposed through high-level, Clef-idiomatic libraries that maintain the language's functional programming paradigm while leveraging advanced hardware features:
+For application developers, these capabilities will eventually be exposed through Clef-idiomatic libraries that keep the language's functional paradigm while drawing on advanced hardware features:
 
 1. **Tensor Computing Library**: For high-performance numerical operations
 2. **GPU Acceleration Library**: For transparent hardware acceleration
@@ -676,18 +676,18 @@ For application developers, these capabilities will eventually be exposed throug
 4. **Actor System Library**: For distributed, fault-tolerant concurrency
 5. **ML Framework**: For deep learning with automatic hardware optimization
 
-These libraries and others like them will allow developers to express computations in natural Clef style without worrying about the underlying hardware details, while still benefiting from the performance advantages of advanced memory technologies like CXL.
+These libraries, and others like them, are intended to give application code the performance of memory technologies such as CXL without binding that code to specific hardware.
 
-These capabilities target the next generation of heterogeneous computing, where the boundaries between different memory spaces are increasingly blurred by technologies like CXL. The pre-optimization approach of BAREWire is built to match the hardware coherency provided by CXL, giving high-performance native code a foundation that spans the computing spectrum.
+These capabilities target the next generation of heterogeneous computing, where the boundaries between different memory spaces are increasingly blurred by technologies like CXL. The pre-optimization approach of BAREWire is built to match the hardware coherency provided by CXL, giving high-performance native code the same foundation from data-center servers to edge deployments.
 
-The systems programming community has long accepted that advanced memory architectures require advanced programming discipline. CXL tutorials warn developers to "carefully track which pointers point where" and "always verify coherence domain compatibility before access." This guidance amounts to admitting that the toolchain cannot help. Our design takes the opposite premise. If the hardware provides multiple memory pools with different characteristics, the type system should encode those characteristics. If coherence domains constrain valid access patterns, the compiler should verify them. The cognitive burden that C++ and Rust place on developers working with CXL is not inherent to the problem. It reflects limitations in those languages' type systems, and Fidelity's type system is designed to lift them.
+The systems programming community has long accepted that advanced memory architectures require advanced programming discipline. CXL tutorials warn developers to "carefully track which pointers point where" and "always verify coherence domain compatibility before access." This guidance amounts to admitting that the toolchain cannot help. Our design takes the opposite premise. If the hardware provides multiple memory pools with different characteristics, the type system should encode those characteristics. If coherence domains constrain valid access patterns, the compiler should verify them. The cognitive burden that C++ and Rust place on developers working with CXL is not inherent to the problem. It reflects limitations in those languages' type systems, and Fidelity's type system is designed without those limitations.
 
-## Watching the Fabric the Network Stack Cannot See
+## CXL Fabric Observability
 
-CXL.mem and CXL.cache move data along paths the operating system never observes. A peer read that crosses a coherence-domain boundary touches remote memory directly, and packet-oriented tools such as tcpdump and socket tracing are blind to it. The direct response in the field is wBPF (HCDS '25), a specialized eBPF runtime for CXL pooling systems that coordinates tracing across the compute nodes sharing a memory pool and captures rare memory and communication anomalies while holding telemetry overhead low. Parallel efforts point the same instrument elsewhere: eGPU brings eBPF observability to inter-device GPU memory transfers, and TierBPF governs page-migration admission control in tiered memory that includes CXL. These attach un-typed probes reactively, sampling anomalies no static contract had ruled out.
+CXL.mem and CXL.cache move data along paths the operating system never observes. A peer read that crosses a coherence-domain boundary touches remote memory directly, and packet-oriented tools such as tcpdump and socket tracing are blind to it. The direct response in the field is wBPF (HCDS '25), a specialized eBPF runtime for CXL pooling systems that coordinates tracing across the compute nodes sharing a memory pool and captures rare memory and communication anomalies while holding telemetry overhead low. Related projects apply eBPF elsewhere: eGPU brings eBPF observability to inter-device GPU memory transfers, and TierBPF governs page-migration admission control in tiered memory that includes CXL. These attach un-typed probes reactively, sampling anomalies no static contract had ruled out.
 
-Our design would invert that arrangement. The pool residency the type already carries, `SharedBuffer<'T, cxl_mem>` against `unified` against `cpu_mem`, is the same fact the coeffect discipline checks to admit an access at compile time. A CPU-local buffer reaching CXL-coherent code is caught at design time as a diagnostic, the very failure the C++ programmer discovers at runtime as a segfault or silent corruption. The runtime monitoring predicate would be the negation of the admissibility fact the compiler already discharged, derived rather than hand-authored and bolted on afterward, so a kprobe or PMC probe on CXL.mem/CXL.cache peer transactions would witness that the fabric behaved as proven, watching exactly the transactions the type contract named.
+Our design would invert that arrangement. The pool residency the type already carries, `SharedBuffer<'T, cxl_mem>` against `unified` against `cpu_mem`, is the same fact the coeffect discipline checks to admit an access at compile time. A CPU-local buffer reaching CXL-coherent code is caught at design time as a diagnostic, the very failure the C++ programmer discovers at runtime as a segfault or silent corruption. The runtime monitoring predicate would be the negation of the admissibility fact the compiler already discharged, derived rather than hand-authored and bolted on afterward. A kprobe or PMC probe on CXL.mem/CXL.cache peer transactions would then witness that the fabric behaved as proven, and the probe would watch exactly the transactions the type contract named.
 
-This is our [BAREWire contract gaining a fabric leg]({{< ref "building-bulletproof-ebpf-programs" >}}): the same schema-settled region that would gain a kernel leg past the syscall boundary crossing a coherent interconnect, with the kernel probe as its witness. Observability would come out as a byproduct of the fabric type, verified where the compiler already reasoned, rather than a separate telemetry program chasing anomalies after the fact.
+This extends our [BAREWire contract]({{< ref "building-bulletproof-ebpf-programs" >}}) across a second boundary: the same schema-settled region that would cross the syscall boundary into the kernel would also cross a coherent interconnect, with the kernel probe as its witness. Observability would be a byproduct of the fabric type, verified where the compiler already reasoned, rather than the output of a separate telemetry program detecting anomalies after the fact.
 
 The underlying technology, built on our "System and Method for Zero-Copy Inter-Process Communication Using BARE Protocol" (US 63/786,247), opens possibilities for AI systems that distribute computation across heterogeneous hardware while reducing the overhead traditionally associated with data movement. This software from SpeakEZ AI addresses distributed AI model training and heterogeneous computing.

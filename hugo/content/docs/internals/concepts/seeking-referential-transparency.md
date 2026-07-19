@@ -10,11 +10,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-Compiler design carries a standing tension between keeping high-level abstractions and generating efficient machine code. In our design, referential transparency gives the Composer compiler a decision point for compilation strategy: whether a region is pure gives a mathematical property to branch on, rather than a heuristic.
+Compiler design carries a standing tension between keeping high-level abstractions and generating efficient machine code. In our design, referential transparency is the decision point for the Composer compiler's compilation strategy: whether a region is pure is a mathematical property to branch on, rather than a heuristic.
 
-At the heart of our Clef native compiler lies the Program Hypergraph (PHG), which analyzes code to identify referentially transparent regions. That analysis drives a compilation strategy that chooses between two computational models: interaction nets for pure, concurrent computations, and delimited continuations for effectful, sequential operations.
+Our Clef native compiler is organized around the Program Hypergraph (PHG), the representation Composer analyzes to identify referentially transparent regions. From that analysis, Composer chooses between two computational models: interaction nets for pure, concurrent computations, and delimited continuations for effectful, sequential operations.
 
-Selecting the compilation strategy from the purity of a region, rather than from optimization heuristics, lets Composer preserve the high-level intent of Clef code while targeting the appropriate execution model. This document describes how the two paradigms work together across heterogeneous hardware. The mechanisms here describe the designed pipeline.
+Selecting the compilation strategy from the purity of a region, rather than from optimization heuristics, lets Composer preserve the high-level intent of Clef code while targeting the appropriate execution model. The two models are designed to work together across heterogeneous hardware.
 
 ## Core Architecture
 
@@ -39,7 +39,7 @@ let effectfulComputation data = async {
 
 ### Program Analysis Pipeline
 
-The compilation strategy emerges from three key analyses:
+The compilation strategy derives from three analyses:
 
 1. **Program Hypergraph (PHG)** - Captures high-level program structure
 2. **Control Flow Graph (CFG)** - Hypernodes in the PHG that identify control dependencies
@@ -69,7 +69,7 @@ func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
 }
 ```
 
-### Why Interaction Nets Excel for Pure Code
+### Why Interaction Nets Suit Pure Code
 
 1. **Natural Parallelism** - Reductions happen simultaneously wherever patterns match
 2. **No Synchronization Overhead** - Pure functions need no coordination
@@ -77,7 +77,7 @@ func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
 
 ## Interaction Nets and Post-Transformer Architectures
 
-Interaction nets might seem a poor fit for traditional ML workloads dominated by matrix multiplication. Post-transformer architectures change that fit. [MatMul-free](https://arxiv.org/abs/2406.02528) and sub-quadratic models map well onto interaction net compilation.
+Interaction nets might seem a poor fit for traditional ML workloads dominated by matrix multiplication, but [MatMul-free](https://arxiv.org/abs/2406.02528) and sub-quadratic post-transformer models map well onto interaction net compilation.
 
 ### MatMul-Free Networks as Interaction Patterns
 
@@ -101,7 +101,7 @@ inet.rule @ternary_sub : (!inet.wire<f32>, !inet.wire<f32>) -> !inet.wire<f32>
 
 ### BitNet and Quantized Models
 
-BitNet's 1.58-bit weights create ideal conditions for interaction nets:
+BitNet's 1.58-bit weights are ternary, so each layer reduces to additions and subtractions, the operations interaction rules express directly:
 
 ```fsharp
 // BitNet layer - 2 bits per weight, simple operations
@@ -140,7 +140,7 @@ let mambaStep (state: State) (input: float) (A: Diagonal) (B: Vector) =
 
 ### Memory Characteristics
 
-Compiling post-transformer models through the Inet path shifts where the work lands:
+Compiling post-transformer models through the Inet path changes the memory and arithmetic profile:
 
 | Architecture | Traditional GPU | Inet + SPIR-V | Direction |
 |-------------|----------------|---------------|-------------|
@@ -173,7 +173,7 @@ dcont.func @processWithEffects(%data: !fidelity.data) {
 
 ## Hybrid Compilation Strategy
 
-The real power comes from combining both approaches:
+Mixed workloads combine both strategies in a single function:
 
 ```fsharp
 // Mixed pure and effectful code
@@ -211,14 +211,14 @@ func @hybridProcessing() {
 
 ## SPIR-V Integration for Post-Transformer Architectures
 
-SPIR-V's capabilities align perfectly with interaction net compilation, especially for post-transformer models:
+SPIR-V's capabilities align with interaction net compilation, especially for post-transformer models:
 
 ### Reference Type Preservation
 - **Interaction nets** → Direct mapping to GPU work items
 - **Ternary weights** → 2-bit packed representations in shared memory
 - **Zero-copy semantics** → BAREWire unified memory access
 
-### Efficient SPIR-V Generation for MatMul-Free Models
+### SPIR-V Generation for MatMul-Free Models
 
 ```fsharp
 // BitNet layer compiles to efficient SPIR-V
@@ -249,7 +249,7 @@ let matMulFreeLayer (input: Tensor<float32>) (weights: TernaryTensor) =
 
 ### Hybrid CPU-GPU Execution
 
-Post-transformer architectures enable efficient hybrid execution:
+In post-transformer architectures, the work splits between CPU and GPU:
 
 ```fsharp
 // CPU handles ternary ops efficiently with AVX-512
@@ -298,16 +298,16 @@ let hybridInference (model: HybridBitNet) (input: TokenSequence) =
 
 ### Post-Transformer Specific Benefits
 
-The Inet compilation path, initially considered "rare" for ML workloads, becomes dominant for post-transformer architectures:
+The Inet compilation path becomes the dominant strategy for post-transformer architectures:
 
 1. **BitNet/Ternary Networks**
    - 2 bits per weight → entire layers fit in L2 cache
-   - Simple add/subtract ops → no tensor cores needed
-   - Parallel reductions → perfect for interaction nets
+   - Add/subtract ops → no tensor cores needed
+   - Parallel reductions → concurrent interaction net rewrites
 
 2. **Linear Attention/State Space Models**
    - O(n) complexity instead of O(n²)
-   - Local state updates → ideal for concurrent execution
+   - Local state updates → independent, coordination-free updates
    - No attention matrices → massive memory savings
 
 3. **Hybrid Architectures**
@@ -318,7 +318,7 @@ The Inet compilation path, initially considered "rare" for ML workloads, becomes
 ## Design Principles
 
 1. **Preserve Until Necessary** - Keep high-level abstractions as long as they provide value
-2. **Let Purity Guide** - Referential transparency determines compilation strategy
+2. **Purity as the Decision Point** - Referential transparency determines compilation strategy
 3. **No Forced Model** - Choose interaction nets or continuations based on code semantics
 4. **Hardware Awareness** - Target appropriate hardware based on computation patterns
 
@@ -336,28 +336,28 @@ The Inet compilation path, initially considered "rare" for ML workloads, becomes
 - **Neuromorphic chips** - Event-driven computation via continuations
 - **Custom ASICs** - Domain-specific interaction patterns
 
-## Conclusion
+## Property-Driven Compilation
 
-By recognizing that different computational patterns benefit from different compilation strategies, Fidelity achieves something unique: it preserves the elegance of functional programming while generating code competitive with hand-optimized implementations.
+Fidelity selects a compilation strategy per computational pattern, preserving functional abstractions while targeting code competitive with hand-optimized implementations.
 
-The purity analysis (via Alex) can automatically determine whether interaction nets or delimited continuations will provide better performance. This becomes especially powerful with post-transformer architectures, where simple arithmetic operations (additions, subtractions, bit manipulations) make interaction nets the *optimal* compilation target, not a rare edge case.
+The purity analysis (via Alex) can automatically determine whether interaction nets or delimited continuations will provide better performance. The effect is largest with post-transformer architectures, where simple arithmetic operations (additions, subtractions, bit manipulations) make interaction nets the primary compilation target.
 
 Post-transformer models fundamentally change the GPU programming landscape:
 
-- **No tensor cores required** - Simple arithmetic ops work on any GPU
+- **No tensor cores required** - Addition and subtraction run on any GPU
 - **Minimal memory bandwidth** - Ternary weights fit in cache/registers
 - **Massive parallelism** - Every operation can execute simultaneously
-- **Democratized AI** - Efficient inference on consumer hardware
+- **Consumer hardware** - Efficient inference without specialized accelerators
 
-The convergence of functional programming principles, interaction net theory, and post-transformer architectures creates unprecedented opportunities. What began as an exploration of referential transparency as a compilation heuristic has revealed a deeper truth: the mathematical properties of our code should drive how we compile it, as opposed to being bound by the limitations of previous patterns.
+What began as an exploration of referential transparency as a compilation heuristic became a design commitment: the mathematical properties of our code determine how we compile it.
 
-This approach transforms Clef from a high-level language making performance compromises into a precision tool for modern computing. Developers write idiomatic functional code; the compiler automatically identifies optimal execution strategies. A BitNet model that would traditionally require specialized kernels and manual optimization can now compile directly from straightforward Clef expressions to efficient SPIR-V code that may outperform hand-tuned implementations.
+Developers write idiomatic functional code, and the compiler selects the execution strategy from the purity of each region. A BitNet model that would traditionally require specialized kernels and manual optimization can compile directly from straightforward Clef expressions to SPIR-V code that may outperform hand-tuned implementations.
 
-The implications extend beyond performance metrics. By making post-transformer architectures accessible through familiar functional abstractions, Composer will enable a new generation of AI applications:
+By making post-transformer architectures accessible through familiar functional abstractions, Composer will enable a new generation of AI applications:
 
 - **Edge AI devices** running full language models with megabytes, not gigabytes, of memory
 - **Real-time inference** on consumer GPUs without specialized hardware
 - **Energy-efficient deployment** reducing computational costs by orders of magnitude
 - **Compositional AI systems** where functional guarantees enable safe, predictable model composition
 
-As we move beyond the transformer era, the Fidelity framework stands ready. Its principled approach to compilation, grounded in mathematical properties and guided principled analysis, provides the foundation for whatever computational paradigms emerge next. The future of functional programming isn't about choosing between elegance and efficiency. With Composer and the Fidelity framework, we show that they can be intertwined with the right foundations.
+As post-transformer architectures mature, our approach to compilation, grounded in the mathematical properties of the program, is designed to extend to whatever computational paradigms emerge next.

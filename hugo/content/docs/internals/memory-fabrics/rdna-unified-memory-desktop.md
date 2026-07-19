@@ -12,9 +12,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-Between the server-scale memory coherence of CXL and the constrained world of edge accelerators lies a third tier of heterogeneous computing that is becoming more common: the unified memory SoC. This is not simply a GPU bolted onto a laptop. It represents a different programming model where CPU, GPU, and NPU share a coherent virtual address space backed by the same physical memory pool. AMD's Strix Halo architecture, found in devices like the ASUS ROG Flow Z13, exemplifies this approach with its unified LPDDR5X and AMD's Heterogeneous System Architecture providing hardware coherence across all compute agents.
+Between the server-scale memory coherence of CXL and the constrained world of edge accelerators lies a third tier of heterogeneous computing that is becoming more common: the unified memory SoC. Where a laptop with a discrete GPU keeps CPU and GPU memory in separate domains, the unified memory SoC gives CPU, GPU, and NPU a coherent virtual address space backed by the same physical memory pool. AMD's Strix Halo architecture, found in devices like the ASUS ROG Flow Z13, exemplifies this approach with its unified LPDDR5X and AMD's Heterogeneous System Architecture providing hardware coherence across all compute agents.
 
-Our companion pieces on [CXL memory coherence](/docs/internals/memory-fabrics/next-generation-memory-coherence) and [RDMA network communication](/docs/internals/memory-fabrics/rdma-accelerating-network-comms) explored how BAREWire's zero-copy architecture extends across system boundaries. This article turns inward, examining how Fidelity can leverage unified memory architectures for local inference pipelines where voice-to-text on the NPU feeds directly into LLM inference on the GPU without explicit buffer management or programmer-visible copies.
+Our companion pieces on [CXL memory coherence](/docs/internals/memory-fabrics/next-generation-memory-coherence) and [RDMA network communication](/docs/internals/memory-fabrics/rdma-accelerating-network-comms) explored how BAREWire's zero-copy architecture extends across system boundaries. Unified memory brings the same zero-copy architecture inside a single machine: voice-to-text on the NPU feeds directly into LLM inference on the GPU without explicit buffer management or programmer-visible copies.
 
 ## The Three Tiers of Zero-Copy
 
@@ -49,13 +49,13 @@ graph LR
 | Network | RDMA/RoCE | Explicit registration, kernel bypass | BAREWire.RDMA | Cross-node inference, model parallelism |
 | Desktop | AMD HSA | Unified address space, coherent | BAREWire.HSA | Local inference pipelines, voice assistants |
 
-The desktop tier carries the simplest programming model of the three. There is no explicit staging buffer API, no memory registration step, no PCIe transfers to orchestrate. HSA provides a unified virtual address space where all agents can reference the same pointers.
+The desktop tier carries the simplest programming model of the three. The desktop tier needs no explicit staging buffer API and no memory registration step, and nothing on the PCIe bus has to be orchestrated. HSA provides a unified virtual address space where all agents can reference the same pointers.
 
 > The handoff is a pointer, not an explicit data copy.
 
 This simplicity, however, is only available to programmers whose toolchains can express it. The C++ HSA headers expose raw pointers with no type-level distinction between CPU-optimal and GPU-optimal memory regions. Rust's HSA bindings inherit this limitation. The borrow checker verifies ownership but cannot distinguish memory residency. Fidelity's type system [encodes residency hints directly, making cross-agent buffer sharing verifiable at compile time](https://arxiv.org/abs/2603.16437) rather than debuggable at runtime.
 
-That said, unified addressing does not mean all memory accesses perform identically. The system BIOS reserves a portion of the LPDDR5X pool for GPU-optimized access, and when the GPU reads data from regions primarily used by the CPU, the hardware coherence layer may need to synchronize caches. In practice, this overhead is far smaller than the latency of copying data across a PCIe bus to discrete VRAM. The real win is twofold: developers no longer need to manage explicit staging buffers and copy commands, and the data path stays entirely within the same physical memory subsystem rather than traversing an external interconnect.
+That said, unified addressing does not mean all memory accesses perform identically. The system BIOS reserves a portion of the LPDDR5X pool for GPU-optimized access, and when the GPU reads data from regions primarily used by the CPU, the hardware coherence layer may need to synchronize caches. In practice, this overhead is far smaller than the latency of copying data across a PCIe bus to discrete VRAM. Developers no longer need to manage explicit staging buffers and copy commands, and the data path stays within the same physical memory subsystem rather than traversing an external interconnect.
 
 ## Understanding the Hardware
 
@@ -63,7 +63,7 @@ AMD's Strix Halo architecture (the Ryzen AI Max+ 395 series) brings together thr
 
 **CPU**: 16 Zen 5 cores with 32 threads, serving as the orchestration layer and handling sequential workloads.
 
-**GPU**: The Radeon 8060S with 40 RDNA 3.5 compute units. This is not a discrete GPU competing for PCIe bandwidth, but neither is it an Apple-style unified core with symmetric memory access. The GPU connects to the same LPDDR5X pool through memory controllers tuned for GPU access patterns, with HSA providing coherence when crossing domain boundaries.
+**GPU**: The Radeon 8060S with 40 RDNA 3.5 compute units. The Radeon 8060S shares the LPDDR5X pool rather than holding separate VRAM behind a PCIe boundary, and its memory access is asymmetric, not the symmetric access of an Apple-style unified core. The GPU connects to the same LPDDR5X pool through memory controllers tuned for GPU access patterns, with HSA providing coherence when crossing domain boundaries.
 
 **NPU**: The XDNA2 neural processing unit rated at 50 TOPS for int8 inference. Purpose-built for sustained, power-efficient AI workloads like speech recognition and image classification.
 
@@ -103,9 +103,9 @@ flowchart LR
     end
 ```
 
-The "pointer handoff" eliminates explicit copy operations from application code. The NPU writes transcription results to a buffer; the GPU reads from that same virtual address. HSA's hardware coherence layer handles visibility, though the underlying hardware may still perform cache flushes or prefetching depending on where the buffer was allocated. The programmer sees a simple pointer; the hardware manages the complexity.
+The "pointer handoff" eliminates explicit copy operations from application code. The NPU writes transcription results to a buffer. The GPU reads from that same virtual address. HSA's hardware coherence layer handles visibility, though the underlying hardware may still perform cache flushes or prefetching depending on where the buffer was allocated. 
 
-## BAREWire.HSA: The Abstraction Layer
+## BAREWire.HSA
 
 Building on the patterns established in our [CXL integration](/docs/internals/memory-fabrics/next-generation-memory-coherence), our planned BAREWire.HSA module provides [Clef](https://clef-lang.com) abstractions for unified memory allocation and cross-agent buffer sharing.
 
@@ -163,9 +163,9 @@ let signalCompletion (buffer: UnifiedBuffer<'T>) : unit =
     HSARuntime.memoryFence buffer.Address
 ```
 
-Note the contrast with the discrete GPU model. There would be no `copyToDevice` or `copyFromDevice` operation. The buffer exists in a single location that all agents can address. The `signalCompletion` function issues a memory fence to ensure writes are visible, but no data movement occurs.
+In contrast with the discrete GPU model, there would be no `copyToDevice` or `copyFromDevice` operation. The buffer exists in a single location that all agents can address. The `signalCompletion` function issues a memory fence to ensure writes are visible, but no data movement occurs.
 
-The type signature tells a story that C++ HSA headers cannot express. In C++, the memory hint is a runtime parameter passed to `hsa_memory_allocate`. Nothing prevents passing a CPU-optimal buffer to a GPU kernel and wondering why performance degraded. Rust's type system could theoretically encode residency through phantom types, but the existing HSA crates follow C++ conventions. Fidelity's `UnifiedBuffer<'T>` carries residency information at the type level, enabling the compiler to warn when access patterns contradict allocation hints. The actor model reinforces this further: each compute agent maps naturally to an actor with its own memory region, and cross-agent communication follows the capability-based ownership patterns. In our design, a residency violation is a shape the type system does not admit, so the class of error is caught before code generation rather than surfacing at runtime.
+The type signature captures a distinction that C++ HSA headers cannot express. In C++, the memory hint is a runtime parameter passed to `hsa_memory_allocate`. Nothing prevents passing a CPU-optimal buffer to a GPU kernel and wondering why performance degraded. Rust's type system could theoretically encode residency through phantom types, but the existing HSA crates follow C++ conventions. Fidelity's `UnifiedBuffer<'T>` carries residency information at the type level, enabling the compiler to warn when access patterns contradict allocation hints. The actor model reinforces this further: each compute agent corresponds to an actor with its own memory region, and cross-agent communication follows the capability-based ownership patterns. In our design, a residency violation is a shape the type system does not admit, so the compiler rejects this class of error before code generation.
 
 ## Farscape Bindings for Inference Libraries
 
@@ -231,9 +231,9 @@ extern nativeptr<byte> whisperSegmentText(ctx: WhisperContext, segment: int)
 
 The library markers `"__llama"` and `"__whisper"` follow the same pattern as Alloy's `"__fidelity"` marker. These are not actual shared library names. They signal to Alex that these are extern primitives requiring platform-specific binding generation.
 
-## From PSG to MLIR: The Compilation Flow
+## From PSG to MLIR
 
-This section illustrates the planned compilation flow. When Composer compiles code using these bindings, the PSG would capture the extern call with its metadata. Alex's traversal encounters the node and emits appropriate MLIR based on the target platform and binding configuration.
+ When Composer compiles code using these bindings, the PSG would capture the extern call with its metadata. Alex's traversal encounters the node and emits appropriate MLIR based on the target platform and binding configuration.
 
 ```mermaid
 flowchart TD
@@ -297,7 +297,7 @@ On HSA hardware, the binding implementation is simpler than discrete GPU targets
 
 ## The Complete Inference Pipeline
 
-Bringing these pieces together, here is how a voice assistant pipeline could look in Fidelity once the HSA integration is complete.
+The BAREWire.HSA buffer abstractions and Farscape bindings would together express a full voice assistant pipeline once the HSA integration is complete.
 
 ```fsharp
 module VoiceAssistant
@@ -371,13 +371,13 @@ let processVoiceInput
     extractResponse pipeline.ResponseOutput
 ```
 
-Each step accesses buffers in unified memory through pointer handoff; `signalCompletion` issues memory fences without copying data.
+Each step accesses buffers in unified memory through pointer handoff. The `signalCompletion` calls issue memory fences without copying data.
 
 > On hardware with proper HSA support, this pipeline design should achieve latencies significantly lower than equivalent discrete-GPU implementations.
 
 Consider the equivalent C++ implementation. The HSA headers provide `hsa_signal_store_screlease` and `hsa_signal_wait_acquire` for synchronization, but the programmer must manually place these calls at each handoff boundary. Omit a fence and the bug manifests as intermittent data corruption that varies with system load. Rust's ownership model helps prevent data races within a single memory space, but HSA's cross-agent visibility semantics fall outside what the borrow checker can verify. The coherence protocol is a hardware contract that neither language's type system can express.
 
-Fidelity's semantic graph captures the full data flow from NPU to GPU to CPU. When Alex generates MLIR for this pipeline, it can identify cross-agent handoff points and insert appropriate fences automatically. The `signalCompletion` call in the source code becomes a semantic marker rather than an imperative command. The compiler ensures visibility semantics are honored even when the programmer forgets. This is the practical consequence of treating the PSG as a proof-carrying structure rather than a syntax tree to be translated.
+Fidelity's semantic graph captures the full data flow from NPU to GPU to CPU. When Alex generates MLIR for this pipeline, it can identify cross-agent handoff points and insert appropriate fences automatically. In the source code, `signalCompletion` reads as an imperative command, but the compiler treats it as a semantic marker. The compiler ensures visibility semantics are honored even when the programmer forgets. This is the practical consequence of treating the PSG as a proof-carrying structure rather than a syntax tree to be translated.
 
 ## The Fine-Tuning Angle
 
@@ -438,7 +438,7 @@ Consider the workload distribution:
 | Ternary FFN layers | GPU | Massive parallelism for add/subtract across weight matrices |
 | Trit unpacking and coordination | CPU | AVX-512 bit manipulation, orchestration logic |
 
-The NPU's 50 TOPS specification assumes int8 multiply-accumulate operations. MLA's key-value projection into a compressed latent space is precisely this kind of dense matrix operation, and it runs continuously during autoregressive generation. This is where the NPU earns its power efficiency advantage.
+The NPU's 50 TOPS specification assumes int8 multiply-accumulate operations. MLA's key-value projection into a compressed latent space is precisely this kind of dense matrix operation, and it runs continuously during autoregressive generation. That continuous, dense workload matches the NPU's power-efficiency profile.
 
 The ternary FFN layers present a different profile. With weights constrained to {-1, 0, +1}, each "multiplication" becomes: negate the activation, skip entirely, or pass through unchanged. The GPU's thousands of cores can apply these conditional operations across massive weight matrices in parallel, even though the individual operations are simpler than traditional matmul.
 
@@ -476,7 +476,7 @@ The CPU handles trit unpacking using the [base-3 encoding scheme](/blog/unified-
 
 The latency overhead would overwhelm any computational savings. With unified memory and memory fences instead of copies, the three-way split becomes viable.
 
-Attempting this three-way dispatch in C++ would require juggling HSA agent handles, memory region queries, and explicit signal operations across hundreds of lines of boilerplate. The code would compile but provide no assurance that the NPU-to-GPU handoff respects cache coherence semantics. Rust improves matters through its ownership model, but the existing ecosystem treats GPU and NPU as separate concerns; no crate we are aware of provides unified abstractions for HSA's coherent memory across all three compute domains. The actor model provides natural boundaries: each dispatch becomes a message to an actor owning that compute domain, and the capability-based ownership ensures the handoff is semantically valid before code generation begins.
+Attempting this three-way dispatch in C++ would require juggling HSA agent handles, memory region queries, and explicit signal operations across hundreds of lines of boilerplate. The code would compile but provide no assurance that the NPU-to-GPU handoff respects cache coherence semantics. Rust improves matters through its ownership model, but the existing ecosystem treats GPU and NPU as separate concerns. No crate we are aware of provides unified abstractions for HSA's coherent memory across all three compute domains. The actor model provides natural boundaries: each dispatch becomes a message to an actor owning that compute domain, and the capability-based ownership ensures the handoff is semantically valid before code generation begins.
 
 ```fsharp
 /// Complete ternary inference pass with MLA, distributed across HSA agents
@@ -518,31 +518,31 @@ let ternaryInferencePass
     logits
 ```
 
-We are not aware of anyone else pursuing this specific combination: ternary-quantized models with MLA-compressed KV caches, distributed across unified memory HSA hardware, coordinated through zero-copy memory fences. The individual pieces exist in isolation. BitNet demonstrates ternary quantization viability. DeepSeek's MLA shows KV compression at scale. AMD's HSA provides the coherent memory fabric. BAREWire's abstraction makes the coordination tractable.
+We are not aware of anyone else pursuing this specific combination: ternary-quantized models with MLA-compressed KV caches, distributed across unified memory HSA hardware, coordinated through zero-copy memory fences. The individual pieces exist in isolation: BitNet demonstrates ternary quantization viability, DeepSeek's MLA shows KV compression at scale, and AMD's HSA provides the coherent memory fabric. BAREWire's abstraction makes coordinating them tractable.
 
-The synthesis is what we believe could deliver on "hyper-local AI": models that run entirely on desktop hardware, with latencies low enough to feel immediate, power draw that permits sustained operation, and memory efficiency that opens larger context windows than discrete-GPU systems allow.
+We believe the synthesis could deliver on "hyper-local AI": models that run entirely on desktop hardware, with latencies low enough to feel immediate, power draw that permits sustained operation, and memory efficiency that opens larger context windows than discrete-GPU systems allow.
 
-> This is a different deployment model, one that the unified memory desktop makes possible.
 
-Whether this approach proves practical remains an open research question. The NPU's int8 TOPS rating may not translate directly to MLA projection efficiency. The GPU's advantage for ternary operations may narrow as model sizes grow. The coordination overhead of three-way dispatch may dominate for smaller models. These are empirical questions that require hardware access and careful measurement.
 
-What we can state with confidence: without BAREWire.HSA's unified memory abstractions, the staging and transfer overhead would eliminate any benefit before measurement could begin. This is an exciting time to be involved with hardware-software co-design, and we're excited to be exploring an avenue with so much rich potential.
+Whether this approach proves practical remains an open research question. The NPU's int8 TOPS rating may not translate directly to MLA projection efficiency. As model sizes grow, the GPU's advantage for ternary operations could narrow. And for smaller models, three-way dispatch coordination may cost more than it saves. These are empirical questions that require hardware access and careful measurement.
+
+What we can state with confidence: without BAREWire.HSA's unified memory abstractions, the staging and transfer overhead would eliminate any benefit before measurement could begin. 
 
 ## Growing Pains and the Technology Super-Cycle
 
 The industry is at the beginning of a technology super-cycle for heterogeneous desktop compute. AMD's HSA vision has been articulated as early as 2012, but the full software stack, particularly for NPUs, is still arriving.
 
-The XDNA2 kernel driver landed in Linux 6.14, a significant recent milestone. However, the userspace runtime requires manual setup from AMD's xdna-driver repository. ROCm support for consumer RDNA GPUs has historically lagged datacenter parts, though the situation improves with each release. The Vulkan compute path, as we noted in [GPU cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-gpu), provides a more portable alternative that sidesteps many ROCm version compatibility issues. We're interested in targeting both from MLIR in the Composer compiler, and is part of our ongoing research efforts.
+The XDNA2 kernel driver landed in Linux 6.14, a significant recent milestone. However, the userspace runtime requires manual setup from AMD's xdna-driver repository. ROCm support for consumer RDNA GPUs has historically lagged datacenter parts, though the situation improves with each release. The Vulkan compute path, as we noted in [GPU cache-aware compilation](/docs/internals/hardware/cache-aware-compilation-gpu), provides a more portable alternative that sidesteps many ROCm version compatibility issues. We're interested in targeting both from MLIR in the Composer compiler as part of our ongoing research.
 
-These rough edges are expected. They amount to the friction of new territory being explored, and development proceeds through them rather than halting on them. Every technology super-cycle has similar characteristics: the hardware capabilities arrive before the software stack fully matures, and early adopters navigate incomplete documentation and evolving APIs.
+These rough edges are expected at this stage of the stack's maturity, and development proceeds through them. Every technology super-cycle has similar characteristics: the hardware capabilities arrive before the software stack fully matures, and early adopters navigate incomplete documentation and evolving APIs.
 
-Fidelity's architecture is being designed to meet these drivers when they arrive. The BAREWire HSA abstractions outlined here do not require a complete stack today. They are waypoints that guide current development toward a future where the hardware coherence is fully exposed to userspace. When AMD's NPU toolchain stabilizes, applications built on Fidelity's abstractions will be ready to leverage them without architectural changes.
+Fidelity's architecture is being designed to meet these drivers when they arrive. The BAREWire HSA abstractions outlined here do not require a complete stack today. They are waypoints that guide current development toward a future where the hardware coherence is fully exposed to userspace. When AMD's NPU toolchain stabilizes, applications built on Fidelity's abstractions will run against it without architectural changes.
 
-## What We Know With Certainty
+## Architectural Certainties
 
 While specific software stacks remain in flux, certain architectural truths anchor our design.
 
-**The hardware coherence exists.** Hardware coherence in HSA is real silicon. The memory controllers in Strix Halo provide cache coherence across CPU, GPU, and NPU. This is not a software simulation or a driver abstraction. It is hardware. This is very exciting to see this in mass-produced hardware. It will only grow more common over time.
+**The hardware coherence exists.** The memory controllers in Strix Halo provide cache coherence across CPU, GPU, and NPU in silicon, not as a software simulation or a driver abstraction. We expect this arrangement to grow more common in mass-produced hardware over time.
 
 **The address space is unified.** All compute agents can reference the same virtual addresses through HSA's coherence layer. The BIOS still allocates dedicated GPU memory regions for optimal access patterns, and cross-domain access may involve coherence traffic, but there is no PCIe barrier or physically separate VRAM. When an NPU writes to address X, the GPU can read from address X through the coherence fabric without explicit programmer-managed copies.
 
@@ -550,13 +550,13 @@ While specific software stacks remain in flux, certain architectural truths anch
 
 ## The Actor Model and Heterogeneous Ownership
 
-The actor model proves particularly well-suited to heterogeneous memory architectures. Each compute domain, CPU, GPU, NPU, maps naturally to an actor with its own memory region and message-passing interface. Cross-domain communication becomes actor messaging with explicit capabilities rather than shared mutable state with implicit coherence requirements.
+The actor model proves particularly well-suited to heterogeneous memory architectures. Each compute domain (CPU, GPU, NPU) is modeled as an actor with its own memory region and message-passing interface. Cross-domain communication becomes actor messaging with explicit capabilities rather than shared mutable state with implicit coherence requirements.
 
-Consider the ownership model required for our ternary inference pipeline. The NPU actor owns the MLA projection buffers. The GPU actor owns the ternary weight matrices. The CPU actor orchestrates the pipeline and owns the final output buffer. When the NPU completes its projection, it sends a capability (not a copy) to the GPU actor, granting read access to the projection output. The GPU processes the ternary layers and sends a capability to the CPU actor for final sampling.
+Consider the ownership model required for our ternary inference pipeline. The NPU actor owns the MLA projection buffers and the GPU actor owns the ternary weight matrices. The CPU actor owns the final output buffer and orchestrates the pipeline. When the NPU completes its projection, it sends a capability (not a copy) to the GPU actor, granting read access to the projection output. The GPU processes the ternary layers and sends a capability to the CPU actor for final sampling.
 
 This capability-based ownership supersedes what Rust's borrow checker can express. Rust verifies that references do not outlive their owners and that mutable access is exclusive. These properties are necessary but insufficient for HSA's memory model. The borrow checker cannot verify that a GPU kernel has finished writing before a CPU thread reads, because memory fences are side effects invisible to the type system. It cannot verify that a buffer allocated with `PreferGPU` hint is not being accessed primarily from the CPU, because allocation strategy is a runtime concern.
 
-Fidelity's actor model addresses both gaps. Message delivery between actors implies synchronization. When the GPU actor receives the capability from the NPU actor, the fence has already occurred. Residency hints flow through the type system from allocation to use, so the compiler can warn when access patterns contradict hints. The actor's capability becomes a proof of both ownership and residency, enforced at compile time rather than debugged at runtime.
+Fidelity's actor model addresses both gaps. Message delivery between actors implies synchronization. When the GPU actor receives the capability from the NPU actor, the fence has already occurred. Residency hints flow through the type system from allocation to use, so the compiler can warn when access patterns contradict hints. The actor's capability becomes a compile-time proof of both ownership and residency.
 
 This gives a safer model for heterogeneous memory systems, one that the C++ and Rust ecosystems cannot currently provide because their ownership models predate the hardware coherence that HSA now makes possible.
 
@@ -593,7 +593,7 @@ flowchart LR
 
 ```
 
-The same Clef code, the same BAREWire abstractions, different underlying transport. A voice assistant running locally on a developer's workstation would use BAREWire.HSA for the inference pipeline. A production deployment might run the same inference code on an edge server with CXL-attached GPU memory. Model training happens in the datacenter with RDMA-connected nodes. The application code remains unchanged. Only the platform configuration differs.
+The same Clef code and the same BAREWire abstractions run over a different underlying transport at each deployment target. A voice assistant running locally on a developer's workstation would use BAREWire.HSA for the inference pipeline. A production deployment might run the same inference code on an edge server with CXL-attached GPU memory, and model training would stay in the datacenter on RDMA-connected nodes. Across all three, only the platform configuration changes.
 
 ```fsharp
 // Same inference code works across deployment targets
@@ -611,19 +611,19 @@ let runInference (ctx: InferenceContext) (input: Buffer<Token>) =
 
 This illustrates the Fidelity precept: deploy to nearly any hardware, with memory safety and efficiency appropriate to each target. The [AI Refinery](/blog/fidelity-as-ai-refinery) vision extends from the developer's desktop to hyperscale infrastructure without forcing a rewrite at each tier.
 
-## Heralding the Hyper-Local Future
+## Hyper-Local Inference
 
-The unified memory desktop represents a distinct compute model when compared to either server CXL or edge accelerators. We're very excited about the potential to have a common semantic model that can address all three with similar design-time mechanics. As opposed to the standard "GPU in a laptop" this is a heterogeneous SoC where NPU, GPU, and CPU are peers sharing coherent memory. AMD's Strix Halo architecture demonstrates that this model can scale to serious inference workloads, with unified memory pools large enough to run powerful inference models locally.
+The unified memory desktop represents a distinct compute model when compared to either server CXL or edge accelerators. Our aim is a common semantic model that addresses all three tiers with similar design-time mechanics. As opposed to the standard "GPU in a laptop" this is a heterogeneous SoC where NPU, GPU, and CPU are peers sharing coherent memory. AMD's Strix Halo architecture demonstrates that this model can scale to serious inference workloads, with unified memory pools large enough to run 70B-class models locally.
 
-Fidelity's planned BAREWire.HSA abstractions are designed to prepare Clef developers to leverage this architecture without waiting for legacy toolchains to catch up. The dominant AI ecosystem remains anchored to Python, a language whose interpreter overhead and GIL contention make it structurally incapable of expressing zero-copy semantics or direct hardware coordination. Python tooling assumes the GPU is a black box that tensors are thrown at. The runtime handles the copies, and developers never see the cost. That abstraction served well when discrete GPUs were the only game in town. It becomes a liability when the hardware itself offers coherent memory that Python struggles to express.
+Fidelity's planned BAREWire.HSA abstractions give Clef developers a path to this architecture without waiting for legacy toolchains to catch up. The dominant AI ecosystem remains anchored to Python, a language whose interpreter overhead and GIL contention make it structurally incapable of expressing zero-copy semantics or direct hardware coordination. Python tooling assumes the GPU is a black box that tensors are thrown at. The runtime handles the copies, and developers never see the cost. That abstraction served well when discrete GPUs were the only game in town. It becomes a liability when the hardware itself offers coherent memory that Python struggles to express.
 
 The systems programming alternatives fare better but still fall short. C++ provides direct access to HSA headers and can express zero-copy patterns, but the language lacks type-level mechanisms to track memory residency or verify cross-agent access patterns. A C++ programmer working with HSA must maintain mental models of which buffers live where and which fences are required. The compiler offers no assistance. SYCL attempts to address this through its unified shared memory model, but the abstractions assume a simpler two-party (CPU/GPU) relationship rather than the three-way (CPU/GPU/NPU) choreography that Strix Halo enables.
 
 Rust presents a more nuanced case. Its ownership model prevents data races and ensures memory safety, properties that matter enormously for systems programming. However, the model was designed for homogeneous memory spaces where a reference is simply a pointer with a lifetime. HSA's coherent memory introduces a new dimension: the same virtual address may have different performance characteristics depending on which agent accesses it. Rust's type system cannot currently express "this reference is GPU-optimal" or "this buffer requires an NPU fence before GPU access." The language would need to evolve considerably, perhaps through something like linear types with residency annotations, to provide the compile-time guarantees that HSA's memory model demands.
 
-Fidelity's architecture anticipates these requirements. The actor model maps naturally to heterogeneous compute domains; each actor owns its memory region with capabilities that express cross-domain access patterns. The PSG captures semantic information about data flow that enables automatic fence insertion. Units of measure encode residency hints at the type level. When the hardware provides coherent memory across CPU, GPU, and NPU, Fidelity is prepared to leverage it safely; we anticipate this will give our users a significant advantage over projects constrained by toolchains designed for simpler memory models.
+Fidelity's architecture is organized around these requirements. The actor model fits heterogeneous compute domains directly. Each actor owns its memory region with capabilities that express cross-domain access patterns. The PSG captures semantic information about data flow that enables automatic fence insertion. Units of measure encode residency hints at the type level. When the hardware provides coherent memory across CPU, GPU, and NPU, Fidelity is prepared to use it safely. We anticipate this will give our users a significant advantage over projects constrained by toolchains designed for simpler memory models.
 
-The patterns established here, unified buffer allocation, cross-agent signaling, pointer handoffs instead of copies, will become the foundation for local AI applications that feel responsive because they eliminate the data movement overhead that plagues both discrete-GPU systems and the toolchains that assume them.
+Unified buffer allocation, cross-agent signaling, and pointer handoffs in place of copies are the foundation we are building for local AI applications that feel responsive, because they eliminate the data movement overhead that discrete-GPU systems and the toolchains built around them impose.
 
 We are hard at work to design these abstractions now in anticipation of full toolchain maturity for three reasons. 
 
@@ -631,4 +631,4 @@ We are hard at work to design these abstractions now in anticipation of full too
 1. Early exploration reveals design constraints that documentation does not capture. 
 1. We would rather be six months early than six months late.
 
-The rough edges we encounter today become the guardrails we build, both for our customers and more broadly in sharing this platform to be used by other developers. The HSA software stack will mature, NPU toolchains will stabilize, and the pieces of this technology super-cycle will inevitably fall into place. Fidelity applications will be ready to maximize those unique opportunities for a more performant, more efficient, and more secure future.
+We fold what we learn from today's rough edges into the platform's abstractions, for our customers and for the other developers who adopt it. The HSA software stack will mature and NPU toolchains will stabilize. Applications built on Fidelity's abstractions will be ready when they do.
