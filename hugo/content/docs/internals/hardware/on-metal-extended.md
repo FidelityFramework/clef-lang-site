@@ -15,7 +15,7 @@ params:
 
 [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/) treats one class of target at full depth: two paths onto a microcontroller, and the trusted-computing-base decision that selects between them. This document covers the wider territory. A sealed Clef image can enter at a reset vector, boot as a microVM guest, or run as a static binary against a host kernel's syscall surface, and what changes between those forms is the substrate declaration, never the program text.
 
-Farscape can parse vendor C/C++ headers in Clef and hand the compiler a coherent typed memory model. The memory strategies graduate from stack-only allocation to actor-owned arenas. Two companion entries carry the parts of the range with machinery of their own: [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/) for the dispatch layer, and [Bring-Up Beyond the CPU](/docs/internals/hardware/spatial-bring-up/) for targets where the registers themselves are compilation outputs. The proposition has held since our earliest bare-metal work: expressive, idiomatic Clef compiling to machine code indistinguishable from hand-written assembly, with the toolchain that delivers machine bring-up and low-level process automation now written in Clef itself.
+Farscape can parse vendor C/C++ headers in Clef and hand the compiler a coherent typed memory model. The memory strategies graduate from stack-only allocation to actor-owned arenas. Two companion entries carry the parts of the range with machinery of their own: [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/) for the dispatch layer, and [Bring-Up Beyond the CPU](/docs/internals/hardware/bring-up-beyond-the-cpu/) for targets where the registers themselves are compilation outputs. The proposition has held since our earliest bare-metal work: expressive, idiomatic Clef compiling to machine code indistinguishable from hand-written assembly, with the toolchain that delivers machine bring-up and low-level process automation now written in Clef itself.
 
 ---
 
@@ -40,7 +40,7 @@ A platform declaration that describes a 4-byte word with no heap region and one 
 
 [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/) treats the scheduler beneath the image: the dispatch contract our actor system holds constant across these same rows, and the per-substrate manifest that separates what an implementation discharges itself from what it assumes from below.
 
-On spatial silicon the image is a configuration rather than a program, and the registers a driver would poke are artifacts the compiler synthesizes. [Bring-Up Beyond the CPU](/docs/internals/hardware/spatial-bring-up/) follows the backend legs onto those targets.
+On spatial silicon the image is a configuration rather than a program, and the registers a driver would poke are artifacts the compiler synthesizes. [Bring-Up Beyond the CPU](/docs/internals/hardware/bring-up-beyond-the-cpu/) follows the backend legs onto those targets.
 
 ## The Problem with Wrappers
 
@@ -232,7 +232,7 @@ The goal we set at the start holds: Clef on bare metal with zero runtime cost. T
 ### The Companion Entries
 
 - [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/): the dispatch contract across the substrate spectrum, down to Thread and Handler mode
-- [Bring-Up Beyond the CPU](/docs/internals/hardware/spatial-bring-up/): the backend legs onto spatial silicon, where registers are compilation outputs
+- [Bring-Up Beyond the CPU](/docs/internals/hardware/bring-up-beyond-the-cpu/): the backend legs onto spatial silicon, where registers are compilation outputs
 
 ### Memory Architecture
 
