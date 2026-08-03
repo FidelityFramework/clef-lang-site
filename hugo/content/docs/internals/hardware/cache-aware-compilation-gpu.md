@@ -2,6 +2,7 @@
 title: "GPU Cache-Aware Compilation"
 linkTitle: "GPU Cache-Aware Compilation"
 description: "How Composer and Alex Will Extend Memory Optimization to Parallel Architectures"
+weight: 40
 date: 2025-09-24T00:00:00-04:00
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance", "GPU"]

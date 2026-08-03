@@ -728,7 +728,7 @@ This is the Fidelity approach: express posit arithmetic in idiomatic Clef, compi
 ### Fidelity Framework
 
 - [Fidelity Framework: A Primer](/blog/fidelity-framework-primer/): Overview of native Clef compilation
-- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): The broader memory modeling vision
+- [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/): The broader memory modeling vision
 - [Cache-Conscious Memory Management](/docs/internals/hardware/cache-aware-compilation-cpu/): How data layout affects performance
 - [Memory Management by Choice](/docs/design/memory/memory-management-by-choice/): The spectrum from automatic to explicit control
 - [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/): Actor-aware memory management through deterministic lifetimes

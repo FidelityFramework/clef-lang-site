@@ -2,6 +2,7 @@
 title: "Fidelity on MCU"
 linkTitle: "Fidelity on MCU"
 description: "Two paths to a microcontroller: binding a vendor HAL through Farscape, and compiling Clef straight to the reset vector"
+weight: 10
 date: 2024-01-02T16:59:54+06:00
 authors: ["Houston Haynes"]
 tags: ["Architecture"]
@@ -181,7 +182,7 @@ This assembly matches what an expert embedded programmer would write by hand, ge
 
 The process begins with Farscape, which parses vendor-provided hardware headers. For ARM-based microcontrollers these are typically CMSIS (Cortex Microcontroller Software Interface Standard) headers, and for the Renesas RA family they are the Flexible Software Package (FSP) headers. Both describe every register, bit field, and memory map in the microcontroller.
 
-Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to read these headers, so a malformed header fails the parse with a precise diagnostic at its source location, where a wrapper-based flow would carry the mistake forward into a silently wrong binding. The output is quotation-based hardware descriptors that integrate with the Clef compilation pipeline rather than raw P/Invoke bindings. [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/) traces this path in depth, from the CMSIS `__I`/`__O`/`__IO` qualifiers through to the `MemoryModel` record the compiler consumes.
+Farscape uses XParsec (the same parser combinator library that powers other parts of the Fidelity toolchain) to read these headers, so a malformed header fails the parse with a precise diagnostic at its source location, where a wrapper-based flow would carry the mistake forward into a silently wrong binding. The output is quotation-based hardware descriptors that integrate with the Clef compilation pipeline rather than raw P/Invoke bindings. [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/) traces this path in depth, from the CMSIS `__I`/`__O`/`__IO` qualifiers through to the `MemoryModel` record the compiler consumes.
 
 When a contributor runs Farscape on a new microcontroller's headers, it generates a complete Clef hardware abstraction library with three components: quotations encoding memory layout, active patterns for PSG recognition, and a MemoryModel record for Clef integration.
 
@@ -326,7 +327,7 @@ module internal MemoryConfiguration =
             StandardMemory.configure()
 ```
 
-The memory management strategy is determined when the library is generated based on the target platform. Application developers work with standard Clef collections and data structures, while the framework handles the mapping to the appropriate low-level memory operations. On the constrained end, the bit-banging driver layer allocates nothing at all: a register write is value-in, store-out, and buffers are static and linker-provided, an invariant the build can check. [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/) traces the graduated-memory story from stack-only allocation through actor-aware arenas.
+The memory management strategy is determined when the library is generated based on the target platform. Application developers work with standard Clef collections and data structures, while the framework handles the mapping to the appropriate low-level memory operations. On the constrained end, the bit-banging driver layer allocates nothing at all: a register write is value-in, store-out, and buffers are static and linker-provided, an invariant the build can check. [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/) traces the graduated-memory story from stack-only allocation through actor-aware arenas.
 
 ## An Accessible Discipline
 
@@ -334,7 +335,8 @@ Across both paths, the aim is to move embedded development from a specialized cr
 
 ## See also
 
-- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): the Farscape header-parsing path in depth, from CMSIS qualifiers to the graduated-memory model
+- [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/): the substrate spectrum past the microcontroller, with the Farscape toolchain and graduated memory in depth
+- [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/): the dispatch contract the freestanding profile discharges in full, down to Thread and Handler mode
 - [Getting to the Heart of Unikernels]({{< ref "getting-to-the-heart-of-unikernels" >}}): freestanding versus bare-metal entry, the Cortex-M33 reset vector, and no-libc execution
 - [Where Native Goes, Mobile Follows]({{< ref "where-native-goes-mobile-follows" >}}): the cross-platform native-compilation thesis this MCU target sits inside
 - [Cryptographic Certainty]({{< ref "cryptographic-certainty" >}}): the Post-Quantum Credential work that drives the pure-Clef unikernel on the RA6M5

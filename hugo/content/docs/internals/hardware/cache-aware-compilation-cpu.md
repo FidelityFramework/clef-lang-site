@@ -2,6 +2,7 @@
 title: "Cache-Conscious Memory Management: CPU Edition"
 linkTitle: "Cache-Conscious Memory: CPU"
 description: "From Memory-Aware to Cache-Aware: Architecting Performance Through Hierarchical Memory Control"
+weight: 30
 date: 2025-09-24
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Performance"]

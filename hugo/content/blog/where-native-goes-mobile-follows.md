@@ -293,7 +293,7 @@ Native goes where our Composer IR reaches, and we made that reach part of the de
 ### Hardware targets
 
 - [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/): the bare-metal end of the same native-compilation path, from vendor-HAL binding to the pure-Clef unikernel
-- [Clef on Metal Revisited](/docs/internals/hardware/on-metal-revisited/): a year of evolution in graduated memory across native targets
+- [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/): graduated memory and the substrate spectrum across native targets
 - [RDNA Unified Memory on the Desktop](/docs/internals/memory-fabrics/rdna-unified-memory-desktop/): the desktop-GPU target on the same heterogeneous matrix
 
 ### UI patterns
