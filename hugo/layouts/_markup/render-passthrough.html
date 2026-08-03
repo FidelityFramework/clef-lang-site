@@ -3,6 +3,7 @@
 {{- if eq $engine "katex" -}}
   {{- $macros := dict
         `\parr` `\mathbin{\char"214B}`
+        `\with` `\mathbin{\&}`
         "⅋" `\mathbin{\char"214B}`
         "¡" `\mathord{\char"A1}`
         "¿" `\mathord{\char"BF}` }}
