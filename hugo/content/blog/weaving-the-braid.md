@@ -148,17 +148,15 @@ The duality doc uses "braiding" for one of the monoidal laws, the commutativity 
 
 The polarity argument settles the mechanism and leaves the object unnamed. A delimited continuation is how a crossing gets carried, and the type for what it carries appears in a paper written for reasons that had nothing to do with us.
 
-Qian, Kavvos, and Birkedal published [*Client-Server Sessions in Linear Logic*](https://arxiv.org/abs/2010.13926) in 2021, introducing a family of connectives they call coexponentials. Their concern was proof-theoretic. They wanted a type for a stateful server handling an unbounded pool of clients, expressed inside Classical Linear Logic, and they wanted it without reaching for the Mix rule. Mix is poison in their setting: it forces the conflation \(\otimes = ⅋\), and Atkey and colleagues trace deadlock to that conflation directly.
+Qian, Kavvos, and Birkedal published [*Client-Server Sessions in Linear Logic*](https://arxiv.org/abs/2010.13926) in 2021, introducing a family of connectives they call coexponentials. Their concern was proof-theoretic. They wanted a type for a stateful server handling an unbounded pool of clients, expressed inside Classical Linear Logic, and they wanted it without reaching for the Mix rule. Mix is poison in their setting: it forces the conflation \(\otimes = \parr\), and Atkey and colleagues trace deadlock to that conflation directly.
 
 The server side of the construction is a rule with three premises:
 
-```
-⊢ Γ, B        ⊢ B⊥, ∆        ⊢ B⊥, A, B
-────────────────────────────────────────
-              ⊢ Γ, ∆, ¡A
-```
+$$
+\frac{\vdash \Gamma, B \qquad \vdash B^{\perp}, \Delta \qquad \vdash B^{\perp}, A, B}{\vdash \Gamma, \Delta, ¡A}
+$$
 
-Read alongside the prose that accompanies it, the rule describes a stateful server with an internal protocol `B`: a process that produces a `B` while interacting along `Γ`, a process that consumes a `B` when the server finishes, and a process that takes a `B`, serves one client with interface `A`, and hands back the next `B`. The dual connective `¿A` is the client pool, and the calculus treats two orderings of the same pool as the same derivation, so the server may take any client from it.
+Read alongside the prose that accompanies it, the rule describes a stateful server with an internal protocol \(B\): a process that produces a \(B\) while interacting along \(\Gamma\), a process that consumes a \(B\) when the server finishes, and a process that takes a \(B\), serves one client with interface \(A\), and hands back the next \(B\). The dual connective \(¿A\) is the client pool, and the calculus treats two orderings of the same pool as the same derivation, so the server may take any client from it.
 
 An Olivier actor satisfies those three premises with nothing annotated. Here is the shape our [three-layer contract](/docs/design/concurrency/the-three-layer-actor-contract/) describes, with the premises marked in the comments:
 
@@ -186,15 +184,15 @@ let catalog = Olivier.actor {
 }
 ```
 
-`CatalogState` is the state type a developer declares anyway. The receive loop is the loop they write anyway. The mailbox is the client pool `¿A`, and the actor's conversation over its lifetime is `¡A`. None of that appears in the source and none of it is asked for.
+`CatalogState` is the state type a developer declares anyway. The receive loop is the loop they write anyway. The mailbox is the client pool \(¿A\), and the actor's conversation over its lifetime is \(¡A\). None of that appears in the source and none of it is asked for.
 
-The metatheory is where the correspondence pays. A well-typed process in their system is always either finished or able to take another step, which is the guarantee a progress theorem gives, and a stuck composition is what it rules out. The `⊢ B⊥, A, B` premise reads linearly, one state consumed and one produced per client served, so a branch that returns without threading the update fails it. The permutation quotient asserts that any serving order gives the same result.
+The metatheory is where the correspondence pays. A well-typed process in their system is always either finished or able to take another step, which is the guarantee a progress theorem gives, and a stuck composition is what it rules out. The \(\vdash B^{\perp}, A, B\) premise reads linearly, one state consumed and one produced per client served, so a branch that returns without threading the update fails it. The permutation quotient asserts that any serving order gives the same result.
 
 Deadlock, silent state loss, and order dependence are the three failure modes actor systems discover at run time today. All three are timing-dependent, which is the class testing covers worst.
 
 > Three runtime failure modes, settled at design time, with nothing added to the source.
 
-Whether any of this is reachable turns on one feature of the rule. `B` appears in all three premises and in no part of the conclusion, so an observer outside the actor sees the client interface and not the state type. The paper records what the free choice of `B` costs them: a reduced proof can mention types that appear nowhere in what it set out to prove. Anyone reconstructing the type from behavior faces that cost squarely, because the goal gives no bound on what `B` could be. An Olivier actor declares its state type. `B` is read from the source and the three premises are checked, which leaves the analysis one job: recover the client interface `A` from the receive loop's match cases.
+Whether any of this is reachable turns on one feature of the rule. \(B\) appears in all three premises and in no part of the conclusion, so an observer outside the actor sees the client interface and not the state type. The paper records what the free choice of \(B\) costs them: a reduced proof can mention types that appear nowhere in what it set out to prove. Anyone reconstructing the type from behavior faces that cost squarely, because the goal gives no bound on what \(B\) could be. An Olivier actor declares its state type. \(B\) is read from the source and the three premises are checked, which leaves the analysis one job: recover the client interface \(A\) from the receive loop's match cases.
 
 Olivier's contract was not designed against a linear-logic rule. The three-part shape came from supervision being tractable and from [an arena belonging to its actor](/docs/design/memory-management/), and it is the shape actor runtimes before ours arrived at under the same pressures. We recognized the correspondence afterward. That is the same order our [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854) reports along the compilation axis, where the combinator was built to sequence lowering passes and turned out to be the operational form of Ohori's machine-code proof theory, a sequence the paper states in its own conclusion.
 
