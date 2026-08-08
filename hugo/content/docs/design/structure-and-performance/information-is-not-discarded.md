@@ -39,7 +39,7 @@ MLIR arrives through C++, the "worse is better" lineage in Gabriel's sense. Clef
 
 The account here is the mechanical one. The same principle has a formal statement and a normative one, and this discipline is where they meet.
 
-Formally, the compilation pipeline is a monotone sheaf: each lowering pass adds annotations to the stalk and removes none, and the dual-pass architecture is the witness that no structure map silently drops a fact. That reading, with its cohomological consequences, is developed in [The Compilation Sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/).
+Formally, the compilation pipeline is a monotone sheaf: each lowering pass adds annotations to the stalk and removes none, and the staged-discharge architecture is the witness that no structure map silently drops a fact. That reading, with its cohomological consequences, is developed in [The Compilation Sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/).
 
 Normatively, the specification requires it. A design-time property the specification obliges an implementation to establish must be preserved through lowering, or re-checked at the lowering steps that could perturb it. A property silently lost in lowering is a conformance violation. The obligation is stated in [Conformance §6, the preservation obligation through lowering](/spec/draft/conformance/).
 

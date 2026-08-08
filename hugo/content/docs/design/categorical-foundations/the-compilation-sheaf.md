@@ -10,15 +10,15 @@ tags: ["Architecture", "Innovation", "Verification"]
 
 ## Why a Sheaf
 
-Our Fidelity framework's verification story has, until this entry, been told in two registers. The first register is operational: our Program Semantic Graph (PSG) computes annotations during elaboration, our dual-pass architecture re-verifies them at each MLIR lowering, and the reconciliation tool checks the binary against a certificate produced at the end of the pipeline. The second register is logical: the [four-tier Hoare correspondence](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/#the-four-tiers) assigns each verification obligation to a decidable fragment, from Gaussian elimination over \(\mathbb{Z}^n\) at Tier 1 to probabilistic relational Hoare logic at Tier 4.
+Our Fidelity framework's verification story has, until this entry, been told in two registers. The first register is operational: our Program Semantic Graph (PSG) computes annotations during elaboration, our staged-discharge architecture re-verifies them at each MLIR lowering, and the reconciliation tool checks the binary against a certificate produced at the end of the pipeline. The second register is logical: the [four-tier Hoare correspondence](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/#the-four-tiers) assigns each verification obligation to a decidable fragment, from Gaussian elimination over \(\mathbb{Z}^n\) at Tier 1 to probabilistic relational Hoare logic at Tier 4.
 
 The third register is the formal one. The mechanical account of why annotations are carried through lowering rather than discarded, in the engineering terms of arity, closures, and dimensional types, is [Information Is Not Discarded](/docs/design/structure-and-performance/information-is-not-discarded/); what follows is the categorical structure underneath it, in which that carrying is a monotone sheaf and a dropped annotation is a broken structure map.
 
-These two registers describe the same architecture, and neither, on its own, explains *why the architecture composes*. The operational story takes compositionality as a design assumption ("the dual-pass keeps things consistent"). The logical story takes it as a proof rule ("the consequence rule applies at each lowering"). Both are correct, and both elide the underlying structure that makes them correct simultaneously.
+These two registers describe the same architecture, and neither, on its own, explains *why the architecture composes*. The operational story takes compositionality as a design assumption ("the staged discharge keeps things consistent"). The logical story takes it as a proof rule ("the consequence rule applies at each lowering"). Both are correct, and both elide the underlying structure that makes them correct simultaneously.
 
-That structure is a sheaf. The compilation pipeline carries a cellular sheaf whose stalks are the annotation bundles produced by elaboration, whose structure maps are the lowering passes, and whose global sections are exactly the certificates the pipeline emits. Our dual-pass architecture is the witnessing mechanism for a global section of this sheaf. Our tier architecture is a graduated refinement of the stalk category over a fixed base poset.
+That structure is a sheaf. The compilation pipeline carries a cellular sheaf whose stalks are the annotation bundles produced by elaboration, whose structure maps are the lowering passes, and whose global sections are exactly the certificates the pipeline emits. Our staged-discharge architecture is the witnessing mechanism for a global section of this sheaf. Our tier architecture is a graduated refinement of the stalk category over a fixed base poset.
 
-The sheaf framing sharpens four claims the operational and logical accounts state without proving: why the dual-pass works, why the tiers compose, why our Program Hypergraph (PHG) requires hyperedges rather than binary edges, and what a "conservative" range finding actually is.
+The sheaf framing sharpens four claims the operational and logical accounts state without proving: why the staged discharge works, why the tiers compose, why our Program Hypergraph (PHG) requires hyperedges rather than binary edges, and what a "conservative" range finding actually is.
 
 ## The Compilation Poset
 
@@ -51,9 +51,9 @@ The defining axiom of a sheaf is the compositionality equation: for any chain \(
 
 \[D(s_0 < s_1) \,;\, D(s_1 < s_2) \;=\; D(s_0 < s_2).\]
 
-In our framework's terms: lowering from PSG to mid-level MLIR via the high-level dialect must produce the same annotations as lowering directly from PSG to mid-level MLIR. This is the property our dual-pass architecture *enforces*. Each lowering pass is required to preserve the annotations of the stage above it, and the Z3 re-discharge at each pass is the local check that compositionality holds across that edge of the compilation poset.
+In our framework's terms: lowering from PSG to mid-level MLIR via the high-level dialect must produce the same annotations as lowering directly from PSG to mid-level MLIR. This is the property our staged-discharge architecture *enforces*. Each lowering pass is required to preserve the annotations of the stage above it, and the Z3 re-discharge at each pass is the local check that compositionality holds across that edge of the compilation poset.
 
-A theorem about finite posets makes this enforcement strategy efficient. To verify that a global section exists, it suffices to check the structure-map equations on the edges of the Hasse diagram; transitivity propagates through compositionality. The dual-pass architecture's computational cost is therefore proportional to the number of lowering passes, not to the number of pairs of compilation stages, and this is a categorical fact rather than an engineering optimization.
+A theorem about finite posets makes this enforcement strategy efficient. To verify that a global section exists, it suffices to check the structure-map equations on the edges of the Hasse diagram; transitivity propagates through compositionality. The staged-discharge architecture's computational cost is therefore proportional to the number of lowering passes, not to the number of pairs of compilation stages, and this is a categorical fact rather than an engineering optimization.
 
 ## Global Sections and the Certificate
 
@@ -61,7 +61,7 @@ A *global section* of a sheaf is an assignment of one stalk value to each node o
 
 A global section certifies that *consistent annotations exist*. It does not, by itself, certify that the binary realizes those annotations; that is the reconciliation tool's job. The global section is a *necessary* condition for the binary to be correct with respect to the source-level specification. Sufficiency requires the additional check that the binary is a faithful implementation of the section. The reconciliation tool, in sheaf-theoretic terms, verifies that the binary and the certificate are witnesses to the same global section over the same base poset.
 
-This is the categorical version of the consequence rule applied at each lowering, and it is also the categorical reason our dual-pass architecture cannot be replaced by a single end-of-pipeline check. A single check at the binary stage would verify only the stalk at the bottom of the poset, leaving the structure maps that connect it to the source unverified. A break in the structure-map chain (a lowering pass that silently changes a dimensional annotation, an MLIR transformation that drops a coeffect attribute) would be invisible. The dual-pass is the witness that no such break occurs.
+This is the categorical version of the consequence rule applied at each lowering, and it is also the categorical reason our staged-discharge architecture cannot be replaced by a single end-of-pipeline check. A single check at the binary stage would verify only the stalk at the bottom of the poset, leaving the structure maps that connect it to the source unverified. A break in the structure-map chain (a lowering pass that silently changes a dimensional annotation, an MLIR transformation that drops a coeffect attribute) would be invisible. The staged discharge is the witness that no such break occurs.
 
 ## Tiers as Stalk-Category Refinements
 
@@ -112,13 +112,13 @@ The four-tier correspondence describes Hoare logic over the values a program com
 
 In the sheaf framing these are *different sheaves over the same compilation poset*, with different stalk categories, rather than new tiers added to the existing four. Access Hoare logic is the sheaf whose stalks are capability lattices and whose structure maps preserve access discipline through lowering. Symmetry Hoare logic is the sheaf whose stalks carry group actions and whose structure maps are equivariant.
 
-The compilation poset is shared across all three sheaves. Our framework verifies a program by checking that global sections exist for whichever sheaves the engineer's domain requires: the four-tier functional sheaf for correctness, the access sheaf for authorization, the symmetry sheaf for conservation laws and equivariance. The dual-pass architecture witnesses each of these global sections by the same mechanism: local structure-map equations checked at the edges of the compilation poset, with compositionality propagating the structural check through the rest. The PSG and PHG are committed to the base poset over which any number of compatible sheaves can live. [The braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/) proposes one such addition, a non-abelian sheaf whose stalks carry the crossing order of concurrent work.
+The compilation poset is shared across all three sheaves. Our framework verifies a program by checking that global sections exist for whichever sheaves the engineer's domain requires: the four-tier functional sheaf for correctness, the access sheaf for authorization, the symmetry sheaf for conservation laws and equivariance. The staged-discharge architecture witnesses each of these global sections by the same mechanism: local structure-map equations checked at the edges of the compilation poset, with compositionality propagating the structural check through the rest. The PSG and PHG are committed to the base poset over which any number of compatible sheaves can live. [The braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/) proposes one such addition, a non-abelian sheaf whose stalks carry the crossing order of concurrent work.
 
 ## What This Reframes
 
 Our cohomological framing leaves the implementation unchanged and changes what the implementation is *about*:
 
-Our dual-pass architecture is the witnessing mechanism for global sections of the compilation sheaf, and the local-edge-check strategy is forced by the finite-poset cohomology theorem.
+Our staged-discharge architecture is the witnessing mechanism for global sections of the compilation sheaf, and the local-edge-check strategy is forced by the finite-poset cohomology theorem.
 
 The tier architecture is a graduated refinement of the stalk category over a fixed base poset, with each tier corresponding to a categorically natural choice of stalks (abelian groups, QF_LIA models, distributions over lattice cosets, relational pRHL judgments).
 
