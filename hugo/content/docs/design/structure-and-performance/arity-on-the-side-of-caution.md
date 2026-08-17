@@ -148,7 +148,7 @@ App(greet, [prefix; readln()])     // Direct 2-arg call
 
 ### Closure Representation When Needed
 
-When arity analysis cannot prove a call saturated, the partial application becomes a closure, and from that point the [flat closure representation](/docs/design/memory/gaining-closure/) governs what it is and why it is safe: a code pointer paired with a settled environment, [null-free by construction](/docs/design/language/null-free-by-construction/), placed on the stack or in a region by escape analysis. Arity analysis settles whether a closure exists at all. When one does, the flat closure representation fixes its layout and lifetime.
+When arity analysis cannot prove a call saturated, the partial application becomes a closure, and from that point the [flat closure representation](/docs/design/memory/gaining-closure/) governs what it is and why it is safe: a code pointer paired with a settled environment, [null-free by construction](/docs/design/language/null-free-by-construction/), placed on the stack or in a region by escape analysis. Arity analysis settles whether a closure exists at all. When one does, the flat closure representation fixes its layout and lifetime. Every closure that does exist has an enumerated environment and a known extent.
 
 For genuinely escaping partial applications, the design carries an explicit closure node.
 

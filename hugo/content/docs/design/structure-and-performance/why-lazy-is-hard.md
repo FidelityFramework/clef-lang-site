@@ -125,7 +125,7 @@ Our implementation builds directly on the flat closure architecture described in
 | computed: i1 | value: T | code_ptr: ptr | cap_0 | cap_1 ... |
 | [0] | [1] | [2] | [3] | [4] |
 
-The structure is self-contained: no pointers to outer environments, no heap allocation beyond the lazy value itself, and no collector to involve.
+The structure is self-contained: no pointers to outer environments, no heap allocation beyond the lazy value itself, and no collector to involve. A chain of linked thunks would break exactly this containment: each unforced link widens the set of live captures a lifetime judgment must account for, which is the space leak stated structurally. Keeping the thunk flat keeps that set at the field list, so the abstraction arrives with its judgments already finite and costs less than a hand-rolled deferral scheme that would carry none of them.
 
 ### The Thunk Calling Convention
 

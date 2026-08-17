@@ -306,7 +306,7 @@ let modifyExternal (ref: byref<int>) =
  
 ```
 
-Escape analysis answers a single question: does this mutable outlive its lexical scope? For byref parameters specifically, the challenge involves tracking whether references to local mutables escape through function boundaries. Our [ByRef Resolved](/docs/design/types/byref-resolved/) work established the foundation for handling these scenarios in native compilation. If yes, arena allocation (heap-like, but with region-based lifetime). If no, stack allocation (memref.alloca, fast and deterministic).
+Escape analysis answers a single question: does this mutable outlive its lexical scope? For byref parameters specifically, the challenge involves tracking whether references to local mutables escape through function boundaries. Our [ByRef Resolved](/docs/design/types/byref-resolved/) work established the foundation for handling these scenarios in native compilation. If yes, arena allocation (heap-like, but with region-based lifetime). If no, stack allocation (memref.alloca, fast and deterministic). The arena path is what keeps the region model sound: the region that receives an escaping capture outlives every closure that can reach it.
 
 The complete system requires four components:
 
