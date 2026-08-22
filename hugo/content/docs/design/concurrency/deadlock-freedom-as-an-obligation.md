@@ -12,7 +12,7 @@ params:
 
 Our actor model gives every instance an arena that lives exactly as long as the actor, and Prospero reclaims it deterministically when the actor terminates. That discipline, Resource Acquisition Is Initialization (RAII) drawn to the actor boundary, forecloses the memory failures of an actor system: use-after-free, dangling byref, a byref escaping its frame, a reference into a dead actor. **However, it does not foreclose deadlock.** Two actors can each park a continuation on a reply that only the other could send, every arena intact, every sentinel reading `Valid`, every lifetime correct, and the system makes no progress while reporting green. This is the gap this document closes, the way managed mutability closes its own.
 
-## Two properties use the word "safe"
+## "Safe" covers two properties
 
 Actor-scoped RAII is a safety property in the technical sense: nothing bad happens to memory. Each actor owns its arena, cross-process references resolve through sentinels, and cleanup is tied to the actor lifecycle rather than to a collector running on its own clock. Those are the failure modes actor-scoped RAII is designed to rule out, and in [Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/) it does.
 
@@ -26,7 +26,7 @@ Our RAII work eliminated the memory-safety failures and left the liveness axis t
 
 The hazard has one source: a synchronous reply expectation across actors. A `PostAndReply` call suspends the caller's continuation until the callee answers on a reply channel. That suspension is an edge in a wait-for relation, and a cycle of such edges where every actor is simultaneously blocked is the deadlock.
 
-A fire-and-forget `Tell` adds no such edge. The sender posts to a mailbox and returns, so the asynchronous fraction of a program is invisible to this hazard and cannot deadlock through it. The synchronous request and response concentrates the whole risk, because that is the only place a caller's progress is contingent on a specific message another actor is contractually bound to produce.
+A fire-and-forget `Tell` adds no such edge. The sender posts to a mailbox and returns, so the asynchronous fraction of a program is invisible to this hazard and cannot deadlock through it. The synchronous request and response concentrates the risk, because that is the only place a caller's progress is contingent on a specific message another actor is contractually bound to produce.
 
 We want remote procedure call (RPC) available. It is genuinely useful in systems work, and closed-loop request and response is much better than legislating it away in favor of pervasive callbacks. So the synchronous edge stays in the model. The question is how to make its liveness visible in a way that fits our design-time norms.
 

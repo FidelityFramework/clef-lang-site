@@ -11,7 +11,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-Every compiler must eventually represent "the rest of the computation." In imperative languages, this question rarely surfaces explicitly. The call stack handles it through it's own instrumentation, and programmers rarely think about what happens after the current statement. But in languages that embrace computation expressions as Clef does, this question moves from implicit mechanism to explicit design decision.
+Every compiler must eventually represent "the rest of the computation." In imperative languages, this question rarely surfaces explicitly. The call stack handles it through its own instrumentation, and programmers rarely think about what happens after the current statement. But in languages that embrace computation expressions as Clef does, this question moves from implicit mechanism to explicit design decision.
 
 For the Fidelity framework, this question became a turning point. Delimited continuations form the connective tissue between Clef's async expressions, the actor model, and our native compilation strategy, and treating them as one primitive reshaped the compiler architecture around them.
 
@@ -56,11 +56,11 @@ The transformation is verbose, but the structure underneath is simple:
 
 > async expressions are syntax sugar over delimited continuations.
 
-The `let!` keyword hides the explicit continuation capture that happens underneath. This transformation is what lets Clef's async syntax compile to native code with deterministic memory management, worked through in [Platform-Aware Continuation Compilation](#platform-aware-continuation-compilation) below.
+The `let!` keyword hides the explicit continuation capture that happens underneath. This transformation lets Clef's async syntax compile to native code with deterministic memory management, worked through in [Platform-Aware Continuation Compilation](#platform-aware-continuation-compilation) below.
 
 ## Actors as Sugared Continuations
 
-The actor model presents a different face of the same concept. An actor receives a message, processes it, and waits for the next message. That "waits for the next message" is itself a continuation: the computation that will execute when the next message arrives.
+The actor model is a different face of the same concept. An actor receives a message, processes it, and waits for the next message. That "waits for the next message" is itself a continuation: the computation that will execute when the next message arrives.
 
 Consider the relationship between Clef's `MailboxProcessor` and an async workflow:
 
@@ -202,7 +202,7 @@ Delimited continuations are a sophisticated concept with substantial theoretical
 
 ## The Turning Point
 
-Why do we call this Fidelity's "turning point"? Because recognizing the centrality of delimited continuations reframed our entire approach.
+Why do we call this Fidelity's "turning point"? Because recognizing the centrality of delimited continuations reframed our approach.
 
 Before this recognition, we treated async, actors, and computation expressions as separate features requiring separate compilation strategies. The async builder was one thing, the actor model another, computation expressions a third. Each had its own MLIR lowering path, its own optimization considerations, its own edge cases.
 

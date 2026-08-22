@@ -15,7 +15,7 @@ Clef's computation expressions give a unified syntax for control flow that would
 
 The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case; an applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
-This builds on the architectural foundations we've established across the Fidelity framework - from our [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to our [exploration of continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from our [reactive programming model](/blog/fidelityrx-native-reactivity/) to our [approach to referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
+This builds on the architectural foundations we've established across the Fidelity framework - from [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from the [reactive programming model](/blog/fidelityrx-native-reactivity/) to [referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
 
 ## A Principled Start
 
@@ -57,7 +57,7 @@ The `let!` is syntactic sugar for a specific pattern of function composition. Wh
 
 ## The Continuation Connection
 
-The continuation pattern is already there in ordinary code. Every `let` binding can be rewritten as a function application: Every `let` binding can be rewritten as a function application:
+The continuation pattern is already there in ordinary code. Every `let` binding can be rewritten as a function application:
 
 ```fsharp
 // A normal let binding
@@ -249,7 +249,7 @@ let rec size tree =
 
 ## Compilation Strategies
 
-Let's trace how these different patterns compile to see the performance implications:
+Each lane compiles to a different cost profile:
 
 ### DCont Compilation: Stack-Based Async
 
@@ -371,7 +371,7 @@ graph TD
 
 ## The Mathematical Foundation
 
-The spine is the monad/applicative axis, and the mathematics on each side is what tells us when these transformations preserve semantics and where they pay off. The sequential side is monadic. The independent side is applicative, and its operational guarantee on the interaction-net lane is a confluence theorem.
+The spine is the monad/applicative axis, and the mathematics on each side tells us when these transformations preserve semantics and where they pay off. The sequential side is monadic. The independent side is applicative, and its operational guarantee on the interaction-net lane is a confluence theorem.
 
 ### Monads and Sequential Composition
 
