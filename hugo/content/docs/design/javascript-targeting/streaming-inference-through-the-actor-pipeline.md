@@ -10,7 +10,7 @@ weight: 50
 
 ## The Streaming Problem in Inference
 
-Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. When that communication is a stream of inference tokens instead of one request and one response, the frame discipline below is what sustains it.
+Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. A single request and its response exchange one frame each. A streamed inference reply is hundreds of frames, one per token, arriving as they are generated, and each frame must carry enough structure on its own, a tag identifying its case, a correlation ID tying it to its request, a fixed payload layout, for the receiver to route and read it without waiting for the rest. This page describes that per-frame structure and follows it from the container's inference loop to the client's screen.
 
 Every LLM deployment solves this, and the standard approach is Server-Sent Events with JSON payloads:
 
@@ -73,7 +73,7 @@ The Worker's JavaScript is compiled through JSIR as described in [JSIR: JavaScri
 
 ## Contrast with Conventional Streaming
 
-The difference is not just wire efficiency. It is structural.
+The wire savings are the smaller difference. What separates the two patterns is structural, and it shows in how each handles change.
 
 In the SSE/JSON pattern, the client must parse each message to determine its type. The string `"finish_reason"` appears in every message. The receiver must check whether its value is `null` or `"stop"` by string comparison. If the API adds a new field, every consumer must be updated to handle JSON objects with an unexpected key. If a field is renamed, the consumer silently gets `undefined` and fails downstream.
 
