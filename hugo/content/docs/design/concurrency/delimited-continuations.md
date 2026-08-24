@@ -115,7 +115,7 @@ async.Bind(fetchData(), fun a ->
 
 Each `Bind` call is a continuation capture. The second argument to `Bind` (namely `fun a -> ...`) is literally "what to do with the result." The builder orchestrates how these continuations compose, whether they sequence (like async) or fan out (like query).
 
-This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and route them through the appropriate MLIR dialects. Sequential patterns flow through DCont; independent pure patterns flow to the tensor path when the work is dense and rectangular, and to Inet when the reduction is irregular. The computation expression syntax that developers write maps to optimized native execution patterns.
+This mechanism is central to our compilation strategy. The Composer compiler is designed to recognize computation expression patterns and classify their regions on the Program Semantic Graph. Sequential patterns lower through the DCont lane. Independent pure patterns lower to the tensor path when the work is dense and rectangular, and to Inet when the reduction is irregular. The computation expression syntax that developers write maps to optimized native execution patterns.
 
 ## Platform-Aware Continuation Compilation
 
@@ -141,33 +141,13 @@ let processFile() = async {
 
 The types themselves encode CPS structure. The async primitives make continuation capture explicit in their signatures, and the Composer compiler recognizes these patterns during type resolution, recording them in the Program Semantic Graph for code generation.
 
-The DCont dialect in MLIR provides the target representation:
-
-```mlir
-// Clef async compiles to DCont operations
-dcont.func @fetchAndProcess(%url: !clef.string) -> !clef.data {
-    %k1 = dcont.shift {
-        %response = call @http_get_async(%url)
-        dcont.resume %k1 %response
-    }
-
-    %k2 = dcont.shift {
-        %data = call @parse_response(%response)
-        dcont.resume %k2 %data
-    }
-
-    %result = call @summarize(%data)
-    dcont.reset %result
-}
-```
-
-Each `dcont.shift` captures "the rest of the computation" at that point. The `dcont.resume` delivers a value to the captured continuation. The `dcont.reset` establishes the boundary. This MLIR representation preserves the continuation structure through optimization passes until final lowering to native code.
+The target representation is the graph itself. The design once placed a DCont dialect at this point in the pipeline, and the concepts have since been elevated into native expression on the Program Semantic Graph, the story [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/#upward-migration) tells in full. Saturation assembles each async expression into a continuation state machine aggregate: the boundary, each suspension point with its state index, the values live across suspensions, and the per-suspension resume code. The monad-law rewrites, frame elimination and continuation fusion, run over that aggregate during saturation, where the classification that justifies them resides. The witness then emits the settled form in the portable dialects, a function whose entry switches on the state index: the same primitive operations a transformed DCont dialect would have rendered at the end of its own pass pipeline. The continuation structure survives to code generation as graph structure, and nothing between the graph and the backend re-encodes it.
 
 ## From Type Resolution to Code Generation
 
-The [zipper-based pipeline](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) that correlates Clef's typed tree with the Program Semantic Graph becomes essential when compiling continuations. During type resolution, the compiler identifies continuation points (suspension, capture, and boundary markers) and annotates the PSG accordingly. These annotations then guide code generation, determining where to emit `dcont.shift`, `dcont.resume`, and `dcont.reset` operations.
+The [zipper-based pipeline](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) that correlates Clef's typed tree with the Program Semantic Graph becomes essential when compiling continuations. During type resolution, the compiler identifies continuation points (suspension, capture, and boundary markers) and annotates the PSG accordingly. These annotations then guide code generation, determining the state indices, the resume blocks, and the boundary of the emitted state machine.
 
-The coherence between type resolution and code generation ensures that continuation annotations align exactly with MLIR emission. Variables captured across suspension points are stack-allocated. Boundary scopes map to reset operations. Suspension points become shift operations with appropriate resume types. No scope mismatch, no lost context.
+The coherence between type resolution and code generation ensures that continuation annotations align exactly with MLIR emission. Variables captured across suspension points are stack-allocated. Boundary scopes map to the state machine's entry and completion. Suspension points become resume blocks with their result types. No scope mismatch, no lost context.
 
 This principled front-loading means the Composer compiler requires far fewer MLIR and LLVM passes than compilers for imperative languages. As Andrew Appel demonstrated in his seminal 1998 paper, [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf): the Static Single-Assignment form at the heart of optimizing compilers is mathematically equivalent to functional programming with lexical scope. When C++ or Rust compile to LLVM, their compilers must *reconstruct* the functional relationships that imperative syntax obscures: analyzing loops, tracking mutations, resolving aliasing. Fidelity's pipeline preserves what those compilers must rediscover. The continuation structure, the type information, the scope boundaries: in our model ***these features survive intact*** from Clef source through the PSG to MLIR. This is the meaning behind the framework's name: fidelity to the original program structure yields faster compilation and more predictable optimization, because MLIR operates on preserved intent rather than speculative reconstructions.
 
@@ -189,7 +169,7 @@ let counter = actor {
 ```
 
 What they don't see:
-- The `receive()` compiles to a `dcont.shift` that captures the message-handling continuation
+- The `receive()` compiles to a suspension point that captures the message-handling continuation
 - The `return!` compiles to a tail call with continuation transfer
 - The `tell` compiles to a non-blocking message send that doesn't capture a continuation
 - The entire actor loop compiles to a state machine with explicit continuation slots
@@ -206,7 +186,7 @@ Why do we call this Fidelity's "turning point"? Because recognizing the centrali
 
 Before this recognition, we treated async, actors, and computation expressions as separate features requiring separate compilation strategies. The async builder was one thing, the actor model another, computation expressions a third. Each had its own MLIR lowering path, its own optimization considerations, its own edge cases.
 
-The three then read as one construct: async expressions are delimited continuations with I/O-triggered resumption, actors the same with message-triggered resumption, and computation expressions the surface syntax for manipulating them. All three compile through the DCont dialect, share its optimization passes, and reach similar machine-level continuation representations.
+The three then read as one construct: async expressions are delimited continuations with I/O-triggered resumption, actors the same with message-triggered resumption, and computation expressions the surface syntax for manipulating them. All three saturate to the same continuation aggregate on the graph, share its rewrites, and reach the same machine-level continuation representation.
 
 This unification enables:
 
@@ -224,18 +204,18 @@ This unification enables:
 
 The DCont preservation strategy extends to hardware targeting. As noted in [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/), WebAssembly's Stack Switching proposal provides first-class support for delimited continuations. When targeting WASM, the Composer compiler can preserve continuation structure all the way to the runtime:
 
-```mlir
-// DCont operations map to WASM stack switching
-dcont.shift { ... }
+```
+// A suspension point maps to WASM stack switching
+suspension point (continuation aggregate)
   ↓
 ssawasm.suspend $continuation_tag
 ```
 
 For LLVM targets (native x86-64, ARM, RISC-V), continuations compile to efficient state machines:
 
-```mlir
-// DCont operations compile to state machine for native targets
-dcont.shift { ... }
+```
+// A suspension point compiles to state-machine dispatch for native targets
+suspension point (continuation aggregate)
   ↓
 llvm.switch %state, %continuation_blocks
 ```

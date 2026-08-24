@@ -51,7 +51,7 @@ The defining axiom of a sheaf is the compositionality equation: for any chain \(
 
 \[D(s_0 < s_1) \,;\, D(s_1 < s_2) \;=\; D(s_0 < s_2).\]
 
-In our framework's terms: lowering from PSG to mid-level MLIR via the high-level dialect must produce the same annotations as lowering directly from PSG to mid-level MLIR. This is the property our staged-discharge architecture *enforces*. Each lowering pass is required to preserve the annotations of the stage above it, and the Z3 re-discharge at each pass is the local check that compositionality holds across that edge of the compilation poset.
+In our framework's terms: lowering from PSG to mid-level MLIR via the tensor path's high-level dialects must produce the same annotations as lowering directly from PSG to mid-level MLIR. This is the property our staged-discharge architecture *enforces*. Each lowering pass is required to preserve the annotations of the stage above it, and the Z3 re-discharge at each pass is the local check that compositionality holds across that edge of the compilation poset.
 
 A theorem about finite posets makes this enforcement strategy efficient. To verify that a global section exists, it suffices to check the structure-map equations on the edges of the Hasse diagram; transitivity propagates through compositionality. The staged-discharge architecture's computational cost is therefore proportional to the number of lowering passes, not to the number of pairs of compilation stages, and this is a categorical fact rather than an engineering optimization.
 

@@ -24,20 +24,18 @@ In our Composer architecture, delimited continuations appear as first-class citi
 
 ```fsharp
 type PSGNode =
-    | DelimitedContinuation of {
-        Reset: PSGNode           // The delimiter boundary
-        Shift: PSGNode           // The capture point
-        Context: ZipperContext   // Full surrounding context
+    | ContinuationStateMachine of {
+        Delimiter: PSGNode              // the reset boundary: the CE block itself
+        SuspendPoints: SuspendPoint list // each capture site with its state index
+        CaptureSet: NodeId list         // values live across suspensions
+        ResumeBlocks: PSGNode list      // per-suspension resume code
+        Context: ZipperContext          // full surrounding context
         Metadata: ContinuationMetadata
     }
-    | Async of {
-        Body: PSGNode
-        Continuations: Map<SuspendPoint, ContinuationCapture>
-        ResourceTracking: RAIIContext
-    }
+// async, actor receive, and generator regions all saturate to this one aggregate
 ```
 
-At this level, we hold the full semantic information. The bidirectional zipper structure lets us navigate and transform the continuation while preserving its surrounding context. The continuation is still a mathematical object here, with the precise semantics the source assigned it.
+At this level, we hold the full semantic information. The bidirectional zipper structure lets us navigate and transform the continuation while preserving its surrounding context. The continuation is still a mathematical object here, with the precise semantics the source assigned it, and saturation settles it into the aggregate above before any emission runs.
 
 ## The Fork(s) in the Road: WAMI vs LLVM
 
@@ -62,17 +60,12 @@ flowchart TD
         DFG --> ANALYSIS
     end
 
-    subgraph "Existing MLIR Dialects"
-        ANALYSIS --> DCONT[DCont Dialect<br/>Delimited Continuations]
-        ANALYSIS --> SCF[SCF Dialect<br/>Structured Control Flow]
-        ANALYSIS --> MEMREF[MemRef Dialect<br/>Memory Operations]
-        DCONT --> ASYNC[Async Dialect<br/>Async Operations]
+    subgraph "Graph Saturation"
+        ANALYSIS --> AGG[Continuation State Machine<br/>Saturated Aggregate]
     end
 
     subgraph "Decision Point"
-        ASYNC --> DECIDE{Backend Selection<br/>Based on Target +<br/>Performance Needs}
-        SCF --> DECIDE
-        MEMREF --> DECIDE
+        AGG --> DECIDE{Realization Selection<br/>Per Call Site<br/>Target + Performance}
     end
 
     subgraph "Alternative Backends"
@@ -86,23 +79,21 @@ flowchart TD
     end
 
     subgraph "WAMI Path - Preservation"
-        DECIDE -->|WebAssembly Target<br/>Preserve Continuations| SSAWASM[SsaWasm Dialect<br/>DCont → Stack Switching]
+        DECIDE -->|WebAssembly Target<br/>Preserve Suspension| SSAWASM[SsaWasm Dialect<br/>Suspension → Stack Switching]
         SSAWASM --> WASM[Wasm Dialect<br/>suspend/resume Operations]
         WASM --> WAT[WebAssembly Text]
         WAT --> WBIN[WebAssembly Binary<br/>.wasm]
     end
 
     subgraph "LLVM Path - Compilation"
-        DECIDE -->|Native Target<br/>Max Performance| LLVMDIALECT[LLVM Dialect<br/>DCont → Coroutines]
-        LLVMDIALECT --> LLVMIR[LLVM IR<br/>Low-level SSA]
+        DECIDE -->|Native Target<br/>Max Performance| STATE[State Machine in<br/>Portable Dialects]
+        STATE --> LLVMIR[LLVM IR<br/>Low-level SSA]
         LLVMIR --> OPT[LLVM Optimizations]
         OPT --> NATIVE[Native Binary<br/>x86/ARM/RISC-V]
     end
 ```
 
-Composer builds on existing MLIR dialects, particularly the DCont (delimited continuation) dialect, rather than introducing new ones. Our PSG transforms Clef into these standard dialects, and then we choose whether to preserve continuations (the WAMI path) or compile them away (the LLVM path).
-
-Our PSG (and the PHG that will follow it in a later revision) retains the full semantic information about continuations, effects, and resource lifetimes. That information maps onto existing MLIR dialects like DCont, Async, SCF, and MemRef, which lets us defer the preserve-or-compile decision to the last possible moment.
+Composer had considered using a 'DCont' delimited continuation dialect in MLIR for continuations, but quickly realized that a specific MLIR dialect is not required. Our designs resolve them in native expression on the graph, the story [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/#upward-migration) tells in full. The saturated aggregate retains the full semantic information about continuations, effects, and resource lifetimes, which is what lets us defer the preserve-or-compile decision to the correct stage of lowering: each call site selects its realization via joint resolution in the graph. Once witnessed to direct MLIR ops, the MiddleEnd's form and the target's own suspension primitive are the sole concern in lowering.
 
 ### The WAMI Path: Semantic Preservation
 
@@ -116,23 +107,18 @@ let processAsync() = async {
     return result
 }
 
-// PSG representation
-DelimitedContinuation {
-    Reset = AsyncBoundary
-    Shift = ReadSensorSuspendPoint
-    Context = TransformContinuation
-}
-
-// DCont dialect in MLIR
-dcont.shift @readSensor : !dcont.cont {
-    dcont.suspend %sensor_read
+// PSG representation (saturated aggregate)
+ContinuationStateMachine {
+    Delimiter = AsyncBoundary
+    SuspendPoints = [ ReadSensorSuspendPoint, 0 ]
+    ResumeBlocks = [ TransformContinuation ]
 }
 
 // preserved on the WAMI path
 ssawasm.suspend $sensor_read
 ```
 
-The suspend/resume operations in the Stack Switching proposal are delimited continuations at the IR level. The mapping preserves the abstraction, targeting an equivalent construct on the platform.
+The suspend/resume operations in the Stack Switching proposal are delimited continuations at the IR level. The mapping runs directly from the graph aggregate to the platform construct, with no intermediate encoding, and preserves the abstraction on a target that offers an equivalent one.
 
 ### The LLVM Path: Semantic Compilation
 
@@ -164,7 +150,7 @@ Here the delimited continuation semantics compile away into state machines, the 
 
 The WAMI path preserves our abstractions but runs on a virtual machine that carries its own overhead. The LLVM path compiles those abstractions away and produces native code. Which one serves functional systems programming better?
 
-The answer may be "both."
+The answer may be "both," and the elevation of the continuation into the graph is why "both" is coherent: the structure is held once, above every IR, and each call site selects the realization its target serves best. Nothing preserves the continuation inside the IR because nothing needs to.
 
 ## Building Pure Functional Hardware Drivers
 
@@ -194,19 +180,19 @@ This protocol description is purely functional. It describes **what** to do with
 
 ### The System Boundary
 
-Drivers become **effect interpreters** at the system boundary, using standard MLIR patterns:
+Drivers become **effect interpreters** at the system boundary, using the same suspension machinery:
 
 ```mermaid
 flowchart TD
     subgraph "Pure Functional Domain"
         PURE[Pure I2C Protocol<br/>Algebraic Effects]
-        CONT[DCont Operations<br/>Standard MLIR]
+        CONT[Suspension Structure<br/>Saturated on the Graph]
     end
 
     subgraph "Effect Interpretation Layer"
         PURE --> INT{Effect Interpreter}
         CONT --> INT
-        INT --> SHIFT[DCont Shift<br/>Capture State]
+        INT --> SHIFT[Suspension<br/>Capture State]
     end
 
     subgraph "System Boundary"
@@ -219,7 +205,7 @@ flowchart TD
     end
 
     subgraph "Resume Path"
-        RESULT --> RESUME[DCont Resume<br/>With Result]
+        RESULT --> RESUME[Resume<br/>With Result]
         RESUME --> CONT2[Continue Pure<br/>Computation]
     end
 ```

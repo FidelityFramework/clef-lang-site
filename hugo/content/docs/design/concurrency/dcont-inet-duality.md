@@ -13,7 +13,7 @@ params:
 
 Clef's computation expressions give a unified syntax for control flow that would otherwise be written as explicit branching. Beneath that syntax sits a mathematical structure most compilers do not exploit. A region that threads each step through the result of the last must sequence, and a region whose steps have no such dependency can run them together. That partition between dependency-carrying and independent work is what our Fidelity framework reads off the source to choose a compilation strategy, and we are designing a compilation path around it to reach zero-cost computation graphs. The dependent side lowers through delimited continuations. The independent side lowers to a parallel target, and which target depends on the shape of the work.
 
-The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case; an applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
+The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case. An applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
 This builds on the architectural foundations we've established across the Fidelity framework - from [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from the [reactive programming model](/blog/fidelityrx-native-reactivity/) to [referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
 
@@ -89,11 +89,9 @@ maybe {
 }
 ```
 
-Once we read computation expressions as continuations, we face a compilation decision a conventional compiler does not make: whether the continuations must thread in sequence or can run at once.
-
 ## The Fork: Sequential vs Parallel
 
-Once we recognize computation expressions as continuation structures, we face a compilation decision. Some computations require sequential threading of continuations, where each step depends on the previous one. Others impose no such dependencies, so all operations could in principle execute at once.
+Once we recognize computation expressions as continuation structures, we face a compilation decision a conventional compiler does not make. Some computations require sequential threading of continuations, where each step depends on the previous one. Others impose no such dependencies, so all operations could in principle execute at once.
 
 This distinction determines the compilation strategy for the whole expression. As we explored in our [coeffects and codata analysis](/docs/internals/concepts/coeffects-and-codata/), different computational patterns call for different execution strategies. The independent side splits once more by the shape of the work, which gives three lowering lanes rather than two.
 
@@ -103,7 +101,7 @@ The unit of analysis is the region, classified by its effect and data dependency
 
 - **Sequential effects lower through DCont.** A region whose steps depend on prior results, or that touches the world, captures its continuation at each suspension point and resumes when the result arrives. This is the dependency-carrying lane.
 - **Regular data-parallel work lowers to the tensor path.** Dense, statically shaped, rectangular work, map and filter and reduce and scan over arrays, is SIMD and SIMT data parallelism. It lowers through the standard arithmetic and tensor dialects and the GPU dialect to NVVM for NVIDIA targets and the AMDGPU backend for AMD, with MLIR-AIE carrying NPU targets. Its iterations are independent by construction, so there is no graph rewriting to coordinate.
-- **Irregular higher-order reduction lowers to interaction nets.** Recursive functions over trees and graphs, symbolic reduction, and sharing-sensitive computation whose shape is data-dependent are the genuine interaction-net workload. The Inet graph lowers through MLIR to LLVM, and the LLVM NVPTX and AMDGPU backends generate the GPU code. The actor layer orchestrates the CPU-to-GPU boundary with zero-copy BAREWire transport and re-bootstraps the computation graph as new redexes become available.
+- **Irregular higher-order reduction lowers to interaction nets.** Recursive functions over trees and graphs, symbolic reduction, and sharing-sensitive computation whose shape is data-dependent are the genuine interaction-net workload. The region lowers through the portable dialects to LLVM, and the LLVM NVPTX and AMDGPU backends generate the GPU code. The actor layer orchestrates the CPU-to-GPU boundary with zero-copy BAREWire transport and re-bootstraps the computation graph as new redexes become available.
 
 The flat map-and-filter query is the case that least needs interaction nets. Dense data parallelism falls out as the rectangular, degenerate case and is handled by the tensor path. Interaction nets are the lowering for the irregular reductions where the rewrite shape is not known until the data arrives.
 
@@ -123,32 +121,22 @@ let processOrder order = async {
 }
 ```
 
-Our Composer compiler is designed to recognize this pattern and lower it to MLIR's DCont dialect:
+Our Composer compiler is designed to recognize this pattern and saturate it on the Program Semantic Graph as a continuation state machine: an aggregate recording the delimiter (the CE block itself), each suspension point with its state index, the set of values live across suspensions, and the per-suspension resume code. No special operation carries that aggregate into the IR. The witness emits it in the portable dialects as an ordinary function whose entry loads the state index and switches to the matching resume block, with the live values held in a state record:
 
 ```mlir
-// DCont: explicit continuation capture and resumption
-dcont.func @processOrder(%order: !order) -> !result {
-    %k1 = dcont.shift {
-        %inventory = call @checkInventory(%order.items)
-        dcont.resume %k1 %inventory
-    }
-
-    %k2 = dcont.shift {
-        %pricing = call @calculatePricing(%order, %inventory)
-        dcont.resume %k2 %pricing
-    }
-
-    %k3 = dcont.shift {
-        %shipping = call @estimateShipping(%order, %pricing)
-        dcont.resume %k3 %shipping
-    }
-
-    %result = call @combine(%inventory, %pricing, %shipping)
-    dcont.reset %result
+// The state-machine shape the aggregate lowers to (portable dialects; sketch)
+func.func @processOrder_resume(%state: memref<?xi8>, %value: index) -> i1 {
+    %idx = memref.load %state[%c0] : memref<?xi8>
+    cf.switch %idx : i32, [
+      default: ^done,
+      0: ^afterInventory,   // store %value, advance index, request pricing
+      1: ^afterPricing,     // store %value, advance index, request shipping
+      2: ^afterShipping     // combine and finish
+    ]
 }
 ```
 
-Each `dcont.shift` captures the continuation at that point, "the rest of the computation," so the operation can suspend and later resume. In this design async operations run without allocating Tasks or using thread pools. Where these effectful regions cross actor boundaries through synchronous reply, their liveness is a separate obligation, the acyclicity check we develop in [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/).
+Each suspension point captures "the rest of the computation" as a state index and a resume block. In this design async operations run without allocating Tasks or using thread pools, and on a single-core target the suspend and resume semantics is itself the cooperative scheduler, with no separate dispatch machinery (the reduction is developed in [platform-aware continuation compilation](/docs/design/concurrency/delimited-continuations/#platform-aware-continuation-compilation)). The LLVM coroutine intrinsics remain available to that lowering as an optimization it may select per call site, never a form the middle end commits to. Where these effectful regions cross actor boundaries through synchronous reply, their liveness is a separate obligation, the acyclicity check we develop in [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/).
 
 ### Regular Data-Parallel: The Tensor Path
 
@@ -191,20 +179,9 @@ let rec eval expr =
  
 ```
 
-This lowers to an interaction net, the model where computation is local graph rewriting and the agents make copying and discarding explicit. Lafont's symmetric interaction combinators give the vocabulary: a constructor agent builds structure, a duplicator agent copies it, and an eraser agent discards it. Coll's Inet dialect encodes these agents and their rewrite rules in MLIR:
+This lowers to an interaction net, the model where computation is local graph rewriting and the agents make copying and discarding explicit. Lafont's symmetric interaction combinators give the vocabulary: a constructor agent builds structure, a duplicator agent copies it, and an eraser agent discards it. An active pair is two agents connected at their principal ports, and reducing it is the application of one interaction rule. The eraser realizes weakening, and same-symbol annihilation realizes the trace, which places the rule system at the compact-closed level rather than at plain graph rewriting. The model needs no continuation capture, no sequencing, and no central scheduler.
 
-```mlir
-// Inet: an active pair is two agents on the same wire; reducing it is one rule
-inet.rule @add_lit {
-  // (Add ⋈ Lit) annihilates and rewrites to the summed cell
-  %a = inet.agent "Add" : !inet.cell
-  %l = inet.agent "Lit" : !inet.cell
-  inet.active_pair %a, %l           // the redex
-  // ... rewrite to the reduced net
-}
-```
-
-An active pair is two agents connected at their principal ports, and reducing it is the application of one interaction rule. The eraser realizes weakening, and same-symbol annihilation realizes the trace, which places the dialect at the compact-closed level rather than at plain graph rewriting. The model needs no continuation capture, no sequencing, and no central scheduler.
+In our design the net has three residences, and an IR is none of them. The rule system is design-time structure: which agent pairs interact, and what each rewrite produces, is settled on our Program Hypergraph during saturation, where the independence of distinct active pairs is exactly the multi-way fact the hyperedges carry. Each rule's right-hand side compiles as an ordinary function over node records, emitted in the portable dialects like any other function. The net itself is runtime data: agent nodes and their port wiring as plain records, with a worklist of active pairs that the compiled rule kernels consume. What HVM encodes as a runtime's interpretive machinery, and what an IR dialect would encode as custom operations, both land here as the ordinary trio of design-time structure, compiled functions, and runtime data.
 
 What licenses running every active pair at once is strong confluence: Lafont's one-step diamond. Any two distinct active pairs are independent, and reducing them in either order yields the same net. That is the theorem behind "all at once," and it holds with no coordination because the rules are local. Confluence is established once over the rule system, in the same character as the abstraction theorem that makes our Tier 1 dimensional content free by parametricity. It is a property of the logic, not an obligation a program incurs.
 
@@ -247,6 +224,16 @@ let rec size tree =
     | Node (l, r) -> size l + size r
 ```
 
+## Upward Migration
+
+The design did not start here. Earlier framing in this corpus placed each regime in a custom MLIR dialect: a DCont dialect carrying shift and reset as operations, and an Inet dialect carrying agents and rewrite rules, with the dialect work of Kang et al. and of Coll as the standing art for encoding either regime at the IR level. Working through what those dialects would actually do changed the position. A DCont dialect earns its place through its transformation passes, frame elimination by the left identity law and continuation fusion by associativity, and every one of those rewrites is available earlier, on the saturated graph, where the classification that justifies it already resides. An Inet dialect earns its place by carrying rules to a lowering pass that compiles them, and the rules are already design-time structure the hypergraph holds. Each dialect is a waystation that re-encodes what the graph has settled, transforms it with less context than the graph had, and then lowers to the same place.
+
+So the concepts were elevated into native expression on our Program Semantic Graph and its hypergraph extension. The sequential regime is the continuation state machine aggregate, saturated with its suspension points, state indices, and capture set. The independent regime is the rule system and the independence structure the hyperedges carry, with rule bodies compiled as ordinary functions. The monad laws still do their work, as saturation rewrites over the aggregate. The confluence theorem still does its work, discharged once over the rule system. What is gone is the representation hop between the graph and the primitives.
+
+The witness emits the same MLIR primitive operations a transformed DCont or Inet dialect would have rendered at the end of its own pass pipeline. A shift and reset chain, after frame elimination and fusion, bottoms out as a function, a switch over a state index, and loads and stores against a state record. A rule set, after compilation, bottoms out as kernel functions and a worklist loop. Those are the forms the witness now produces directly from the saturated aggregates, in the portable dialects the pipeline already carries for closures, unions, and sequences. The terminal vocabulary is identical. The route to it is one hop shorter, and the transformations that justified the dialects run where the most context lives.
+
+The discipline that keeps this from concentrating pressure on the traversal is the same transport rule the hypergraph work states for every multi-way fact. A joint fact, the capture set of a continuation or the independence of a set of redexes or the co-location of operations bound for one tile, is discharged once at saturation, as a solver query over an enumerated set. Its consequence reaches emission as codata on the nodes it governs, or as a reified annotation of the kind a co-location constraint becomes for the spatial targets. The traversal that witnesses the graph never re-derives a joint fact at focus time. What accumulates as the language grows is a dispatch table of local recipes, one per saturated aggregate kind, and a recipe reads its aggregate the way the closure witness reads a capture layout, without computing it. The standing law: a construct whose witnessing appears to need cross-node context is under-saturated, and the remedy is a richer saturated aggregate or a reified annotation, never a smarter traversal.
+
 ## Compilation Strategies
 
 Each lane compiles to a different cost profile:
@@ -286,7 +273,7 @@ let optimized() = async {
  
 ```
 
-The DCont dialect is meant to preserve the continuation structure in MLIR, which leaves room for optimization while keeping execution stack-based with no heap allocations.
+The continuation state machine preserves that structure on the graph itself, where the monad-law rewrites run during saturation, and the witness emits the settled form in the portable dialects, keeping execution stack-based with no heap allocations.
 
 ### Tensor-Path Compilation: Data Parallelism
 
@@ -357,9 +344,9 @@ graph TD
     end
 
     subgraph "Code Generation"
-        IO1 --> DCONT1[DCont Dialect]
+        IO1 --> DCONT1[Continuation State Machine]
         PURE --> TENSOR[Tensor Path]
-        IO2 --> DCONT2[DCont Dialect]
+        IO2 --> DCONT2[Continuation State Machine]
     end
 
     subgraph "Runtime Execution"
