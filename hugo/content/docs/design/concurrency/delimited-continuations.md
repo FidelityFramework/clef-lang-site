@@ -244,7 +244,7 @@ The centrality of delimited continuations to Fidelity's architecture has implica
 
 **Algebraic effects**: The CE-based effect system described in [The DCont/Inet Duality](/docs/design/concurrency/dcont-inet-duality/) is essentially typed delimited continuations. As we extend Fidelity's effect tracking, the continuation infrastructure is already in place.
 
-**Formal verification**: Continuation semantics are well-studied mathematically. The continuation-based compilation model gives our [four-tier proof architecture](/docs/internals/verification/) a clean structure to verify against: obligations are built from the continuation structure already present in the graph, discharged by Z3 through Tier 3, with the Rocq kernel entering the trusted base only for the relational judgments at Tier 4.
+**Formal verification**: Continuation semantics are well-studied mathematically. The continuation-based compilation model gives our [four-tier proof architecture](/docs/internals/verification/) a clean structure to verify against: obligations are built from the continuation structure already present in the graph, discharged by the SMT solver through Tier 3, with the Rocq kernel entering the trusted base only for the relational judgments at Tier 4.
 
 **Novel hardware**: Interaction nets and dataflow architectures benefit from explicit continuation representation. As Fidelity targets post-Von Neumann architectures, the continuation representation already carries the dataflow structure those machines execute.
 

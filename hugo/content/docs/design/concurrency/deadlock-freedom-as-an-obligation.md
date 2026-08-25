@@ -44,7 +44,7 @@ A synchronous RPC introduces one structural object: a blocking-wait hyperedge. A
 
 Collect those edges into a wait-for relation \(W\) over actor behaviors. A node `caller —waits-on→ callee` exists whenever the caller issues a synchronous RPC to the callee and parks until the reply. Deadlock is a cycle in \(W\) whose actors are all in their blocked state at once. The relation is a may-wait over-approximation: an actor that can call either of two callees depending on message content contributes an edge to each. Over-approximating keeps the analysis sound, never claiming deadlock freedom that an execution could violate, at the cost of sometimes flagging a cycle no run reaches. Our escape analysis takes this posture too: `EscapeKind` over-approximates escape and never under-approximates it.
 
-For the fragment where every callee is a statically resolvable actor reference, \(W\) is a finite directed graph and deadlock freedom reduces to its acyclicity. A strongly-connected-component pass finds any cycle in linear time. The [graph-coloring pass](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/) runs this analysis to license interaction-net breakout, and here it applies to a different edge label, and it lands as a Tier 2 obligation built mechanically from graph structure. Most instances discharge by graph algorithm alone, which makes them cheaper than the arithmetic obligations Z3 handles at the same tier.
+For the fragment where every callee is a statically resolvable actor reference, \(W\) is a finite directed graph and deadlock freedom reduces to its acyclicity. A strongly-connected-component pass finds any cycle in linear time. The [graph-coloring pass](/docs/internals/pipeline/speed-and-safety-with-graph-coloring/) runs this analysis to license interaction-net breakout, and here it applies to a different edge label, and it lands as a Tier 2 obligation built mechanically from graph structure. Most instances discharge by graph algorithm alone, which makes them cheaper than the arithmetic obligations the SMT solver handles at the same tier.
 
 ## A classification that mirrors EscapeKind
 
@@ -103,7 +103,7 @@ module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
 }
 ```
 
-Lowering emits the verification condition for that scope into the SMT dialect, and Z3 discharges it exactly as it discharges an interval obligation:
+Lowering emits the verification condition for that scope into the SMT dialect, and the solver discharges it exactly as it discharges an interval obligation:
 
 ```mlir
 %edges = collect rpc.wait_edge in @order_system

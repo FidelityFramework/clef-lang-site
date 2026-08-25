@@ -41,8 +41,8 @@ The verification spectrum in the Fidelity framework divides into four tiers, org
 
 ```mermaid
 graph TD
-    T1["Tier 1: Compilation Byproducts<br>ℤⁿ equality, Gaussian elimination<br>No annotation required"] --> T2["Tier 2: Scoped Hoare Assertions<br>QF_LIA / QF_BV, Z3<br>Lightweight attributes"]
-    T2 --> T3["Tier 3: Restricted Probabilistic Fragment<br>Distributions on lattice cosets, Z3<br>Library-instantiated lemmas"]
+    T1["Tier 1: Compilation Byproducts<br>ℤⁿ equality, Gaussian elimination<br>No annotation required"] --> T2["Tier 2: Scoped Hoare Assertions<br>QF_LIA / QF_BV, cvc5<br>Lightweight attributes"]
+    T2 --> T3["Tier 3: Restricted Probabilistic Fragment<br>Distributions on lattice cosets, cvc5<br>Library-instantiated lemmas"]
     T3 --> T4["Tier 4: Probabilistic Relational Hoare Logic<br>pRHL type checker + Rocq library<br>Relational proofs for cryptography"]
 
     T1 ---|"Dimensional consistency<br>Escape classification<br>Allocation verification<br>Capability checking"| P1[All Clef programs]
@@ -51,7 +51,7 @@ graph TD
     T4 ---|"EUF-CMA reductions<br>Indistinguishability proofs<br>Game-based security"| P4[Cryptographic protocols]
 ```
 
-The trusted computing base for Tiers 1 through 3 is Z3 alone. Rocq enters the TCB only at Tier 4, where the pRHL rule library is the foundational dependency that the type checker consults.
+The trusted computing base for Tiers 1 through 3 is cvc5 alone. Rocq enters the TCB only at Tier 4, where the pRHL rule library is the foundational dependency that the type checker consults.
 
 ### Tier 1: Compilation Byproducts
 
@@ -72,27 +72,27 @@ let updateState (state: SimulationState) : SimulationState =
  
 ```
 
-These attributes are *mid-computation Hoare assertions*. Each one names a precondition or postcondition that must hold at a specific program point, and the compiler discharges the implication using Z3 over QF_LIA. The intended verification mechanism depends on the property:
+These attributes are *mid-computation Hoare assertions*. Each one names a precondition or postcondition that must hold at a specific program point, and the compiler discharges the implication as a QF_LIA obligation. The intended verification mechanism depends on the property:
 
-- **Bounds assertions** narrow the postcondition at branch joins (Hoare's conjunction rule), letting Z3 verify that the asserted bound is implied by both incoming branches against the dimensional range analysis
-- **Invariant declarations** state a loop invariant in Hoare's sense (\(\{P \wedge B\}\, C\, \{P\}\) implies \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\)) and Z3 discharges the local preservation check at each iteration boundary
+- **Bounds assertions** narrow the postcondition at branch joins (Hoare's conjunction rule), letting the solver verify that the asserted bound is implied by both incoming branches against the dimensional range analysis
+- **Invariant declarations** state a loop invariant in Hoare's sense (\(\{P \wedge B\}\, C\, \{P\}\) implies \(\{P\}\, \text{while } B \text{ do } C\, \{P \wedge \neg B\}\)) and the solver discharges the local preservation check at each iteration boundary
 - **Pre/post conditions** are checked at function boundaries via Hoare's sequential composition rule, with the called function's postcondition becoming a precondition for the caller's continuation
 
 The annotation cost is modest: one attribute per property, attached to the function or scope where the property must hold. The engineer chooses which functions warrant this level of assurance. A web application might use no Tier 2 annotations. A financial calculation might annotate key invariants. An avionics controller might annotate every function in the safety-critical path. The [decidability sweet spot document](/docs/internals/verification/decidability-sweet-spot/) treats the design-time discharge as weakest-precondition computation and the compile-time MLIR re-discharge as the consequence rule, which is the precise Hoare-logic vocabulary for the staged-discharge architecture.
 
 ### Tier 3: Restricted Probabilistic Fragment
 
-Some verification obligations exceed QF_LIA / QF_BV but remain decidable inside a restricted probabilistic fragment that the framework supports through library-instantiated lemmas. The clearest example is rejection-sampling termination: a rejection-sampling loop's exit is governed by an acceptance probability \(p\) that is computable from Tier 2 facts, the geometric series convergence is a QF_LIA argument over \(p\), and the support equality of uniform distributions over lattice cosets is an abelian-group argument discharged by Gaussian elimination. The lemma that combines these into a single termination guarantee lives in `Fidelity.Lemmas.Mathematics`, proved once and parameterized over its inputs. The compiler instantiates the lemma from the specific values present in the PSG and discharges the resulting obligation through Z3.
+Some verification obligations exceed QF_LIA / QF_BV but remain decidable inside a restricted probabilistic fragment that the framework supports through library-instantiated lemmas. The clearest example is rejection-sampling termination: a rejection-sampling loop's exit is governed by an acceptance probability \(p\) that is computable from Tier 2 facts, the geometric series convergence is a QF_LIA argument over \(p\), and the support equality of uniform distributions over lattice cosets is an abelian-group argument discharged by Gaussian elimination. The lemma that combines these into a single termination guarantee lives in `Fidelity.Lemmas.Mathematics`, proved once and parameterized over its inputs. The compiler instantiates the lemma from the specific values present in the PSG and discharges the resulting obligation through the solver.
 
 This tier is also where conservative findings from Tier 2 range propagation get resolved when the gap requires more than a local annotation. When Tier 2 range analysis returns a conservative bound for a transcendental function or a nonlinear recurrence, the resolution is a Tier 3 lemma parameterized over the interval, proved once in Rocq, and instantiated automatically by the compiler, because at Tier 2 the engineer cannot honestly assert a tighter range without invoking a real-analysis fact. A conservative finding reported today marks a lemma not yet present in `Fidelity.Lemmas.Mathematics`. The analysis is sound; the conservative region shrinks monotonically as the lemma library grows.
 
-Tier 3 still discharges through Z3 alone. The lemma library provides the *parameterized obligation*. Z3 instantiates and verifies it. Rocq is not in the trusted computing base at this tier.
+Tier 3 still discharges through the solver alone. The lemma library provides the *parameterized obligation*. The solver instantiates and verifies it. Rocq is not in the trusted computing base at this tier.
 
 ### Tier 4: Probabilistic Relational Hoare Logic
 
 For cryptographic protocols and other settings, the property of interest shifts from "what value does the program compute" to "are two programs computationally indistinguishable," and the obligations become probabilistic relational. A pRHL judgment of the form \(\{\Phi\}\, C_1 \sim C_2\, \{\Psi\}\) asserts that for any two initial states satisfying \(\Phi\), the executions of \(C_1\) and \(C_2\) produce final states satisfying \(\Psi\) with overwhelming probability. The structural derivation of such judgments is a typed proof term in the pRHL rule language, type-checked by the Composer's pRHL type checker against a foundational rule library proved once in Rocq.
 
-Z3 still handles the arithmetic leaves of each pRHL derivation. The structural pRHL proof itself is verified by the type checker, not by Z3. The Tier 4 lemmas are parameterized over Tier 3 facts (acceptance probability, norm bound, distribution support) and the lemma body is proved in the abstract over the parameter types. The framework instantiates them with the values established at Tier 3.
+The solver still handles the arithmetic leaves of each pRHL derivation. The structural pRHL proof itself is verified by the type checker, not by the solver. The Tier 4 lemmas are parameterized over Tier 3 facts (acceptance probability, norm bound, distribution support) and the lemma body is proved in the abstract over the parameter types. The framework instantiates them with the values established at Tier 3.
 
 The trusted computing base for Tier 4 includes Rocq's kernel as a foundational library dependency. For Tiers 1 through 3 it does not. The distinction reaches procurement: a deployment that cares about cryptographic indistinguishability accepts Rocq as part of its TCB, while a deployment that only cares about safety-critical arithmetic, range proofs, and rejection-sampling termination does not.
 
@@ -106,7 +106,7 @@ At Tiers 3 and 4 the compiler would generate machine-readable certificates as co
 - **The scope:** which PSG nodes (identified by the hyperedge in the compilation graph) the proof covers
 - **The metadata:** tool version, input hash, timestamp, and any assumptions the proof depends on
 
-This is the distinction identified in our earlier analysis of proof-carrying compilation: the hyperedge defines the proof's scope ("these operations, on this tile, under these constraints"), the proof is an external artifact (a document the auditor reads and the certification body evaluates), and the compiler generates the obligation and the evidence. The tier label tells the reconciliation tool which trusted computing base the certificate depends on, which matters for procurement workflows where Rocq-in-TCB and Z3-only deployments have different acceptance criteria.
+This is the distinction identified in our earlier analysis of proof-carrying compilation: the hyperedge defines the proof's scope ("these operations, on this tile, under these constraints"), the proof is an external artifact (a document the auditor reads and the certification body evaluates), and the compiler generates the obligation and the evidence. The tier label tells the reconciliation tool which trusted computing base the certificate depends on, which matters for procurement workflows where Rocq-in-TCB and solver-only deployments have different acceptance criteria.
 
 The annotation cost at Tiers 3 and 4 is significant. The engineer must declare the properties to be certified, provide sufficient type-level information for the solver or type checker to discharge the obligations, and review the generated certificates for correctness. This cost is justified only in domains where regulatory compliance or cryptographic security requires it.
 
@@ -120,7 +120,7 @@ An engineering team can adopt verification incrementally:
 
 2. **Add assertions where risk concentrates.** Annotate safety-critical functions with bounds, invariants, and pre/post conditions. The solver verifies these properties at compile time.
 
-3. **Invoke the lemma library where the analysis is conservative.** When Tier 2 range propagation cannot tighten a bound through linear arithmetic alone, instantiate a Tier 3 lemma from `Fidelity.Lemmas.Mathematics` against the relevant interval. The compiler discharges the lemma's parameterized obligation through Z3.
+3. **Invoke the lemma library where the analysis is conservative.** When Tier 2 range propagation cannot tighten a bound through linear arithmetic alone, instantiate a Tier 3 lemma from `Fidelity.Lemmas.Mathematics` against the relevant interval. The compiler discharges the lemma's parameterized obligation through the solver.
 
 4. **Generate certificates for regulated and cryptographic components.** Enable proof generation for modules that require certification or game-based security. The compiler produces the artifacts; the engineer reviews them.
 
@@ -144,7 +144,7 @@ Proof metadata flows through the MLIR pipeline as operation and function attribu
 
 At the MLIR level, satisfied proof obligations transform into optimization constraints:
 
-- A conservation law verified by Z3 becomes an affine constraint in the `affine` dialect and a `llvm.loop.invariant` metadata node in LLVM IR
+- A conservation law verified by the solver becomes an affine constraint in the `affine` dialect and a `llvm.loop.invariant` metadata node in LLVM IR
 - A convergence guarantee becomes a barrier to certain MLIR transformations and an `llvm.assume` intrinsic that enables safe optimizations
 - A bounds proof becomes the absence of a bounds check in the generated code
 
@@ -169,9 +169,9 @@ From a practical standpoint, a compiler that generates compliance certificates a
 
 Tier 1 verification (compilation byproducts) is architectural: the PSG computes these properties as part of standard elaboration and saturation. The language server displays them. This is the layer closest to implementation.
 
-Tier 2 verification (scoped Hoare assertions) requires SMT solver integration. The Z3 solver is available; the integration with the Clef attribute syntax and the PSG's coefficient infrastructure is in design. The attribute syntax shown in this entry is design-target, not yet implemented.
+Tier 2 verification (scoped Hoare assertions) requires SMT solver integration. The cvc5 solver is available. The integration with the Clef attribute syntax and the PSG's coefficient infrastructure is in design. The attribute syntax shown in this entry is design-target, not yet implemented.
 
-Tier 3 verification (restricted probabilistic fragment) requires the same Z3 integration plus the lemma library that supplies parameterized obligations for rejection-sampling termination, transcendental bounds, and nonlinear recurrences. The lemma library grows incrementally; each new lemma shrinks the conservative-finding region for every program whose PSG annotations fall within the lemma's parameter types.
+Tier 3 verification (restricted probabilistic fragment) requires the same solver integration plus the lemma library that supplies parameterized obligations for rejection-sampling termination, transcendental bounds, and nonlinear recurrences. The lemma library grows incrementally; each new lemma shrinks the conservative-finding region for every program whose PSG annotations fall within the lemma's parameter types.
 
 Tier 4 verification (probabilistic relational Hoare logic) requires the pRHL type checker and its Rocq-proved foundational rule library. Certificate generation in standards-compliant formats adds additional engineering surface. This is the most distant layer. The architecture accommodates it; the implementation is future work.
 

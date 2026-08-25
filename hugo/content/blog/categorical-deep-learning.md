@@ -280,14 +280,14 @@ and AdjointPair<'Input, 'Output> = {
     Counit: 'Output -> 'Output
 
     // triangle identities, verifier-discharged
-    Certificate: Z3Certificate
+    Certificate: SMTCertificate
 }
 
 // Clef supports custom operators for the mathematical notation
 let inline (⊣) forward backward =
     { Unit = fun x -> backward.Apply(forward.Apply x)
       Counit = fun y -> forward.Apply(backward.Apply y)
-      Certificate = checkAdjunction forward backward }  // Z3 discharges the triangle identities
+      Certificate = checkAdjunction forward backward }  // the solver discharges the triangle identities
 
 let computation = {
     Forward = myForwardFunctor
@@ -376,7 +376,7 @@ This biproduct structure is essential for gradient decomposition and is automati
 
 #### The Missing Link
 
-F* and Z3 provide the formal verification layer for the unified framework. The point often missed is that **proofs don't just ensure correctness; they inform optimization patterns that can be up to 100x more efficient**. This extends the work we outlined in [Transforming AI Efficiency](/blog/fidelity-as-ai-refinery/) where we show that proofs are also lowered in MLIR to execute through SMTLIB.
+F* and its SMT backend provide the formal verification layer for the unified framework. The point often missed is that **proofs don't just ensure correctness; they inform optimization patterns that can be up to 100x more efficient**. This extends the work we outlined in [Transforming AI Efficiency](/blog/fidelity-as-ai-refinery/) where we show that proofs are also lowered in MLIR to execute through SMTLIB.
 
 ### Proof-Carrying Code in the Hypergraph
 
@@ -386,12 +386,12 @@ This abstract should be considered an advanced example, something that would be 
 // Hypergraph edges carry both algorithmic and numerical proofs
 type ProofHyperedge =
     // HPC proofs
-    | ConservationProof of system: Node * law: ConservationLaw * cert: Z3Certificate
+    | ConservationProof of system: Node * law: ConservationLaw * cert: SMTCertificate
     | StabilityProof of solver: Node * condition: StabilityCondition * cert: SMTProof
 
     // AI proofs
     | ConvergenceProof of training: Node * bound: ConvergenceBound * cert: SMTProof
-    | RobustnessProof of model: Node * perturbation: Epsilon * cert: Z3Certificate
+    | RobustnessProof of model: Node * perturbation: Epsilon * cert: SMTCertificate
 
     // Unified proofs
     | NumericalExactnessProof of computation: Node * error: ErrorBound * cert: Universal
@@ -560,16 +560,16 @@ graph TD
     D --> E[Hardware-Specific MLIR]
     E --> F[Verified Machine Code]
 
-    G[Z3 Verification] --> D
+    G[cvc5 Verification] --> D
     H[SMT Proofs] --> D
     I[Universal Numerics] --> D
 ```
 
-At the MLIR level, proof obligations once satisfied transform into optimization constraints using standard MLIR infrastructure. Rather than custom dialects, we leverage MLIR's existing attribute system and transformation framework, including the SMT dialect for encoding verification conditions that can be checked by Z3 during lowering. Proof metadata travels as function and operation attributes that standard MLIR passes respect but don't need to understand.
+At the MLIR level, proof obligations once satisfied transform into optimization constraints using standard MLIR infrastructure. Rather than custom dialects, we leverage MLIR's existing attribute system and transformation framework, including the SMT dialect for encoding verification conditions that can be checked by an SMT solver during lowering. Proof metadata travels as function and operation attributes that standard MLIR passes respect but don't need to understand.
 
 For example, when lowering HPC simulations, we use standard `linalg` and `affine` dialects for the computation, with satisfied proof obligations encoded as attributes that prevent unsafe transformations. The `affine` dialect's polyhedral model naturally preserves loop invariants that correspond to conservation laws. The SMT dialect encodes these invariants as assertions that can be verified at compile time. Similarly, AI operations lower through `tensor` and `linalg` dialects with attributes marking gradient-critical paths that must maintain numerical stability.
 
-MLIR's pass infrastructure already supports preserving unknown attributes through transformations. These attributes flow all the way through to LLVM as metadata and function attributes that constrain backend optimizations. For instance, a conservation law verified by Z3 becomes both an affine constraint in MLIR and a `llvm.loop.invariant` metadata node in LLVM IR. A convergence bound becomes both a barrier to certain MLIR transformations and an `llvm.assume` intrinsic that enables safe optimizations while preventing unsafe ones. The mathematical properties guide the lowering without requiring MLIR or LLVM to understand the proofs themselves. They respect the constraints that our PHG-guided proofs impose, based on their satisfaction through MLIR and F*.
+MLIR's pass infrastructure already supports preserving unknown attributes through transformations. These attributes flow all the way through to LLVM as metadata and function attributes that constrain backend optimizations. For instance, a conservation law verified by the solver becomes both an affine constraint in MLIR and a `llvm.loop.invariant` metadata node in LLVM IR. A convergence bound becomes both a barrier to certain MLIR transformations and an `llvm.assume` intrinsic that enables safe optimizations while preventing unsafe ones. The mathematical properties guide the lowering without requiring MLIR or LLVM to understand the proofs themselves. They respect the constraints that our PHG-guided proofs impose, based on their satisfaction through MLIR and F*.
 
 #### Layer 3: Hardware-Specific Verified Code
 
@@ -619,9 +619,9 @@ type DifferentiableSimulation<'State> = {
     // Backward: Automatic differentiation
     Gradient: 'State -> Gradient<'State>
 
-    // Certificates: Z3 discharges energy conservation and gradient correctness
-    ForwardCertificate: Z3Certificate
-    BackwardCertificate: Z3Certificate
+    // Certificates: the solver discharges energy conservation and gradient correctness
+    ForwardCertificate: SMTCertificate
+    BackwardCertificate: SMTCertificate
 
     // Numerics: Unified representation
     Arithmetic: Posit<32,2>
@@ -632,8 +632,8 @@ type VerifiedNeuralOperator<'Domain> = {
     // Learn: AI optimization
     Train: Dataset<'Domain> -> Model<'Domain>
 
-    // Verify: Z3 discharges the safety property and returns a certificate
-    Certify: Model<'Domain> -> Z3Certificate
+    // Verify: the solver discharges the safety property and returns a certificate
+    Certify: Model<'Domain> -> SMTCertificate
 
     // Execute: HPC performance
     Run: 'Domain -> 'Domain
@@ -672,7 +672,7 @@ module JetEngineDigitalTwin =
             let! flow = cfd.Simulate
             let! wear = degradation.Predict
 
-            // Z3 verifies composition preserves properties
+            // the solver verifies composition preserves properties
             let! composed = verifyComposition flow wear
 
             return composed
@@ -1185,7 +1185,7 @@ While this vision is compelling, we must be honest about the challenges ahead:
 
 **Mathematical Foundations**: Translating category theory into efficient implementations remains an active research area. The gap between mathematical elegance and machine level computational efficiency is non-trivial.
 
-**Tool Maturity**: F*, Z3, and MLIR are capable and in many cases well aligned, but integrating them cleanly for production use will require concerted effort. Our Fidelity framework implementation is still evolving to meet the challenges that each "corner case" will present.
+**Tool Maturity**: F*, SMT solvers, and MLIR are capable and in many cases well aligned, but integrating them cleanly for production use will require concerted effort. Our Fidelity framework implementation is still evolving to meet the challenges that each "corner case" will present.
 
 **Performance Validation**: Theoretical advantages don't always translate to equal speedups in material implementation. Bottlenecks emerge in unexpected places when targeting complex hardware. Extensive benchmarking across diverse workloads on extant and emerging hardware architectures will be necessary.
 
@@ -1201,7 +1201,7 @@ The convergence of Categorical Deep Learning, Universal Numbers, and low-burden 
 
 - **CDL** provides the theoretical underpinnings
 - **Universal** addresses the numerical challenges
-- **F\*/Z3** provides formal verification
+- **F\* with SMT discharge** provides formal verification
 - **Fidelity** unifies the implementation through Clef
 
 Our journey toward this unified vision wasn't planned; it emerged from solving real engineering problems. That these solutions align with established mathematical principles gives us confidence in the direction.

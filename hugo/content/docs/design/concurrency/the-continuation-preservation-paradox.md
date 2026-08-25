@@ -74,7 +74,7 @@ flowchart TD
     end
 
     subgraph "Verification Seam"
-        ANALYSIS --> SMT[SMT Dialect<br/>Z3 through Tier 3]
+        ANALYSIS --> SMT[SMT Dialect<br/>cvc5 through Tier 3]
         SMT -.-> ROCQ[Rocq Library<br/>Tier 4 Relational]
     end
 

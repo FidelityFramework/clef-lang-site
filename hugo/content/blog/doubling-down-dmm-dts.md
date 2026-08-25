@@ -293,7 +293,7 @@ The crux of our position: proofs constrain abstract requirements, not concrete i
 
 A function requiring `WriteCapability` and `Lifetime(L)` can be called with any allocation strategy that provides those capabilities. The proof verifies the abstract requirements. The compiler verifies that each call site's allocation strategy satisfies those requirements. Both verifications happen at compile time.
 
-This approach integrates with Z3 and cvc5 for SMT solving, as described in [Proof-Aware Compilation](/docs/internals/pipeline/proof-aware-compilation/). The [compilation ledger](/docs/internals/concepts/coeffects-and-codata/) records each verification decision: which requirements a function has, which capabilities a call site provides, why the capabilities satisfy the requirements.
+This approach integrates with cvc5 for SMT solving, as described in [Proof-Aware Compilation](/docs/internals/pipeline/proof-aware-compilation/). The [compilation ledger](/docs/internals/concepts/coeffects-and-codata/) records each verification decision: which requirements a function has, which capabilities a call site provides, why the capabilities satisfy the requirements.
 
 ```fsharp
 // SMT specification for verified memory operation

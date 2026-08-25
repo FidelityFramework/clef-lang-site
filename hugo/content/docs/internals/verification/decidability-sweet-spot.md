@@ -1,11 +1,11 @@
 ---
 title: "The Decidability Sweet Spot"
 linkTitle: "The Decidability Sweet Spot"
-description: "How DTS maps dimensional constraints to Z3's QF_LIA logic fragment for microsecond-scale transparent verification"
+description: "How DTS maps dimensional constraints to the SMT-LIB QF_LIA fragment for microsecond-scale transparent verification"
 weight: 20
 date: 2026-02-25
 authors: ["Houston Haynes"]
-tags: ["Formal Methods", "Z3", "Type Systems"]
+tags: ["Formal Methods", "SMT", "Type Systems"]
 params:
   originally_published: 2026-02-25
   migration_date: 2026-02-25
@@ -25,7 +25,7 @@ Dimensional consistency of an arithmetic expression reduces to linear algebra ov
 
 Dependent types differ here. A dependent type can encode an *arbitrary predicate* over values, so checking whether two dependent types are equal may require proving an arbitrary theorem. Dimensional consistency checking is only a comparison of two integer vectors, a constant-time operation per base dimension.
 
-General dependent type systems have decidable type checking when the developer supplies the type, but type *inference* and proof search are undecidable, which is why production systems built on them require manual annotations, fuel limits, and timeout heuristics during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of Z3's most well-studied, [guaranteed-decidable logic fragments](https://arxiv.org/abs/2603.25414): **`QF_LIA`**. CCS is designed to ask Z3 to solve a bounded system of linear equations. Z3 resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses. The same fragment carries the [eBPF target's admissibility obligations](/blog/building-bulletproof-ebpf-programs/), where the Linux kernel's own verifier re-derives at load what CCS discharged at design time.
+General dependent type systems have decidable type checking when the developer supplies the type, but type *inference* and proof search are undecidable, which is why production systems built on them require manual annotations, fuel limits, and timeout heuristics during SMT solving. Because DTS constraints reduce to linear algebra over integers, they map to one of SMT-LIB's most well-studied, [guaranteed-decidable logic fragments](https://arxiv.org/abs/2603.25414): **`QF_LIA`**. CCS is designed to submit a bounded system of linear equations to the solver. The cvc5 solver resolves these `QF_LIA` obligations in microseconds, guaranteeing the polynomial-time inference required for real-time language server responses. The same fragment carries the [eBPF target's admissibility obligations](/blog/building-bulletproof-ebpf-programs/), where the Linux kernel's own verifier re-derives at load what CCS discharged at design time.
 
 | Property | DTS | Dependent Types |
 |---|---|---|
@@ -42,7 +42,7 @@ The decidability holds because every quantity in the paragraphs above lives in a
 
 ## Design-Time Verification
 
-Transparent verification is achieved by integrating Z3 directly into CCS to discharge decidable SMT obligations. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke Z3 in the background. The NTU simultaneously acts as the proof apparatus for Z3, deriving proof obligations from the PSG's structure. Every arithmetic operation in the PSG produces a Z3 assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
+Transparent verification is achieved by integrating the SMT solver directly into CCS to discharge decidable obligations. The verification process is designed to happen continuously at design time. As the developer types, Lattice will traverse the PSG and invoke the solver in the background. The NTU simultaneously acts as the proof apparatus for the solver, deriving proof obligations from the PSG's structure. Every arithmetic operation in the PSG produces an SMT assertion, governed by the fixed rules of dimensional algebra. The developer writes zero proof code.
 
 ### The Gravitational Force Example
 
@@ -64,7 +64,7 @@ The developer provides no proofs and no dependent-type annotations. Here is what
 (declare-const d_dist_m Int)
 ```
 
-**Step 2: Operation Constraints ("Natural Bounds").** When CCS processes `distance * distance`, it knows multiplication means *adding* dimensional exponents. It would automatically generate the Z3 constraint:
+**Step 2: Operation Constraints ("Natural Bounds").** When CCS processes `distance * distance`, it knows multiplication means *adding* dimensional exponents. It would automatically generate the SMT constraint:
 
 ```lisp
 ;; d(denom) = 2 * d(distance)
@@ -86,12 +86,12 @@ The developer provides no proofs and no dependent-type annotations. Here is what
 (assert (= d_dist_m 1))
 ```
 
-Z3 then verifies if the *inferred* constraints (naturally derived from the code operations) match the *explicit* boundary constraints provided by the developer. The result:
+The solver then verifies if the *inferred* constraints (naturally derived from the code operations) match the *explicit* boundary constraints provided by the developer. The result:
 
 - `d_g` resolves to `m^3 · kg^-1 · s^-2` (the gravitational constant's natural dimension)
 - Return dimension: `m^3 · kg^-1 · s^-2 + kg + kg - 2·m = kg · m · s^-2 = newtons`
 
-Because this is just basic integer addition and subtraction over a bounded system, Z3 solves it instantly and returns `SAT`. CCS then stamps the PSG node with its proof certificate. The proof cert is generated before MLIR lowering, with the syntactic footprint of standard F#.
+Because this is just basic integer addition and subtraction over a bounded system, cvc5 solves it instantly and returns `SAT`. CCS then stamps the PSG node with its proof certificate. The proof cert is generated before MLIR lowering, with the syntactic footprint of standard F#.
 
 ### Dimensionally Polymorphic Inference
 
@@ -103,7 +103,7 @@ A function `let scale factor value = factor * value` infers type `float<'d1> -> 
 
 If a developer were to attempt a dependent-type-style annotation in Clef, something like `[<Requires(dim_a = dim_b + dim_c)>]`, the DTS would make it redundant. CCS would have already generated that exact constraint from the arithmetic operations in the code.
 
-If a developer explicitly annotates a boundary (the "push model"), like `(m1: float<kg>)`, CCS treats that as a hard assertion in Z3: `(assert (= d_m1_kg 1))`. Z3 then verifies whether the inferred constraints naturally derived from the code operations match the explicit boundary constraints. If they conflict, Z3 returns `UNSAT`, and Lattice will highlight the exact line of code where the physics broke down.
+If a developer explicitly annotates a boundary (the "push model"), like `(m1: float<kg>)`, CCS treats that as a hard SMT assertion: `(assert (= d_m1_kg 1))`. The solver then verifies whether the inferred constraints naturally derived from the code operations match the explicit boundary constraints. If they conflict, the solver returns `UNSAT`, and Lattice will highlight the exact line of code where the physics broke down.
 
 By making the NTU responsible for translating standard arithmetic operators into SMT linear equations, the developer is isolated from theorem proving entirely.
 
@@ -111,7 +111,7 @@ By making the NTU responsible for translating standard arithmetic operators into
 
 Because the SMT proofs are resolved at design time within the saturated PSG, Lattice will be able to exploit them for precise diagnostics.
 
-When Z3 returns `UNSAT` for a set of constraints, the plan is for Lattice to produce an **unsat core**, the exact subset of conflicting constraints. CCS translates that mathematical core back into the specific PSG edges that caused the conflict.
+When the solver returns `UNSAT` for a set of constraints, the plan is for Lattice to produce an **unsat core**, the exact subset of conflicting constraints. CCS translates that mathematical core back into the specific PSG edges that caused the conflict.
 
 If an engineer attempts to accumulate gradients of dimension \(\langle \text{newtons} / \text{meters} \rangle\) with \(\langle \text{joules} / \text{seconds} \rangle\), Lattice will highlight the *exact operation* and explain the physical impossibility, backed by a formal mathematical proof, all without leaving the editor.
 
@@ -127,8 +127,8 @@ The gradient of a loss function with dimension \(\langle \text{loss} \rangle\) w
 
 The mechanism above maps onto two standard constructions in program verification: weakest-precondition computation for the design-time discharge, and Hoare's consequence rule for the compile-time re-discharge.
 
-The design-time Z3 pass is *weakest-precondition computation* in Dijkstra's sense. Each PSG node carries a postcondition (the dimensional constraint the node's output must satisfy), and Z3 works backward through the constraint chain to compute the weakest precondition that suffices for the postcondition to hold. Hoare's assignment axiom and sequential composition rule are the local steps. The QF_LIA decision procedure discharges each step in microseconds. The engineer writes the program and the solver derives the precondition. That inference is decidable, complete, and principal because the underlying logic is QF_LIA.
+The design-time solver pass is *weakest-precondition computation* in Dijkstra's sense. Each PSG node carries a postcondition (the dimensional constraint the node's output must satisfy), and the solver works backward through the constraint chain to compute the weakest precondition that suffices for the postcondition to hold. Hoare's assignment axiom and sequential composition rule are the local steps. The QF_LIA decision procedure discharges each step in microseconds. The engineer writes the program and the solver derives the precondition. That inference is decidable, complete, and principal because the underlying logic is QF_LIA.
 
-The compile-time MLIR re-discharge at each lowering pass is *the consequence rule*. Hoare's consequence rule states that if \(P' \to P\), \(\{P\}\, C\, \{Q\}\), and \(Q \to Q'\), then \(\{P'\}\, C\, \{Q'\}\). At each lowering, the lowering pass is the command \(C\) that transforms one program representation into the next. The framework's obligation is to verify that the precondition established at the higher dialect implies the precondition required at the lower dialect, and that the postcondition delivered by the lower dialect entails the postcondition the higher dialect promised. Both implications are themselves QF_LIA statements, and Z3 discharges them. The staged discharge is the consequence rule applied at every lowering boundary.
+The compile-time MLIR re-discharge at each lowering pass is *the consequence rule*. Hoare's consequence rule states that if \(P' \to P\), \(\{P\}\, C\, \{Q\}\), and \(Q \to Q'\), then \(\{P'\}\, C\, \{Q'\}\). At each lowering, the lowering pass is the command \(C\) that transforms one program representation into the next. The framework's obligation is to verify that the precondition established at the higher dialect implies the precondition required at the lower dialect, and that the postcondition delivered by the lower dialect entails the postcondition the higher dialect promised. Both implications are themselves QF_LIA statements, and the solver discharges them. The staged discharge is the consequence rule applied at every lowering boundary.
 
 Compositionality of the pipeline then reduces to local checks at each lowering, with no global re-verification required at the binary stage. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) makes that compositionality categorical, treating the design-time and compile-time discharges together as the witnessing mechanism for a global section over the compilation poset. That design is deliberately open: any number of compatible sheaves can sit over the same poset and be checked at the same edges, and the non-abelian crossing structure of concurrent work is a proposed [fourth such sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/), assembled by the same staged discharge with a different stalk category.

@@ -7,7 +7,7 @@ sidebar:
 
 Composer is the Clef compiler. It uses a nanopass architecture built on MLIR, lowering ML-family source through a series of small, composable transformations into native machine code for CPUs, GPUs, FPGAs, and spatial accelerators.
 
-The compilation path starts in Clef Compiler Services (CCS), which produces an AST and a fully typed tree. Baker correlates these into the Program Semantic Graph (PSG), a unified representation that preserves both structural and type information. The PSG is then saturated: dimensional annotations are verified via Z3, escape classifications are resolved through the coeffect algebra, and BAREWire schemas are derived from verified discriminated unions. Alex lowers the saturated PSG into MLIR dialects using XParsec, and from there the code flows to target-specific backends through LLVM, CIRCT, or JSIR depending on the deployment substrate.
+The compilation path starts in Clef Compiler Services (CCS), which produces an AST and a fully typed tree. Baker correlates these into the Program Semantic Graph (PSG), a unified representation that preserves both structural and type information. The PSG is then saturated: dimensional annotations are verified through SMT discharge, escape classifications are resolved through the coeffect algebra, and BAREWire schemas are derived from verified discriminated unions. Alex lowers the saturated PSG into MLIR dialects using XParsec, and from there the code flows to target-specific backends through LLVM, CIRCT, or JSIR depending on the deployment substrate.
 
 The articles below document each stage of this process, from the front-end through to silicon.
 
@@ -21,7 +21,7 @@ The internal stages of Composer: Baker type resolution and PSG construction, hyp
 
 ### [Transparent Verification](verification/)
 
-How the DTS maps dimensional constraints to Z3's decidable `QF_LIA` fragment for microsecond-scale verification, how the coeffect algebra extends that verification model to memory safety through escape classification, and how the verified PSG produces cryptographic proof certificates that attest dimensional consistency, memory safety, representation fidelity, and optimization correctness in the release binary.
+How the DTS maps dimensional constraints to the decidable `QF_LIA` fragment for microsecond-scale verification, how the coeffect algebra extends that verification model to memory safety through escape classification, and how the verified PSG produces cryptographic proof certificates that attest dimensional consistency, memory safety, representation fidelity, and optimization correctness in the release binary.
 
 ### [MLIR Integration](mlir/)
 

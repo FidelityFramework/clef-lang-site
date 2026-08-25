@@ -102,7 +102,7 @@ The early design closed with a vision of "toward auto-generated verification," a
 
 Working through the annotation bridge forced a close reading of which properties were being specified, function by function. The dimensional constraints that pervade systems code reduced to integer vector arithmetic over a finite set of base dimensions. Velocity is \((1, -1, 0, \ldots)\) for length\(^1\) · time\(^{-1}\). Force is \((1, -2, 1, \ldots)\) for length\(^1\) · time\(^{-2}\) · mass\(^1\). Checking that a multiplication produces the correct dimension amounts to adding two integer vectors. Memory lifetime orderings reduced similarly to linear inequalities: stack < arena < heap.
 
-The algebraic classification matters because it determines what a solver can guarantee. Dimensional constraints and lifetime orderings form finitely generated abelian groups over \(\mathbb{Z}\). Consistency checking over these structures reduces to systems of linear equations and inequalities over integers, which maps directly to QF_LIA (Quantifier-Free Linear Integer Arithmetic). Z3's decision procedure for QF_LIA is complete and terminates in polynomial time. It does not require heuristics, fuel limits, or developer-supplied proof witnesses. Compare this with general dependent types, where type equality may require proving an arbitrary theorem, and the solver may time out or require interactive guidance. Because QF_LIA is decidable, the compiler can check every constraint automatically, at design time, without the developer writing a single annotation.
+The algebraic classification matters because it determines what a solver can guarantee. Dimensional constraints and lifetime orderings form finitely generated abelian groups over \(\mathbb{Z}\). Consistency checking over these structures reduces to systems of linear equations and inequalities over integers, which maps directly to QF_LIA (Quantifier-Free Linear Integer Arithmetic). The QF_LIA decision procedure is complete and terminates in polynomial time. It does not require heuristics, fuel limits, or developer-supplied proof witnesses. Compare this with general dependent types, where type equality may require proving an arbitrary theorem, and the solver may time out or require interactive guidance. Because QF_LIA is decidable, the compiler can check every constraint automatically, at design time, without the developer writing a single annotation.
 
 This algebraic observation, combined with the recognition that the annotation approach wouldn't scale, became the foundation for the Dimensional Type System. The annotation bridge served a purpose. Writing those specifications is how we learned what the properties looked like, and once we saw that the approach could not scale, we asked whether the same properties could be derived automatically.
 
@@ -112,7 +112,7 @@ This algebraic observation, combined with the recognition that the annotation ap
 graph LR
     A["F* Dependent Types<br/><i>arbitrary predicates</i>"] -->|inspired| B["Annotation Bridge<br/><i>[&lt;SMT ...&gt;] attributes</i>"]
     B -->|"revealed<br/>algebraic structure"| C["Abelian Groups<br/><i>over ℤ</i>"]
-    C -->|enabled| D["PSG + Z3 QF_LIA<br/><i>zero annotations</i>"]
+    C -->|enabled| D["PSG + cvc5 QF_LIA<br/><i>zero annotations</i>"]
 
 ```
 
@@ -123,11 +123,11 @@ Building out the Native Type Universe (NTU) within CCS is the architectural chan
 1.  **Dimensional Type System (DTS):** The physical units (e.g., meters, newtons) and their dynamically inferred magnitudes, encoded as constraints drawn from finitely generated abelian groups over \(\mathbb{Z}\).
 2.  **Deterministic Memory Management (DMM):** The lifetime coeffects (Stack, Arena, Heap) that dictate memory allocation, formalized as a coeffect discipline within the same graph.
 
-Both map to **`QF_LIA`** (Quantifier-Free Linear Integer Arithmetic), one of the most well-studied decidable logic fragments in computer science. The NTU is designed to act as the proof apparatus that derives `QF_LIA` assertions from the structural realities of the PSG for Z3.
+Both map to **`QF_LIA`** (Quantifier-Free Linear Integer Arithmetic), one of the most well-studied decidable logic fragments in computer science. The NTU is designed to act as the proof apparatus that derives `QF_LIA` assertions for the SMT solver from the structural realities of the PSG.
 
 ### Saturation
 
-When the PSG reaches "saturation," every node in the graph will have been stamped with its dimensional constraints and memory lifetime coeffects. This is designed to happen incrementally as the compiler builds the graph. Arithmetic operations generate dimensional constraints and variable bindings generate lifetime constraints, while function application propagates constraints from arguments to parameters. Z3 checks these constraints as they accumulate, and CCS records the results directly on the PSG nodes.
+When the PSG reaches "saturation," every node in the graph will have been stamped with its dimensional constraints and memory lifetime coeffects. This is designed to happen incrementally as the compiler builds the graph. Arithmetic operations generate dimensional constraints and variable bindings generate lifetime constraints, while function application propagates constraints from arguments to parameters. The solver checks these constraints as they accumulate, and CCS records the results directly on the PSG nodes.
 
 The saturated PSG is intended to become the single source of truth for verification. The constraints emerge from the code's structure, and the proofs are generated from those constraints. When the code changes, the constraints change with it, and the proofs are regenerated automatically. The implementation *is* the specification, because the specification is derived from the implementation's algebraic structure.
 

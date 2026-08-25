@@ -74,7 +74,7 @@ If an optimization would violate a verified property, the SMT solver rejects the
 
 ### Proof Before Lowering
 
-CCS is designed to perform its rigorous analysis and generate the proof certificate **before** any MLIR lowering occurs. This guarantees that the source of truth is the high-level native AST. By solving the constraints at the highest possible semantic level, the system captures the developer's exact domain intent before it is lowered into control flow graphs and target-specific dialects. The Alex middle-end will embed the Z3 proofs already solved in the PSG directly into the Intermediate Representation.
+CCS is designed to perform its rigorous analysis and generate the proof certificate **before** any MLIR lowering occurs. This guarantees that the source of truth is the high-level native AST. By solving the constraints at the highest possible semantic level, the system captures the developer's exact domain intent before it is lowered into control flow graphs and target-specific dialects. The Alex middle-end will embed the SMT proofs already solved in the PSG directly into the Intermediate Representation.
 
 ## Platform-Aware Resolution
 
@@ -148,14 +148,14 @@ The DTS+DMM framework's standard inference and coeffect machinery would handle t
 
 ## The Cryptographic Release Certificate
 
-The complete pipeline comprises DTS inference, DMM coeffect resolution, Z3 proof discharge, PSG saturation, and MLIR translation validation. It is designed to culminate in a single artifact: the **cryptographic release certificate**.
+The complete pipeline comprises DTS inference, DMM coeffect resolution, SMT proof discharge, PSG saturation, and MLIR translation validation. It is designed to culminate in a single artifact: the **cryptographic release certificate**.
 
 The culmination of this architecture occurs when the developer executes `clef build --release`. At this point, the compilation shifts from interactive design-time guidance to immutable, cryptographic certification:
 
 1. **The Final Freeze.** The PSG is locked. The boundary conditions are fixed across all target architectures (Zen 5 CPU, RDNA 3.5 GPU, XDNA 2 NPU, and Arty A7 FPGA).
 2. **The Global SMT Theorem.** CCS aggregates the constraints derived from the entire dependency graph into a single, comprehensive SMT-LIB2 problem.
-3. **Witness Generation.** Z3 executes a strict, global verification run. Upon a `SAT` result, proving that no dimensional bounds are exceeded, no memory lifetimes are violated, and no BAREWire layouts are breached, Z3 generates a mathematical witness.
-4. **Binary Stamping.** CCS compiles the final LLVM (or CIRCT SystemVerilog) output and cryptographically hashes the binary alongside the Z3 witness, embedding the certificate directly into a `.proofcert` file or a dedicated ELF section.
+3. **Witness Generation.** The SMT solver executes a strict, global verification run. Upon a `SAT` result, proving that no dimensional bounds are exceeded, no memory lifetimes are violated, and no BAREWire layouts are breached, the solver generates a mathematical witness.
+4. **Binary Stamping.** CCS compiles the final LLVM (or CIRCT SystemVerilog) output and cryptographically hashes the binary alongside the solver witness, embedding the certificate directly into a `.proofcert` file or a dedicated ELF section.
 
 The certificate is designed to guarantee:
 
@@ -176,7 +176,7 @@ The Fidelity Framework's integrated approach to verification is designed to coll
 
 | Concern | Traditional Approach | Fidelity/Clef Approach |
 |---|---|---|
-| Dimensional correctness | Erasure (F# UoM) or annotation burden (F\*) | Transparent inference via DTS + Z3 |
+| Dimensional correctness | Erasure (F# UoM) or annotation burden (F\*) | Transparent inference via DTS + cvc5 |
 | Memory safety | Manual lifetime annotations (Rust) or runtime checks | Coeffect inference with escape classification |
 | Cross-target compilation | Separate build configs, no semantic preservation | Dimensional preservation guides representation selection |
 | Optimization verification | Trust the optimizer | Translation validation via MLIR SMT dialect |

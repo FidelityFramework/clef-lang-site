@@ -344,7 +344,7 @@ The shadow-api approach has practical consequences in four areas:
 
 **Gradual Adoption**: Organizations can harden foundational tools without the coordination an interface change would require. Scripts, automation, and integration tests continue working unchanged.
 
-**Verification Capability**: SMT verification through Z3 enables machine-checked proofs over key operations, providing guarantees that would be difficult to establish for a C implementation.
+**Verification Capability**: SMT verification through cvc5 enables machine-checked proofs over key operations, providing guarantees that would be difficult to establish for a C implementation.
 
 **Performance Preservation**: Composer's compilation ensures that safety improvements don't compromise the performance that organizations depend on. The zero-cost abstraction principle means the type safety measures, bounds checking, and verification annotations are erased during compilation. The resulting native code performs identically to hand-optimized C.
 
