@@ -116,25 +116,26 @@ CCS8031: synchronous wait cycle
   break the cycle: supply a priority, convert one leg to Tell, or opt into supervised timeout.
 ```
 
-The lowering underneath makes the diagnostic and the proof the same object. This is illustrative dialect, the real attribute names are still settling as Composer is built. Each `PostAndReply` lowers to a blocking op carrying only its own wait edge as local fact, because no single op can see the whole set:
+The lowering underneath makes the diagnostic and the proof the same object. This is illustrative, the real attribute names are still settling as Composer is built. Each `PostAndReply` lowers to a blocking send carrying only its own wait edge as local fact, derived at emission from the program graph, because no single op can see the whole set:
 
 ```mlir
-%r = dcont.suspend_on_reply %callee : !actor.ref<"inventory">
-       { rpc.wait_edge = #wait<from = "order", to = "inventory"> }
+%r = func.call @inventory_reply(%request)
+       { rpc.wait_edge = #wait<from = "order", to = "inventory"> } : (index) -> index
 ```
 
 The acyclicity obligation rides on the enclosing scope, the smallest region closed under "can send a synchronous reply to," which instructs the seam to gather every edge in the region and prove a rank exists:
 
 ```mlir
 module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
-  // actor behaviors and their suspend_on_reply ops
+  // actor behaviors and their blocking sends
 }
 ```
 
-Lowering would emit the verification condition into the SMT dialect, and the solver would discharge it like any interval check:
+Lowering would emit the verification condition from the graph's wait relation into the SMT dialect, cross-check the gathered anchors against it, and the solver would discharge it like any interval check:
 
 ```mlir
-%edges = collect rpc.wait_edge in @order_system
+%edges = collect rpc.wait_edge in @order_system   // per-op anchors, for diagnostics
+check %edges == W   // W: the graph's wait relation; a dropped anchor is an emission bug
 smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
 smt.check   // sat: a rank exists, acyclic. unsat: the core is the cycle.
  

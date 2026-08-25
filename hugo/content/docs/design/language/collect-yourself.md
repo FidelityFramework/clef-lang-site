@@ -303,11 +303,11 @@ Each stage maintains purity. The entire pipeline is a composition of pure functi
 
 Compare this to imperative code where each loop iteration might mutate shared state, access global variables, or perform I/O. The compiler must assume the worst and serialize everything.
 
-## The Road Ahead: DCont and INet Dialects
+## The DCont and Inet Regimes Ahead
 
 Today, our Composer compiler emits standard MLIR dialects for collection operations, and the architecture preserves degrees of freedom for further optimization.
 
-When the Delimited Continuations (DCont) dialect is integrated into our MLIR scheme, effectful boundaries will be explicit:
+As our Composer compiler saturates the DCont regime on the Program Semantic Graph, effectful boundaries become explicit, each one a suspension point in a continuation state machine:
 
 ```fsharp
 let process = async {
@@ -317,7 +317,7 @@ let process = async {
 }
 ```
 
-When the Interaction Net (INet) dialect is in the picture, pure regions will compile to parallel reduction networks. This is the mathematical dual of the lambda calculus itself, executing in parallel wherever data dependencies permit.
+Pure regions take the interaction-net lane, compiling to parallel reduction wherever data dependencies permit. This is the mathematical dual of the lambda calculus itself, settled as rule structure on the graph and emitted as kernels and a worklist.
 
 ```mermaid
 flowchart LR
@@ -327,7 +327,7 @@ flowchart LR
     end
 
     subgraph "Pure Region Optimization"
-        P1 --> I1[INet parallel reduction]
+        P1 --> I1[Inet parallel reduction]
         P1 --> V1[Vector dialect SIMD]
     end
 ```
@@ -342,4 +342,4 @@ When you write a `map`, `filter`, or `fold`, you are writing ordinary code that 
 
 The purity that makes Clef code straightforward to reason about is the same purity our compiler reads to generate parallel code. Structural sharing does double duty: it makes immutable collections practical and it preserves optimization opportunities. Our aim is for clear, idiomatic Clef code to compile to performance in the range of hand-optimized C++, with no template metaprogramming, SFINAE, or concept constraints in the source.
 
-This is the design we will keep building toward as the dialect work and the saturation engine come together: collection code that reads as ordinary, and a compiler that treats it as the pure lambda calculus it already is.
+This is the design we will keep building toward as the regime lanes and the saturation engine come together: collection code that reads as ordinary, and a compiler that treats it as the pure lambda calculus it already is.

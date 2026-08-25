@@ -94,17 +94,17 @@ builder.Bind(someOption, fun x ->
         builder.Return(x + y)))
 ```
 
-The nested lambdas are continuations. This observation carries directly into native compilation: computation expressions already express the control flow patterns that our DCont dialect needs to represent.
+The nested lambdas are continuations. This observation carries directly into native compilation: computation expressions already express the control flow our Composer compiler saturates as continuation state machines on the Program Semantic Graph.
 
 The Composer compilation strategy depends on the computation pattern:
 
-| Pattern | Dialect | Strategy |
-|---------|---------|----------|
-| Sequential effects (async, state) | DCont | Preserve continuations |
+| Pattern | Regime | Strategy |
+|---------|--------|----------|
+| Sequential effects (async, state) | DCont | Saturate as a continuation state machine |
 | Parallel pure (validated, reader) | Inet | Compile to data flow |
 | Mixed | Both | Analyze and split |
 
-An async computation expression is designed to compile to DCont dialect operations, where each `let!` becomes a `dcont.shift` that captures the continuation. A validated computation with `and!` combinators compiles to Inet dialect, where the independent branches can execute in parallel.
+An async computation expression is designed to saturate as a continuation state machine, where each `let!` marks a suspension point whose captured continuation becomes a state index and resume block. A validated computation with `and!` combinators takes the interaction-net lane, where the independent branches can execute in parallel.
 
 We describe this construction in [DCont Inet Duality](/docs/design/concurrency/dcont-inet-duality/). The application here is that referential transparency determines compilation strategy. Our coeffect system tracks what code *needs* from its environment, and this information guides the decomposition.
 
@@ -159,7 +159,7 @@ Three Clef features form the architectural backbone of our Composer compiler:
 
 - **Quotations** encode memory constraints and semantic information as inspectable compile-time data
 - **Active patterns** enable compositional structural recognition throughout the nanopass pipeline
-- **Computation expressions** provide continuation capture as notation, compiling naturally to the DCont and Inet dialects
+- **Computation expressions** provide continuation capture as notation, splitting naturally between the DCont and Inet regimes
 
 All three predate our framework by years and have been stable in F# the whole time. They are standing art: capabilities Don Syme designed years ago that now carry our ideas around native compilation without runtime dependencies. Our Fidelity framework aims to show that the type-safe features Clef inherits are practical for systems programming, and that self-hosting is built on this infrastructure.
 

@@ -87,26 +87,28 @@ Parametricity does not establish this property. Free theorems give independence 
 
 A check that runs only in the front end and is discarded before code generation is theater. The CakeML standard is the right bar: the property is established once and carried to the target, rather than asserted at the source and hoped for below. For deadlock freedom that transfer is direct, because the obligation is already a Tier 2 verification condition and Tier 2 conditions already lower to the MLIR SMT dialect and discharge at the seam. There is no separate mechanism for this one.
 
-The shape in MLIR turns on one question: is deadlock freedom a structural invariant of an op, or a proof obligation on a scope? It is the second. A single blocking call cannot establish acyclicity, because acyclicity is a property of the whole set of wait edges and no individual op can see the set. SSA dominance can make use-after-definition structurally impossible at the op level, and there is no analogue here. So each synchronous RPC lowers to a blocking primitive that attaches only its own wait edge as local fact:
+The shape in MLIR turns on one question: is deadlock freedom a structural invariant of an op, or a proof obligation on a scope? It is the second. A single blocking call cannot establish acyclicity, because acyclicity is a property of the whole set of wait edges and no individual op can see the set. SSA dominance can make use-after-definition structurally impossible at the op level, and there is no analogue here. So each synchronous RPC lowers to a blocking primitive that attaches only its own wait edge as local fact, derived at emission from the graph rather than asserted by the op:
 
 ```mlir
-// each PostAndReply lowers to a suspend that names who it waits on
-%r = dcont.suspend_on_reply %callee : !actor.ref<"inventory">
-    { rpc.wait_edge = #wait<from = "order", to = "inventory"> }
+// each PostAndReply lowers to its blocking send. The wait edge is derived
+// at emission and rides the op as a diagnostic anchor
+%r = func.call @inventory_reply(%request)
+    { rpc.wait_edge = #wait<from = "order", to = "inventory"> } : (index) -> index
 ```
 
 The acyclicity proof is hung on the scope that encloses the set of those edges. The enclosing region bears the obligation as an attribute, which instructs the seam to gather every wait edge in the region and prove the relation admits a rank:
 
 ```mlir
 module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
-  // actor behaviors and their suspend_on_reply ops
+  // actor behaviors and their blocking sends
 }
 ```
 
-Lowering emits the verification condition for that scope into the SMT dialect, and the solver discharges it exactly as it discharges an interval obligation:
+The seam emits the verification condition for that scope from the graph's wait relation, cross-checks the gathered anchors against it, and the solver discharges the condition exactly as it discharges an interval obligation:
 
 ```mlir
-%edges = collect rpc.wait_edge in @order_system
+%edges = collect rpc.wait_edge in @order_system   // per-op anchors, for diagnostics
+check %edges == W   // W: the graph's wait relation; a dropped anchor is an emission bug
 smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
 smt.check   // sat: acyclic. unsat: the core is the cycle, reported as CCS8031.
  

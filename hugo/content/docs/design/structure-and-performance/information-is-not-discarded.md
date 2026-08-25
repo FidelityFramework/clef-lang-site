@@ -35,6 +35,20 @@ This discipline needs an intermediate representation that can hold a fact across
 
 MLIR arrives through C++, the "worse is better" lineage in Gabriel's sense. Clef is an ML-family language whose correctness properties are structural, and it uses that pragmatic C++-borne scaffold to carry them to the metal. The [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854) develops that arrangement, and why a scaffold chosen for reach rather than purity carries a structurally-correct language to real hardware while preserving its guarantees.
 
+## An Annotation Is Not a Pragma
+
+An attribute system can decay into pragmas, and the failure mode is worth naming because MLIR's own contract permits it: discardable attributes are namespaced, attachable to any operation, and legitimately droppable by a pass that rebuilds an op it does not fully understand. A pragma is an assertion injected as an input, honored or ignored by convention, with nothing behind it. Held to that default, "carried as an annotation" would be a polite name for hope. Three properties separate the carried facts of this pipeline from that default.
+
+**Provenance.** An annotation is derived at emission from a fact saturation already established on the graph. Nothing downstream is asked to trust it as a claim. The discharge that consumes it re-checks the obligation it feeds. A pragma is an input. A carried fact is a consequence.
+
+**Residence.** The Program Semantic Graph remains the system of record, and the annotation is an emission artifact, closer to a debug symbol than to state. This is what makes the defect-catching clause above mechanical rather than aspirational: because the graph retains every fact it emitted, the seam cross-checks what it gathers against what the graph holds, and a dropped annotation surfaces as an emission defect instead of a silent unsoundness.
+
+**Lifetime.** An annotation is written by the emission traversal and consumed one step later by its named consumer. No pass in between reads it to make a decision. A pass that needs to is the under-saturation signal the [duality piece](/docs/design/concurrency/dcont-inet-duality/) states as a standing law, and the remedy is moving the decision onto the graph, never enriching the annotation.
+
+The lowering target then informs the form the reified fact takes, because the consumer's contract governs it. An obligation bound for the seam expands into the SMT dialect, with per-op anchors retained so an unsat core can name a source span. [Deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) shows the worked shape, anchors cross-checked against the graph's wait relation. A fact a backend dialect genuinely consumes is reified in that dialect's own vocabulary, the form a tile assignment takes for spatial targets or a mapping attribute takes on a parallel loop, target vocabulary in the same sense the LLVM dialect is target vocabulary. And a fact that must survive an open boundary becomes a [constructed witness](/docs/design/javascript-targeting/constructed-witnesses/), a generated guard beside the emitted program. None of the three mints an operation vocabulary of ours. Where a consumer owns a vocabulary, the emission writes into it.
+
+The discipline compresses to a sentence a future pass author can be held to: an annotation is derived at emission, consumed by a named contract, and never read to make a decision the saturated graph should have settled.
+
 ## The Formal and Normative Statements
 
 The account here is the mechanical one. The same principle has a formal statement and a normative one, and this discipline is where they meet.
@@ -51,5 +65,7 @@ Normatively, the specification requires it. A design-time property the specifica
 - [Gaining Closure](/docs/design/memory/gaining-closure/) - closure lifetime resolved at construction and carried
 - [Dimensional Type Safety](/docs/design/types/dimensional-type-safety/) - dimensions preserved to the final lowering stage
 - [Proofs to Silicon](/docs/internals/verification/proofs-to-silicon/) - verification facts carried through the middle end
+- [Deadlock Freedom as an Obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) - the anchor-and-cross-check shape worked in full
+- [Constructed Witnesses](/docs/design/javascript-targeting/constructed-witnesses/) - the reification a fact takes at an open boundary
 - [Fixed-Point Scaffolding](https://arxiv.org/abs/2606.02854) - why an MLIR/C++ scaffold carries a structurally-correct language to hardware
 - [Opining Upon Reflection](/blog/opining-upon-reflection/) - the accrual principle read against runtime reflection, for readers arriving from managed platforms

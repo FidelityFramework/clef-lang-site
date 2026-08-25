@@ -144,25 +144,27 @@ The alternative the actor tradition has developed for the same liveness properti
 
 ## The three obligations at the seam
 
-The three obligations reach our Composer compiler as attributes on the MLIR the seam reads. The data layer is established by dimensional typing, so it arrives discharged at Tier 1 with no proof code to write. The protocol layer is fixed by elaboration of the session structure at design time, resolved structurally and not by a verification tier. The liveness layer emits an acyclic wait-for rank as a QF_LIA goal that the solver discharges at Tier 2. Inferring the coexponential session type itself stays a design-time concern marked open, so the seam reads a checked annotation, not a solved one.
+The three obligations reach our Composer compiler as attributes on the MLIR the seam reads, each derived from the graph and cross-checked against it at discharge. The data layer is established by dimensional typing, so it arrives discharged at Tier 1 with no proof code to write. The protocol layer is fixed by elaboration of the session structure at design time, resolved structurally and not by a verification tier. The liveness layer emits an acyclic wait-for rank as a QF_LIA goal that the solver discharges at Tier 2. Inferring the coexponential session type itself stays a design-time concern marked open, so the seam reads a checked annotation, not a solved one.
 
 The lowering below is the order-and-inventory system from [deadlock freedom as an obligation](/docs/design/concurrency/deadlock-freedom-as-an-obligation/), bearing all three attributes on one behavior.
 
 ```mlir
-// illustrative dialect; op and attribute names are still settling
-dcont.func @order attributes {
+// illustrative; attribute names are still settling
+func.func @order() attributes {
     verif.obligation = #tier1.barewire_schema,   // data
     session = #session.coexp_proposed            // protocol: proposed shape, inference open
 } {
-    %r = dcont.suspend_on_reply %callee : !actor.ref<"inventory">
-        { rpc.wait_edge = #wait<from = "order", to = "inventory"> }   // liveness
+    %r = func.call @inventory_reply(%request)
+        { rpc.wait_edge = #wait<from = "order", to = "inventory"> }   // liveness anchor
+        : (index) -> index
 }
 
 module @order_system attributes { verif.obligation = #tier2.acyclic_wait } {
-  // actor behaviors and their suspend_on_reply ops
+  // actor behaviors and their blocking sends
 }
 
-%edges = collect rpc.wait_edge in @order_system
+%edges = collect rpc.wait_edge in @order_system   // per-op anchors, for diagnostics
+check %edges == W   // W: the graph's wait relation; a dropped anchor is an emission bug
 smt.assert (forall (u v) (=> (wait %u %v) (lt (rank %u) (rank %v))))
 smt.check   // sat: acyclic. unsat: the core is the cycle, reported as CCS8031
  

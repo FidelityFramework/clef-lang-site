@@ -95,7 +95,7 @@ For orientation, the decidability picture for the protocol layer sits alongside 
 | Inference, candidate fragment | Complete, principal, decidable | `AcyclicStatic`/`OrderedCyclic` rank in `QF_LIA` | Conjectured complete and principal; unproven |
 | Inference, general case | (no general case; the algebra is the fragment) | Undecidable, `Unresolved` fallback | Undecidable on the four dynamic modes |
 | Recovery on failure | (not needed) | May-wait over-approximation of `W`, sound | Over-approximated session, sound; content open |
-| Trusted base | Z3, `QF_LIA`, Tier 1 free | Z3, `QF_LIA`, Tier 2 rank | unsettled; liveness projection is Tier 2 |
+| Trusted base | cvc5, `QF_LIA`, Tier 1 free | cvc5, `QF_LIA`, Tier 2 rank | unsettled; liveness projection is Tier 2 |
 
 The settled column is the existence proof that this profile is reachable for an algebraic object. The shipped column is the existence proof that the over-approximation posture works in our own analyzer on a projection of this very connective. The open column is what this scaffold is for. The two left columns are why the conjecture is worth stating at all, and the gap between the middle and right columns is the research, not a foregone conclusion.
 

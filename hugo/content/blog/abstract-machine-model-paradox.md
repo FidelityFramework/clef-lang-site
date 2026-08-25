@@ -26,9 +26,9 @@ The author of the AMM article would likely object that this violates the princip
 
 ## Continuations, Already in the Language
 
-Clef's async workflows and computation expressions are explicit representations of continuation-passing style, not just syntactic sugar. When a Clef programmer writes an async block, they are thinking in continuations rather than in threads or callbacks. This mental model, this AMM, is the same way MLIR's new DCont (delimited continuation) dialect represents computation.
+Clef's async workflows and computation expressions are explicit representations of continuation-passing style, not just syntactic sugar. When a Clef programmer writes an async block, they are thinking in continuations rather than in threads or callbacks. This mental model, this AMM, is the same one a recent DCont (delimited continuation) dialect for MLIR represents at the IR level.
 
-[The DCont dialect, emerging from CMU research](https://github.com/CMUAbstract/mlir-wasm-dialect), recognizes that continuations are central to how modern programs execute. Every async operation, every suspendable computation, every cooperative multitasking system manipulates continuations to do its work. F#, the lineage Clef descends from, has carried this model in its async workflows for years, and that AMM aligns with MLIR's execution model.
+[The DCont dialect, emerging from CMU research](https://github.com/CMUAbstract/mlir-wasm-dialect), models exactly this: continuations as central to how modern programs execute. Every async operation, every suspendable computation, every cooperative multitasking system manipulates continuations to do its work. F#, the lineage Clef descends from, has carried this model in its async workflows for years, and that AMM aligns with MLIR's execution model.
 
 The picture extends with [Martin Coll's Inet dialect for MLIR](https://github.com/colltoaction/mlir-inet-dialect). Interaction nets provide a model of computation where parallel reduction is both possible and deterministic. Pure functions can be parallelized automatically without race conditions or synchronization overhead. Clef's expression-oriented, immutable-by-default style maps to this model. Our language's AMM does not force programmers to think about parallelism; it is structured so that parallelism emerges from normal code.
 
@@ -50,11 +50,11 @@ Second, the article assumes that the control/guarantees tradeoff is two-dimensio
 
 ## What MLIR Changes
 
-The emergence of MLIR challenges the AMM article's assumption that there is a fixed set of AMMs that programmers use. MLIR's dialect system means new AMMs can be created, composed, and transformed. The DCont and Inet dialects are not just implementation details. They are established mathematical models built for efficient expression on sympathetic hardware. The theory has existed for more than a generation (delimited continuations since the 1980s, interaction nets since 1990), and current technology can express them in a way that newer architectures now make practical.
+The emergence of MLIR challenges the AMM article's assumption that there is a fixed set of AMMs that programmers use. MLIR's dialect system means new AMMs can be created, composed, and transformed. The DCont and Inet dialects carry established mathematical models into IR form, built for efficient expression on sympathetic hardware. The theory has existed for more than a generation (delimited continuations since the 1980s, interaction nets since 1990), and current technology can express them in a way that newer architectures now make practical.
 
 Clef aligns with these models by mathematical correspondence rather than by deliberate design. Our language's emphasis on expressions over statements, its explicit handling of effects through computation expressions, and its type system that preserves information through compilation make it well suited to MLIR's compilation model.
 
-Consider how Clef expresses what MLIR represents: async workflows map to DCont's continuation points, pure functions map to Inet's interaction rules, and sequential computations decompose into SSA form where each binding creates a new immutable value. The programmer writes Clef thinking in one semantic model, and that model decomposes into the multiple AMMs that MLIR supports. Clef holds semantic coherence, one language and one mental model, while that single model projects onto different platforms as needed.
+Consider how Clef expresses these models: async workflows map to delimited-continuation structure, pure functions map to interaction-net rules, and sequential computations decompose into SSA form where each binding creates a new immutable value. The programmer writes Clef thinking in one semantic model, and that model decomposes into the multiple AMMs that MLIR supports. Clef holds semantic coherence, one language and one mental model, while that single model projects onto different platforms as needed.
 
 ## Heterogeneous Hardware
 

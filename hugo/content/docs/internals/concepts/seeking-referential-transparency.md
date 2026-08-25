@@ -45,27 +45,22 @@ The compilation strategy derives from three analyses:
 2. **Control Flow Graph (CFG)** - Hypernodes in the PHG that identify control dependencies
 3. **Data Flow Graph (DFG)** - Hypernodes in the PHG that tracks data dependencies
 
-These analyses inform whether code should target:
-- **Inet dialect** (interaction nets) for pure parallelism
-- **DCont/Async dialects** for continuation-based execution
+These analyses inform which regime a region takes:
+- **Interaction nets** for pure parallelism
+- **Delimited continuations** for effectful, sequential execution
 
-## Interaction Nets as Primary Representation
+## Interaction Nets as the Pure Regime
 
-When Alex identifies pure code, interaction nets become the top-level MLIR representation:
+When Alex identifies pure code, the interaction net is the governing model. The rule system is settled on the Program Hypergraph at saturation, each rule's right-hand side compiles as an ordinary function over node records, and the net itself is runtime data, with a worklist of active pairs the compiled kernels consume. The residue in the portable dialects:
 
 ```mlir
-// Pure Clef function compiles to Inet dialect
-func @pureMapReduce(%data: !inet.wire<tensor<f32>>) -> !inet.wire<f32> {
-  // Duplicate for parallel processing
-  %dup:2 = inet.duplicate %data
-
-  // Apply transformations in parallel
-  %mapped = inet.cap %dup#0, @mapper
-  %filtered = inet.cap %dup#1, @filter
-
-  // Merge results
-  %result = inet.construct %mapped, %filtered
-  return %result
+// The residue a pure region leaves (sketch): rule kernels as ordinary
+// functions, the net as runtime data, and a worklist loop
+func.func @apply_map_rule(%node: memref<?xi8>) { ... }
+func.func @apply_filter_rule(%node: memref<?xi8>) { ... }
+func.func @reduce_worklist(%net: memref<?xi8>) {
+  // consume active pairs until the net is normal
+  scf.while : () -> () { ... } do { ... }
 }
 ```
 
@@ -94,9 +89,9 @@ let ternaryOperation (input: Vector<float>) (weights: TernaryMatrix) =
             | -1y -> result.[i] <- result.[i] - input.[j]  // Simple subtraction
             | 0y -> ()  // No operation
 
-// Maps directly to interaction net rules
-inet.rule @ternary_add : (!inet.wire<f32>, !inet.wire<f32>) -> !inet.wire<f32>
-inet.rule @ternary_sub : (!inet.wire<f32>, !inet.wire<f32>) -> !inet.wire<f32>
+// Maps directly to interaction rules, settled at design time on the PHG
+rule ternary_add : (wire f32, wire f32) -> wire f32
+rule ternary_sub : (wire f32, wire f32) -> wire f32
 ```
 
 ### BitNet and Quantized Models
@@ -162,12 +157,15 @@ let processWithEffects data = async {
     return stored
 }
 
-// Compiles to DCont dialect
-dcont.func @processWithEffects(%data: !fidelity.data) {
-  %cont1 = dcont.shift @validate
-  %transformed = call @pure(%cont1)
-  %cont2 = dcont.shift @save(%transformed)
-  dcont.reset %cont2
+// Saturates as a continuation state machine; the portable-dialect
+// residue is a resume switch over a state record
+func.func @processWithEffects_resume(%state: memref<?xi8>, %value: index) {
+  %idx = memref.load %state[%c0] : memref<?xi8>
+  cf.switch %idx : i32, [
+    default: ^done,
+    0: ^afterValidate,   // run the pure region, then request save
+    1: ^afterSave
+  ]
 }
 ```
 
@@ -192,20 +190,16 @@ let hybridProcessing datasets = async {
 }
 ```
 
-This compiles to:
+This lowers to one state machine whose pure segment calls the compiled parallel kernels between suspension points:
 
 ```mlir
-func @hybridProcessing() {
-  // DCont for async boundaries
-  %data = dcont.shift @readAsync
-
-  // Switch to Inet for pure computation
-  %inet_data = dcont.to_inet %data
-  %processed = call @pureProcessingViaInet(%inet_data)
-
-  // Back to DCont for effects
-  %result = inet.to_dcont %processed
-  dcont.shift @saveAsync(%result)
+func.func @hybridProcessing_resume(%state: memref<?xi8>, %value: index) {
+  %idx = memref.load %state[%c0] : memref<?xi8>
+  cf.switch %idx : i32, [
+    default: ^done,
+    0: ^afterRead,   // pure region: call the compiled kernels, then request save
+    1: ^afterSave
+  ]
 }
 ```
 
@@ -289,12 +283,12 @@ let hybridInference (model: HybridBitNet) (input: TokenSequence) =
 
 | Pattern | Compilation Strategy | Target Hardware | Characteristic |
 |---------|---------------------|-----------------|-------------|
-| Pure map/reduce | Inet dialect | GPU/SIMD | Parallel reduction |
-| Async I/O | DCont dialect | CPU | Deterministic memory |
+| Pure map/reduce | Inet regime | GPU/SIMD | Parallel reduction |
+| Async I/O | DCont regime | CPU | Deterministic memory |
 | Mixed workload | Hybrid | Heterogeneous | Adaptive |
-| **MatMul-free layers** | **Inet dialect** | **Any GPU** | **Reduced memory footprint** |
-| **Ternary networks** | **Inet dialect** | **CPU SIMD** | **Add/sub in place of MatMul** |
-| **State space models** | **Inet dialect** | **GPU** | **Linear complexity** |
+| **MatMul-free layers** | **Inet regime** | **Any GPU** | **Reduced memory footprint** |
+| **Ternary networks** | **Inet regime** | **CPU SIMD** | **Add/sub in place of MatMul** |
+| **State space models** | **Inet regime** | **GPU** | **Linear complexity** |
 
 ### Post-Transformer Specific Benefits
 

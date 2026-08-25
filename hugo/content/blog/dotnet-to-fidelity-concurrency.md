@@ -272,27 +272,27 @@ let userRegion =
 
 Prospero's primary role is scheduling and orchestration within the Olivier actor model. It manages message delivery, supervision hierarchies, and actor lifecycle events within the system, with cross-node transport carried over BAREWire. By extension of its role as actor supervisor, it also marshals the heap allocations for those actors through actor-scoped arenas, the discipline we develop in [RAII in Olivier and Prospero](/docs/design/memory/raii-in-olivier-and-prospero/). The Akka.NET-shaped clustering configuration above is a migration affordance for teams arriving from that ecosystem, not the native transport.
 
-Here's a simplified example of how an async function might look in MLIR:
+Here's a simplified view of how an async function is designed to reach MLIR:
 
 ```mermaid
 flowchart TB
-    subgraph HighLevelMLIR["High-Level MLIR"]
+    subgraph PSG["Program Semantic Graph"]
         direction LR
-        AsyncExecute["dcont.reset<br>Continuation Boundary"]
+        Saturate["Continuation State Machine<br>Delimiter + Suspension Points"]
     end
 
-    subgraph MidLevelMLIR["Mid-Level MLIR"]
+    subgraph Aggregate["Saturated Aggregate"]
         direction LR
-        CreateCoroutine["dcont.shift<br>Capture Continuation"] --> SuspendPoint["dcont.suspend<br>Suspension Point"] --> ResumeCoroutine["dcont.resume<br>Resume Execution"]
+        Capture["Capture Set<br>Values Live Across Suspensions"] --> States["State Indices<br>Per-Suspension Resume Blocks"]
     end
 
-    subgraph LowLevelMLIR["Low-Level MLIR"]
+    subgraph PortableMLIR["Portable MLIR"]
         direction LR
-        Alloca["memref.alloca<br>Allocate State"] --> ControlFlow["scf.if/while<br>Control Flow"] --> LoadStore["memref.load/store<br>State Management"]
+        Alloca["memref.alloca<br>State Record"] --> ControlFlow["cf.switch<br>Resume Dispatch"] --> LoadStore["memref.load/store<br>State Management"]
     end
 
-    HighLevelMLIR --> MidLevelMLIR
-    MidLevelMLIR --> LowLevelMLIR
+    PSG --> Aggregate
+    Aggregate --> PortableMLIR
 ```
 
 Each level gets closer to the metal, with more explicit control over memory and execution. This follows the nanopass philosophy of small, composable transformations that preserve semantic information while lowering abstraction step by step. At the lowest level, the design reaches a representation that maps directly to native code for the target platform, with the original program structure still intact for optimization.
@@ -305,10 +305,10 @@ Our Alex handles the transformation of Clef code into MLIR operations within the
 // You never need to interact with this directly
 // It's part of the compilation pipeline
 let mlirTransform = mlir {
-    // Clef async/task code gets transformed to MLIR operations
-    // These are then lowered through MLIR dialects and ultimately to machine code
-    yield MLIRPrimitives.dcont_reset
-    yield MLIRPrimitives.dcont_shift
+    // Clef async/task code saturates as a continuation state machine,
+    // emitted in the portable dialects and lowered to machine code
+    yield MLIRPrimitives.state_record
+    yield MLIRPrimitives.resume_dispatch
     yield MLIRPrimitives.control_flow
 }
 ```
@@ -317,7 +317,7 @@ Consider how Clef represents function composition, pattern matching, and higher-
 
 Clef's computation expressions, the foundation of async workflows, correspond directly to MLIR's structured control flow. Computation expressions are *continuations in disguise*. When you write `let! x = expr in body`, the compiler transforms it into a `Bind` operation that threads the continuation through the computation. Alex is designed to build on this with **delimited continuations** via `shift` and `reset` operators, which create explicit continuation boundaries that correspond to SSA's basic block boundaries. The alignment is the same mathematical structure expressed directly at the semantic level.
 
-Where the .NET compiler stops at creating state machines that still require runtime support, Alex is designed to use these delimited continuations to capture "the rest of the computation" at specific points, so that operations can suspend and resume without allocating Tasks or using thread pools. Each `shift` captures the continuation and each `reset` delimits its scope, and these map directly to MLIR's DCont dialect operations, preserving the control flow structure through to hardware-optimized instructions.
+Where the .NET compiler stops at creating state machines that still require runtime support, Alex is designed to use these delimited continuations to capture "the rest of the computation" at specific points, so that operations can suspend and resume without allocating Tasks or using thread pools. Each `shift` captures the continuation and each `reset` delimits its scope, and the pair saturates on our Program Semantic Graph as a continuation state machine whose state indices and resume blocks the portable MLIR dialects carry through to hardware-optimized instructions.
 
 Rust's async transformation also produces state machines, and C++20 coroutines follow a similar pattern. The key difference lies in when control flow structure becomes explicit. In Rust and C++, async transformation occurs after type checking; the compiler must reconstruct control flow from imperative code. In Fidelity, delimited continuations make control flow explicit in the source semantics, which the compiler preserves through MLIR lowering. This is not a criticism of the Rust or C++ approaches, which work well within their design constraints. Rather, it illustrates how different starting points lead to different compilation strategies, with Fidelity's concurrent foundation enabling analysis that imperative foundations make more difficult.
 

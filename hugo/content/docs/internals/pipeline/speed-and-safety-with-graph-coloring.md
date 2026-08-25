@@ -133,36 +133,28 @@ The Ramsey insight: if smaller subgraphs have certain properties (like independe
 
 ## MLIR Transformation Strategy
 
-Once we identify parallel regions through graph coloring, we transform them:
+Once graph coloring identifies a parallel region, the residue the witness emits changes shape. Both forms below are portable-dialect output of the same graph, per [the duality piece](/docs/design/concurrency/dcont-inet-duality/):
 
 ```mlir
-// Original: DCont dialect (sequential continuations)
-dcont.func @processData(%data: tensor<1024xf32>) {
-    %0 = dcont.async @normalize(%data)
-    dcont.suspend
-    %1 = dcont.async @validate(%0)
-    dcont.suspend
-    %2 = dcont.async @transform(%1)
-    dcont.suspend
-    dcont.return %2
+// Without the independence fact: the sequential reading, a continuation
+// state machine with a suspension point after each stage (sketch)
+func.func @processData_resume(%state: memref<?xi8>, %v: index) {
+    %idx = memref.load %state[%c0] : memref<?xi8>
+    cf.switch %idx : i32, [
+      default: ^done,
+      0: ^afterNormalize,
+      1: ^afterValidate,
+      2: ^afterTransform
+    ]
 }
 
-// After graph coloring analysis: Inet dialect (parallel)
-inet.func @processData(%data: tensor<1024xf32>) {
-    // Graph coloring revealed element independence
-    %0 = inet.parallel_map @normalize(%data) {
-        dimensions = [1024]
-        interaction_rule = @element_wise
-    }
-    %1 = inet.parallel_map @validate(%0) {
-        dimensions = [1024]
-        interaction_rule = @element_wise
-    }
-    %2 = inet.parallel_map @transform(%1) {
-        dimensions = [1024]
-        interaction_rule = @element_wise
-    }
-    inet.return %2
+// After graph coloring reveals element independence: the region
+// routes down the tensor path as parallel loops
+func.func @processData(%data: tensor<1024xf32>) -> tensor<1024xf32> {
+    %0 = scf.forall (%i) in (1024) { ... }   // normalize, 1024 independent lanes
+    %1 = scf.forall (%i) in (1024) { ... }   // validate
+    %2 = scf.forall (%i) in (1024) { ... }   // transform
+    return %2 : tensor<1024xf32>
 }
 ```
 
@@ -292,10 +284,10 @@ graph TD
 
     subgraph "MLIR Generation"
         REG --> DEC{Parallelizable?}
-        DEC -->|Yes| INET[Inet Dialect]
-        DEC -->|No| DCONT[DCont Dialect]
-        INET --> OPT[Parallel Execution]
-        DCONT --> SEQ[Sequential Execution]
+        DEC -->|Yes| PAR[Parallel Residue<br>tensor path / rule kernels]
+        DEC -->|No| SM[Continuation State Machine]
+        PAR --> OPT[Parallel Execution]
+        SM --> SEQ[Sequential Execution]
     end
 ```
 

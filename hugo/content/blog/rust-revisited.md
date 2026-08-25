@@ -74,7 +74,7 @@ let processWithDcont data =
     )
 ```
 
-Our DCont dialect in MLIR (discussed in our AMM article) is designed to generate static state machines with predetermined memory layouts and no runtime overhead.
+Our continuation lowering (discussed in our AMM article) is designed to generate static state machines with predetermined memory layouts and no runtime overhead.
 
 ## Converging on Error Handling
 

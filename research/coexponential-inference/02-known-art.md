@@ -177,7 +177,7 @@ is a finite directed graph and deadlock freedom reduces to its acyclicity.
 Acyclicity encodes as a rank function: an integer `r` per actor behavior such that
 every edge `u -> v` has `r(u) < r(v)`, which is satisfiable exactly when the relation
 has no cycle. That constraint is QF_LIA, the same fragment as our interval and bound
-checks, and Z3 discharges it as an ordinary Tier 2 obligation. The unsat core is the
+checks, and cvc5 discharges it as an ordinary Tier 2 obligation. The unsat core is the
 cycle, returned as the minimal set of edges that cannot be jointly ranked, which is
 the same object the front-end diagnostic names.
 
@@ -288,7 +288,7 @@ inference would have to fit:
   the tentative assignment: `if lambda_required(v, use_i) > lambda_tentative(v) then
   promote`.
 - The discharge is QF_LIA over a finite lattice, a single linear inequality per use
-  site decided by Z3.
+  site decided by cvc5.
 - The common case is zero-annotation and silent.
 - Otherwise a visible diagnostic fires and an opt-in override is offered.
 

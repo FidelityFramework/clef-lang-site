@@ -24,7 +24,7 @@ The **additive duality** gives every type `'T` a negative type `Neg<'T>`, with t
 
 The **multiplicative duality** gives every type `'T` a fractional type `Recip<'T>`, with the isomorphism `'T × Recip<'T> ↔ 1`. A value of `Recip<'T>` is a constraint on the surrounding context, a logic variable whose value is fixed by unification at a corresponding site. When it flows through a computation, it carries the demand that some `'T` will eventually be supplied. This is the type-level account of constraint propagation.
 
-The two dualities are orthogonal. Prior work treated continuations as a single phenomenon. The claim here is that they are two. At the type level they split into backtracking (negative) and constraint propagation (fractional), and the type system encodes which discipline governs which value. These are categorical entities, distinct from the operational delimited continuations the framework uses at runtime through the DCont dialect. The decomposition is at the type level and leaves the operational primitives intact.
+The two dualities are orthogonal. Prior work treated continuations as a single phenomenon. The claim here is that they are two. At the type level they split into backtracking (negative) and constraint propagation (fractional), and the type system encodes which discipline governs which value. These are categorical entities, distinct from the operational delimited continuations the framework compiles as [continuation state machines](/docs/design/concurrency/dcont-inet-duality/). The decomposition is at the type level and leaves the operational primitives intact.
 
 ## Why the substrate matters
 

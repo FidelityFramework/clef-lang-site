@@ -467,9 +467,9 @@ This will mean:
 
 These theorems license optimizations that would be unsound in languages without parametric polymorphism.
 
-#### Network-Transparent Optimization via Inet Dialect
+#### Network-Transparent Optimization in the Inet Regime
 
-Parametricity also applies across process boundaries through MLIR's Inet dialect. Consider a distributed pipeline:
+Parametricity also applies across process boundaries in the interaction-net lane. Consider a distributed pipeline:
 
 ```fsharp
 // Data flows across process boundaries
@@ -481,7 +481,7 @@ let processRemoteData =
  
 ```
 
-Parametricity guarantees that these transformations can be safely relocated across network boundaries. The Inet dialect will leverage this to:
+Parametricity guarantees that these transformations can be safely relocated across network boundaries. Our saturation rewrites are designed to leverage this to:
 
 - **Fuse operations before transmission**: Send `validate >> transform` as a single remote operation
 - **Push filters upstream**: Move predicates closer to data sources to reduce network traffic
@@ -617,7 +617,7 @@ let fibonacci = seq {
 }
 ```
 
-This will compile to WAMI's DCont dialect:
+On a stack-switching target this generator keeps its continuation structure, the shape WAMI's DCont dialect demonstrates:
 
 ```wasm
 (func $fibonacci_generator (param $cont i32) (result i32)

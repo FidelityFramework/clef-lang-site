@@ -193,7 +193,7 @@ BAREWire's deterministic memory layouts enable precise cache analysis that would
 
 ### Delimited Continuations as the Unifying Abstraction
 
-Recognizing that [delimited continuations](/docs/design/concurrency/delimited-continuations/) are the common mechanism behind async expressions, actors, and native compilation changed our approach. Async expressions are delimited continuations with I/O-triggered resumption. Actors are delimited continuations with message-triggered resumption. All of them compile through a single DCont dialect, share one set of optimization passes, and draw on common continuation-based memory management.
+Recognizing that [delimited continuations](/docs/design/concurrency/delimited-continuations/) are the common mechanism behind async expressions, actors, and native compilation changed our approach. Async expressions are delimited continuations with I/O-triggered resumption. Actors are delimited continuations with message-triggered resumption. All of them saturate on the Program Semantic Graph as one continuation-state-machine form, share one set of graph rewrites, and draw on common continuation-based memory management.
 
 This unification means that improvements to continuation handling propagate across all features that use them. Continuations are stack-allocated when scope is bounded, and cleanup is deterministic at well-defined points. The async syntax that developers write compiles to native code with the same memory characteristics as hand-written state machines.
 
