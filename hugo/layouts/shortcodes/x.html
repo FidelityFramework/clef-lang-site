@@ -1,0 +1,26 @@
+{{- /*
+  Project override of Hugo's built-in x shortcode.
+  Wraps the standard X/Twitter oEmbed output in a stable .x-embed
+  container so spacing is controlled from custom.css, matching the
+  youtube shortcode override (layouts/shortcodes/youtube.html) rather
+  than hooking the tweet's inline styles, which minification mangles.
+  Accepts the same named params (user, id) as the built-in.
+*/ -}}
+{{- $user := .Get "user" -}}
+{{- $id := .Get "id" -}}
+{{- if and $user $id -}}
+  {{- $tweetURL := printf "https://x.com/%s/status/%s" $user $id -}}
+  {{- $req := printf "https://publish.twitter.com/oembed?url=%s&dnt=true" $tweetURL -}}
+  {{- with try (resources.GetRemote $req) -}}
+    {{- with .Err -}}
+      {{- errorf "x shortcode: failed to fetch oembed for %q: %s" $tweetURL . -}}
+    {{- else with .Value -}}
+      {{- $data := unmarshal . -}}
+      <div class="x-embed">{{ $data.html | safeHTML }}</div>
+    {{- else -}}
+      {{- warnf "x shortcode: no oembed response for %q" $tweetURL -}}
+    {{- end -}}
+  {{- end -}}
+{{- else -}}
+  {{- errorf "x shortcode: both 'user' and 'id' params are required" -}}
+{{- end -}}

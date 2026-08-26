@@ -1,6 +1,6 @@
 ---
-title: "Structural Convergence Beyond the Bitter Lesson"
-linkTitle: "Structural Convergence"
+title: "Beyond the Bitter Lesson: Structural Convergence"
+linkTitle: "Beyond the Bitter Lesson"
 description: "Convergence and construction form a continuum, not a binary choice"
 date: 2026-08-26T00:00:00+00:00
 authors:
@@ -10,6 +10,8 @@ draft: false
 ---
 
 For years the prevailing story in machine learning was that competence comes from scale. A large enough model fed enough data would find the answer on its own, and the structure engineers kept adding was scaffolding to pull away once the data grew large enough. Andrej Karpathy gave that story its clearest public statement, in his 2017 essay [Software 2.0](https://karpathy.medium.com/software-2-0-a64152b37c35). "Neural networks are not just another classifier," he wrote, "they represent the beginning of a fundamental shift in how we develop software. They are Software 2.0." He was not unique in espousing it, only unusually willing to say it in public, early and often, which makes him the concrete example for a stance most of the field shared. It hardened past software into a claim about inference itself, that emergence from scale was *somehow* the **one** road to a correct answer, and that anything built by hand was a confession you did not yet have enough data. The claim split the field. Some took it as liberation. Others took it as a refusal to model what was plainly in front of them, and some who took an opposing view walked away to pursue other avenues of research.
+
+{{< x user="khoiiiind" id="2092449669234528453" >}}
 
 And as we now know, the story he advanced did not survive contact with the frontier it described. The labs slipped reinforcement learning into their large language models for the capabilities that scaling alone had not produced. Mistral put sparse mixtures of experts into the mainstream vocabulary, and with them the idea that a model should route to a specialist and run only the part it needs. Each entered as an efficiency or an alignment fix, and each was structure smuggled back in, an ersatz neurosymbolic AI in the clothes of "staged deep learning," practiced everywhere and named nowhere. In the US, we call it "moving the goal posts." The sharpest evidence, though, is not in the pipelines the field bolted on. It is in the pure-convergence results it holds up as proof that structure is unnecessary.
 
@@ -56,6 +58,8 @@ The tell is in the training loop the field is shy to describe. Maximum-entropy r
 > Amortization is the price of not knowing the invariant. 
 
 Our domain models report the posterior directly because the profunctor is typed rather than fit. In short, that is the *construction* end of the continuum, stated in the one vocabulary that makes it obvious.
+
+{{< youtube lXUZvyajciY >}}
 
 ## Structure's Return
 

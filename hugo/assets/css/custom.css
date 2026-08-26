@@ -52,6 +52,25 @@ code, pre, kbd {
   }
 }
 
+/* ── X / tweet embeds ──────────────────────────────────────────
+   Targets the .x-embed wrapper from our x shortcode override
+   (layouts/shortcodes/x.html) — a stable class rather than the
+   tweet's inline styles. Same vertical rhythm as .yt-embed so posts
+   and videos breathe alike. The tweet caps its own width (~550px)
+   and centers via widgets.js, so we only set the surrounding space. */
+.x-embed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2.5rem auto;
+}
+@media (min-width: 768px) {
+  .x-embed {
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+  }
+}
+
 /* ── Provenance block ──────────────────────────────────────── */
 .provenance {
   border-left: 3px solid #888;
