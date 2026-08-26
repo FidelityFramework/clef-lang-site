@@ -27,7 +27,7 @@ That claim meets a reflex. Building the structure by hand is what Sutton warns a
 
 [Sutton's argument](https://www.incompleteideas.net/IncIdeas/BitterLesson.html) pertained specifically to ***pre-supplying* the solution**. Every case it draws on has the same shape. Someone encoded what the answer is, the good chess move, the correct parse, the useful edge detector, and a system that learned the answer from data and compute won instead.
 
-An invariant is not an answer. A grade-type does not force-feed a model an answer about the physics. It states what any solution must obey, that a conserved quantity stays conserved and that dimensions stay consistent, because a value that violates them is unrepresentable. And from that, we find that **the learning *still* happens**. An Adaptive Domain Model is a learned model. The construction narrows the hypotheses to the admissible elements within defined constraints, and convergence finds the answer among those bounds.
+An invariant is not an answer. A grade-type does not force-feed a model an answer about the domain. It states what any solution must obey, that a conserved quantity stays conserved and that dimensions stay consistent, because a value that violates them is unrepresentable. And from that, we find that **the learning *still* happens**. An Adaptive Domain Model is a learned model. The construction narrows the hypotheses to the admissible elements within defined constraints, and convergence finds the answer among those bounds.
 
 > What Sutton warned against was hand-supplying the answer. 
 
