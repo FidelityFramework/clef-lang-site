@@ -9,15 +9,15 @@ tags: ["Architecture", "Design", "Innovation"]
 
 ## A Study in Contrasts
 
-This started as a coincidence. Our [Modular Blob Storage](/spec/draft/modular-blob-storage/) chapter came first, written for a credential store on a Cortex-M33 with no heap and no filesystem. When we read [SeaweedFS](https://github.com/seaweedfs/seaweedfs)'s metadata design later, we saw the same structure at a much larger scale. We didn't set out to match it. We noticed the match afterward, and used it in the next storage chapter.
+This entry surfaced as a result of happenstance, but we take this opportunities as they arrive. We originally authored our [Modular Blob Storage](/spec/draft/modular-blob-storage/) entry toward a credential store on a Cortex-M33, with no heap and no *filesystem* per se. Recently, when reading [SeaweedFS](https://github.com/seaweedfs/seaweedfs)'s metadata design, it came acorss as a harmonious structure at a larger scale. And so, we took the inspiration to carry our own planned design further.
 
 ```mermaid
 flowchart TB
-    subgraph CORE["One design"]
+    subgraph CORE["Simple design"]
         direction LR
         S1["sealed record"]
         S2["opaque handle"]
-        S3["small honest index"]
+        S3["small index"]
         S4["ledger of paired changes"]
     end
     CORE --> MCU["Credential store on an M33<br/>kilobytes · key in silicon"]
@@ -48,9 +48,9 @@ flowchart TD
     class P,D,N,B,K,O theirs;
 ```
 
-
-
 [SeaweedFS](https://github.com/seaweedfs/seaweedfs) is one open implementation of that model, and it comes from [Haystack](https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf), the design Facebook published for storing photos. Like Haystack, it keeps almost no metadata. A single master server does one job: it decides which storage server holds which chunk of disk. Each of those servers keeps just a 16-byte record per object, enough to find any one of billions of objects in a single disk read. The storage servers hold objects by id, with no names and no folders. The names are handled one level up, by an optional component called the filer, which maps a normal directory tree onto those ids. The filer records every change to an append-only log as a before-and-after pair, and other servers can replay that log from any point. This is event sourcing: the log is the record, and every directory listing is rebuilt from the log.
+
+
 
 Two later decisions match what our own storage chapters do. When a directory goes cold, its entries are compressed and written back to the volume servers as ordinary blobs. So the object store holds its own cold metadata, and the live store keeps only what is hot. Each chunk is also encrypted at rest with AES256-GCM, with the keys kept in the metadata store, so a volume server never sees plaintext and can run anywhere. We do both of these in our storage chapters, starting from the microcontroller instead of the cluster.
 
@@ -90,6 +90,18 @@ flowchart TD
 ## A Namespace from a Ledger
 
 We read the SeaweedFS material while drafting the layer above MBS, and the answer we found there settled a design question we had not resolved: what the mutable metadata tree of a filesystem should be on a target that cannot afford one. The draft [Namespace Storage](/spec/draft/namespace-storage/) chapter's answer is a ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
+
+```fsharp
+// the namespace layer, our answer to the filer
+type ChangeEntry = { Prev : Digest; Old : NameBinding option; New : NameBinding option }
+type NameBinding = { Name : Name; Target : Handle<Blob> }
+
+Nss.resolve    : Nss -> Path -> NameBinding option    // fold the ledger: hot set, segments, tail
+Nss.checkpoint : Nss -> SubtreeId -> Handle<Segment>  // seal a folded subtree as an MBS record
+ 
+```
+
+The full type surface, with the fields left out here, is specified in the [Namespace Storage](/spec/draft/namespace-storage/) chapter.
 
 > The filesystem's cold metadata is stored by the object store it manages.
 
