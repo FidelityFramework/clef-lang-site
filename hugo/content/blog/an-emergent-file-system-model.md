@@ -9,7 +9,7 @@ tags: ["Architecture", "Design", "Innovation"]
 
 ## A Study in Contrasts
 
-This entry surfaced as a result of happenstance, but we take these opportunities as they arrive. We originally authored our [Modular Blob Storage](/spec/draft/modular-blob-storage/) entry toward a credential store on a Cortex-M33, with no heap and no *filesystem* per se. Recently, when reading [SeaweedFS](https://github.com/seaweedfs/seaweedfs)'s metadata design, it came acorss as a harmonious structure at a larger scale. And so, we took the inspiration to carry our own planned design further.
+This entry surfaced as a result of happenstance, but we take these opportunities as they arrive. We originally authored our [Modular Blob Storage](/spec/draft/modular-blob-storage/) entry toward a credential store on a Cortex-M33, with no heap and no *filesystem* per se. Recently, when reading [SeaweedFS](https://github.com/seaweedfs/seaweedfs)'s metadata design, it came across as a harmonious structure at a larger scale. And so, we took the inspiration to carry our own planned design further.
 
 ```mermaid
 flowchart TB
@@ -50,13 +50,11 @@ flowchart TD
 
 [SeaweedFS](https://github.com/seaweedfs/seaweedfs) is one open implementation of that model, and it comes from [Haystack](https://www.usenix.org/legacy/event/osdi10/tech/full_papers/Beaver.pdf), the design Facebook published for storing photos. Like Haystack, it keeps almost no metadata. A single master server does one job: it decides which storage server holds which chunk of disk. Each of those servers keeps just a 16-byte record per object, enough to find any one of billions of objects in a single disk read. The storage servers hold objects by id, with no names and no folders. The names are handled one level up, by an optional component called the filer, which maps a normal directory tree onto those ids. The filer records every change to an append-only log as a before-and-after pair, and other servers can replay that log from any point. This is event sourcing: the log is the record, and every directory listing is rebuilt from the log.
 
-
-
 Two of their later decisions match ours. When a directory goes cold, its entries are compressed and written back to the volume servers as ordinary blobs. So the object store holds its own cold metadata, and the live store keeps only what is hot. Each chunk is also encrypted at rest with AES256-GCM, with the keys kept in the metadata store, so a volume server never sees plaintext and can run anywhere. We do both of these, starting from the microcontroller instead of the cluster.
 
 ## Familiar Decisions at a Smaller Scale
 
-We wrote MBS for a target where the store is a fixed set of flash slots. Its requirements look like a smaller version of Haystack's, and we wrote them before we had read Haystack. Records are addressed by opaque, store-issued handles, and the spec forbids a path namespace at this layer outright. A record is written and read whole, which yields crash consistency without a journal. The index is small, fixed, and secret-free. And every record is sealed at rest under a device-held key, so, in its words, the medium need not be access-controlled: a sealed blob is inert without its key, and the key never leaves the device's sequester.
+We wrote MBS for a target where the store is a fixed set of flash slots. Its requirements look like a smaller version of Haystack's, and we take it as a nice little confirmation since we wrote the MBS draft before we discovered the paper. Records are addressed by opaque, store-issued handles, and the specification forbids a path namespace at this layer. A record is written and read whole, which yields crash consistency without a journal. The index is small, fixed, and secret-free. And every record is sealed at rest under a device-held key, so, in its words, the medium need not be access-controlled: a sealed blob is inert without its key, and the key never leaves the device's sequester.
 
 ```fsharp
 // Modular Blob Storage: opaque, store-issued handles, no path namespace
@@ -73,15 +71,31 @@ Put the two custody rules side by side. SeaweedFS stores ciphertext on volume se
 
 ## A Namespace from a Ledger
 
-We read the SeaweedFS material while drafting the layer above MBS, and the answer we found there settled a design question we had not resolved: what the mutable metadata tree of a filesystem should be on a target that cannot afford one. The draft [Namespace Storage](/spec/draft/namespace-storage/) answers with a ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
+When reading the SeaweedFS material while drafting the layer above MBS, what we found settled a design question we had yet to consider: what the mutable metadata tree of a filesystem should be on a target that cannot *afford* one. The draft [Namespace Storage](/spec/draft/namespace-storage/) answers with a conceptual ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
 
 ```fsharp
-// the namespace layer, our answer to the filer
-type ChangeEntry = { Prev : Digest; Old : NameBinding option; New : NameBinding option }
-type NameBinding = { Name : Name; Target : Handle<Blob> }
+// Namespace Storage (Nss): the layer above MBS, our answer to the filer
+type ChangeEntry =
+    { Prev : Digest              // digest of the prior entry: the tamper-evident chain
+      Old  : NameBinding option
+      New  : NameBinding option }
+type NameBinding = { Parent : NodeId; Name : Name; Target : Handle<Blob> }
 
-Nss.resolve    : Nss -> Path -> NameBinding option    // fold the ledger: hot set, segments, tail
-Nss.checkpoint : Nss -> SubtreeId -> Handle<Segment>  // seal a folded subtree as an MBS record
+// one entry shape covers every change: the (Old, New) pair is the verb
+let applyChange tree entry =
+    match entry.Old, entry.New with
+    | None,   Some b -> bind   tree b      // create
+    | Some a, None   -> unbind tree a      // remove
+    | Some a, Some b -> rebind tree a b    // rename or update
+
+// the only write: append one entry, chained onto the tail
+Nss.append     : Nss -> ChangeEntry -> Nss
+// fold the log: hot set, segments, tail
+Nss.resolve    : Nss -> Path -> NameBinding option 
+// seal a folded subtree as an MBS record
+Nss.checkpoint : Nss -> SubtreeId -> Handle<Segment>
+// advance the root to the new segment: one atomic whole-record write
+Nss.commit     : Nss -> Handle<Segment> -> Nss
  
 ```
 
@@ -90,6 +104,8 @@ The full type surface, with the fields left out here, is specified in the [Names
 > The filesystem's cold metadata is stored by the object store it manages.
 
 The properties a constrained target needs are consequences of the shape. Appending is the only write pattern, and appending is the pattern that wears flash least. Crash consistency is inherited from the substrate's whole-record atomicity, at the entry and at the root swap. Recovery to a checkpoint is a shorter replay, and tamper evidence comes from the hash chain itself. The RAM footprint is a provisioned hot set, with resolution bounded by the hot set, one segment read, and a compaction-bounded tail.
+
+On a server or a laptop, memory feels effectively unlimited. A program allocates what it needs, and the operating system finds room or, in the worst case, kills the process cleanly. A microcontroller provides none of that, at least not directly. It has a fixed amount of SRAM and flash, no heap to grow into, and no operating system beneath it to page anything out. Whatever the store will use has to be reserved when the device is built and flashed, and that budget holds for the life of the deployment. So we do not leave the ceiling to be 'found' at runtime. The slot budget is set up front, and growth that might exceed it is refused and reported rather than silently absorbed. The reason to be strict is physical: on a part with no memory protection, an overrun does not fault cleanly. It quietly (and sometimes quite loudly) corrupts. Choosing the budget for a given part, how much of its flash and RAM this store may claim, belongs with the hardware target itself: a profile for the specific board or part, read from its datasheet. Making it a value measured against the target's profile, rather than a surprise the device hits in the field, is what is unique to our design: the platform description is there to aid the developer *while building*. The compiler can weigh a storage layout against the part's memory the way it already catches a type error in the editor, before the code is ever flashed.
 
 ```mermaid
 flowchart TB
@@ -111,11 +127,11 @@ flowchart TB
     class B1,B2,B3,B4 theirs;
 ```
 
-The single-core sensor node came first for us, and it is one point along a wider range. Nothing in the ledger, the segments, or the root record is bound to a particular scale. At cluster size the ledger reads as the event stream peers subscribe to, the segments read as compressed metadata chunks in bulk storage, and the custody anchor is a keyring in the metadata store in place of a hardware sequester, which is precisely the SeaweedFS arrangement.
+The single-core sensor node came first, as we expected it to be a positive *forcing function* to resolve the narrow end of the design. But when zooming out to look a the broader view, nothing in the ledger, the segments, or the root record is bound to a particular scale. At cluster size the ledger reads as the event stream peers subscribe to, the segments read as compressed metadata chunks in bulk storage, and the custody anchor is a keyring in the metadata store in place of a hardware sequester, which is precisely the SeaweedFS arrangement. It was confirming to see key aspects of our approach reflected in a highly regarded open source project.
 
 ## Bringing Types Into Play
 
-There is a typed reason the log sits at the bottom of this design. Our [pre-print on negative and fractional types](https://arxiv.org/abs/2606.04352) distinguishes reversibility that can be *computed*, where the compiler carries a pairing certifying that a step's inverse is structurally complete, from reversibility that must be *recorded*. The boundary between the two is decidable from the types: an effect whose inverse depends on state outside the program is log work. A write to persistent media is the canonical effect of that kind. The storage layer keeps a ledger because, under that discipline, a durable write's reversal is log work, and the minimal record the discipline requires is a pair of old and new entries, chained and sealed. We imagine the fractional side eventually supplying the sharing account as well, with read-shares over sealed segments and compaction demanding the unified whole, and that stays on the research side of the line.
+There is a typed reason the log sits at the bottom of our design. In the [pre-print on negative and fractional types](https://arxiv.org/abs/2606.04352) we show how reversibility can be *computed*, where the compiler carries a pairing certifying that a step's inverse is structurally complete, distinct from reversibility that must be *recorded*. The boundary between the two is decidable from the types: an effect whose inverse depends on state outside the program is a log discipline. A write to persistent media (such as an external database) is the canonical effect of that pattern. The storage layer keeps a ledger because, under that discipline, a durable write's reversal is log work, and the minimal record the discipline requires is a pair of old and new entries, chained and sealed. We imagine the fractional side eventually supplying the sharing account as well, with read-shares over sealed segments and compaction demanding the unified whole. While there's still research and real-world experimentation to confirm the discipline, we're excited to see the structure take shape in this design.
 
 ```fsharp
 // computed reverse: the compiler carries the adjoint
@@ -133,7 +149,7 @@ let compact (seg : Segment) (held : Recip<Segment>) : Segment =
  
 ```
 
-The mechanism is a familiar one. It is the append-only log and replay most engineers already build by hand, the same event sourcing the filer does above. The one addition is that the compiler can always tell which kind of reversal an operation needs, the same way it catches a type error before you run. The bookkeeping usually left to convention (and potential algorithmic errors) becomes a property checkable alongside the rest of the types, settled at design time. A standard N-tier event store database logs every change and replays the entire log to reach a past state. Here only the effects the compiler cannot invert have to persist, and recovering a prior state is a traversal of the compute graph, not a replay of the entire log from a store potentially multiple steps away in the solution stack. It's a clear trade of pattern that has its advantages and costs like any other. But in this case, both in constrained and large-scale deployments we see many cases where this is clearly the more efficient and more sound choice.
+The mechanism is a familiar one. It is the append-only log and replay most engineers already build by hand, the same event sourcing the filer does above. The one addition is that the compiler can always tell which kind of reversal an operation needs, the same way it catches a type error before you run. The bookkeeping usually left to convention (and potential algorithmic errors) becomes a property checkable alongside the rest of the types, settled at design time. A standard N-tier event store database logs every change and replays the entire log to reach a past state. Here only the effects the compiler **cannot** invert have to persist separately, and recovering a prior state is a traversal of the compute graph, not a replay of the entire log from a store potentially multiple steps away in the solution stack. It's a clear trade of pattern that has its advantages and costs like any other. But in this case, both in constrained and large-scale deployments we see many cases where this is clearly the more efficient and more sound choice.
 
 ## The Server Bookend
 
