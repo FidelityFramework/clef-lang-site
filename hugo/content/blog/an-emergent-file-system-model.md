@@ -42,7 +42,7 @@ flowchart TD
     end
     subgraph OBJ["Object store"]
         direction TB
-        K["opaque key"] --> O["object<br/>replace whole"]
+        K["opaque key"] --> O["object<br/>replaced per write"]
     end
     classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
     class P,D,N,B,K,O theirs;
