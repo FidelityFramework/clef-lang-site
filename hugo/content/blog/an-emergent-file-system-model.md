@@ -71,22 +71,6 @@ Mbs.find  : MBS<'R> -> (IndexEntry -> bool) -> Handle<'R> array   // scan the sm
 
 Put the two custody rules side by side. SeaweedFS stores ciphertext on volume servers that can run anywhere, because the keys are held in the filer store. MBS stores ciphertext in ordinary bulk flash, because the key is held in the hardware sequester. It is the same design three orders of magnitude apart in scale, and the only real difference is where the key is held.
 
-```mermaid
-flowchart TD
-    subgraph SW["SeaweedFS"]
-        direction TB
-        C1["ciphertext on volume servers<br/>run anywhere"] --> K1["keys in the filer store"]
-    end
-    subgraph OURS["MBS"]
-        direction TB
-        C2["ciphertext in bulk flash"] --> K2["key in the hardware sequester"]
-    end
-    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
-    classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
-    class C1,K1 theirs;
-    class C2,K2 ours;
-```
-
 ## A Namespace from a Ledger
 
 We read the SeaweedFS material while drafting the layer above MBS, and the answer we found there settled a design question we had not resolved: what the mutable metadata tree of a filesystem should be on a target that cannot afford one. The draft [Namespace Storage](/spec/draft/namespace-storage/) chapter's answer is a ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
