@@ -52,11 +52,11 @@ flowchart TD
 
 
 
-Two later decisions match what our own storage chapters do. When a directory goes cold, its entries are compressed and written back to the volume servers as ordinary blobs. So the object store holds its own cold metadata, and the live store keeps only what is hot. Each chunk is also encrypted at rest with AES256-GCM, with the keys kept in the metadata store, so a volume server never sees plaintext and can run anywhere. We do both of these in our storage chapters, starting from the microcontroller instead of the cluster.
+Two of their later decisions match ours. When a directory goes cold, its entries are compressed and written back to the volume servers as ordinary blobs. So the object store holds its own cold metadata, and the live store keeps only what is hot. Each chunk is also encrypted at rest with AES256-GCM, with the keys kept in the metadata store, so a volume server never sees plaintext and can run anywhere. We do both of these, starting from the microcontroller instead of the cluster.
 
 ## Familiar Decisions at a Smaller Scale
 
-Our MBS chapter was written for a target where the store is a fixed set of flash slots. Its requirements look like a smaller version of Haystack's, and we wrote them before we had read Haystack. Records are addressed by opaque, store-issued handles, and the spec forbids a path namespace at this layer outright. A record is written and read whole, which yields crash consistency without a journal. The index is small, fixed, and secret-free. And every record is sealed at rest under a device-held key, so, in the chapter's words, the medium need not be access-controlled: a sealed blob is inert without its key, and the key never leaves the device's sequester.
+We wrote MBS for a target where the store is a fixed set of flash slots. Its requirements look like a smaller version of Haystack's, and we wrote them before we had read Haystack. Records are addressed by opaque, store-issued handles, and the spec forbids a path namespace at this layer outright. A record is written and read whole, which yields crash consistency without a journal. The index is small, fixed, and secret-free. And every record is sealed at rest under a device-held key, so, in its words, the medium need not be access-controlled: a sealed blob is inert without its key, and the key never leaves the device's sequester.
 
 ```fsharp
 // Modular Blob Storage: opaque, store-issued handles, no path namespace
@@ -73,7 +73,7 @@ Put the two custody rules side by side. SeaweedFS stores ciphertext on volume se
 
 ## A Namespace from a Ledger
 
-We read the SeaweedFS material while drafting the layer above MBS, and the answer we found there settled a design question we had not resolved: what the mutable metadata tree of a filesystem should be on a target that cannot afford one. The draft [Namespace Storage](/spec/draft/namespace-storage/) chapter's answer is a ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
+We read the SeaweedFS material while drafting the layer above MBS, and the answer we found there settled a design question we had not resolved: what the mutable metadata tree of a filesystem should be on a target that cannot afford one. The draft [Namespace Storage](/spec/draft/namespace-storage/) answers with a ledger. Namespace state is the fold of an append-only, hash-linked log of old-entry/new-entry changes. Checkpoints of that fold are serialized, compressed, sealed, and written back as ordinary MBS records, with a small secret-free index each. A single root record binds the current segment set to its checkpoint position, and advancing it is one whole-record atomic write.
 
 ```fsharp
 // the namespace layer, our answer to the filer
@@ -85,7 +85,7 @@ Nss.checkpoint : Nss -> SubtreeId -> Handle<Segment>  // seal a folded subtree a
  
 ```
 
-The full type surface, with the fields left out here, is specified in the [Namespace Storage](/spec/draft/namespace-storage/) chapter.
+The full type surface, with the fields left out here, is specified in the [Namespace Storage](/spec/draft/namespace-storage/) spec entry.
 
 > The filesystem's cold metadata is stored by the object store it manages.
 
@@ -115,7 +115,7 @@ The single-core sensor node came first for us, and it is one point along a wider
 
 ## Bringing Types Into Play
 
-There is a typed reason the log sits at the bottom of this design. Our [pre-print on negative and fractional types](https://arxiv.org/abs/2606.04352) distinguishes reversibility that can be *computed*, where the compiler carries a pairing certifying that a step's inverse is structurally complete, from reversibility that must be *recorded*. The boundary between the two is decidable from the types: an effect whose inverse depends on state outside the program is log work. A write to persistent media is the canonical effect of that kind. The storage layer keeps a ledger because, under that discipline, a durable write's reversal is log work, and the minimal record the discipline requires is the one the chapter specifies: paired old and new entries, chained, sealed. We imagine the fractional side eventually supplying the sharing account as well, with read-shares over sealed segments and compaction demanding the unified whole, and that stays on the research side of the line.
+There is a typed reason the log sits at the bottom of this design. Our [pre-print on negative and fractional types](https://arxiv.org/abs/2606.04352) distinguishes reversibility that can be *computed*, where the compiler carries a pairing certifying that a step's inverse is structurally complete, from reversibility that must be *recorded*. The boundary between the two is decidable from the types: an effect whose inverse depends on state outside the program is log work. A write to persistent media is the canonical effect of that kind. The storage layer keeps a ledger because, under that discipline, a durable write's reversal is log work, and the minimal record the discipline requires is a pair of old and new entries, chained and sealed. We imagine the fractional side eventually supplying the sharing account as well, with read-shares over sealed segments and compaction demanding the unified whole, and that stays on the research side of the line.
 
 ```fsharp
 // computed reverse: the compiler carries the adjoint
@@ -137,11 +137,11 @@ The mechanism is a familiar one. It is the append-only log and replay most engin
 
 ## The Server Bookend
 
-There's a reach that we've been considering as a project that this development has placed front and center. We have designs to provide a high-speed S3-compatible object service with resolution, sharding, and sealing behind one API surface. That standalone service is a strong candidate for the first full Fidelity unikernel in [the sense our unikernels entry develops]({{< ref "getting-to-the-heart-of-unikernels" >}}): the application is the operating system. The workload suits a sealed image unusually well. Storage services hold no interactive userland worth shipping, and their hot paths are tight loops over append-only media. Our arena-and-actor memory model is designed for exactly the deterministic lifetimes a request/response storage loop requires. BAREWire would carry the layout authority twice over, as the wire schema for the S3 surface and as the declared format of segments and ledger entries at rest. The hosted-ELF freestanding tier, direct syscalls with no libc, is the tier we would build it on first, with the microVM tier following as the network stack work matures. We find that trajectory genuinely motivating: the same chapters that seal a credential into an M33's flash would describe the store a cluster can trust will return data with speed and security as part of the bargain.
+There's a reach that we've been considering as a project that this development has placed front and center. We have designs to provide a high-speed S3-compatible object service with resolution, sharding, and sealing behind one API surface. That standalone service is a strong candidate for the first full Fidelity unikernel in [the sense our unikernels entry develops]({{< ref "getting-to-the-heart-of-unikernels" >}}): the application is the operating system. The workload suits a sealed image unusually well. Storage services hold no interactive userland worth shipping, and their hot paths are tight loops over append-only media. Our arena-and-actor memory model is designed for exactly the deterministic lifetimes a request/response storage loop requires. BAREWire would carry the layout authority twice over, as the wire schema for the S3 surface and as the declared format of segments and ledger entries at rest. The hosted-ELF freestanding tier, direct syscalls with no libc, is the tier we would build it on first, with the microVM tier following as the network stack work matures. We find that trajectory genuinely motivating: the same design that seals a credential into an M33's flash would describe the store a cluster can trust will return data with speed and security as part of the bargain.
 
 ## Continuity of Custody
 
-What the study left us with is a single discipline where we had expected to find two. Four structures serve a credential store measured in kilobytes: a sealed record, an opaque handle, a small honest index, and a ledger of paired changes. The same four serve an object cluster measured in petabytes, with custody anchored in silicon at one end and in the metadata store at the other. SeaweedFS shows the large end running in production, and it documents enough of its design to study. The spec chapters cover our end, written for the smallest machines.
+What the study left us with is a single discipline where we had expected to find two. Four structures serve a credential store measured in kilobytes: a sealed record, an opaque handle, a small honest index, and a ledger of paired changes. The same four serve an object cluster measured in petabytes, with custody anchored in silicon at one end and in the metadata store at the other. SeaweedFS shows the large end running in production, and it documents enough of its design to study. The specifications cover our end, written for the smallest machines.
 
 ## Related Entries
 
