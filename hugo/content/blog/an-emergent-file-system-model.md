@@ -127,7 +127,7 @@ flowchart TB
     class B1,B2,B3,B4 theirs;
 ```
 
-The single-core sensor node came first, as we expected it to be a positive *forcing function* to resolve the narrow end of the design. But when zooming out to look a the broader view, nothing in the ledger, the segments, or the root record is bound to a particular scale. At cluster size the ledger reads as the event stream peers subscribe to, the segments read as compressed metadata chunks in bulk storage, and the custody anchor is a keyring in the metadata store in place of a hardware sequester, which is precisely the SeaweedFS arrangement. It was confirming to see key aspects of our approach reflected in a highly regarded open source project.
+The single-core sensor node came first, as we expected it to be a positive *forcing function* to resolve the narrow end of the design. But when zooming out to look at the broader view, nothing in the ledger, the segments, or the root record is bound to a particular scale. At cluster size the ledger reads as the event stream peers subscribe to, the segments read as compressed metadata chunks in bulk storage, and the custody anchor is a keyring in the metadata store in place of a hardware sequester, which is precisely the SeaweedFS arrangement. It was confirming to see key aspects of our approach reflected in a highly regarded open source project.
 
 ## Bringing Types Into Play
 
@@ -157,7 +157,7 @@ There's a reach that we've been considering as a project that this development h
 
 ## Continuity of Custody
 
-What the study left us with is a single discipline where we had expected to find two. Four structures serve a credential store measured in kilobytes: a sealed record, an opaque handle, a small honest index, and a ledger of paired changes. The same four serve an object cluster measured in petabytes, with custody anchored in silicon at one end and in the metadata store at the other. SeaweedFS shows the large end running in production, and it documents enough of its design to study. The specifications cover our end, written for the smallest machines.
+What the study left us with is a single discipline where we had expected to find two. Four structures serve a credential store measured in kilobytes: a sealed record, an opaque handle, a small honest index, and a ledger of paired changes. The same four serve an object cluster measured in petabytes, with custody anchored in silicon at one end and in the metadata store at the other. Reading SeaweedFS confirmed the far end is real ground, not a thought experiment: a production system at cluster scale, arriving at the same structures we wrote for parts with no heap. That is the far end we intend to build, one design carried end to end with no hand-offs to other carriers. The same four structures span from a key sealed in an M33 to the high-speed S3 service delivered over a high throughput network, and making one discipline hold across that range is the work that pays at both ends of the scale.
 
 ## Related Entries
 
