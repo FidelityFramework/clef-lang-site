@@ -161,8 +161,8 @@ What the study left us with is a single discipline where we had expected to find
 
 ## Related Entries
 
-- [Getting to the Heart of Unikernels]({{< ref "getting-to-the-heart-of-unikernels" >}}): the sealed-artifact class this storage service would inhabit, from reset vector to container
+- [Getting to the Heart of Unikernels]({{< ref "getting-to-the-heart-of-unikernels" >}}): the sealed-artifact class this storage service would support, from reset vector to container
 - [Modular Blob Storage](/spec/draft/modular-blob-storage/): the fixed-slot, sealed persistence floor, specified
-- [Namespace Storage](/spec/draft/namespace-storage/): the ledger, the segments, and the root record, specified in draft
+- [Namespace Storage](/spec/draft/namespace-storage/): the ledger, the segments, and the root record
 - [Fidelity on MCU](/docs/internals/hardware/fidelity-on-mcu/): the M33 bring-up work where the storage floor gets its first target
-- [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/): the substrate spectrum the two ends of this post sit on
+- [Clef on Metal Extended](/docs/internals/hardware/on-metal-extended/): a case study showing how a Clef program might run at both a reset vector and a hosted container with only its platform declaration changing
