@@ -7,8 +7,6 @@ authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 ---
 
-## A Study in Contrasts
-
 This entry surfaced as a result of happenstance, but we take these opportunities as they arrive. We originally authored our [Modular Blob Storage](/spec/draft/modular-blob-storage/) entry toward a credential store on a Cortex-M33, with no heap and no *filesystem* per se. Recently, when reading [SeaweedFS](https://github.com/seaweedfs/seaweedfs)'s metadata design, it came across as a harmonious structure at a larger scale. And so, we took the inspiration to carry our own planned design further.
 
 ```mermaid
