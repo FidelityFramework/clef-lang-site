@@ -92,7 +92,7 @@ flowchart TB
 
 ## Shared Memory and the Actor Seam
 
-WebAssembly's shared memory with atomics extends the same reading to concurrency. An actor mailbox is, structurally, a ring of described frames plus two cursors, and a shared linear memory can hold exactly that. A host-side worker and a module would exchange messages through BAREWire frames in the shared region, cursors advanced with atomic operations, no copy and no marshaling on the hot path. That is the zero-copy transport discipline our actor layer already defines for native boundaries, arriving at the web boundary unchanged. The scheduling above it stays with the host until the [stack-switching question](/docs/design/wasm-targeting/coroutine-versus-stack-switching/) settles, and the memory discipline does not need to wait for it.
+WebAssembly's shared memory with atomics extends the same reading to concurrency. An actor mailbox is, structurally, a ring of described frames plus two cursors, and a shared linear memory can hold exactly that. A host-side worker and a module would exchange messages through BAREWire frames in the shared region, cursors advanced with atomic operations, no copy and no marshaling on the hot path. That is the zero-copy transport discipline our actor layer already defines for native boundaries, arriving at the web boundary unchanged. The scheduling above it stays with the host until the [stack-switching question](/docs/design/wasm-targeting/coroutine-versus-stack-switching/) settles, and the memory discipline does not need to wait for it. What a real scheduler over threaded wasm asks for, and what the standard deliberately leaves to it, is [its own entry](/docs/design/wasm-targeting/threads-without-a-scheduler/).
 
 ## Growing Room in the Standard
 
