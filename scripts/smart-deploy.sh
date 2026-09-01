@@ -67,6 +67,16 @@ if [[ -n "$missing" ]]; then
     exit 1
 fi
 
+# Refuse to deploy while a local hugo dev server is running: it holds its own
+# render state and the build would not regenerate public/ fresh from disk.
+# The [h] bracket keeps pgrep from matching its own invocation; "serve" also
+# matches "server" as a prefix on the command line.
+if pgrep -f "[h]ugo serve" >/dev/null 2>&1; then
+    echo "Error: A local 'hugo server' instance is running (PID $(pgrep -f '[h]ugo serve' | head -1))."
+    echo "  Stop it before deploying so public/ renders fresh:  kill $(pgrep -f '[h]ugo serve' | tr '\n' ' ')"
+    exit 1
+fi
+
 # Warn if no deployment state (first deploy should use provision + deploy directly)
 if [[ ! -f ".clef-deploy-state.json" ]]; then
     if [[ -z "$FORCE" ]]; then

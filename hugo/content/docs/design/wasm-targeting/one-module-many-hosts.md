@@ -11,7 +11,7 @@ tags: ["Architecture", "Design"]
 WebAssembly shipped in 2017 as a browser feature, and its second life is the more interesting one. The module format turned out to describe a unit many unrelated industries wanted, and the name now undersells the reality badly enough that practitioners joke the "web" in it is a liability. Solomon Hykes, Docker's creator, put the sharpest version on record in 2019: [if WASM and WASI had existed in 2008, Docker would not have needed to exist](https://twitter.com/solomonstre/status/1111004913222324225). The census since then is best shown, not listed. One artifact class, produced from many languages, embedded nearly everywhere:
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph SRC["many producers"]
         direction TB
         CLEF["Clef<br/>through our pipeline"]
@@ -30,15 +30,12 @@ flowchart LR
         EMB["embedded<br/>runtimes on MCU-class parts"]
         SPACE["flight hardware<br/>SpaceWASM"]
     end
-    CLEF --> MOD
-    OTH --> MOD
-    MOD --> BR
-    MOD --> SRV
-    MOD --> EDGE
-    MOD --> ORCH
-    MOD --> PLUG
-    MOD --> EMB
-    MOD --> SPACE
+    CLEF ~~~ OTH
+    SRV ~~~ EDGE ~~~ ORCH
+    PLUG ~~~ EMB ~~~ SPACE
+    SRC --> MOD
+    MOD --> WEBB
+    MOD --> NONWEB
     classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
     classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
     class CLEF,MOD ours;
@@ -73,7 +70,7 @@ The approved-API pattern in the report is worth naming too. Payloads bound to a 
 The admission contract is not wasm's invention, and naming its sibling sharpens what the census rows share. eBPF runs the same contract inside the Linux kernel: untrusted bytecode, examined by a gate before it loads, speaking only through an approved interface into a host that must not fail. [Our eBPF entry](/blog/building-bulletproof-ebpf-programs/) builds on that gate directly, and the [comparative security literature](https://www.researchgate.net/publication/373819966_Comparing_Security_in_eBPF_and_WebAssembly) treats the two as the production pair in this discipline. Abstract the pattern once and the instances line up:
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph PAT["the admission contract"]
         direction LR
         BC["untrusted bytecode"] --> GT["gate"] --> IF["approved interface"] --> HO["critical host"]
