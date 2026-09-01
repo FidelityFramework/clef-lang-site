@@ -38,6 +38,31 @@ What made this the moment to write it down is the stack-switching proposal. Its 
 
 In the browser the two pathways compose rather than compete. The JavaScript our compiler emits is the host program: it bootstraps the WebAssembly runtime, instantiates the module our compiler also emitted, and hands it its imports, the typed doors the module is allowed to call back through. The two halves would share one BAREWire-described linear memory, so what crosses the seam is bytes at known offsets rather than serialized guesses. One source tree supplies both sides of the boundary, and the contract between them is checked where everything else is checked, in the compiler.
 
+Here is the key no one else is holding. One Clef type is the layout authority:
+
+```fsharp
+type Tick = { Sym : SymbolId; Bid : float; Ask : float; Stamp : Micros }
+// BAREWire derives: Sym @ 0, Bid @ 8, Ask @ 16, Stamp @ 24, size 32, align 8
+ 
+```
+
+And the same type would emit the host's half of the bridge, a view over the module's exported memory rather than a serializer:
+
+```js
+// generated from Tick; these offsets are the ones above, or the build fails
+export const tickView = (mem, base) => ({
+  get bid()   { return mem.getFloat64(base + 8,  true); },
+  get ask()   { return mem.getFloat64(base + 16, true); },
+  get stamp() { return mem.getBigUint64(base + 24, true); },
+});
+
+const { instance } = await WebAssembly.instantiateStreaming(fetch("feed.wasm"), imports);
+const mem = new DataView(instance.exports.memory.buffer);  // cached once, deliberately
+ 
+```
+
+Experienced hands will have flinched at that cached `DataView`, because `memory.grow()` detaches the buffer beneath it, and a stale view is the classic wasm interop bug. The flinch is the point. Our modules carry the provisioned-envelope discipline into the browser: memory is sized when the module is built, growth is not part of the contract, and the cached view is sound by construction rather than by vigilance. The rest of the boundary is judged by what does not happen at it. The mainstream paths either copy, serde through `wasm-bindgen` materializing JavaScript objects on every crossing, or pay a wasm call per field through exported getters. This view does neither. Reading `bid` is a plain load from JavaScript against an offset fixed at compile time, the untouched fields stay where they are, and the `u64` timestamp arrives as the `BigInt` it honestly is rather than a quietly truncated `Number`. No serde derive, no `.d.ts` kept honest by hand, no protocol file in a third language. The record the module wrote is the record the host reads, in place, at offsets both sides learned from the same declaration.
+
 ```mermaid
 flowchart TB
     SRC["one Clef source"] --> PSG["Program Semantic Graph"]

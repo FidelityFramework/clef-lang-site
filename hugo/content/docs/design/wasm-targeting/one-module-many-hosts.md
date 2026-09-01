@@ -68,11 +68,37 @@ flowchart TB
 
 The approved-API pattern in the report is worth naming too. Payloads bound to a host-declared import set is exactly the typed-boundary property from the first figure, exercised at its most conservative, and it is the same pattern an Envoy filter or a Figma plugin lives under. The spacecraft is not an exotic host. It is the census's strictest reader of the same contract.
 
+## The Sibling Discipline in the Kernel
+
+The admission contract is not wasm's invention, and naming its sibling sharpens what the census rows share. eBPF runs the same contract inside the Linux kernel: untrusted bytecode, examined by a gate before it loads, speaking only through an approved interface into a host that must not fail. [Our eBPF entry](/blog/building-bulletproof-ebpf-programs/) builds on that gate directly, and the [comparative security literature](https://www.researchgate.net/publication/373819966_Comparing_Security_in_eBPF_and_WebAssembly) treats the two as the production pair in this discipline. Abstract the pattern once and the instances line up:
+
+```mermaid
+flowchart LR
+    subgraph PAT["the admission contract"]
+        direction LR
+        BC["untrusted bytecode"] --> GT["gate"] --> IF["approved interface"] --> HO["critical host"]
+    end
+    PAT -.-> E1["eBPF<br/>verifier → helpers → running kernel"]
+    PAT -.-> E2["wasm<br/>validator → imports → browser · server · edge"]
+    PAT -.-> E3["SpaceWASM<br/>constrained IR → approved APIs → flight software"]
+    classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
+    class BC,GT,IF,HO,E1,E2,E3 theirs;
+```
+
 ## WASI and the Component Model
 
 WASI, the WebAssembly System Interface, carries the unit past hosts that embed it into hosts that *are* it. Its current form is built on the component model: interfaces declared in a typed IDL, implementations composed across source languages, capabilities granted per interface rather than inherited from a process. Native async is the piece arriving as of this writing, and it is worth watching beside [the stack-switching question](/docs/design/wasm-targeting/coroutine-versus-stack-switching/), because the two settle the same suspension story at two layers.
 
-The component model's typed interfaces are the part we read with recognition. Declarations that generate bindings, contracts held by construction on both sides of a boundary, nothing interpreted at runtime that was decidable before it: this is the discipline our tooling already practices, from Farscape's headers-to-bindings pipeline to BAREWire's [described layouts in linear memory](/docs/design/wasm-targeting/linear-memory-mapping/). A WIT interface is a declaration our binding generation would consume the way it consumes a vendor header today.
+The component model's typed interfaces are the part we read with recognition. Declarations that generate bindings, contracts held by construction on both sides of a boundary, nothing interpreted at runtime that was decidable before it: this is the discipline our tooling already practices, from Farscape's headers-to-bindings pipeline to BAREWire's [described layouts in linear memory](/docs/design/wasm-targeting/linear-memory-mapping/). A WIT interface is a declaration our binding generation would consume the way it consumes a vendor header today:
+
+```wit
+// the shape that generation would read
+interface telemetry {
+  record frame { seq: u32, stamp: u64, flux: f32 }
+  read-frame: func(base: u32) -> frame
+}
+ 
+```
 
 ## Each Host Is a Platform Declaration
 

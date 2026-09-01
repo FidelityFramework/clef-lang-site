@@ -21,6 +21,18 @@ type Frame = { Seq : uint32; Stamp : uint64; Payload : Vector3 }
 // BAREWire derives: Seq @ 0, Stamp @ 8, Payload @ 16, size 32, align 8
 ```
 
+Laid out in the module's memory, the record is a fixed span of described bytes, padding included, and nothing about it is negotiable at runtime:
+
+```mermaid
+flowchart LR
+    subgraph FR["one Frame · 32 bytes · align 8"]
+        direction LR
+        B0["Seq<br/>@0 · u32"] --- B1["pad<br/>@4"] --- B2["Stamp<br/>@8 · u64"] --- B3["Payload<br/>@16 · 3 × f32"] --- B4["pad<br/>@28"]
+    end
+    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
+    class B0,B1,B2,B3,B4 ours;
+```
+
 Discriminated unions keep the same discipline. A case is a compile-time index in a described layout, never a string tag in a dynamic object:
 
 ```fsharp
@@ -44,6 +56,39 @@ const stamp = mem.getBigUint64(frameBase + 8, true);
 ```
 
 We imagine both ends of this pair generated from the one schema: the module side laid out by the compiler, the host side emitted as accessors over the exported buffer, each derived from the same BAREWire description so that drift between them is a build failure rather than a runtime surprise. There is no JSON tagging at this seam and no reflective machinery behind it, and the compiler is never in the runtime loop. What crosses the boundary is bytes at described offsets, which is what crosses every other boundary in the framework.
+
+```mermaid
+flowchart TB
+    DECL["one Clef declaration<br/>the layout authority"]
+    DECL -->|"compiled by Composer"| MOD["module side<br/>writes Frame at described offsets"]
+    DECL -->|"emitted for the host"| HOST["JavaScript side<br/>DataView accessors at the same offsets"]
+    MOD --- MEM["exported linear memory<br/>one region, no copies"]
+    HOST --- MEM
+    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
+    classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
+    class DECL,MOD,HOST ours;
+    class MEM theirs;
+```
+
+## The WREN Precedent
+
+The one-declaration, two-compilers pattern is not a proposal in this entry alone. Our WREN stack demonstrates it at the WebView seam today: a shared protocol module, types only, compiled by Fable into the WebView's JavaScript and by Composer into the native host binary, with a codec per side so each compiler stays inside its proven surface. The wasm seam this entry describes is the same discipline aimed at a different pair of worlds, with linear memory in place of the script-message bridge and BAREWire's described offsets in place of interim framing.
+
+```mermaid
+flowchart TB
+    subgraph WREN["WREN seam · demonstrated"]
+        P1["shared protocol module<br/>types only"] -->|"Fable"| UI["WebView UI<br/>JavaScript"]
+        P1 -->|"Composer"| NAT["native host binary"]
+        UI ---|"script-message bridge"| NAT
+    end
+    subgraph WSEAM["wasm seam · this entry's design"]
+        P2["one Clef declaration"] -->|"Composer"| M2["wasm module"]
+        P2 -->|"emitted accessors"| H2["JavaScript host"]
+        M2 ---|"described linear memory"| H2
+    end
+    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
+    class P1,UI,NAT,P2,M2,H2 ours;
+```
 
 ## Shared Memory and the Actor Seam
 

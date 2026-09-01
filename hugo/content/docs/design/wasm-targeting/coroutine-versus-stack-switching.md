@@ -14,6 +14,18 @@ A Clef program's concurrency saturates to one delimited-continuation form on the
 
 The coroutine lowering is a compile-time transform. Each suspension point becomes a state index. Every value live across a suspension moves into a state record. Resumption is a branch on the index into the code that follows the capture site. In our pipeline this is the sequential regime's witnessed form: an ordinary function, a branch table over the state, and a plain memory record holding the captured values. LLVM's coroutine intrinsics serve as a per-call-site optimization along this path where they win, never a form the middle end commits to.
 
+A region carrying one suspension would leave the middle end in a shape like this, ordinary structure with nothing continuation-shaped left in it:
+
+```
+// a suspension-bearing region, saturated and witnessed as ordinary structure
+func.func @step(%s: memref<1x!SendState>) {
+  %st = memref.load %s[0].state          // the state index
+  cf.switch %st [0: ^start, 1: ^await_ack, 2: ^done]
+  // each block runs to the next capture site, stores its index, returns
+}
+ 
+```
+
 On WebAssembly this is the portable answer today, and the ecosystem has run on it for years. Emscripten's Asyncify is the whole-program version of the same transform, applied to code that was never written as a state machine. The properties follow from the shape:
 
 - It runs on every engine shipping now. No proposal, no flag, no origin trial.
@@ -28,6 +40,18 @@ The [stack-switching proposal](https://github.com/WebAssembly/stack-switching/bl
 - Tags declare typed suspension signatures in the module interface: what a suspension passes out, what it expects back.
 - `suspend` cuts the stack to the nearest enclosing handler for a tag and reifies the remainder as a continuation. `resume` runs one while installing handler clauses. `switch` hands off directly between stacks. `resume_throw` resumes by injecting an exception, which is the cancellation story.
 - Continuations are one-shot. Resuming twice traps. That is a linear discipline, enforced dynamically in the current design.
+
+The proposal's surface is small, and it reads like our own vocabulary translated. A preserved region would emit against exactly this:
+
+```wat
+(type $work (func (param i32) (result i32)))
+(type $k    (cont $work))
+(tag $yield (param i32) (result i32))
+
+(suspend $yield)                    ;; cut to the nearest handler; the rest of this stack becomes a $k
+(resume $k (on $yield $handler))    ;; run a continuation, catching its suspensions
+ 
+```
 
 The standardization picture is specific and worth stating plainly. The proposal is pre-standard: it did not ship in WebAssembly 3.0, and no browser ships it by default. Wasmtime carries a production-grade implementation. JSPI, the JavaScript async-interop piece, reached the standard in April 2025 and ships in Chrome and Firefox, so the browser boundary half of the async question is settled ground while the general mechanism is still in committee.
 
@@ -45,7 +69,21 @@ The standardization picture is specific and worth stating plainly. The proposal 
 | Verification surface | the state record is visible, described data | the stack is engine-held, opaque to the module |
 | Cancellation | a state transition we emit | `resume_throw` from the handler |
 
-Two rows deserve more than a cell. The verification surface is the one we weigh heaviest: a state machine keeps the entire suspended computation as data our compiler laid out and our analyses can read, while preservation hands that state to the engine and the checking story then rests on what the tags' types declare at the interface. And the one-shot rule is not a limitation to us. It is a linear discipline arriving in the target, the same family of constraint our own type work leans on, though the proposal enforces it with a trap where a type system would enforce it before the module ever loads.
+Two rows deserve more than a cell. The verification surface is the one we weigh heaviest: a state machine keeps the entire suspended computation as data our compiler laid out and our analyses can read, while preservation hands that state to the engine and the checking story then rests on what the tags' types declare at the interface. And the one-shot rule is not a limitation to us. It is a linear discipline arriving in the target, the same family of constraint our own type work leans on, though the proposal enforces it with a trap where a type system would enforce it before the module ever loads. Drawn as shapes, the trade is plain: one lowering leaves the suspension as data anyone can read, the other leaves it as a stack only the engine can touch.
+
+```mermaid
+flowchart LR
+    subgraph SMR["coroutine lowering · the suspension is data"]
+        REC["state record in linear memory<br/>state index · captured values<br/>described offsets, visible to analyses"]
+    end
+    subgraph PRR["stack switching · the suspension is a stack"]
+        STK["engine-held stack<br/>opaque to the module"] --- TAGS["typed tags at the interface<br/>what goes out · what comes back"]
+    end
+    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
+    classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
+    class REC ours;
+    class STK,TAGS theirs;
+```
 
 ## Where WAMI Fits
 
@@ -55,6 +93,28 @@ Our pipeline holds the structure higher. Clef expresses continuations coherently
 
 ## A Choice Made Per Call Site
 
-The fork is not program-wide. Because the PSG holds each continuation as a complete aggregate, with its capture set, suspend points, and surrounding context intact, the classification can be made late and locally, the same inferred-with-override discipline our [wait-class and escape analysis](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) already applies. A hot sequential region lowers to the state machine and pays nothing for machinery it does not use. A region whose structure the tags can carry, on a target that accepts the instructions, would preserve instead, and the design routes that choice through the platform declaration rather than through source changes.
+The fork is not program-wide. Because the PSG holds each continuation as a complete aggregate, with its capture set, suspend points, and surrounding context intact, the classification can be made late and locally, the same inferred-with-override discipline our [wait-class and escape analysis](/docs/design/concurrency/deadlock-freedom-as-an-obligation/) already applies. A hot sequential region lowers to the state machine and pays nothing for machinery it does not use. A region whose structure the tags can carry, on a target that accepts the instructions, would preserve instead, and the design routes that choice through the platform declaration rather than through source changes. Where a developer wants the last word, the override would take the same declared shape `WaitClass` takes:
 
-That is the practical reading of this whole comparison. Code written once compiles to every engine shipping today through the state-machine path, with its suspended state visible to the same analyses that check the rest of the program. The day the standard lands, the same source is positioned to take the preserved path where it wins, because the form the proposal standardizes is the form our compiler already holds.
+```fsharp
+[<Suspension(Preserve)>]    // ride the stack-switching instructions where the target accepts them
+let telemetryPump () = async { (* ... *) }
+ 
+```
+
+The classification, drawn end to end, with the platform declaration supplying the one input the source never mentions:
+
+```mermaid
+flowchart TB
+    AGG["continuation aggregate on the PSG<br/>capture set · suspend points · context"] --> CLS["per-call-site classification<br/>inferred · override honored"]
+    PD["platform declaration<br/>does the target switch stacks?"] --> CLS
+    CLS -->|"portable lane"| SM["state machine<br/>function · branch table · state record"]
+    CLS -->|"preserved lane"| PR["typed continuation<br/>suspend · resume · switch"]
+    SM --> ENG1["every engine shipping today"]
+    PR --> ENG2["Wasmtime today · browsers pending the standard"]
+    classDef ours fill:#1a2a3a,stroke:#48a,color:#cdf;
+    classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
+    class AGG,CLS,PD,SM,PR ours;
+    class ENG1,ENG2 theirs;
+```
+
+That is the practical reading of this comparison. Code written once compiles to every engine shipping today through the state-machine path, with its suspended state visible to the same analyses that check the rest of the program. The day the standard lands, the same source is positioned to take the preserved path where it wins, because the form the proposal standardizes is the form our compiler already holds.

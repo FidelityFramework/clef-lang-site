@@ -37,14 +37,14 @@ flowchart TB
 SpaceWASM's admission path is the eBPF loader's path with the kernel swapped for a vehicle:
 
 ```mermaid
-flowchart TB
-    subgraph K["Linux kernel · eBPF"]
-        direction LR
-        P1["bytecode program"] --> V1["verifier"] --> H1["approved helpers"] --> K1["running kernel"]
-    end
+flowchart LR
     subgraph S["spacecraft · SpaceWASM"]
         direction LR
         P2["mission package"] --> V2["decoder / validator<br/>constrained IR"] --> A2["approved APIs"] --> F2["flight software"]
+    end
+    subgraph K["Linux kernel · eBPF"]
+        direction LR
+        P1["bytecode program"] --> V1["verifier"] --> H1["approved helpers"] --> K1["running kernel"]
     end
     classDef theirs fill:#2a2a2a,stroke:#888,color:#ddd;
     class P1,V1,H1,K1,P2,V2,A2,F2 theirs;
@@ -67,6 +67,51 @@ flowchart TB
 
 SpaceWASM slots into that assessment as [the strictest row of the census](/docs/design/wasm-targeting/one-module-many-hosts/) we recently mapped: one module format, embedded from browsers to edge isolates to plugin hosts, now reaching a vehicle that must not crash. The flight case also validates the census's core reading. A host is a platform declaration, a statement of what the image assumes and which doors exist, and JPL's interpreter is that declaration written by people who qualify software for launch windows.
 
+## Both Sides of the Door
+
+An approved API is an interface contract, and flight practice has a name for where such contracts live: the ICD. It also has a name for where their failures surface, which is integration testing, because the document and the two implementations reading it are three artifacts that can drift apart. Every boundary on a vehicle raises the question that matters most: how do we know the communication is coherent across it? Our answer is that we do not have to wonder, because we write the interface for both sides.
+
+In our design the contract is a type. The module's imports and the host's implementation of those doors compile from one declaration, so a mismatch is a build failure on the ground, never an anomaly in flight. A sequencing door would read as ordinary Clef:
+
+```fsharp
+[<Measure>] type mrad   // milliradian
+[<Measure>] type s      // second
+
+// the door, declared once, compiled into both sides of the boundary
+type Door =
+    | AdjustAttitude of float<mrad> * float<s>   // slew this far, over this window
+    | HaltSequence   of SequenceId
+
+type Disposition =
+    | Accepted of float<mrad/s>                  // the commanded rate, dimensionally derived
+    | Refused  of FaultCode
+
+// the module's side of the door: the algebra is checked before anything is emitted
+let dispose door =
+    match door with
+    | AdjustAttitude (delta, window) ->
+        let rate = delta / window                // float<mrad/s>, inferred, never annotated
+        // let bad = delta + window              // refused at compile time: mrad + s has no meaning
+        if rate <= maxSlew then Accepted rate else Refused SlewLimit
+    | HaltSequence sid -> halt sid
+ 
+```
+
+The flight software implements `Door` and answers with `Disposition`. The module can only speak `Door` and can only hear `Disposition`. Neither side holds a copy of the contract, both hold the contract, and BAREWire fixes its layout so the bytes at the boundary match the types above them. Where the host is JavaScript rather than flight software, the same declaration emits that side too:
+
+```js
+// generated from Disposition; the unit rides the name, the offset rides the build
+export const disposition = (mem, base) => ({
+  get accepted()     { return mem.getUint32(base + 0, true) === 0; },  // case index: a compile-time constant
+  get rateMradPerS() { return mem.getFloat64(base + 8, true); },
+});
+ 
+```
+
+The bracketed measures are the dimensional half of the contract, and they are the part this audience has scar tissue for: a vehicle was once lost to a pound-force seconds and newton seconds disagreement at a boundary just like this one. In Clef the mismatch refuses to compile. An attitude adjustment declared in milliradians cannot receive degrees, cannot be added to a duration, and needs nothing at runtime to stay honest, because the check is discharged in the type system before emission and the unit erases to a bare `f64` at its described offset. That erasure is what lets the discipline cross both boundaries at zero cost. The native side compiled against `float<mrad>` and `float<s>`, and the division that produced the rate carried the units with it: `mrad/s` was computed by the type system, not written by a person. The generated JavaScript getter exists only because the declaration produced that derived unit, and it carries it in its name, so the one place a host touches the value reads as `rateMradPerS` rather than a naked number. JavaScript cannot check the unit, and it does not need to: no hand-written reader exists to get it wrong.
+
+Nor is this a design on paper. Our WREN stack already runs the pattern at a different seam: one protocol module compiled twice, by two compilers, into the two halves of a desktop application, the WebView UI on one side and the native host on the other, [the same discipline our UI work describes]({{< ref "fidelity-ui-model" >}}). The wasm boundary is that seam with a harder host, and the discipline transfers intact.
+
 ## What a Review Board Accepts
 
 Flight qualification has a definite shape. In the airborne world it is DO-178C, with design assurance levels graded by hazard and, at Level A, structural coverage down to MC/DC over requirements-traced tests. NASA's regime runs through NPR 7150.2 and its software classes. The common spine is that the evidence is mostly testing-shaped: requirements traced to tests, structure covered by tests, confidence assembled from sampled executions. The limit of that shape is acknowledged inside the standards themselves, because DO-333, the formal-methods supplement to DO-178C, exists to admit analysis in place of sampling wherever a toolchain can actually produce it.
@@ -74,7 +119,7 @@ Flight qualification has a definite shape. In the airborne world it is DO-178C, 
 Most C++ flight frameworks meet those objectives with parameterized test suites, and a passing suite is real evidence at the points it sampled. A discharged obligation is a different class of evidence. Our verification regime is designed to produce that class as a byproduct of compilation: dimensional and unit content discharged by parametricity with nothing to run, declared pre- and postconditions discharged by a solver at design time, probabilistic and relational properties carried at the tiers above. Where a test demonstrates behavior at samples, a discharged obligation closes a failure class over the modeled behavior, which is the difference the formal-methods supplement was written to let a certification argument use.
 
 ```mermaid
-flowchart LR
+flowchart TD
     OBJ["a verification objective<br/>DO-178C · NPR 7150.2"]
     OBJ --> T["parameterized test suite<br/>sampled executions · coverage as proxy"]
     OBJ --> D["discharged obligation<br/>parametricity · solver · relational tiers"]
