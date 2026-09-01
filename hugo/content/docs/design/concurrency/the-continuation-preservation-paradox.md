@@ -97,7 +97,7 @@ Composer had considered using a 'DCont' delimited continuation dialect in MLIR f
 
 ### The WAMI Path: Semantic Preservation
 
-The Stack Switching proposal for WebAssembly brings delimited continuations in as a first-class feature. On the WAMI path we envision, Clef continuations would map onto it almost directly:
+The Stack Switching proposal for WebAssembly brings delimited continuations in as a first-class feature, and [Coroutines Versus Stack Switching](/docs/design/wasm-targeting/coroutine-versus-stack-switching/) weighs that path against the state-machine lowering in target-specific detail. On the WAMI path we envision, Clef continuations would map onto it almost directly:
 
 ```fsharp
 // Clef source

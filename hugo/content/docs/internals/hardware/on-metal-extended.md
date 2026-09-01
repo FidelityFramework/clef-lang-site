@@ -36,7 +36,7 @@ The middle rows are the sealed-image territory in the [MirageOS](https://mirage.
 - container and microVM guest: the same bindings statically coupled, musl sealed into the image
 - freestanding: [no C runtime at all](/spec/draft/ffi-boundary/), no foreign-function boundary, interior memory on the compiler's own lifetime lattice
 
-A platform declaration that describes a 4-byte word with no heap region and one that grants eight cores and a gigabyte under a syscall policy are the same kind of object, and the program text between them is untouched. The build that enters at a Cortex-M33 reset vector and the build that runs multi-threaded Olivier actors inside a container grant are one programming model at two points on the declared range.
+A platform declaration that describes a 4-byte word with no heap region and one that grants eight cores and a gigabyte under a syscall policy are the same kind of object, and the program text between them is untouched. The build that enters at a Cortex-M33 reset vector and the build that runs multi-threaded Olivier actors inside a container grant are one programming model at two points on the declared range. WebAssembly hosts extend the range without changing the kind of object a declaration is, a reading [One Module, Many Hosts](/docs/design/wasm-targeting/one-module-many-hosts/) develops across that target's census of embeddings.
 
 [Scheduling on Metal](/docs/internals/hardware/scheduling-on-metal/) treats the scheduler beneath the image: the dispatch contract our actor system holds constant across these same rows, and the per-substrate manifest that separates what an implementation discharges itself from what it assumes from below.
 

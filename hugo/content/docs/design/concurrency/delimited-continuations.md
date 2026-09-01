@@ -202,7 +202,7 @@ This unification enables:
 
 ## Continuations and Hardware Targets
 
-The DCont preservation strategy extends to hardware targeting. As noted in [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/), WebAssembly's Stack Switching proposal provides first-class support for delimited continuations. When targeting WASM, the Composer compiler can preserve continuation structure all the way to the runtime:
+The DCont preservation strategy extends to hardware targeting. As noted in [The Continuation Preservation Paradox](/docs/design/concurrency/the-continuation-preservation-paradox/), WebAssembly's Stack Switching proposal provides first-class support for delimited continuations. The choice between preserving that structure and compiling it into a state machine is weighed per call site in [Coroutines Versus Stack Switching](/docs/design/wasm-targeting/coroutine-versus-stack-switching/). When targeting WASM, the Composer compiler can preserve continuation structure all the way to the runtime:
 
 ```
 // A suspension point maps to WASM stack switching
