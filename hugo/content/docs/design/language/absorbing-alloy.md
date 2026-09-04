@@ -10,7 +10,7 @@ params:
   migration_date: 2026-02-15
 ---
 
-In March 2025, we published [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), describing a BCL-free Clef standard library that would provide native type implementations. The goal was to preserve familiar APIs like `Console.WriteLine` while compiling to fat pointers and stack allocations instead of GC-tracked heap objects. Alloy would be to Fidelity what the BCL is to .NET.
+In March 2025, we published [Building Composer With Alloy](https://speakez.tech/blog/building-firefly-with-alloy/), describing a BCL-free Clef standard library that would provide native type implementations. The goal was to preserve familiar APIs like `Console.WriteLine` while compiling to buffer views and stack allocations instead of GC-tracked heap objects. Alloy would be to Fidelity what the BCL is to .NET.
 
 Over the months that followed, we deepened our reading of ML-family languages, studied production MLIR frameworks, and refined the Native Type Universe architecture. We reached a different position: types belong in the compiler, not in a library. This may seem obvious to software engineers who live in other ecosystems, but we wanted it to arrive as an emergent property of the design rather than a reflexive withdrawal from current art in the .NET ecosystem.
 
@@ -230,7 +230,7 @@ Looking back at [Building Composer With Alloy](https://speakez.tech/blog/buildin
 
 More importantly, Alloy served as a discovery mechanism. By implementing `NativeStr`, `Console`, and `Memory` as library code, we confirmed many of our expectations for native primitives:
 
-1. **What native types needed to look like:** fat pointers, stack buffers, value-type options
+1. **What native types needed to look like:** buffer views, stack buffers, value-type options
 2. **What operations needed to exist:** platform-independent APIs with platform-specific implementations
 3. **How SRTP could drive compile-time resolution:** inline functions with type constraints
 4. **Where the BCL assumptions lived:** string encoding, GC integration, object hierarchies

@@ -131,7 +131,7 @@ When ClefPak resolves dependencies, it fetches source packages from clefpak.dev 
 
 Where traditional F# uses FCS (F# Compiler Services) targeting the CLR, Fidelity uses CCS — a fork that provides native-first type semantics. CCS handles source-level dependency resolution natively:
 
-- **Native Type Universe (NTU)**: All types resolve to native representations. `string` is a UTF-8 fat pointer, not `System.String`. `option<'T>` has value semantics, not heap-allocated.
+- **Native Type Universe (NTU)**: All types resolve to native representations. `string` is a UTF-8 `memref<?xi8>` view, not `System.String`. `option<'T>` has value semantics, not heap-allocated.
 - **`[<FidelityExtern>]` Recognition**: When CCS encounters a binding declaration with this attribute, it emits an opaque extern node in the PSG rather than trying to compile the `Unchecked.defaultof<T>` body.
 - **SRTP Preservation**: Statically resolved type parameters survive through compilation, enabling Baker and Alex to make specialized code generation decisions.
 

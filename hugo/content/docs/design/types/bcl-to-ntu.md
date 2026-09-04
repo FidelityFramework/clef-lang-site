@@ -413,7 +413,7 @@ Most application code operates at Level 1. Library code providing platform bindi
 flowchart TB
     subgraph Level1["Level 1: Default"]
         L1_INT[int] --> L1_CCS[CCS: NTUint]
-        L1_STR[string] --> L1_CCS2[CCS: UTF-8 fat pointer]
+        L1_STR[string] --> L1_CCS2[CCS: UTF-8 `memref<?xi8>` view]
         L1_OPT["option<'T>"] --> L1_CCS3[CCS: voption stack type]
     end
 
@@ -477,11 +477,11 @@ This design reflects the Windows platform heritage and optimizes for scenarios c
 
 ### The Native Model
 
-In the native type universe, [`string` is a fat pointer](/spec/draft/native-type-mappings/#strings):
+In the native type universe, [`string` is a buffer view](/spec/draft/native-type-mappings/#strings):
 
 ```
 ┌─────────────────┬─────────────────┐
-│ ptr: *u8        │ len: usize      │
+│ base: index     │ extent: index   │
 └─────────────────┴─────────────────┘
      8 bytes           8 bytes       = 16 bytes (64-bit)
 ```
@@ -493,7 +493,7 @@ This representation is:
 - Length-prefixed (no null terminator)
 - Zero-copy sliceable (substrings reference original data)
 
-The UTF-8 encoding matches what Unix tooling and web transports already use. The fat pointer slices without allocating, since a substring is a new pointer and length into the same bytes. A length prefix in place of a null terminator removes both the out-of-bounds read risk and the cost of scanning to find the string's end.
+The UTF-8 encoding matches what Unix tooling and web transports already use. The buffer view slices without allocating, since a substring is a new pointer and length into the same bytes. A length prefix in place of a null terminator removes both the out-of-bounds read risk and the cost of scanning to find the string's end.
 
 ### API Consequences
 
