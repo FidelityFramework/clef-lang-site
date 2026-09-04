@@ -211,61 +211,48 @@ let linkedOperations data =
     processLinkedList linkedData
 ```
 
-The MLIR pipeline we are building toward would optimize this code, producing something equivalent to:
+The witnessed form of this code, in the portable dialects and nothing else, is equivalent to the following (simplified for readability):
 
 ```mlir
-// Automatically generated MLIR (simplified for readability)
-module {
-  // Function to process linked list with region-based memory management
-  func.func @processLinkedList(%arg0: !fir.ptr<struct<linked_node>>, %pool: !fir.ptr<memory_pool>) -> i32 {
-    %c0 = arith.constant 0 : i32
-
-    // Check if node is Empty
-    %is_empty = fir.load %arg0 : !fir.ptr<struct<linked_node>>
-    cond_br %is_empty, ^empty, ^has_value
-
-  ^empty:
-    return %c0 : i32
-
-  ^has_value:
-    // Load value and next pointer
-    %value_ptr = fir.field_addr %arg0, "value" : (!fir.ptr<struct<linked_node>>) -> !fir.ptr<i32>
-    %value = fir.load %value_ptr : !fir.ptr<i32>
-
-    %next_ptr = fir.field_addr %arg0, "next" : (!fir.ptr<struct<linked_node>>) -> !fir.ptr<struct<linked_node>>
-    %next = fir.load %next_ptr : !fir.ptr<struct<linked_node>>
-
-    // Recursive call
-    %result = call @processLinkedList(%next, %pool) : (!fir.ptr<struct<linked_node>>, !fir.ptr<memory_pool>) -> i32
-
-    // Add value to result
-    %sum = arith.addi %value, %result : i32
-    return %sum : i32
+// Witnessed form. The list's nodes live in one arena chosen by the lifetime lattice;
+// a link is an arena-relative index; the empty list is the sentinel at offset 0 (tag = 0).
+// There is no pointer and no null: the recursion tests the tag, never an address.
+func.func @processLinkedList(%arena: memref<?xi8>, %node: index) -> i32 {
+  %c0   = arith.constant 0 : i32
+  %zero = arith.constant 0 : i8
+  %tag_slot = memref.view %arena[%node][] : memref<?xi8> to memref<1xi8>
+  %tag  = memref.load %tag_slot[%c0i] : memref<1xi8>
+  %is_cons = arith.cmpi ne, %tag, %zero : i8
+  %sum = scf.if %is_cons -> i32 {
+    // head and tail are read only under the tag test (VC-GUARD); offsets are literals settled at saturation
+    %head_off = arith.addi %node, %off_head : index
+    %head_slot = memref.view %arena[%head_off][] : memref<?xi8> to memref<1xi32>
+    %value = memref.load %head_slot[%c0i] : memref<1xi32>
+    %tail_off = arith.addi %node, %off_tail : index
+    %tail_slot = memref.view %arena[%tail_off][] : memref<?xi8> to memref<1xindex>
+    %next  = memref.load %tail_slot[%c0i] : memref<1xindex>
+    %rest = func.call @processLinkedList(%arena, %next) : (memref<?xi8>, index) -> i32
+    %s = arith.addi %value, %rest : i32
+    scf.yield %s : i32
+  } else {
+    scf.yield %c0 : i32
   }
+  return %sum : i32
+}
 
-  // Main function with automatic memory pool management
-  func.func @linkedOperations(%data: !fir.ptr<array<i32>>, %len: i32) -> i32 {
-    // Create stack-based memory pool for linked list nodes
-    %pool_size = arith.constant 4096 : i32
-    %pool = memref.alloca(%pool_size) : memref<i32>
-    %pool_ptr = memref.cast %pool : memref<i32> to !fir.ptr<memory_pool>
-
-    // Initialize pool
-    call @initMemoryPool(%pool_ptr, %pool_size) : (!fir.ptr<memory_pool>, i32) -> ()
-
-    // Fold array into linked list
-    %linked_data = call @createLinkedList(%data, %len, %pool_ptr) : (!fir.ptr<array<i32>>, i32, !fir.ptr<memory_pool>) -> !fir.ptr<struct<linked_node>>
-
-    // Process linked list
-    %result = call @processLinkedList(%linked_data, %pool_ptr) : (!fir.ptr<struct<linked_node>>, !fir.ptr<memory_pool>) -> i32
-
-    // Pool automatically cleaned up when going out of scope
-    return %result : i32
-  }
+func.func @linkedOperations(%data: memref<?xi32>) -> i32 {
+  // The arena is scope-bounded, so the lattice places it on the stack. Its floor holds the
+  // sentinel image copied in at creation; nodes are placed above the floor by bump allocation,
+  // and the whole arena is released with the scope. No per-node allocation, no free.
+  %arena = memref.alloca() : memref<4096xi8>
+  %view  = memref.cast %arena : memref<4096xi8> to memref<?xi8>
+  %list   = func.call @createLinkedList(%view, %data) : (memref<?xi8>, memref<?xi32>) -> index
+  %result = func.call @processLinkedList(%view, %list) : (memref<?xi8>, index) -> i32
+  return %result : i32
 }
 ```
 
-Here the compiler is meant to identify the recursive linked list pattern and apply region-based memory management using a memory pool. This eliminates individual allocations and provides deterministic cleanup without explicit developer intervention. For a deeper look at how our Fidelity memory model extends to arenas and actors, see [Beyond Zero-Allocation]({{< relref "beyond-zero-allocation" >}}).
+Here the compiler places the list's nodes in one scope-bounded arena chosen by the lifetime lattice, links them by bounded arena indices, and represents the empty list as the static sentinel at offset 0 rather than a null. This eliminates individual allocations and provides deterministic cleanup without explicit developer intervention. For a deeper look at how our Fidelity memory model extends to arenas and actors, see [Beyond Zero-Allocation]({{< relref "beyond-zero-allocation" >}}).
 
 ## A Spectrum of Control
 
