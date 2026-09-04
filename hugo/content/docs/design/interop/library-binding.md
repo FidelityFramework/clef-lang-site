@@ -142,9 +142,9 @@ module Platform.Bindings.MyLib =
 
 // Farscape generated idiomatic wrapper
 let performOperation (input: NativeStr) : Result<int, ErrorCode> =
-    use output = NativePtr.stackalloc<int> 1
-    let resultCode = Platform.Bindings.MyLib.libraryFunction input.Pointer (NativePtr.toNativeInt output)
-    if resultCode = 0 then Ok (NativePtr.read output)
+    use output = stackalloc<int> 1
+    let resultCode = Platform.Bindings.MyLib.libraryFunction input.Pointer output
+    if resultCode = 0 then Ok output.[0]
     else Error (enum<ErrorCode> resultCode)
 ```
 
@@ -370,8 +370,8 @@ module Platform.Bindings.Hashing =
 module Hashing =
     /// Computes a secure hash of the provided data
     let computeHash (data: NativeStr) : Result<NativeArray<byte>, int> =
-        let output = NativePtr.stackalloc<byte> 32
-        let result = Platform.Bindings.Hashing.hash data.Pointer (nativeint data.Length) (NativePtr.toNativeInt output)
+        let output = stackalloc<byte> 32
+        let result = Platform.Bindings.Hashing.hash data.Pointer (nativeint data.Length) output
         if result = 0l then Ok (NativeArray.fromPtr output 32)
         else Error (int result)
 ```
@@ -591,10 +591,10 @@ type CounterEnvironment = {
     mutable count: int
 }
 
-let counterImpl (env: nativeptr<CounterEnvironment>) : int =
-    let currentCount = NativePtr.read env
+let counterImpl (env: Ptr<CounterEnvironment, Stack, ReadWrite>) : int =
+    let currentCount = (!env).count
     let newCount = currentCount + 1
-    NativePtr.write env newCount
+    env := { count = newCount }
     newCount
 
 let createCounter(initialValue: int) =
@@ -602,7 +602,7 @@ let createCounter(initialValue: int) =
 
     // Allocate environment in the region
     let env = StackRegion.allocate<CounterEnvironment> region
-    NativePtr.write env { count = initialValue }
+    env := { count = initialValue }
 
     // Create function that encapsulates the environment pointer
     let counter = {

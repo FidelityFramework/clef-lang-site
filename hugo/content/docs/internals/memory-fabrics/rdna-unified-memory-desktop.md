@@ -192,10 +192,10 @@ type LlamaBackendType =
 // llama.cpp extern declarations
 // Library marker "__llama" signals Alex to emit direct calls
 [<Extern("__llama", EntryPoint = "llama_load_model_from_file")>]
-extern LlamaModel llamaLoadModel(path: string, params: nativeptr<LlamaModelParams>)
+extern LlamaModel llamaLoadModel(path: string, params: CHandle<LlamaModelParams>)
 
 [<Extern("__llama", EntryPoint = "llama_new_context_with_model")>]
-extern LlamaContext llamaNewContext(model: LlamaModel, params: nativeptr<LlamaContextParams>)
+extern LlamaContext llamaNewContext(model: LlamaModel, params: CHandle<LlamaContextParams>)
 
 [<Extern("__llama", EntryPoint = "llama_decode")>]
 extern int llamaDecode(ctx: LlamaContext, batch: LlamaBatch)
@@ -219,14 +219,14 @@ type WhisperState = nativeint
 extern WhisperContext whisperInit(modelPath: string)
 
 [<Extern("__whisper", EntryPoint = "whisper_full")>]
-extern int whisperFull(ctx: WhisperContext, params: nativeptr<WhisperParams>,
-                       samples: nativeptr<float32>, nSamples: int)
+extern int whisperFull(ctx: WhisperContext, params: CHandle<WhisperParams>,
+                       samples: CHandle<float32>, nSamples: int)
 
 [<Extern("__whisper", EntryPoint = "whisper_full_n_segments")>]
 extern int whisperSegmentCount(ctx: WhisperContext)
 
 [<Extern("__whisper", EntryPoint = "whisper_full_get_segment_text")>]
-extern nativeptr<byte> whisperSegmentText(ctx: WhisperContext, segment: int)
+extern CHandle<byte> whisperSegmentText(ctx: WhisperContext, segment: int)
 ```
 
 The library markers `"__llama"` and `"__whisper"` follow the same pattern as Alloy's `"__fidelity"` marker. These are not actual shared library names. They signal to Alex that these are extern primitives requiring platform-specific binding generation.
@@ -345,7 +345,7 @@ let processVoiceInput
     // Audio data is already in unified memory from capture
     let transcribeResult = Native.whisperFull(
         whisperCtx,
-        NativePtr.ofNativeInt pipeline.AudioInput.Address,
+        pipeline.AudioInput,   // the buffer itself; the pathway commits its address at the extern boundary
         audioSamples)
 
     // Signal that NPU writes are complete

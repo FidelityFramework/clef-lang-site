@@ -61,8 +61,8 @@ let hello (arena: byref<Arena<'lifetime>>) =
 
 [<EntryPoint>]
 let main argv =
-    let arenaMem = NativePtr.stackalloc<byte> 4096
-    let mutable arena = Arena.fromPointer (NativePtr.toNativeInt arenaMem) 4096
+    let arenaMem = stackalloc<byte> 4096
+    let mutable arena = Arena.fromPointer arenaMem 4096
     hello &arena
     0
 ```
@@ -216,7 +216,7 @@ For Level 1 to work, the compiler needs several capabilities:
 
 ```fsharp
 let readln () =
-    let buffer = NativePtr.stackalloc<byte> 256
+    let buffer = stackalloc<byte> 256
     let len = readLineInto buffer 256
     NativeStr.fromPointer buffer len  // Returns reference to stack!
  

@@ -53,7 +53,7 @@ and PoolingStrategy =
 // Native bindings to arena management via FidelityExtern
 module ArenaManagement =
     [<FidelityExtern("arena_mgmt", "arena_create_pool")>]
-    let createArenaPool (size: uint64) (config: nativeptr<PoolConfig>) : nativeint =
+    let createArenaPool (size: uint64) (config: Ptr<PoolConfig, 'Region, ReadOnly>) : nativeint =
         Unchecked.defaultof<nativeint>
 
     [<FidelityExtern("arena_mgmt", "arena_allocate")>]

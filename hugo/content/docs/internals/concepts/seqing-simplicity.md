@@ -85,18 +85,20 @@ Fidelity's approach to sequences did not emerge from first principles. It draws 
 
 Sequences extend the flat closure once more. [A sequence is a flat closure with state machine fields and internal mutable state](/spec/draft/seq-representation/#41-seq-structure):
 
-| Seq‹T› | | | | | | |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| state: i32 | current: T | code_ptr: ptr | cap₀ | cap₁ ... | state₀ | state₁ ... |
-| [0] | [1] | [2] | [3+] | | [3+n] | |
+| Seq‹T› = (moveNext, env); env: | | | | | |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| state: i32 | current: T | cap₀ | cap₁ ... | state₀ | state₁ ... |
+| [0] | [1] | [2+] | | [2+n] | |
+
+`MoveNext` is the function-value half of the pair, not a field of the environment.
 
 Each row extends the structure above it:
 
 | Feature | Structure | What It Adds |
 |---------|-----------|--------------|
-| Closure | `{code_ptr, captures...}` | Base flat closure |
-| Lazy | `{computed, value, code_ptr, captures...}` | Memoization prefix |
-| Seq | `{state, current, code_ptr, captures..., internal...}` | State machine + internal state suffix |
+| Closure | `(fn, {captures...})` | Base flat closure |
+| Lazy | `(thunk, {computed, value, captures...})` | Memoization prefix |
+| Seq | `(moveNext, {state, current, captures..., internal...})` | State machine + internal state suffix |
 
 Getting closures right let lazy values extend them naturally, and getting lazy values right let sequences extend them in turn.
 
@@ -117,17 +119,16 @@ let multiplesOf (factor: int) (count: int) = seq {
 }
 ```
 
-The distinction affects struct layout. Captures fill indices 3 through 3+n; internal state fills indices 3+n onward. Both live in the same flat structure, but they serve different purposes and have different initialization timing.
+The distinction affects struct layout. Captures fill indices 2 through 2+n; internal state fills indices 2+n onward. Both live in the same flat structure, but they serve different purposes and have different initialization timing.
 
 ```mermaid
 flowchart TD
-    subgraph SeqStruct["Seq Struct for multiplesOf 3 5"]
+    subgraph SeqStruct["Seq environment for multiplesOf 3 5"]
         STATE["state: i32<br/>[0]"]
         CURRENT["current: i64<br/>[1]"]
-        CODE["code_ptr<br/>[2]"]
-        CAP1["factor: 3<br/>[3]"]
-        CAP2["count: 5<br/>[4]"]
-        INTERNAL["i: mutable<br/>[5]"]
+        CAP1["factor: 3<br/>[2]"]
+        CAP2["count: 5<br/>[3]"]
+        INTERNAL["i: mutable<br/>[4]"]
     end
 ```
 
@@ -341,16 +342,9 @@ The current implementation generates MLIR using a mix of `func`, `cf`, `arith`, 
 A future direction we are actively exploring is a dedicated MLIR dialect that captures closure and sequence semantics at a higher level:
 
 ```mlir
-// Hypothetical future dialect
-%seq = fidelity.seq.create @moveNext_fn
-    captures(%factor: i64, %count: i64)
-    internal(%i: i64)
-    : !fidelity.seq<i64>
-
-%result = fidelity.seq.iterate %seq
-    body { ^bb(%x: i64):
-        // loop body
-    }
+// There is no seq dialect, and none is planned. A seq is the pair (moveNext, env);
+// MoveNext is scf.index_switch over the state slot, in the five portable dialects —
+// see the witnessed form in seq-representation §5.2.
 ```
 
 Such a dialect would enable:

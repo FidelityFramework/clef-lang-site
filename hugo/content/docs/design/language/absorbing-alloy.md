@@ -90,7 +90,7 @@ type NTUKind =
 
 CCS already had intrinsic modules for essential operations:
 
-- `NativePtr.*` for pointer manipulation
+- `Ptr.*` for region-typed, access-kind-checked pointer handles (the raw `NativePtr.*` surface Alloy carried is stripped; not denotable in Clef)
 - `Sys.*` for platform operations (write, read, exit, etc.)
 - `Array.*` for collection operations
 - `NativeStr.*` for string operations
@@ -148,7 +148,7 @@ In our design, CCS provides intrinsic modules across the following surface:
 | Module | Purpose | Example Operations |
 |--------|---------|-------------------|
 | **Sys.*** | Platform operations | write, read, exit, clock_gettime |
-| **NativePtr.*** | Pointer manipulation | get, set, add, stackalloc |
+| **Ptr.*** | Pointer handles (region- and access-kind-typed) | ofAddress, field, asReadOnly; `stackalloc` yields a bounded array |
 | **Array.*** | Collection operations | length, get, set, create |
 | **String.*** | String operations | concat, substring, length |
 | **Math.*** | Mathematical functions | sin, cos, sqrt (→ LLVM intrinsics) |
@@ -206,7 +206,7 @@ module Platform.Console =
         <@ fun (str: NTUstring) ->
             let ptr, len = NativeStr.toParts str
             Sys.write Sys.stdout ptr len
-            Sys.write Sys.stdout (NativePtr.ofArray "\n"B) 1n
+            Sys.write Sys.stdout "\n"B 1
         @>
 ```
 
@@ -245,13 +245,13 @@ Clef descends from F#, and CCS builds on three capabilities that lineage carries
 
 Quotations, inherited from F#, provide type-carrying, compile-time code inspection. Where string-based or JSON-based code representations leave types as opaque metadata that must be parsed and validated separately, a quotation preserves the compiler's type information as first-class data.
 
-When Alex needs to generate a syscall, it doesn't parse a string to discover that `buffer` is a `nativeptr<byte>`. That information is structurally present in the quotation, verified by the same type checker that validated the original code.
+When Alex needs to generate a syscall, it doesn't parse a string to discover that `buffer` is an `array<byte, 'n, Stack>`. That information is structurally present in the quotation, verified by the same type checker that validated the original code.
 
 When CCS encounters a platform binding, it uses quotations to resolve the platform-specific implementation:
 
 ```fsharp
 // Platform binding signature
-let write (fd: int) (buffer: nativeptr<byte>) (count: int) : int =
+let write (fd: int) (buffer: array<byte, 'n, Stack>) (count: int) : int =
     platform_binding  // Quotation-resolved
 
 // Resolved at compile time via platform descriptor
@@ -305,7 +305,7 @@ flowchart TD
         end
         subgraph Intrinsics["Intrinsic Modules"]
             I1["Sys.* (platform ops)"]
-            I2["NativePtr.* (memory ops)"]
+            I2["Ptr.* (memory handles)"]
             I3["Array.* (collections)"]
             I4["String.* (string ops)"]
             I5["Math.* (LLVM intrinsics)"]

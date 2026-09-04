@@ -45,7 +45,7 @@ The traditional approach, dating to early Lisp implementations and formalized in
 ```mermaid
 flowchart LR
     subgraph Closure["Closure"]
-        CP1[code_ptr]
+        CP1[code]
         EP[env_ptr]
     end
     subgraph OuterEnv["Outer Env"]
@@ -71,7 +71,7 @@ The alternative, developed by Appel and Shao in their 1992 work on Standard ML o
 flowchart LR
     subgraph FlatClosure["Flat Closure"]
         direction LR
-        CP[code_ptr]
+        CP[code]
         CX[captured_x]
         CY[captured_y]
         ETC[...]
@@ -130,39 +130,32 @@ This separation conforms to our Composer principle that the PSG should be comple
 
 ## The Witnessed Form
 
-What that layout data becomes deserves careful statement. The MiddleEnd, through Alex and the Zipper, represents a closure as a code-and-environment pair: two `index` values carried in a `memref`. The dialects are the standard ones, `func`, `memref`, `arith`, `index`, and `scf`, and nothing else. Type resolutions that depend on a target are deferred, and the deferral is explicit in the IR as `builtin.unrealized_conversion_cast`.
+What that layout data becomes deserves careful statement. The MiddleEnd, through Alex and the Zipper, represents a closure as two SSA values: the code, a `func.constant` naming the lifted implementation function, and the environment, a `memref` of the extent saturation settled. The dialects are the standard ones, `func`, `memref`, `arith`, `index`, and `scf`, and nothing else. Nothing is deferred: there is no cast in the listing, because there is no question left for a target to answer about what a closure *is*.
 
 ```mlir
-// The pair as witnessed: two index values in a memref.
-// Slot 0 carries the code value, slot 1 the environment value.
-func.func @makeCounter(%start: i32) -> memref<2xindex> {
+// The closure as witnessed: two SSA values, never packed, never cast.
+func.func @makeCounter(%start: i32) -> ((memref<4xi8>) -> i32, memref<4xi8>) {
   %c0 = arith.constant 0 : index
-  %c1 = arith.constant 1 : index
 
   // count escapes with the returned closure, so its cell is an arena slot.
+  // The environment is the arena view itself: extent 4, settled at saturation.
   %arena = memref.get_global @counter_arena : memref<64xi8>
-  %count = memref.view %arena[%c0][] : memref<64xi8> to memref<1xi32>
+  %env = memref.subview %arena[0][4][1] : memref<64xi8> to memref<4xi8>
+  %count = memref.view %env[%c0][] : memref<4xi8> to memref<1xi32>
   memref.store %start, %count[%c0] : memref<1xi32>
 
-  // The environment value: the capture's storage, deferred to index.
-  %env = builtin.unrealized_conversion_cast %count : memref<1xi32> to index
+  // The code: a first-class function value in the portable dialect.
+  %fn = func.constant @makeCounter_lambda : (memref<4xi8>) -> i32
 
-  // The code value: the implementation function, deferred to index.
-  %fn = func.constant @makeCounter_lambda : (memref<1xi32>) -> i32
-  %code = builtin.unrealized_conversion_cast %fn : (memref<1xi32>) -> i32 to index
-
-  %closure = memref.alloca() : memref<2xindex>
-  memref.store %code, %closure[%c0] : memref<2xindex>
-  memref.store %env, %closure[%c1] : memref<2xindex>
-  return %closure : memref<2xindex>
+  return %fn, %env : (memref<4xi8>) -> i32, memref<4xi8>
 }
 ```
 
-The `builtin.unrealized_conversion_cast` operations deserve a direct explanation, because the honesty of the witnessed form rests on them. The operation is MLIR's standard placeholder for a type conversion whose mechanism has not been chosen yet: it asserts that a value of one type will be usable at another type, generates no code, and carries both types in its text. The MiddleEnd uses it at exactly the two points where a machine-level answer would be a target commitment: what a function value is as data, and what a buffer is as data. On the LLVM path those answers are addresses; on a hardware path they are not addresses at all; so the witnessed form declines to answer, and records each open question as a cast. The MLIR verifier tracks every one, and the lowering contract is strict: each cast must be discharged by the target conversion pipeline, and any cast that survives to translation fails the build. "Everything left undecided" is therefore not a figure of speech; it is an enumerable set of typed operations in the listing, each naming precisely the decision it defers, discharged only when a backend supplies its answer.
+The absence of any cast deserves a direct explanation, because an earlier revision of this chapter carried two. That revision packed the pair into a `memref<2xindex>` and marked each half with `builtin.unrealized_conversion_cast`, on the reasoning that what a function value is *as data* is a target commitment. The reasoning was right about the commitment and wrong about the need: in the interior of a Clef program a function value is never data. The environment is a byte buffer of captured *values*, and the code is a symbol. `func.constant` is already a first-class value in the portable dialect, `func.call_indirect` already consumes it, and two values cross a function boundary as two parameters. Where a closure must reside in memory — an aggregate field, a container element — the environment buffer resides there and the closure *form*, decided at saturation, fixes the code component; that is a graph decision, not an emission-time cast. So the witnessed form no longer records open questions, because there are none.
 
-This listing is the witness boundary made concrete. It is what Alex and the Zipper witness out of the saturated Program Semantic Graph, and it is complete: no llvm dialect appears in it, because no llvm dialect exists anywhere in the MLIR the witness produces. The pair is target-agnostic by construction, and the unrealized casts are honest markers of everything left undecided. Target commitment happens below this line, in the target conversion pipeline, after witnessing is done.
+This listing is the witness boundary made concrete. It is what Alex and the Zipper witness out of the saturated Program Semantic Graph, and it is complete: no llvm dialect appears in it, because no llvm dialect exists anywhere in the MLIR the witness produces. The pair is target-agnostic by construction. Target commitment happens below this line, in the target conversion pipeline, after witnessing is done, and it happens through the standard lowerings for `func` and `memref` — no resolution pass, no plugin.
 
-Every slot in the pair is written. The code slot is initialized to the closure's implementation function, and the environment slot carries valid storage. No slot is left null. The layout carries no "uninitialized closure" state, no sentinel values, no null checks at call sites. [Null-Free by Construction](/docs/design/language/null-free-by-construction/) states the reasoning in full; here it is a structural property of the witnessed IR, not a surface-level API convention.
+Every slot in the environment is written. The environment carries valid storage for every capture, and the code value names a defined function. No slot is left null. The layout carries no "uninitialized closure" state, no sentinel values, no null checks at call sites. [Null-Free by Construction](/docs/design/language/null-free-by-construction/) states the reasoning in full; here it is a structural property of the witnessed IR, not a surface-level API convention.
 
 This property is designed to survive target conversion into the final native code, so that the emitted binary carries no null pointer checks for closure invocation. Our type system, through CCS and Alex, establishes at compile time that closures are well-formed. The runtime cost of this safety is zero.
 
@@ -174,16 +167,14 @@ Because the witnessed pair commits to no target, one representation can be reali
 
 ### LLVM: The Common Case
 
-The most common case is native CPU code through LLVM, and it is the path that runs today. Below the witness boundary, the target conversion pipeline applies the standard lowering passes for `func`, `memref`, and `arith`, and its tail resolves the deferred casts: the `index` values that carried the pair become `llvm.ptrtoint` and `llvm.inttoptr` at the seam, and the pair becomes a struct of a code pointer and captured fields.
+The most common case is native CPU code through LLVM, and it is the path that runs today. Below the witness boundary, the target conversion pipeline applies the standard lowering passes for `func`, `memref`, and `arith`, and nothing else is needed: `func.constant` becomes `llvm.mlir.addressof`, the environment `memref` becomes a pointer plus the memref descriptor the standard lowering already produces, and `func.call_indirect` becomes an `llvm.call` through the function value.
 
 ```mlir
-// Below the witness boundary: produced by target conversion, not by Alex.
-// Closure struct type: { ptr<fn>, ptr<i32> }
-%env_alloca = llvm.alloca %one x !llvm.struct<(ptr, ptr)> : (i64) -> !llvm.ptr
-%count_addr = llvm.getelementptr %env_alloca[0, 1] : (!llvm.ptr) -> !llvm.ptr
-llvm.store %count_ptr, %count_addr : !llvm.ptr, !llvm.ptr
-%code_addr = llvm.getelementptr %env_alloca[0, 0] : (!llvm.ptr) -> !llvm.ptr
-llvm.store %fn_ptr, %code_addr : !llvm.ptr, !llvm.ptr
+// Below the witness boundary: produced by standard target conversion, not by Alex.
+%fn_ptr  = llvm.mlir.addressof @makeCounter_lambda : !llvm.ptr
+%env_ptr = llvm.getelementptr %arena_base[0] : (!llvm.ptr) -> !llvm.ptr
+// application, elsewhere:
+%r = llvm.call %fn_ptr(%env_ptr) : !llvm.ptr, (!llvm.ptr) -> i32
 ```
 
 This is the first point in the pipeline where the llvm dialect exists at all. Every guarantee the listing exhibits, the fully initialized fields above all, was established in the witnessed form before any llvm operation was created.

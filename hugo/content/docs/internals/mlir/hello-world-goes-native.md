@@ -63,17 +63,17 @@ The nanopass architecture enforces a critical invariant: once FCS completes its 
 Consider how type information flows through the pipeline. A function like:
 
 ```fsharp
-let formatInt (value: int) (buffer: nativeptr<byte>) (maxLength: int) : int = ...
+let formatInt (value: int) (buffer: array<byte, 'n, Stack>) (maxLength: int) : int = ...
 ```
 
 Gets its types resolved once during PSG construction, then that resolved information is available to every downstream pass:
 
 ```
 FUNCTION: Console.Format.formatInt
-└── Binding [formatInt] : int -> nativeptr<byte> -> int -> int
+└── Binding [formatInt] : int -> array<byte, 'n, Stack> -> int -> int
 ```
 
-The emission layer reads from the PSG's `Type` field and produces MLIR. For .NET developers familiar with pointer types, MLIR uses `memref` (memory reference) to represent buffers and arrays. The Clef type `nativeptr<byte>` becomes `memref<?xi8>` (a dynamic-length buffer of bytes):
+The emission layer reads from the PSG's `Type` field and produces MLIR. For .NET developers familiar with pointer types, MLIR uses `memref` (memory reference) to represent buffers and arrays. The Clef type `array<byte, 'n, Stack>` becomes `memref<?xi8>` (a dynamic-length buffer of bytes):
 
 ```mlir
 func.func @formatInt(%arg0: i32, %arg1: memref<?xi8>, %arg2: i32) -> i32 {
@@ -217,7 +217,7 @@ With the nanopass architecture operational, the Composer compiler now produces n
 
 ```
 FUNCTION: Console.Format.formatInt
-└── Binding [formatInt] : int -> nativeptr<byte> -> int -> int
+└── Binding [formatInt] : int -> array<byte, 'n, Stack> -> int -> int
 ```
 
 Generates:

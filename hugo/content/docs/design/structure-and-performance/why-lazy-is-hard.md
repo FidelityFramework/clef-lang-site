@@ -46,7 +46,6 @@ flowchart TD
         direction TB
         B_COMP[computed: false]
         B_VAL[value: undefined]
-        B_CODE[code_ptr: thunk_fn]
         B_CAP[captures...]
     end
 
@@ -54,7 +53,6 @@ flowchart TD
         direction TB
         A_COMP[computed: true]
         A_VAL[value: result]
-        A_CODE[code_ptr: thunk_fn]
         A_CAP[captures...]
     end
 
@@ -120,27 +118,29 @@ This works well in the .NET ecosystem. For native compilation, every aspect of t
 
 Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A [lazy value is a flat closure](/spec/draft/lazy-representation/) with additional fields for memoization state.
 
-| Lazy<T> | | | | |
-|:---:|:---:|:---:|:---:|:---:|
-| computed: i1 | value: T | code_ptr: ptr | cap_0 | cap_1 ... |
-| [0] | [1] | [2] | [3] | [4] |
+| Lazy<T> = (thunk, env); env: | | | |
+|:---:|:---:|:---:|:---:|
+| computed: i1 | value: T | cap_0 | cap_1 ... |
+| [0] | [1] | [2] | [3] |
+
+The thunk is the function-value half of the pair, not a field: no function address is stored in the environment.
 
 The structure is self-contained: no pointers to outer environments, no heap allocation beyond the lazy value itself, and no collector to involve. A chain of linked thunks would break exactly this containment: each unforced link widens the set of live captures a lifetime judgment must account for, which is the space leak stated structurally. Keeping the thunk flat keeps that set at the field list, so the abstraction arrives with its judgments already finite and costs less than a hand-rolled deferral scheme that would carry none of them.
 
 ### The Thunk Calling Convention
 
-When the thunk executes, it receives a pointer to the full lazy struct. This design decision deserves explanation.
+When the thunk executes, it receives the lazy value's environment. This design decision deserves explanation.
 
 An alternative would pass captured values as function parameters. The thunk would have signature `(cap_0, cap_1, ...) -> T`, and the forcing code would extract captures and pass them. This works but creates complexity at call sites: the caller must know how many captures exist and their types.
 
-Instead, Fidelity's thunks have uniform signature `(ptr<Lazy>) -> T`. The thunk receives a pointer to its containing structure and extracts its own captures at known offsets. The forcing code is simple: extract the code pointer, call it with the struct pointer, store the result.
+Instead, Fidelity's thunks have uniform signature `(env) -> T`. The thunk receives its environment and extracts its own captures at known offsets. The forcing code is simple: call the thunk — the function-value half of the pair — with the environment, and store the result.
 
 ```mermaid
 flowchart TD
     subgraph Force["Lazy.force Implementation"]
         CHECK[Check computed flag]
-        EXTRACT[Extract code_ptr]
-        CALL["Call thunk(lazy_ptr)"]
+        EXTRACT[Thunk = fn half of the pair]
+        CALL["Call thunk(env)"]
         STORE[Store result at value slot]
         SET[Set computed = true]
         RETURN[Return value]

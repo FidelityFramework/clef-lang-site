@@ -10,6 +10,8 @@ params:
   migration_date: 2026-03-12
 ---
 
+> **Editor's note (September 2026).** Code in this post uses `nativeptr<'T>` / `NativePtr.*` from `FSharp.NativeInterop`. That surface is not denotable in Clef: the interior has no raw pointer type, and a C binding's pointer marshals through the opaque `CHandle<'T>` (spec `ffi-boundary.md` §1; `Ptr<'T, 'Region, 'Access>` is the interior handle). The post is left as written otherwise.
+
 ---
 
 The cybersecurity landscape has shifted dramatically in recent years, with memory safety vulnerabilities accounting for approximately 70% of critical security issues in systems software. This reality has prompted governments and industries to mandate transitions to memory-safe languages for critical infrastructure. Yet the economics of wholesale rewrites are daunting: decades of refined C and C++ code represent trillions of dollars in intellectual property and domain expertise. What if, instead of rewriting everything, we could wrap existing code in provably safe interfaces?

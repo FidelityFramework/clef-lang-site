@@ -10,6 +10,9 @@ params:
   migration_date: 2026-03-12
 ---
 
+> **Surface note (2026-09).** The generated bindings sketched in this chapter target the pre-strip pointer surface (`nativeptr<'T>`, `NativePtr.*`). That surface is not denotable in Clef: a C binding's pointer marshals through the opaque `CHandle<'T>` and interior code holds `Ptr<'T, 'Region, 'Access>` (spec `ffi-boundary.md`). Farscape's generated surface follows that chapter; the sketches here move with the generator.
+
+
 Binding [the Clef language](https://clef-lang.com) to C++ libraries has historically meant one of three compromises: accepting the limitations of C-style APIs, writing error-prone binding code by hand, or relying on runtime marshaling that imposes performance penalties. Farscape generates these bindings against the [FFI boundary semantics](/spec/draft/ffi-boundary/) the specification defines, where null handling and pointer validity are isolated to the interface with external code. Farscape's design targets Plugify's C++ ABI intelligence, extending the broader binding vision [The Farscape Bridge]({{< ref "the-farscape-bridge" >}}) introduces. Farscape generates type-safe Clef bindings automatically, and those bindings compile away to zero-cost abstractions through LLVM's Link-Time Optimization.
 
 Farscape will evolve from its current [C-focused binding generation](/docs/internals/farscape/farscape-modular-entry-points/) to comprehensive C++ support by building on Plugify's accumulated knowledge of C++ ABIs. The result will be a tool that generates safe, idiomatic Clef bindings for any C++ library, with those bindings compiling through the Fidelity framework to native code that's as efficient as hand-written C++.

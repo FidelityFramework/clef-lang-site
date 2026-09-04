@@ -325,9 +325,9 @@ Copy-on-write (COW) semantics defer cache coherency traffic until a write occurs
 module COWOptimization =
 
     type COWBuffer<'T> = {
-        mutable Data: nativeptr<'T>
+        mutable Data: Ptr<'T, Arena, ReadWrite>
         mutable IsPrivate: bool
-        OriginalData: nativeptr<'T>
+        OriginalData: Ptr<'T, Arena, ReadOnly>
     }
 
     let write (buffer: COWBuffer<'T>) index value =
@@ -342,7 +342,7 @@ module COWOptimization =
             buffer.IsPrivate <- true
 
         // Subsequent writes go directly to private copy
-        NativePtr.set buffer.Data index value
+        buffer.Data.[index] <- value
 ```
 
 ### Prefetching Distance Calibration

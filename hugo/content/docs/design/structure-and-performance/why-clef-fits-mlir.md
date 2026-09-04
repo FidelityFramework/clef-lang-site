@@ -118,16 +118,20 @@ let processData input = async {
     return finalize transformed
 }
 
-// Natural mapping to MLIR's async dialect
-async.func @processData(%input: !fidelity.buffer) -> !fidelity.result {
-    %validated = async.await {
-        call @validate(%input) : (!fidelity.buffer) -> !fidelity.validated
-    }
-    %transformed = async.await {
-        call @transform(%validated) : (!fidelity.validated) -> !fidelity.transformed
-    }
-    %result = call @finalize(%transformed) : (!fidelity.transformed) -> !fidelity.result
-    return %result : !fidelity.result
+// The witnessed form. The suspension recipe settles the region on the PSG —
+// two cuts, a frame with literal extent E, a delimiter edge — and Alex emits
+// standard dialects only: a discriminant, the frame, scf.index_switch. No async
+// dialect, no custom types.
+func.func @processData_resume(%frame: memref<Exi8>, %delivered: memref<?xi8>) -> i1 {
+    %s = ... memref.load of the discriminant from %frame ...
+    %again = scf.index_switch %s -> i1
+      case 0 { %v = func.call @validate(%input) : (memref<?xi8>) -> memref<?xi8>
+               ... store %v into its frame slot, store 1 ... ; scf.yield %true : i1 }
+      case 1 { %t = func.call @transform(%delivered) : (memref<?xi8>) -> memref<?xi8>
+               ... store %t, store 2 ... ; scf.yield %true : i1 }
+      default { %r = func.call @finalize(%delivered) : (memref<?xi8>) -> memref<?xi8>
+                ... store %r, store done ... ; scf.yield %false : i1 }
+    return %again : i1
 }
 ```
 

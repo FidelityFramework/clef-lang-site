@@ -133,15 +133,15 @@ The optimization decision gets made with the **least** amount of information pos
 Now consider what MLIR sees when `Console.write` is a real function:
 
 ```mlir
-func.func @Console.write(%arg0: !fidelity.memref<?xi8>) {
+func.func @Console.write(%arg0: memref<?xi8>) {
   %stdout = arith.constant 1 : i32
-  call @Sys.write(%stdout, %arg0) : (i32, !fidelity.memref<?xi8>) -> i32
+  call @Sys.write(%stdout, %arg0) : (i32, memref<?xi8>) -> i32
   return
 }
 
-func.func @main(%argv: !fidelity.memref<?x!fidelity.memref<?xi8>>) -> i32 {
-  %str = memref.get_global @str_12345 : !fidelity.memref<14xi8>
-  call @Console.write(%str) : (!fidelity.memref<?xi8>) -> ()
+func.func @main(%argv: memref<?xmemref<?xi8>>) -> i32 {
+  %str = memref.get_global @str_12345 : memref<14xi8>
+  call @Console.write(%str) : (memref<?xi8>) -> ()
   %c0 = arith.constant 0 : i32
   return %c0 : i32
 }
@@ -225,12 +225,12 @@ The type system needs to see the concrete types at each call site to resolve whi
 
 From the Clef specification:
 
-> "When a function allocates memory via `NativePtr.stackalloc` and returns a pointer, the pointer becomes invalid when the function returns (the stack frame is deallocated). Marking the function `inline` causes CCS to expand the function body at the call site, **lifting the allocation to the caller's frame**."
+> "When a function allocates memory via `stackalloc` and returns a pointer, the pointer becomes invalid when the function returns (the stack frame is deallocated). Marking the function `inline` causes CCS to expand the function body at the call site, **lifting the allocation to the caller's frame**."
 
 ```fsharp
 // REQUIRED: inline for memory safety
 let inline readln () : string =
-    let buffer = NativePtr.stackalloc<byte> 256
+    let buffer = stackalloc<byte> 256
     let len = readLineInto buffer 256
     NativeStr.fromPointer buffer len
     // Without inline: buffer is deallocated, pointer dangles

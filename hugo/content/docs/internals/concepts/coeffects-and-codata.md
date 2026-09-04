@@ -601,11 +601,11 @@ These continuation points map onto Fidelity's actor-based memory model. When an 
 
 ### WebAssembly via WAMI
 
-The WAMI (WebAssembly Machine Interface) backend preserves delimited continuations (dcont) through every stage of compilation, from Clef source to WebAssembly machine code. Control flow survives as a first-class construct at the machine level.
+On a WebAssembly target with stack switching, the WAMI backend leg — below the witness boundary — transliterates the continuation frame Alex witnesses from the saturated PSG into the runtime's native suspend/resume instructions. The continuation is graph structure from source to saturation, a discriminant-and-frame state machine at the witness, and a first-class construct at the machine level.
 
 #### The Delimited Continuation Advantage
 
-Compilers conventionally discard the high-level structure of control flow, lowering async/await or yield patterns to opaque state machines. WAMI instead keeps them as delimited continuations:
+Compilers conventionally discard the high-level structure of control flow, lowering async/await or yield patterns to opaque state machines. Clef's witnessed form is also a state machine — that is what every target receives — but the structure it came from is not lost: it is on the graph, and a target that hosts continuations natively can receive it in that shape:
 
 ```fsharp
 // Codata pattern: infinite generator
@@ -617,7 +617,7 @@ let fibonacci = seq {
 }
 ```
 
-On a stack-switching target this generator keeps its continuation structure, the shape WAMI's DCont dialect demonstrates:
+On a stack-switching target this generator keeps its continuation structure — the shape the proposal's instructions carry, and the shape the WAMI backend leg transliterates the witnessed frame into:
 
 ```wasm
 (func $fibonacci_generator (param $cont i32) (result i32)

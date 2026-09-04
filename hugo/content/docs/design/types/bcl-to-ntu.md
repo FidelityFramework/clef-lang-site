@@ -142,7 +142,7 @@ The central innovation of NTU is the separation of type identity from type width
 Consider a platform binding function:
 
 ```fsharp
-let write (fd: int) (buffer: nativeptr<byte>) (count: int) : int = ...
+let write (fd: int) (buffer: array<byte, 'n, Stack>) (count: int) : int = ...
 ```
 
 On a 64-bit Linux system, the system call expects 64-bit arguments. On a 32-bit embedded target, it expects 32-bit arguments. If `int` has a fixed meaning, cross-platform compilation requires conditional code paths, platform-specific type aliases, or manual width annotations.

@@ -10,6 +10,8 @@ params:
   migration_date: 2026-03-12
 ---
 
+> **Editor's note (September 2026).** Code in this post uses `nativeptr<'T>` / `NativePtr.*` from `FSharp.NativeInterop`. That surface is not denotable in Clef: the interior has no raw pointer type, and a C binding's pointer marshals through the opaque `CHandle<'T>` (spec `ffi-boundary.md` §1; `Ptr<'T, 'Region, 'Access>` is the interior handle). The post is left as written otherwise.
+
 AI accelerators are changing the performance characteristics developers can target, and post-quantum cryptography is moving from research into practice. Security vulnerabilities in memory-unsafe code continue to cost billions annually. The ecosystem of foundational libraries, from TensorFlow's core implementations to OpenSSL, remains anchored in C and C++. We have been asking how to bring type and memory safety to that body of native code without discarding it, and our answer is Farscape: a CLI tool we are designing to generate safe bindings into the Clef ecosystem.
 
 ## The Native Code Opportunity

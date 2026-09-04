@@ -10,6 +10,8 @@ params:
   migration_date: 2026-03-12
 ---
 
+> **Editor's note (September 2026).** Code in this post uses `nativeptr<'T>` / `NativePtr.*` from `FSharp.NativeInterop`. That surface is not denotable in Clef: the interior has no raw pointer type, and a C binding's pointer marshals through the opaque `CHandle<'T>` (spec `ffi-boundary.md` §1; `Ptr<'T, 'Region, 'Access>` is the interior handle). The post is left as written otherwise.
+
 Reactive programming has become essential infrastructure for modern applications. From browser interfaces responding to user input to distributed systems coordinating state across nodes, the ability to propagate changes through a dependency graph underpins countless software architectures. Yet the dominant patterns for implementing reactivity carry significant cognitive and runtime overhead. The subscription model that pervades .NET, RxJS, and similar frameworks demands explicit lifecycle management that clutters application code and creates entire categories of resource leaks.
 
 Our Fidelity Framework takes a different approach. By combining BAREWire's zero-copy memory architecture with a signal-based reactive model, we aim for reactive semantics without the subscription ceremony. This is an architectural decision that aligns with our [actor-oriented design philosophy](/blog/the-case-for-actor-oriented-architecture/) and carries consistent reactive patterns across native compilation, browser deployment, and managed runtime targets.

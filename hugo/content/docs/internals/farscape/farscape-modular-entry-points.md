@@ -10,6 +10,9 @@ params:
   migration_date: 2026-03-12
 ---
 
+> **Surface note (2026-09).** The generated bindings sketched in this chapter target the pre-strip pointer surface (`nativeptr<'T>`, `NativePtr.*`). That surface is not denotable in Clef: a C binding's pointer marshals through the opaque `CHandle<'T>` and interior code holds `Ptr<'T, 'Region, 'Access>` (spec `ffi-boundary.md`). Farscape's generated surface follows that chapter; the sketches here move with the generator.
+
+
 The Fidelity framework's Farscape CLI addresses a pressing challenge in modern software development: how to enhance the safety of battle-tested C/C++ tools without disrupting the countless systems that depend on them. Every day, organizations rely on command-line tools like OpenSSL, libzip, and many others that represent decades of engineering expertise but carry the inherent memory safety risks of their C/C++ heritage. Building on Farscape's current capability -- generating `[<FidelityExtern>]` attributed [Clef](https://clef-lang.com) binding declarations from C headers against the [FFI boundary semantics](/spec/draft/ffi-boundary/) the specification defines -- the "shadow-api" design vision extends the tool toward a more ambitious goal: generating drop-in replacements for widely deployed tools that preserve the original interface exactly while adding type and memory safety. The companion [C++ Binding via Farscape](/docs/internals/farscape/binding-cpp-to-clef-in-farscape/) article covers the same tooling reaching from C into C++ libraries.
 
 The shadow-api design produces transparent recompilations to native binaries rather than bindings or wrappers. Given the same inputs, a replacement passes the original's integration tests and produces outputs identical to its C/C++ predecessor. The safety abstractions employ Clef's zero-cost abstraction principles, where all type safety and bounds checking compile away to efficient native code, unlike many C++ safety extensions or custom compiler approaches that can impose significant runtime overhead. [The Farscape Bridge]({{< ref "the-farscape-bridge" >}}) introduces the broader vision these entry points serve.
@@ -209,7 +212,7 @@ type SafeRSAKey = {
 }
 
 // Cryptographically secure memory clearing that won't be optimized away
-let secureZero (ptr: nativeptr<byte>) (size: int) =
+let secureZero (ptr: array<byte, 'n, Stack>) (size: int) =
     for i = 0 to size - 1 do
         NativePtr.set ptr i 0uy
     // Platform-specific volatile barrier prevents optimizer from eliding the writes
@@ -240,7 +243,7 @@ let generateRSAKeySafe (keySize: int) (publicExp: int64) : Result<SafeRSAKey, st
             // Calculate private exponent with bounds checking
             match modularInverse publicExp phi with
             | Some d ->
-                let privateData = NativePtr.stackalloc<byte> (keySize / 8)
+                let privateData = stackalloc<byte> (keySize / 8)
                 encodePrivateKey d privateData
 
                 Ok {
