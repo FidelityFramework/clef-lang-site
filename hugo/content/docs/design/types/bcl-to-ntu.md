@@ -728,9 +728,9 @@ The move from BCL-based type assumptions to the Native Type Universe changed how
 
 Four conclusions settled out of this work:
 
-**Type identity and type width are separable concerns.** By treating width as erased metadata, NTU enables type-safe cross-platform development without conditional compilation clutter.
+**Type identity and type width are separable concerns.** By carrying width as a dimension of the type, distinct in identity and resolved once by the Clef Compiler Service at saturation against each target's platform description, NTU enables type-safe cross-platform development without conditional compilation clutter.
 
-**Platform awareness belongs in structured metadata, not scattered annotations.** Quotation-based platform bindings centralize platform-specific information while keeping the type checker platform-agnostic.
+**Platform awareness belongs in structured metadata, not scattered annotations.** Quotation-based platform bindings centralize platform-specific information while keeping type identity platform-agnostic; resolution happens once, at saturation, and everything downstream reads it.
 
 **The compiler should control memory layout until the last possible moment.** Region types, access kinds, and platform predicates carry semantic information through the pipeline, enabling informed code generation decisions.
 
