@@ -15,106 +15,79 @@ Our toolchain evolution from Ionide to **Lattice** follows a progression from ch
 
 [Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community, provides comprehensive F# development tooling for .NET, a polished IDE experience in the functional programming ecosystem. We needed to reach beyond .NET's boundaries into native, freestanding systems programming. Ionide is a stalwart tool for .NET F# development. We will springboard from that to create Lattice, supporting Clef's toolchain needs with features that extend well past that foundation.
 
----
-
-## Fork Rationale
-
-Clef reconceives F#'s type semantics and execution model rather than serving as one more compile target:
-
-### Native Type Semantics
-
-**.NET F#** assumes the Base Class Library:
-- `string` is UTF-16, heap-allocated, reference-counted
-- `option<'T>` is a discriminated union wrapping `Some` or `None`
-- Integer arithmetic is unchecked by default
-- Everything inherits from `System.Object`
-
-**Clef** operates in a freestanding environment:
-- `string` is UTF-8, stack-or-heap at the developer's discretion
-- `option<'T>` is a value type (like Rust's `Option<T>`)
-- Platform words (`nativeint`) are first-class citizens
-- No .NET runtime, no garbage collector, no BCL
-
-> For a detailed exploration of these type system differences, see [From BCL to NTU](/docs/design/types/bcl-to-ntu/) and [Doubling Down](/blog/doubling-down-dmm-dts/) for more information on our dimensional type system.
-
-The differences are architectural. An IDE built around `.fsproj` project files, NuGet packages, and BCL types cannot also serve `.fidproj` manifests (TOML), native linking, and bare-metal semantics without becoming two tools forced into one codebase.
-
-### Extensive Tooling Coverage
-
-Ionide spans a full ecosystem beyond syntax highlighting and autocomplete:
-- **Language Server** (Clef Compiler Services)
-- **Project Explorer** (MSBuild integration)
-- **Debugger** (CoreCLR protocol)
-- **REPL** (Clef Interactive)
-- **Analyzers** (FSharp.Analyzers.SDK)
-- **Package Management** (NuGet, Paket)
-
-Clef requires parallel infrastructure:
-- **CCS** (Clef Compiler Services) - pure compiler, no analyzers
-- **CAC** (Clef AutoComplete) - LSP server that consumes CCS output
-- **Composer** - AOT compiler (Clef → MLIR → LLVM → native binary)
-- **`.fidproj`** - TOML-based project manifests
-- **Lattice Analyzers** - NuGet package with analyzers that plug into CAC
-- **Native Bindings** - MLIR dialect integration, not BCL
-
-Merging these concerns into Ionide would carry a heavy maintenance cost: feature flags everywhere, dual type systems, and bifurcated build paths.
-
-> The Ionide team shouldn't have to reason about MLIR dialects. The Lattice toolchain shouldn't have to preserve MSBuild compatibility.
-
-With a more clearly delineated tool set, the two can stand alone, and perhaps in the future interoperate with one another.
+> **Implementation status, September 2026.** A local VSCode demo now connects actual CCS dimensional inference, diagnostics and resolved definitions to an expandable proof panel with cvc5 source results. Neovim has a Clef registration shim and transport tests; its compiler-backed check remains work. The shared [Lattice integration design](https://github.com/FidelityFramework/Composer/blob/main/docs/Lattice_Integration.md) records the current boundary, compiler-branch reconciliation and remaining acceptance gates.
 
 ---
 
-## The Four Lattice Repositories
+## The working boundary
 
-To avoid potential confusion, we re-labeled the extant Clef tooling ecosystem from "Ionide.FsNative" to "Lattice":
+Lattice should let you work in Clef with the editor you already use. CCS owns the language facts: inferred types and dimensions, source references, ranges, layouts and proof obligations. Composer consumes those facts through lowering. Lattice presents the same compiler-owned information through the Language Server Protocol (LSP), with editor-specific views where they help.
 
-### 1. [lattice-vscode](https://github.com/FidelityFramework/lattice-vscode)
-**The VSCode Extension**
+The first server is hosted in .NET, alongside Composer's existing CCS integration. The current VSCode development client uses a small JavaScript transport entry point, and the Neovim client uses Lua. F# and Fable remain available for richer client tooling. Those are implementation choices for the tools. The source being checked is Clef, with Clef's type and proof contracts.
 
-- **Extension ID**: `lattice-fsharp`
-- **Display Name**: "Lattice for Clef"
-- **Activates On**: `.fidproj`, `.fsnx`, `.fsproj`, `.fsni`, `.fidsln`
-- **Config Namespace**: `lattice.fsharp.*`
+```mermaid
+flowchart LR
+    VS[VSCode] --> L[Lattice LSP server]
+    NV[Neovim] --> L
+    L --> CCS[CCS project and graph service]
+    PD[Platform and BAREWire declarations] --> CCS
+    CCS --> C[Composer lowering]
+```
 
-The extension is built with Fable (F# → JavaScript), just like Ionide, and supports both .NET F# (via FsAutoComplete) and Clef (via CAC). Ionide and Lattice run side-by-side: they have different extension IDs and don't conflict.
+This is the intended integration across clients and builds. The local server now connects CCS project checking and unsaved source overrides to versioned editor results. Position queries use compiler source intervals and resolved references. The proof panel reads obligations from the same check. Sharing one live session with a Composer build request remains further work.
 
-### 2. [lattice-analyzers](https://github.com/FidelityFramework/lattice-analyzers)
-**Custom Analyzers for Clef**
+## The repository work
 
-- **NuGet Package**: `Lattice.Analyzers`
-- **Framework**: Uses `FSharp.Analyzers.SDK` (community standard)
-- **Target**: .NET 10
+The first forks preserved useful Ionide infrastructure. Each now has a specific role in the Clef integration:
 
-These analyzers are written for Clef's native type semantics. They warn on `System.String` methods that assume UTF-16 encoding and detect unnecessary heap allocations in stack-only memory models. They also prevent `null` usage (Clef is null-safe by design) and block `obj` downcasting operations that assume .NET's type hierarchy.
+| Repository | Role and first change |
+| --- | --- |
+| [lattice-vscode](https://github.com/FidelityFramework/lattice-vscode) | Register Clef, launch the Lattice server and present standard diagnostics and hover. Replace inherited server acquisition and private F# requests as the Clef capabilities land. |
+| [lattice-vim](https://github.com/FidelityFramework/lattice-vim) | Register the same server for `.clef` files in `.fidproj` workspaces. Validate Neovim and the separate Vim client path. |
+| [lattice-vscode-helpers](https://github.com/FidelityFramework/lattice-vscode-helpers) | Supply Fable bindings for the VSCode and language-client APIs. Align package references and the lock file so the extension builds against the intended helpers. |
+| [clef-grammar](https://github.com/FidelityFramework/clef-grammar) | Supply lexical highlighting before semantic results arrive. Add representative Clef fixtures; CCS semantic tokens will carry the resolved meaning. |
+| [ClefAutoComplete](https://github.com/FidelityFramework/ClefAutoComplete) | Preserve the earlier FSAC bridge as implementation reference. The new thin server belongs with Composer's CCS integration. |
+| [lattice-analyzers](https://github.com/FidelityFramework/lattice-analyzers) | Review inherited rules and concrete future analysis slots. Required semantics belong in CCS; graph queries and optional review questions need explicit contracts. |
 
-### 3. [lattice-vim](https://github.com/FidelityFramework/lattice-vim)
-**Vim/Neovim Plugin**
+The analyzer repository's inherited SDK is part of its F# implementation history. Clef can have an extensive analysis experience while type resolution and Baker carry and settle the underlying facts. An analyzer slot needs a concrete purpose: inspecting those facts, suggesting an additional proof question, or applying an explicitly scoped review policy. Required type and proof checks remain in the compiler's joint constraint mechanism. Disabling an optional analyzer must never make an invalid program compile. The [slot boundary](https://github.com/FidelityFramework/Composer/blob/main/docs/Lattice_Integration.md#analysis-and-analyzer-slots) is part of the integration design; a general plugin API has not been selected.
 
-- **Lua Module**: `require('lattice')`
-- **Install Path**: `FidelityFramework/lattice-vim` (via vim-plug, packer, lazy.nvim)
+Target context also determines which analyses matter. HelloArty already uses a compiler-hosted FPGA depth analysis that produces ordinary diagnostics. That structural timing advice has a different basis from a required capacity proof or a post-route timing result. Lattice should expose the target, premises and evidence behind each finding. The [target-context design](https://github.com/FidelityFramework/Composer/blob/main/docs/Lattice_Integration.md#target-context-selects-the-applicable-analysis) uses that example to guide further analysis slots.
 
-For developers who prefer modal editing, the plugin connects to CAC via the LSP protocol and provides syntax highlighting for `.fidproj` and `.fsnx` files.
+## Clef names and project context
 
-### 4. [lattice-vscode-helpers](https://github.com/FidelityFramework/lattice-vscode-helpers)
-**Fable Bindings for VSCode API**
+The client migration targets language ID `clef`, with settings and commands under `lattice.*`. The server is Lattice; the language service it consumes is CCS. The first source file association is `.clef`, and the project manifest is `.fidproj`. Script support needs a separate check before adding `.clefx` to the supported set.
 
-- **Internal Dependency**: Used by `lattice-vscode`
-- **Namespace**: `Lattice.VSCode.Helpers`
+These identifiers now have a local VSCode development entry point, with an [F5 walkthrough](https://github.com/FidelityFramework/lattice-vscode/blob/fidelity/client/README.md) that needs no Marketplace publication. A published extension identifier and installable server command will be documented when those artifacts exist; the inherited F# identifiers are not the Clef setup contract.
 
-Type-safe F# bindings for the VSCode extension API, compiled to JavaScript via Fable. This keeps the extension codebase in idiomatic F#.
+Project loading includes source order, dependencies and platform declarations. Lattice obtains that context from CCS, including unsaved Clef source contents. `.fidproj` stays in TOML mode for rich syntax support; the demo gives it a teal bass-clef icon alongside orange Clef source icons. TOML tooling does not itself interpret the project's compilation contract. Manifest edits currently take effect in CCS after saving, and missing project inputs produce a check failure.
 
+## The first working loop
 
+The local VSCode fixture opens a two-file project, displays `float<m / s>` on hover, and locates the incompatible-dimension diagnostic when seconds are replaced by metres. An unsaved correction clears it. The same host test checks definition routing and proof-result invalidation. Neovim still needs this semantic fixture. An older check finishing later must not replace newer results; completion and further navigation need their own compiler-backed queries.
+
+That small loop establishes the path used by the richer views below. The [implementation gates](https://github.com/FidelityFramework/Composer/blob/main/docs/Lattice_Integration.md#implementation-gates) tie each step to its owning repository and its regression checks.
+
+## Proofs while you write
+
+The lower tiers of Clef's proof architecture start with facts the compiler already has. For BAREWire, the design calls for the compiler to cross-apply an operation's contract, the declared memory layout and the program's established ranges to construct the applicable obligation. Each obligation needs its premises and a supported reasoning fragment. The developer should be able to ask why a property holds without first writing a refinement annotation to repeat those facts.
+
+There is useful kinship with Dafny here: shaping routine obligations so automated verification can do the work. Dafny also admits quantified specifications, and its full verification language reaches beyond decidable fragments; its [verification guidance](https://dafny.org/v4.9.1/VerificationOptimization/VerificationOptimization) discusses helping the solver with difficult goals. [F*'s editor support](https://github.com/FStarLang/fstar-vscode-assistant) offers another useful precedent in incremental checking, cancellation and visible verification progress. These inform Lattice's tooling while Clef's own inference and proof contracts govern what our tooling targets.
+
+The local VSCode version offers a live **Proofs** control in the status bar: Hidden, Drawers or Full. Drawers places compact controls at compiler-provided source sites; clicking opens the matching proof details in the panel. Full expands the details, and Hidden removes the proof presentation while leaving checking active. Inline drawers beneath declarations are a possible next presentation, using the same evidence. A cross-applied obligation may span several sites, so its explanation should link those sites. If a premise changes, the affected result needs revalidation. Pending, inconclusive and stale results remain distinguishable from successful discharge.
+
+When a reusable lemma would help, an editor suggestion can introduce its application. The compiler must still establish the premises at that use. A consistent partial program can retain a pending obligation until the [applicable commitment boundary](/spec/draft/width-inference/#6-unobservable-ranges). Developers can choose to hide proof annotations while retaining a marker that they are present; that choice leaves checking active.
+
+CCS carries the obligation definitions; the local Lattice server now dispatches their source queries to cvc5 and invalidates results after edits. The panel shows statements, premises, reasoning fragments and the actual query beside each verdict. Source verification and preservation through lowering still need separate, linked status backed by corresponding evidence. The external ledger remains a scaffold for checking that correspondence as the proof-carrying graph mechanism matures.
 
 ---
 
 ## Heritage
 
-Every file in the Lattice repositories begins with the same acknowledgment:
+The Lattice forks retain their Ionide attribution:
 
 > This project is a hard fork of [Ionide](https://ionide.io/), created by Krzysztof Cieślak and maintained by the Ionide community.
 
-We preserve the original MIT License with Ionide copyright holders. We maintain `IONIDE_HERITAGE.md` in each repository explaining the fork rationale, and we link to Ionide in every README.
+The inherited licenses and copyright notices remain with the code. The repository READMEs link that heritage alongside the Clef integration work.
 
 The two toolchains serve different, occasionally adjacent use cases:
 
@@ -129,13 +102,13 @@ The two toolchains serve different, occasionally adjacent use cases:
 
 If you're building web apps with Giraffe, microservices with Saturn, or data pipelines with .NET, **use Ionide**. That role will not change.
 
-If you're building operating system kernels, [embedded unikernels](/blog/getting-to-the-heart-of-unikernels/), high-performance native applications, or related tooling, **use Lattice**.
+Lattice is being developed for Clef projects, including [embedded unikernels](/blog/getting-to-the-heart-of-unikernels/), native applications and heterogeneous targets. The first editor integration gates above are the starting point for that support.
 
 ---
 
 ## Unified Toolchain
 
-Lattice is a framework for a cohesive editing experience that brings Clef together with MLIR's dialect system and LLVM's optimization infrastructure. By integrating Clang and related LLVM tooling alongside native Clef semantics, it provides one environment for systems application development, compiling type-safe functional code to native, bare-metal binaries.
+Lattice is the editor-facing part of the Clef toolchain. Related tooling has its own responsibilities: BAREWire supplies the shared contracts for memory layout, IPC and network communication; platform libraries supply target declarations; binding generators supply foreign interfaces. The [tooling map](/docs/tooling/) connects those repositories. Each contributes to the developer experience through the facts CCS and Composer can establish.
 
 ---
 
@@ -155,9 +128,9 @@ Lattice is a framework for a cohesive editing experience that brings Clef togeth
 - [Lattice Vim](https://github.com/FidelityFramework/lattice-vim)
 - [Ionide](https://ionide.io/) (for .NET F# development)
 - [Composer Compiler](https://github.com/FidelityFramework/Composer)
-- [CCS](https://github.com/FidelityFramework/clef-lang) (Clef Compiler Services)
+- [CCS](https://github.com/FidelityFramework/clef) (Clef Compiler Services)
 
 ## See also
 
-- [Bridging Clef AutoComplete To The Fidelity Ecosystem](/docs/tooling/clef-autocomplete-integration/): how CAC extends the FSAC project-loader architecture to crack `.fidproj` TOML manifests and deliver IntelliSense for native Clef projects in VSCode and nvim.
+- [Earlier Clef AutoComplete integration](/docs/tooling/clef-autocomplete-integration/): the historical FSAC bridge proposal, retained as background to the current CCS-backed design.
 - [Opining Upon Reflection](/blog/opining-upon-reflection/): the case for why a PSG-backed language server is not a shadow model beside the sources, told for readers arriving from the .NET reflection mindset.

@@ -8,155 +8,137 @@ tags: ["Architecture", "Compilation", "JavaScript", "JSIR", "Design"]
 weight: 30
 ---
 
-Composer's JavaScript-targeting pipeline joins the same MLIR architecture as every other Clef target, established in [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/), with the verification properties that hold across it covered in [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/). The back-end emission changes on a schedule the rest of the toolchain does not: it moves from Fable plus npm bundlers today to JSIR plus MLIR later, while the .NET-hosted Composer host stays in place.
+The working F#/Fable path gives this design something valuable: programs, bindings and runtime tests we can use now. Composer's proposed JSIR backend would give Clef a different route to JavaScript through its own semantic graph and MLIR middle-end. The two efforts can inform each other without requiring F# users to migrate.
 
-[TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/) covers the ingestion side of the same transition. Ingestion via Xantham is durable; emission via Fable to JSIR is transitional.
+This page keeps the transition as a set of engineering waypoints. It does not describe a completed Composer backend: the specification's [JavaScript Substrate profile](/spec/draft/javascript-boundary/) is design-stage, with no conforming implementation yet. The [central worked example](../jsir-javascript-as-mlir-backend/#from-contract-to-emitted-artifact) gives the acceptance sequence that each new lowering should follow.
 
-## The Two-Path Reality
+## Two Models, Two Source Languages
 
-Two paths reach JavaScript from Composer's broader ecosystem. Both will continue to exist long-term. They serve different source languages.
+Fable compiles F# through its own intermediate AST and target transformations. Its JavaScript route produces Babel-shaped output and supports interop declarations, including `[<Emit>]` templates. The compiler is available as a [.NET tool](https://fable.io/docs/getting-started/your-first-fable-project.html); a project's optional Node-based bundler is a separate choice. Describing Fable as a Node-resident source walker without an IR misses both its implementation and its contribution.
 
-**The Fable path** serves F# users. F# source compiles through Fable, walking F#'s source AST, producing JavaScript via string-template emission with `[<Emit>]` attributes for binding-specific shapes. Fable is a Node-resident tool with deep transitive npm dependencies (the Fable compiler itself, plus whatever bundler the user chooses, plus that bundler's plugin ecosystem). The path is mature, production-tested, and the right answer for F# code today and indefinitely.
+Composer owns Clef's Program Semantic Graph. The proposed route carries its facts through Alex toward JSHIR/JSIR and JavaScript. Earlier drafts considered a separate JavaScript AST route that bypassed Alex. Moving the design into the MLIR fan-out offers a common place to express and check lowering obligations; it does not automatically prove those obligations.
 
-**The JSIR path** serves Clef users. Clef source compiles through Composer's MLIR pipeline, with Alex (the middle-end) witnessing PSG nodes against verification rules and emitting JSIR ops that lower to JavaScript via JSIR's `hir2ast,ast2source` reverse pipeline. JSIR is an out-of-tree MLIR dialect from Google (RFC April 2026), with full Babel AST round-trip fidelity and production scale at Google for adjacent uses (Hermes bytecode decompilation, deobfuscation, malicious code analysis).
+The difference is therefore the owner of the language semantics and preservation work. F# continues through Fable. Clef would use Composer. Both can target the same host APIs, and both can be checked against the same external contract where their source semantics overlap.
 
-The transition this document describes is **for Clef code**: from "Clef source bypasses Alex and emits JS through a Fable-like Oak-like AST" (the original architectural plan, prior to JSIR's release) to "Clef source flows through the same Alex middle-end as native targets, with JSIR as the JS-emission back-end." Fable continues unchanged for F# users. The change is in Composer's own JS-emission strategy for Clef.
+## What Fable Does Well, What Composer Needs to Add
 
-## What Fable Does Well, What It Structurally Constrains
+Fable preserves F# idioms through its intermediate representation, has a mature interop model and supplies years of useful implementation experience. Partas.Solid, WrenHello's WebView layer and FSharp.CloudEdge bindings make that experience relevant to this design. The existing BAREWire Fable target supplies byte-level examples and runtime tests immediately.
 
-Fable is the right answer for F# for a specific architectural reason. F#'s post-compile representation is .NET CLR IL, an IR designed around C#'s semantics (reified generics, sealed class hierarchies, boxing rules, structural variance). By the time F# source has been lowered to IL, the F# idioms (pipes, curried functions, discriminated unions as sealed types, pattern matching expanded into cascading type tests) have been translated into CLR-shaped constructs. A hypothetical IL-to-JavaScript compiler would be compiling the CLR, not F#. The F# source AST is the last representation where F# idioms are still visible as F# idioms, which is why Fable walks the source AST.
+Composer's additional work is specific:
 
-This is forced by F#'s representation pipeline, not a preference. Fable's architectural choices follow from where F# lives: it has no analogue to the stable, ML-preserving bytecode that OCaml provides for `js_of_ocaml`. Fable cannot adopt the IR-walking approach without first solving the problem of preserving F# idioms through some lower-level IR. That is not a small undertaking, and it is not what Fable was built for.
+- Carry its own dimensions, range facts, boundary grades and other obligations to the target operations that rely on them.
+- Characterize reusable binding-shape lowerings, including receiver binding, optional arguments, callbacks and failure behavior.
+- Establish preservation or re-checks at affected lowering edges, under [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering).
+- Meet the whole JavaScript boundary profile before claiming conformance, including generated narrowing and host-error conversion.
 
-What Fable does well in consequence:
-
-- **Source-AST fidelity**. F# constructs survive as F# constructs into the JS emission step. Pipes lower to JS chains; pattern matching lowers to switch chains; discriminated unions lower to tagged objects. The transformations are direct because the source AST is the input.
-- **Tactical escape via `[<Emit>]`**. When the JS shape doesn't have a clean F# analog, the developer writes a string template and Fable substitutes during compilation. This is a pragmatic accommodation that keeps Fable's architecture simple.
-- **Ecosystem maturity**. Fable has been production-shipping for years. Partas.Solid, WrenHello's WebView layer, and every existing F# Worker on Cloudflare via our Fidelity.CloudEdge library all run on Fable today. None of that needs to change.
-
-What Fable structurally constrains for the *Clef* targeting case:
-
-- **No shared middle-end**. Fable's pipeline is separate from Composer's MLIR pipeline. Verification passes written against Alex don't apply to Fable output. Dimensional consistency, escape classification, BAREWire schema derivation, and other middle-end properties either need to be reproduced in Fable's pipeline or accepted as not applying to Fable-compiled code.
-- **String-template emission for bindings**. Each `[<Emit>]` is a per-binding decision, written by hand, untyped at the JS-shape level. Fine for F# bindings; not the right model for the durable witnessing rules we want for the broader Clef binding effort.
-- **npm-resident**. Fable runs in Node. Bundlers that follow it (esbuild, vite, webpack, rollup) all run in Node with their own transitive dep trees. The npm supply-chain surface is large.
-
-These constraints are not Fable's fault. They are consequences of Fable serving F# in F#'s representation environment. For Clef, which has its own post-frontend representation under our Composer, the right architecture is different, and JSIR makes that different architecture available.
+An `[<Emit>]` template is an interop tool with a contract to test. A generated MLIR operation also has a contract to establish. Replacing one with the other changes where we can analyze and reuse that work; it does not remove the work.
 
 ## What JSIR Brings
 
-JSIR places JavaScript inside MLIR as a first-class dialect. The pipeline becomes:
+The proposed pipeline is:
 
 ```
-Clef source ──▶ PSG ──▶ Alex (MLIR middle-end) ──▶ JSIR ──▶ JavaScript
-                          │
-                          └──▶ LLVM ──▶ native binary
-                          └──▶ CIRCT ──▶ FPGA
-                          └──▶ MLIR-AIE ──▶ spatial accelerator
+Clef source → PSG → Alex / MLIR → JSHIR/JSIR → JavaScript
+                       ├──────→ LLVM → native binary
+                       ├──────→ CIRCT → FPGA
+                       └──────→ other declared targets
 ```
 
-JavaScript joins the same back-end fan-out as every other Clef target. The shared middle-end (Alex) carries dimensional annotations as PSG codata, escape classifications, BAREWire schema derivation, concurrency primitive validation, and other verification properties through to the point of JSIR emission. The JS path inherits whatever properties hold at the middle-end.
+The semantic metadata remains in PSG/codata through the reasoning and affected lowering edges that need it. It can be erased after those obligations are fulfilled. A common BAREWire derivation can select the same encoding for several backends, while each backend establishes that its operations implement that choice. The final payload stays untagged with respect to type, schema, dimension and proof metadata.
 
-What JSIR specifically provides:
+JSIR supplies operations and an analysis substrate, along with source regeneration. Its reported round-trip success is empirical fidelity, not a proof that Composer's serializer emits the right bytes. Upstream verification is also path-specific: AST conversion invokes MLIR verification, while the reviewed transformation runner disables pass-manager verification pending an IR fix. The [pinned upstream details](../jsir-javascript-as-mlir-backend/#boundary-2-lowering-fidelity) belong in the tool qualification, not in an assumption that every pass is verified.
 
-- **First-class witnessing rules**. Alex emits JSIR ops by characterized rules, not string templates. A binding declaration's elision is encoded as a witnessing rule that produces specific JSIR ops. The rule is verified by MLIR's pass infrastructure, and the same rule applies uniformly across every call site for that binding shape. `[<Emit>]`'s per-binding escape-hatch becomes per-shape-category systematic emission.
-- **Round-trip Babel AST fidelity**. JSIR maintains a nearly 1:1 mapping with Babel AST nodes, with 99.9%+ fidelity on round-trip conversion across billions of samples at Google. The JS that comes out parses identically to JS written by hand against the same shape.
-- **Shared verification with native targets**. Properties verified in Alex apply to the JS path because the JS path goes through Alex. BAREWire schema derivation produces both the native serializer (via LLVM) and the JS deserializer (via JSIR) from the same IR representation. Cross-substrate compatibility becomes a structural property of the compiler rather than a testing concern.
-- **No npm in the emission pipeline**. JSIR's emitter (`jsir_gen`) is a single binary. Composer invokes it as part of its MLIR back-end fan-out. No bundler chain, no plugin ecosystem, no transitive npm deps for the emission step. (Ingestion-side TypeScript Compiler API, used by Xantham, remains the only npm dependency in the binding-generation toolchain.)
+The proposed Library of Alexandria would collect reusable lowering rules and their contracts. A rule can then be applied across call sites whose premises it covers. That is a useful unit for tests and eventual proof work. Unknown shapes and external behavior still need explicit treatment.
 
-The distinction that matters is between dependencies that *ship* and dependencies that *build*. The shipped artifact carries no third-party runtime JavaScript: the Clef standard library compiles through the same pipeline as application code, so the running Worker has no `node_modules` and no transitive runtime graph that an un-guarded update could compromise. That is where the supply-chain exposure actually lives, and that is what the compile-through-IR approach removes. At build time the picture is different and deliberately so. We ingest Cloudflare's TypeScript surface through Xantham (which rides the TypeScript Compiler API, npm-resident), and we deploy through Cloudflare's own tooling. Those are build-time dependencies on Cloudflare's curated surface, not arbitrary third-party runtime code, and targeting Cloudflare at all requires them, since the platform itself is defined in TypeScript and deployed through npm tooling. We keep that build-time surface minimal and at arm's length. We do not claim to eliminate it. The claim is narrower and sturdier than "no npm": no third-party JavaScript runs in the shipped artifact.
+## Direct Tools and the Supply Chain
 
-The witnessing-rule model enables our Library of Alexandria, the curated catalog of TS-shape-to-JSIR-op witnessing rules, to grow as more libraries are bound, with each rule verified once and applied uniformly thereafter. Fable's `[<Emit>]` doesn't compose this way. Each binding stands alone.
+A direct `jsir_gen` invocation can reduce the orchestration needed for one emission stage. It is still a tool built from dependencies: the reviewed upstream embeds Babel and QuickJS. Removing a Node launcher does not remove those implementations from the trust base. The exact revision also matters: current upstream spells the routes `source2ast,ast2jsir` and `jsir2ast,ast2source`, while the April checkout used `ast2hir` and `hir2ast`. [Pinned driver](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_gen.cc), [embedded dependencies](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/quickjs_babel/BUILD).
+
+The artifact's runtime dependencies are another question. Type-only declarations for a host API need not ship JavaScript. A wrapper SDK can ship substantial behavior in the bundle, even when there is no `node_modules` directory at runtime. Bindings describe that code; they do not absorb or verify it. [Fully Informed Bindings](../fully-informed-bindings/) separates host surfaces, wrapper libraries and management clients.
+
+Build dependencies also matter because they can change emitted bytes. The useful supply-chain contract records tools, input packages, generated artifacts and the transitive code actually shipped, with pins and reproducible provenance where available. NuGet, npm and a native binary are packaging choices, not trust proofs. Xantham's compiler transport and the deployment client should be described from the chosen configuration rather than treated as an unavoidable npm runtime chain.
 
 ## Composer as .NET Host Across the Transition
 
-Composer is a .NET-hosted compiler. JSIR integrates into Composer as an MLIR dialect Composer's back-end fan-out invokes. The .NET host persists across the transition described in this document. The transition is *within* the .NET-hosted Composer environment, not an exit from it.
+Composer's .NET host can invoke native MLIR tooling; adopting a JavaScript dialect does not require changing that host. The planning split is:
 
-Concretely:
+| Component | Working reference or present role | Proposed Clef path |
+|---|---|---|
+| Compiler host | Fable and Composer have .NET tooling | Composer remains .NET-hosted |
+| F# JavaScript compilation | Fable's own IR and target transforms | Continues independently |
+| Clef JavaScript compilation | Backend design and implementation work | PSG → Alex → JSHIR/JSIR with preservation evidence |
+| Bindings | Xantham analysis and F# generation | A Clef consumer plus matching boundary and lowering metadata |
+| Bundling and deployment | Selected per application and host | Selected per emitted imports and deployment contract |
 
-| Component | Today | Mid-transition | Mature |
-|:----------|:------|:---------------|:-------|
-| Composer compiler host | .NET | .NET | .NET |
-| Front-end (Clef parser, type system) | Composer (.NET) | Composer (.NET) | Composer (.NET) |
-| Middle-end (PSG, Alex, MLIR pipeline) | Composer (.NET hosting MLIR via interop) | Same | Same |
-| JS back-end | (Clef paths bypass Alex, emit Oak-like JS AST directly; or Fable for F# code) | Both: existing path remains; first JSIR lowering passes added | JSIR via MLIR; Oak-like bypass retired for Clef |
-| F# JS back-end | Fable (Node, npm) | Fable (unchanged for F# users) | Fable (continues for F# users) |
-| Bundlers | npm bundlers (esbuild/vite/webpack/rollup) | npm bundlers (for Fable output); Composer-emitted JS is bundle-ready | Composer emits self-contained or directly bundleable JS; npm bundlers used only for Fable F# output |
-
-The .NET host is constant. NuGet's curated package ecosystem remains the dependency model for Composer itself. MLIR/LLVM tooling (C++) continues to be invoked from the .NET host through Composer's existing MLIR integration. The npm-resident pieces (Fable + bundlers) phase out for the Clef-emission path. They continue to serve F# users on the parallel Fable path.
-
-This is the persistent shape for the planning horizon, months through end of year and beyond. Self-hosting Composer in Clef itself is a far-longer-term consideration that is **out of scope for this document.** The transition arc described here ends at "Composer is .NET-hosted, JSIR is the canonical Clef JS back-end, Fable continues for F# users."
+Self-hosting Composer is outside this transition. The intended destination is a supported Clef JavaScript backend alongside the F# ecosystem, with dependencies and conformance claims stated precisely.
 
 ## The Transition Arc as Waypoints
 
-Five waypoints, each with a clear state, a clear what's-true, and a clear what's-next:
+These are acceptance milestones rather than a release calendar. Upstreaming JSIR into MLIR is not a prerequisite for a pinned, out-of-tree experiment.
 
-### Waypoint 1: Today (May 2026)
+### Waypoint 1: The Working Reference Path
 
-**State.** Composer ships with the original JS-emission plan (PSG bypasses Alex, emits via an Oak-like JS AST). Fable serves F# users via a separate pipeline. Fidelity.CloudEdge ships F# bindings produced by Xantham + Xantham.Generator, compiled to JS by Fable.
+**State.** F# libraries and applications compile through Fable. FSharp.CloudEdge and BAREWire provide useful API and runtime test material. Composer's JSIR path remains proposed work.
 
-**What's true.** Production F# Worker code runs on Cloudflare today via this path. The Xantham analysis substrate is in active development, with encoder and decoder stabilizing toward 1.0 (see [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/) for the analysis-side details). Composer's JS-emission path for Clef code is not a focus of current investment.
+**What this gives us.** A corpus of concrete behaviors: property access, class imports, callbacks, optional values, asynchronous calls and exact bytes. A passing corpus is evidence for those cases, not a declaration that all bindings are correct.
 
-**What's next.** JSIR's MLIR upstream merge progresses. The first JSIR-targeted lowering pass from Alex is prototyped. The deterministic Fable output produced by today's F# bindings becomes the **executable specification** for what the eventual JSIR pipeline must produce. Every shipping binding seeds the witnessing-rule library for the future path.
+**Next gate.** Pin tools and inputs, lift a small Worker-shaped program, regenerate source and run its original assertions. Record unsupported constructs and discrepancies against the API contract.
 
-### Waypoint 2: Stabilized current path
+### Waypoint 2: A Reproducible Reference Corpus
 
-**State.** Xantham 1.0 published. Open issues (decoder MISSREF behavior, package-boundary metadata, lib.es policy) closed upstream. Fidelity.CloudEdge regenerates bindings against multiple Cloudflare SDK packages mechanically. Fable output is deterministic across regenerations.
+**State to earn.** Binding regeneration, compiler execution and runtime assertions are reproducible for a documented set of packages and shapes. Cases include negative and boundary behavior, not only successful compilation.
 
-**What's true.** The F#/Fable path is fully stable. Bindings are in production. Pattern characterization data accumulates as a side-effect of normal binding work. Every TS shape that gets bound is documented in Fable's deterministic output, which serves as the oracle for the rule library.
+**What this gives us.** An executable reference that can expose a changed import, lost argument or incorrect receiver. A discovered defect in the reference is corrected against the host and source-language contracts, not adopted as the desired behavior.
 
-**What's next.** JSIR upstream in MLIR (or Composer absorbs the dialect from Google's repo in advance of upstream merge). Composer adds MLIR build infrastructure to consume JSIR. First Alex → JSIR lowering pass written for a single binding shape (a let-binding, a function definition).
+**Next gate.** Select one Clef operation and give its lowering an explicit contract and premises. Use the [shared acceptance sequence](../jsir-javascript-as-mlir-backend/#from-contract-to-emitted-artifact), without treating a textual match as success.
 
-### Waypoint 3: JSIR pipeline standup
+### Waypoint 3: One Supported JSIR Lowering
 
-**State.** Composer's MLIR back-end fan-out includes JSIR as a target alongside LLVM/CIRCT/MLIR-AIE. Initial witnessing rules characterized empirically against the Fable-compiled JS oracle for foundational shapes (Promise-returning function, async/await, basic class declaration, simple discriminated union). The Library of Alexandria starts as a small set of these foundational patterns.
+**State to earn.** A simple Clef operation reaches JavaScript through Composer, with an identified source obligation, a target operation and preservation or re-check evidence at the affected edges.
 
-**What's true.** A simple Clef program targeting JS compiles through the unified pipeline (PSG → Alex → JSIR → JavaScript) with the same MLIR pass infrastructure that produces native code for other targets. The verification properties documented in [design-time-spec-runtime-reliability.md](../design-time-spec-runtime-reliability/) start applying to Clef-emitted JS.
+**What this gives us.** A bounded supported subset, backed by structural checks and execution tests. It does not yet confer the entire JavaScript Substrate profile.
 
-**What's next.** The TypeScript-binding generator that produces Clef extern declarations + matching Alex witnessing metadata begins. This consumes Xantham's analysis output (no change required to Xantham itself) and produces the matched-pair artifacts that the JSIR pipeline knows how to elide. The first Cloudflare SDK gets bound through this new path as a proof-of-concept (likely the smallest surface, `dynamic-workflows`, given its size).
+**Next gate.** Extend to foundational binding operations, such as a Promise-returning call, a class method and an inbound callback. Add narrowing and typed failure handling together with the successful path.
 
-### Waypoint 4: First Clef-native bindings
+### Waypoint 4: First Clef-Native Bindings
 
-**State.** Both binding pipelines are functional. F# bindings continue via Xantham → Xantham.Generator → Fable for existing F# users. New Clef code uses Xantham → Clef-binding generator → matched (Clef declaration + Alex witness) pairs → Composer's JSIR back-end → JavaScript. Fidelity.CloudEdge stays on the F# path; new Clef-native projects (or new modules in evolving projects) adopt the JSIR path.
+**State to earn.** A Clef binding generator consumes declaration analysis and produces matching boundary metadata and lowering rules for a selected SDK surface. F# generation continues independently.
 
-**What's true.** The JSIR path produces JavaScript that runs on Cloudflare Workers identically to Fable's output for the same TS surface. Cross-substrate guarantees (our BAREWire byte-identity between native and edge actors) remain intact structurally because both serializers derive from the same Alex IR. The witnessing rule library covers the shape categories the bound Cloudflare SDKs use.
+**What this gives us.** Two implementations that can be compared for the agreed observable contract. BAREWire byte compatibility is tested and connected to the common encoding obligations; it is not inferred solely from their shared origin.
 
-**What's next.** Additional libraries get bound via the new path. D3 (chained-method-builder pattern), SolidJS (reactive primitives), TanStack Solid family (factory-with-options pattern). Each library characterizes new patterns or reuses existing ones. The Library of Alexandria matures with each round.
+**Next gate.** Grow the shape inventory through additional libraries and operation families, retaining explicit unknowns and package provenance. A `.d.ts` signature alone cannot supply a library's effect, persistence or lifecycle semantics.
 
-### Waypoint 5: JSIR canonical for new Clef code; Fable continues for F# code
+### Waypoint 5: A Supported Clef JavaScript Backend
 
-**State.** Composer's JSIR back-end is the default JS-emission path for Clef. Witnessing rule library is sufficiently mature that binding new TypeScript libraries is mechanical pattern-classification rather than per-library design. Fable continues to serve F# code, including the existing Fidelity.CloudEdge surface (which transitions name to FSharp.CloudEdge under fsprojects community maintenance, per the rename anticipated in [JSIR doc § "What Does Not Change"](../jsir-javascript-as-mlir-backend/#what-does-not-change)).
+**State to earn.** Composer supports the documented target and operation set, and satisfies the full requirements of any profile it claims. Lowering evidence and runtime gates cover the emitted artifacts and dependency closure.
 
-**What's true.** Two ecosystems coexist permanently. F# source through Fable to JS for the F# community. Clef source through Composer + JSIR to JS for the Clef community. Both produce V8-acceptable JavaScript that runs on the same Cloudflare runtime. They share Xantham as the analysis substrate when binding TypeScript surfaces (one consumer each), they share BAREWire as the wire format when actors communicate cross-substrate, and they don't compete.
+**What this gives us.** Clef and F# programs can coexist on the same hosts. Fable remains the F# route; Composer owns the Clef route. They can share BAREWire endpoint contracts without embedding type or proof metadata in final payloads.
 
-**What's next.** Further consolidation as the rule library asymptotes. New JS libraries get bound by classification. The IDE-side coordination layer (Atelier's [Transcribe](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md)) extends binding generation into interactive design-time workflows. That's the territory beyond this document's planning horizon.
+**Next gate.** Expand through measured demand. New rules, SDKs and host features bring their own acceptance obligations; a mature library of rules does not make arbitrary JavaScript behavior decidable.
 
 ## What Each Path Owns at Maturity
 
-At Waypoint 5, the responsibility split is clean:
+- **Fable** owns its F# translation and runtime representation choices.
+- **Composer** owns Clef's semantics, narrowing and preservation through its target lowerings; **JSIR** supplies the JavaScript IR infrastructure it uses.
+- **Xantham** supplies declaration analysis to binding consumers; declarations remain claims about foreign interfaces.
+- **BAREWire** connects memory, IPC and network contracts through explicit representations and untagged final payloads.
+- **Conclave** supplies the Cloudflare platform design; **Cloudflare and shipped libraries** supply the external implementations and host contracts on which execution depends.
 
-- **Fable owns**: F# source language, F# idiom translation, F# user community, existing `[<Emit>]`-based binding patterns, integration with the F# / .NET tooling ecosystem.
-- **Composer + JSIR owns**: Clef source language, Clef → MLIR lowering through Alex, the witnessing rule library (the Library of Alexandria), JSIR-based JS emission, integration with the broader MLIR ecosystem (LLVM/CIRCT/MLIR-AIE for non-JS targets).
-- **Xantham owns**: TypeScript surface analysis (consumed by both paths' binding generators).
-- **Cloudflare owns**: the runtime contract for V8 isolate execution. Both paths produce JS that targets that contract; Cloudflare's stability commitments apply uniformly.
+## Fable Output as an Executable Reference
 
-At the source-language level, Fable and JSIR are *suited to different source languages*. The architectural decision was forced by F#'s representation environment for Fable and enabled by Clef's representation environment for JSIR.
+A TypeScript declaration, Fable output and Composer output have different roles. The declaration describes the foreign surface. The Fable program is one implementation of an application using it. The Composer program would be another. Correctness is agreement with the source and boundary semantics over admitted inputs, not equality of emitted JavaScript text.
 
-## The Fable Output as Executable Specification
+For a supported operation, compare the observations that matter: results and exact bytes, errors and rejected inputs, mutations and object identity, receiver binding, property reads with effects, callback arguments, and promise completion order. Numeric cases need their selected contract, including wide integers, rounding, `NaN` and signed zero where observable. A test need not cover every category, but the chosen contract must say which it covers.
 
-Our current Fidelity.CloudEdge work (every binding shipped, every bug fixed in Xantham, every encoder/decoder issue closed) produces deterministic Fable-compiled JavaScript output. That output is the **specification** for what the JSIR pipeline must produce when binding the same TypeScript surface through the Clef path.
+Lifting both outputs to JSHIR and normalizing can make a difference easier to inspect. It does not establish semantic equivalence by itself. Normalization must preserve evaluation order, effects, scope and the observations under comparison. If one implementation erases an `Option` and the other reifies it, an explicit representation relation must distinguish `None`, `Some` of an absence-like host value and nested options. Collapsing them in a comparison would hide a bug. The [option representation specification](/spec/draft/option-operations-representation/) governs the proposed Clef path.
 
-The current production work outlives the transition: it is the executable oracle that the JSIR pipeline characterizes its witnessing rules against. A Clef-emitted JS file produced by JSIR + the witnessing rule library should match the corresponding Fable-emitted JS file (or differ in well-understood ways: cleaner syntax from MLIR's pass infrastructure, but semantically equivalent). The comparison itself runs in JSHIR space: both outputs lift through JSIR's forward pipeline and normalize, so equivalence is judged on the IR and survives the formatting and naming differences that make textual comparison brittle. One difference between the paths is structural rather than cosmetic: Fable erases `Option` by convention, `None` as undefined with documented edge cases at nested options, while the Clef path erases by proof, per site, reifying where nesting is possible. The normalization treats the two representations as equivalent, and [The Foreign Pair](/docs/design/javascript-targeting/the-foreign-pair/) gives the absence discipline in full. [Fully Informed Bindings](/docs/design/javascript-targeting/fully-informed-bindings/) covers the instrument, and the wider measurement discipline it belongs to.
-
-The pattern is familiar from compiler bootstrapping. js_of_ocaml's test corpus serves the same role for OCaml's JS compilation. LLVM's reference test suite serves the same role for native compilation. Composer's JSIR pipeline gets the same kind of corpus by virtue of Fidelity.CloudEdge shipping F# bindings on the existing path.
-
-This reframes Fidelity.CloudEdge work strategically: every binding shipped today both delivers production value *and* characterizes a pattern for tomorrow's pipeline. The two roles are simultaneous, not sequential.
+This is familiar compiler engineering: a reference corpus supplies examples and regression gates, while the semantic contract and preservation argument explain what correctness means beyond those examples. The js_of_ocaml and Fable precedents give us useful implementations to study. Every binding tested today can deliver value now and sharpen tomorrow's lowering contract.
 
 ## Cross-references
 
-- [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/): the underlying MLIR architecture
-- [Fully Informed Bindings](../fully-informed-bindings/): the ingestion-side counterpart of this transition, joining Xantham's declared surface with the JSIR lift's measured body
-- [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/): what verification properties apply across both paths
-- [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/): the analysis substrate consumed by both binding pipelines (companion to this document)
-- [Library Binding for C/C++](../../interop/library-binding/): Farscape's pattern, structurally analogous to what TS binding does for the JS target
-- [Atelier docs/10_transcribe.md](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md): the polyglot IDE-side ingestion layer that consumes per-language analysis substrates (Xantham for TS, Farscape for C/C++, others)
-- [Fidelity.CloudEdge docs/12](https://github.com/speakeztech/Fidelity.CloudEdge/blob/main/docs/12_xantham_glutinum_replacement_assessment.md): the operational binding migration providing the executable specification for tomorrow's JSIR pipeline
+- [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/): architecture, pinned upstream scope and the worked acceptance sequence
+- [Fully Informed Bindings](../fully-informed-bindings/): declared interfaces, implementation analysis and bounded comparison
+- [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/): current checks and proposed preservation work
+- [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/): declaration analysis
+- [Library Binding for C/C++](../../interop/library-binding/): the native binding counterpart
+- [Atelier Transcribe](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md): the proposed design-time ingestion layer

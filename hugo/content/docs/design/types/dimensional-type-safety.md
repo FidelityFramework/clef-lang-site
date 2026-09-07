@@ -11,27 +11,15 @@ params:
   migration_date: 2026-02-15
 ---
 
-When the Mars Climate Orbiter burned up in the Martian atmosphere on September 23, 1999, it wasn't because of faulty sensors or software bugs in the traditional sense. The spacecraft's navigation software expected metric units while Lockheed Martin's ground software provided imperial[^1]. A simple dimensional mismatch, caught by neither compiler nor testing, destroyed a $327 million mission. This wasn't an isolated incident but a recurring pattern across safety-critical systems that the Ada programming language community had been working to prevent since the early 1980s[^2].
+The Mars Climate Orbiter investigation traced the loss to a mismatch between ground software producing thrust data in pound-force seconds and navigation software expecting newton-seconds[^1]. The numbers crossed the interface, but their intended meaning did not. A dimensional contract must connect the producer and consumer to catch that error. Naming the quantities in comments is insufficient when the interface accepts the same unqualified number on both sides.
 
-Thirty years later, we are building our Fidelity framework toward a design goal: **the same Clef source code can target CPUs, GPUs, NPUs, FPGAs, and CGRAs**. This is a design consequence of choices we made when we hard-forked the F# compiler to create **Clef**. We integrate units of measure as a compiler intrinsic rather than a library feature. As Ada and VHDL demonstrated decades ago, dimensional type safety does more than catch unit conversion errors. It is the foundation for expressing programs in ways that translate between control-flow and dataflow execution models.
+We are building our Fidelity framework toward a design goal: **the same Clef source code can target CPUs, GPUs, NPUs, FPGAs, and CGRAs**. This is a design consequence of choices we made when we hard-forked the F# compiler to create **Clef**. We integrate units of measure as a compiler intrinsic rather than a library feature. As Ada and VHDL demonstrated decades ago, dimensional type safety does more than catch unit conversion errors. It preserves quantity identity while the compiler analyzes the control-flow and dataflow requirements of a target.
 
-## A Note for .NET Developers: Why Clef Exists
+## Hosting and Native Semantics
 
-F# developers familiar with the .NET ecosystem will ask a natural question: **Why fork the F# compiler?**
+Our Clef Compiler Service is hosted in .NET while we develop the native language and its toolchain. That hosting arrangement provides an implementation environment. Clef's source contracts and native representations are specified independently of the host's conventions.
 
-The answer is not that we wanted to abandon .NET or create a competing ecosystem. The .NET runtime is well suited to managed execution with garbage collection, cross-platform deployment, and a rich standard library. For many F# applications, .NET is the right target. We use it daily as the basis of our bootstrapping for the Composer compiler.
-
-But Clef serves a different purpose. Our goal with the Fidelity framework is to compile Clef to native code for scenarios where:
-
-- **No runtime dependencies** are acceptable (embedded systems, CPU and GPU "on the metal")
-- **Deterministic memory behavior** is required (real-time systems, AI, HPC)
-- **Non-Von Neumann architectures** are the target (FPGAs, CGRAs, spatial accelerators)
-
-These requirements conflict with the assumptions baked into IL (Intermediate Language) and the CLR. IL assumes garbage collection. It assumes a sequential, Von Neumann execution model. It assumes reference semantics with managed heap allocation.
-
-To target the full spectrum of modern compute architectures, we needed a compilation path that preserves semantic information all the way down to hardware, information that IL necessarily erases. This is not a criticism of .NET. Different targets require different compilation strategies.
-
-**Clef is not a replacement for .NET**. It's a transformation of Clef's semantic richness into a form that can flow through MLIR to diverse backends. The same Clef language, the same developer experience, but with a compilation path designed for native and hardware targets from the ground up. This means that the normal idioms that a .NET developer might expect will diminish with native Clef patterns. We don't have nulls (we use voption everywhere). We don't have BCL norms. And most salient here, we don't have FSharp.UMX as a separate library. It's built right into the Clef core.
+Our Fidelity framework targets programs that need explicit memory placement and hardware execution beyond managed IL. The [Native Type Universe](/spec/draft/ntu-types/) carries source kind and dimension. The PSG retains the facts needed for representation selection and later lowering. This is also why Clef tooling must report Clef dimensions, constraints, and proofs rather than interpret the program through F# defaults.
 
 ## The Dimensional Safety Imperative
 
@@ -45,11 +33,9 @@ Consider three execution models:
 
 3. **Dataflow (FPGA/CGRA)**: Computation is spatially organized. Data flows through configured logic blocks or reconfigurable processing elements. There is no "instruction pointer" - operations fire when their inputs are available. The parallelism a CPU gives up by imposing an instruction pointer on this kind of work is what [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) measures, reading the memory space and access pattern these same dimensional types make explicit.
 
-Traditional type systems work well for sequential execution. Rust's ownership model, for instance, provides memory safety by tracking when values can be read or written. But ownership assumes a Von Neumann model with linear memory access patterns. As we noted in [The Abstract Machine Model Paradox](/blog/abstract-machine-model-paradox/):
+Ownership and dimensional identity describe different properties. Ownership tracks permitted uses and sharing of a resource. A dimension identifies the kind of quantity, such as length or duration. Both can matter in a parallel or spatial program.
 
-> "Rust's ownership model fundamentally assumes von Neumann architecture with linear memory. There's no 'owner' of a signal propagating through configured logic blocks."
-
-This is where dimensional type safety becomes essential. **[Units of measure](/spec/draft/units-of-measure/) express constraints that are orthogonal to execution model**. Whether a value is processed sequentially, in parallel, or through spatial dataflow, its dimensional properties remain invariant. A `float<meters>` is still a length measurement regardless of how it's computed.
+Clef's [units of measure](/spec/draft/units-of-measure/) retain their algebraic identity across execution models. A `float<meters>` remains a length when a CPU instruction, a GPU kernel, or a synthesized arithmetic unit computes it. The compiler still needs separate evidence for memory access, scheduling, and target capabilities.
 
 ## Historical Foundations: Ada's Lesson
 
@@ -66,67 +52,34 @@ distance_m : Meters := 100.0;
 distance_f : Feet := distance_m;  -- COMPILE ERROR: type mismatch
 ```
 
-This approach caught real bugs in real systems. The Boeing 777, developed in the 1990s with Ada as its primary avionics language, achieved unprecedented software reliability. The derived type system meant that mixing metric and imperial units - the exact bug that doomed Mars Climate Orbiter - would be reliably caught at compile time.
+The derived types make this implicit assignment between `Meters` and `Feet` a type mismatch. Carry those distinct types across a producer-consumer interface, and the compiler can expose the disagreement before execution. The interface then states the units its caller must supply.
 
-But Ada's approach had limitations. The types are distinct but not parameterized - you can't write generic code that works with "any length unit" while preserving dimensional correctness. And critically for our purposes, Ada's type system was designed for sequential execution on conventional processors.
+Ada's derived types establish distinct nominal identities, and its generics can abstract over types. The derived-type mechanism is distinct from the Abelian-group equations used by Clef for products, quotients, and measure polymorphism: Ada's [derived-type rules](https://www.adaic.org/resources/add_content/standards/05aarm/html/AA-3-4.html) are a precedent for preserving semantic identity, while its generics provide a separate abstraction mechanism.
 
 ## VHDL
 
-VHDL (VHSIC Hardware Description Language) emerged from the same DoD initiative as Ada, standardized as IEEE 1076 in 1987 for hardware description[^3]. It inherited Ada's type safety philosophy but extended it for a fundamentally different execution model: **concurrent dataflow**.
+VHDL (VHSIC Hardware Description Language) emerged from the same DoD initiative as Ada, standardized as IEEE 1076 in 1987 for hardware description[^3]. It inherited Ada's type safety philosophy but extended it for a different execution model: **concurrent hardware semantics**.
 
-In VHDL, the basic unit of computation is the signal assignment, which models physical signal propagation through hardware:
+VHDL separates physical quantities from unadorned numbers. A physical type declares a base unit, a range in that unit, and optional scaled units. For example, this declaration expresses distance in micrometres:
 
 ```vhdl
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
-entity dimensional_example is
-    port(
-        clk : in STD_LOGIC;
-        distance_meters : in REAL;    -- Physical type
-        time_seconds : in REAL;       -- Physical type
-        velocity_result : out REAL    -- Must be meters/second
-    );
-end dimensional_example;
-
-architecture behavioral of dimensional_example is
-    -- VHDL supports physical types with dimensional checking
-    type distance is range 0 to 1000000
-        units
-            nm;           -- nanometers (base unit)
-            um = 1000 nm;
-            mm = 1000 um;
-            m = 1000 mm;
-            km = 1000 m;
-        end units;
-
-    type time_unit is range 0 to 1000000
-        units
-            fs;           -- femtoseconds (base unit)
-            ps = 1000 fs;
-            ns = 1000 ps;
-            us = 1000 ns;
-            ms = 1000 us;
-            s = 1000 ms;
-        end units;
-begin
-    -- Concurrent signal assignment (dataflow semantics)
-    velocity_result <= distance_meters / time_seconds;
-end behavioral;
+type distance is range 0 to 1000000
+    units
+        um;
+        mm = 1000 um;
+        cm = 10 mm;
+    end units;
 ```
 
-VHDL's type system serves **two purposes simultaneously**:
+That type-level quantity information is distinct from the representation selected by a particular implementation or foreign interface. For example, [GHDL's foreign-interface documentation](https://ghdl.github.io/ghdl-cosim/vhpidirect/declarations.html#restrictions-on-type-declarations) specifies a 64-bit representation for physical types. That documents one implementation boundary. Clef quantities follow their own target declarations.
 
-1. **Correctness**: Catching dimensional errors at "compile" time (synthesis)
-2. **Synthesis guidance**: Informing the hardware synthesizer about signal properties
+The physical type must be used on the quantity being checked. A signal declared as `distance` carries that contract, while one declared merely `REAL` remains an unadorned number even if its name contains “meters.” Clef extends the quantity-based approach with Kennedy-style product and quotient inference under its [units-of-measure algebra](/spec/draft/units-of-measure/). That inference supplies relationships beyond VHDL's physical-type declarations.
 
-When VHDL code is synthesized to an FPGA, the physical types don't just prevent bugs - they guide the synthesizer in generating efficient hardware. The dimensional information flows through synthesis to affect routing, timing, and resource allocation.
-
-This is precisely the pattern we're implementing in the Fidelity framework: **dimensional types that serve both correctness and code generation purposes**.
+Ada and VHDL provide architectural precedents for keeping quantity identity, legal ranges, and implementation constraints explicit. Clef combines that discipline with Kennedy-style measure inference and carries the resulting constraints into the PSG. The range and the selected representation are later coeffects, governed by [Width Inference](/spec/draft/width-inference/) and [Numeric Selection](/spec/draft/numeric-selection/). Hardware synthesis requires a target realization with validated routing, timing, and resource allocation.
 
 ## FSharp.UMX
 
-Before discussing our intrinsic implementation, we must acknowledge the work that made it possible. **FSharp.UMX**, created by Eirik Tsarpalis in 2019[^4], demonstrated that F#'s units of measure could be extended beyond numeric types through clever use of the type system.
+**FSharp.UMX**[^4] demonstrates a useful extension of F# units of measure to primitive non-numeric types. Our Fidelity design draws on that precedent.
 
 F# has supported units of measure since 2008, based on Andrew Kennedy's academic work on dimensional analysis in ML-family languages[^5]:
 
@@ -152,7 +105,7 @@ let processCustomer (id: CustomerId) =
     ...
 ```
 
-This approach works within standard F# and .NET. It provides non-numeric dimensional safety through the existing type system. For .NET applications, FSharp.UMX is an excellent solution.
+This approach works within standard F# and .NET. It provides non-numeric dimensional safety through the existing type system. It operates within the F# compiler and .NET representation model.
 
 **Our Fidelity framework owes a conceptual debt to FSharp.UMX** for demonstrating that units of measure extend beyond numerics.
 
@@ -160,29 +113,29 @@ This approach works within standard F# and .NET. It provides non-numeric dimensi
 
 ## Beyond Library to Intrinsic
 
-In Clef and our Fidelity framework, we have integrated non-numeric units of measure as a **compiler intrinsic** rather than a library feature. This distinction matters for code generation.
+Clef specifies measured values as part of its native type universe, including non-numeric carriers. A measured identifier should retain its identity when passed through a function or stored in a collection, just as a measured force does during arithmetic. The source kind and dimension must survive until the relevant representation and preservation obligations have been established.
 
-When units of measure are a library feature (as in FSharp.UMX on .NET), the compiler treats them as phantom types that are erased before code generation. The runtime sees no trace of the dimensional information - it exists purely for type checking.
+The distinction from the .NET path is when and how the information is released. A library can use the F# compiler's measure checking while the runtime carries only the underlying representation. Clef needs its dimensional facts available to the native analysis that establishes layout and lowering constraints.
 
-When units of measure are a compiler intrinsic (as in Clef), the dimensional information flows through the **entire compilation pipeline**:
+Our intended native path retains those facts through the stages that need them:
 
 ```
-Clef Source → Clef → PSG → Alex → MLIR → LLVM/Hardware Backend
+Clef Source → CCS → PSG → Alex → MLIR → Target Backend
                 ↑                    ↑
           Units preserved      Units inform
           in type checking     code generation
 ```
 
-This means dimensional constraints can influence:
+Dimensions participate alongside other constraints in:
 
-- **Memory layout decisions**: A `Ptr<byte, Peripheral, ReadOnly>` has different allocation semantics than `Ptr<byte, Stack, ReadWrite>`
-- **MLIR dialect selection**: Tensor operations with dimensional constraints can target different dialects (linalg, vector, gpu)
-- **Hardware synthesis**: When targeting FPGAs, dimensional information can guide resource allocation and pipelining
+- **Memory layout decisions**: Region and access constraints distinguish peripheral access from writable local storage
+- **MLIR dialect selection**: Shape, effects, and target capabilities determine available tensor lowerings
+- **Hardware synthesis**: Established ranges and selected layouts constrain hardware resource requirements
 
 Consider how this works for [memory regions](/spec/draft/memory-regions/#region-typed-pointers):
 
 ```fsharp
-// In Clef, this is intrinsic to the type universe
+// Conceptual region/access contract; the platform declares physical layout
 type Ptr<'T, 'Region, 'Access>
 
 [<Measure>] type Peripheral
@@ -192,26 +145,26 @@ type Ptr<'T, 'Region, 'Access>
 [<Measure>] type ReadWrite
 
 // These constraints flow through compilation
-let gpioReg : Ptr<uint32, Peripheral, ReadWrite> = ...
-let flashData : Ptr<byte, Flash, ReadOnly> = ...
-let localBuffer : Ptr<float32, Stack, ReadWrite> = ...
+let gpioReg : Ptr<int, Peripheral, ReadWrite> = ...
+let flashData : Ptr<int, Flash, ReadOnly> = ...
+let localBuffer : Ptr<float, Stack, ReadWrite> = ...
 
-// The compiler can verify at every stage:
+// Required checks for an applicable target realization:
 // - Peripheral access uses appropriate memory barriers
 // - Flash reads don't attempt writes
 // - Stack allocations have appropriate lifetime
  
 ```
 
-The critical point is **when** these constraints are erased. In .NET, phantom types disappear before code generation - they exist only for type checking. In Clef, dimensional constraints are preserved through the Program Semantic Graph (PSG), carried through MLIR generation, and available for target-specific optimization. They're only erased at the final lowering stage, **after** all compilation decisions that can benefit from them have been made. On a microcontroller, the same carried constraints are what put a memory barrier at a peripheral access and keep a flash read read-only, [worked through for the MCU targets](/docs/internals/hardware/fidelity-on-mcu/). This is one instance of a discipline the compiler holds to everywhere, that [information it establishes is not discarded in lowering](/docs/design/structure-and-performance/information-is-not-discarded/). Dimensions are carried for the same reason arity and closure lifetimes are. This is what we mean by "intrinsic" - the dimensional information is woven into the compiler's representation at every level where it can inform code generation. It's ***also*** among the reasons why we gave our framework the name "Fidelity".
+Our PSG carries dimensional identity together with the distinct region, access, and range facts used by lowering. A peripheral access needs the platform's memory contract, including any required ordering. A read-only view restricts writes. Those facts cannot be fabricated from a quantity's unit name. [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering) permits a source type representation to be released once its structural purpose has been served, provided the properties still needed below that edge are preserved or re-checked. Different backends may reach that boundary at different stages.
 
 ## The SSA Bridge
 
-The Fidelity framework's multi-architecture targeting rests on a fact from compiler theory. It's not new - Andrew Appel demonstrated it in 1998[^6] - but its implications for dimensional types have been underappreciated:
+Appel's account of SSA and functional programming[^6] provides a useful correspondence between SSA bindings and lexically scoped function parameters. It helps expose value dependencies across a control-flow graph.
 
-> **Static Single Assignment (SSA) form is mathematically equivalent to functional programming.**
+> SSA makes each value definition explicit and represents control-flow joins through value parameters or phi functions.
 
-The equivalence is well-known in compiler theory, and it follows that **any program in SSA form can be viewed as either control-flow or dataflow**.
+That representation supports dataflow analysis, while the graph still carries control dependencies and effects. A hardware realization must account for both.
 
 Consider a simple loop:
 
@@ -242,14 +195,14 @@ exit:
     return sum
 ```
 
-The phi (phi) functions at loop headers express data dependencies. **This SSA representation is simultaneously**:
+The phi functions at loop headers express data dependencies. **This SSA representation is simultaneously**:
 
 1. A control-flow graph (basic blocks connected by branches)
 2. A dataflow graph (values flowing through phi functions and operations)
 
 The dimensional constraints (`<meters>`) are preserved throughout. `sum`, `sum_next`, and `val` all carry the `meters` dimension. The phi function's type is `float<meters>`, ensuring dimensional consistency across loop iterations.
 
-**This duality is why the same Clef code can target both Von Neumann and dataflow architectures**. The control-flow view maps naturally to CPUs. The dataflow view maps naturally to FPGAs and CGRAs. The dimensional constraints remain valid in both interpretations.
+Our target pathways can use these explicit dependencies when realizing a computation on a CPU or a dataflow target. The dimensional equations remain the same. Synthesizability additionally depends on bounded resources, effects, and a supported target mapping.
 
 ## The Control-Flow to Dataflow Transform
 
@@ -272,56 +225,28 @@ void vector_add(float* a, float* b, float* c, int n) {
  
 ```
 
-The DATAFLOW pragma instructs the synthesizer to convert control dependencies into data dependencies. Operations that don't have true data dependencies can execute concurrently.
+HLS tools use dataflow and pipeline directives together with dependence analysis to construct concurrent hardware where the program permits it. The exact interfaces and schedule depend on the tool and target.
 
-**This works because SSA exposes the true data dependencies.** The sequential ordering in the source code is largely artificial - a consequence of the Von Neumann programming model, not the algorithm itself.
+SSA exposes value dependencies. Memory aliasing, observable effects, and loop-carried dependencies still constrain which operations can execute concurrently.
 
-**Existing HLS tools perform this transform without the dimensional type information that Fidelity preserves**. They succeed through sophisticated analysis and pragmas that hint at the programmer's intent.
+Our Fidelity design retains source constraints alongside those dependencies. The compiler can use checked region and access facts without reconstructing them from an unqualified load or store. Dimensions continue to check quantity identity as the graph is transformed. With those facts available, the hardware pathway can assess the remaining dependencies and establish a valid schedule for the operations it supports.
 
-> They're reconstructing information that may well have been present in the original design but then lost through compilation.
+The [Program Hypergraph design](/docs/internals/pipeline/hyping-hypergraphs/) extends these joint relationships. Its lowering boundary exposes settled consequences to witnesses, with preservation evidence attached to the affected operations.
 
-The Fidelity framework's approach is different. By preserving dimensional types through compilation:
+## Random Updates and Memory Contracts
 
-1. **Dimensional constraints guide dataflow construction**: Memory regions, access patterns, and data flow properties are explicit in the type system
-2. **No pragmas required for common cases**: The type information expresses intent directly
-3. **Verification at every stage**: Dimensional consistency is checked during control-flow analysis, SSA construction, and dataflow synthesis
+Irregular memory updates provide a useful test of this direction. The work is easy to describe, but the addresses being accessed make scheduling and memory behavior central to performance. NextSilicon's GUPS demonstration[^8] offers a concrete example on a dataflow-oriented processor. For our compiler, it motivates a practical question: which facts about an update can we retain so that a target pathway has enough information to realize it well?
 
-This is what we meant in [Hyping Hypergraphs](/docs/internals/pipeline/hyping-hypergraphs/) when we discussed the Program Hypergraph encoding both control-flow and dataflow views. The dimensional types aren't just for catching bugs - they're semantic information that guides code generation for diverse targets.
+For a Clef version, a table index and a random-generator state can carry distinct dimensions. The operation that derives an index from that state must establish its own contract: the index is in range, and the conversion between the two domains is explicit. Scheduling also needs the dependencies of the random recurrence and the effects of table updates. Keeping those facts together lets the target assess which operations may proceed concurrently.
 
-## Case Study: NextSilicon GUPS Benchmark
+| Fact | What it establishes |
+|---|---|
+| Table-index dimension | The value belongs to the index domain |
+| Bound relative to table length | The indexed access is within the table |
+| Region and access contract | The storage and operations permitted at that access |
+| Dependency and effect analysis | Which updates may be reordered or scheduled concurrently |
 
-To make this concrete, consider a recent demonstration from NextSilicon's Maverick-2 processor[^8] - a Coarse-Grained Reconfigurable Array (CGRA) designed for irregular, data-intensive workloads.
-
-The GUPS (Giga Updates Per Second) benchmark measures random memory access performance - the worst case for conventional architectures due to unpredictable memory access patterns that defeat caches and prefetchers. A traditional CPU running GUPS spends most of its time waiting for memory.
-
-NextSilicon's demonstration showed **30x performance improvement** over conventional CPUs on GUPS[^8]. How? By transforming the inherently sequential benchmark into dataflow execution. The Maverick architecture uses "mill cores" - software-defined processing units that can be dynamically configured for different computational patterns. Instead of fixed ALUs and memory hierarchies, the processor adapts its structure to match the application's dataflow graph.
-
-**What makes this relevant to Fidelity?** NextSilicon's compiler performs the control-flow to dataflow transformation, but in the case of the GPUS demo it seems to accomplish this feat without dimensional type information. The compiler must infer data dependencies, memory access patterns, and synchronization requirements from (what we imagine to be) untyped LLVM IR.
-
-With Fidelity's approach:
-
-```fsharp
-// Hypothetical GUPS in dimensionally-typed Clef
-[<Measure>] type tableIndex
-[<Measure>] type randomState
-
-let gups (table: Ptr<uint64, MainMemory, ReadWrite>)
-         (n: int<tableIndex>)
-         (updates: int) =
-    let mutable rng : uint64<randomState> = initialSeed
-    for _ in 1 .. updates do
-        rng <- nextRandom rng
-        let idx = (rng % uint64 n) |> int
-        table.[idx] <- table.[idx] ^^^ rng
-```
-
-The dimensional types (`tableIndex`, `randomState`, memory region constraints) are information that a dataflow synthesizer can use:
-
-- `tableIndex` and `randomState` are distinct domains that don't interact
-- The table access pattern depends on the random state
-- The random state update is a linear recurrence (can be parallelized with known techniques)
-
-This information exists in the programmer's mental model. Traditional compilation erases it, while Fidelity preserves it.
+These facts have distinct roles in our PSG. Keeping them together lets the target pathway consume the established memory contract while preserving the source quantity identities.
 
 ## The Program Hypergraph
 
@@ -357,64 +282,31 @@ With dimensional types preserved:
 DataFlow {
     Producer = randomGeneratorNode
     Consumers = { tableAccess1; tableAccess2; ... }
-    DimensionalConstraint = uint64<randomState>  // Preserved!
+    DimensionalConstraint = int<randomState>  // Preserved!
 }
 ```
 
-The dimensional constraint flows through the hyperedge, ensuring that all consumers receive values of the correct type. This is verified during PHG construction and remains available during target-specific code generation.
+The proposed hyperedge records the quantity shared by its consumers. Joint constraint solving must establish the compatible uses and reify the consequences on the graph before witnesses consume them. Recording a relationship does not by itself discharge its proof obligation.
 
-## Ownership Against the Dataflow Pivot
+## Ownership and Dimensional Identity
 
-We've mentioned Rust several times as a point of comparison. Rust is an excellent language with genuine innovations in memory safety. But its design makes the control-flow/dataflow pivot fundamentally more difficult.
+Ownership and borrowing remain useful ways to describe permitted uses of storage. They do not determine a quantity's dimension, and a dimension does not establish ownership. A dataflow target still needs rules for duplicated values, shared mutable state, and effects at memory boundaries.
 
-The issue is ownership semantics. Rust's borrow checker assumes:
-
-1. **Linear memory**: Values exist at specific addresses that can be borrowed or moved
-2. **Temporal ownership**: At any point in time, a value has exactly one owner
-3. **Sequential reasoning**: Lifetimes are defined by program execution order
-
-These assumptions align perfectly with Von Neumann execution. They make it harder to reason about:
-
-- **Spatial dataflow**: Where data exists "everywhere at once" in a configured logic fabric
-- **Streaming semantics**: Where values flow through pipelines without discrete ownership transfers
-- **CGRA execution**: Where the same "value" may exist in multiple mill cores simultaneously
-
-Rust can target FPGAs through projects like Rust-GPU and various HLS tools. But these tools work by imposing significant restrictions on the Rust subset that can be synthesized, or by treating the FPGA as a coprocessor rather than a first-class target.
-
-**The dimensional type approach is orthogonal to ownership**. A `float<meters>` has the same dimensional constraint whether it's owned, borrowed, or flowing through a dataflow graph. This orthogonality is what enables the execution model flexibility we're building toward.
+Our Fidelity design carries these constraints together. Immutable values can be copied or shared when the realization preserves their observable behavior. Mutable storage requires an explicit sharing and lifetime contract, including across closure capture and delayed demand. [Gaining Closure](/docs/design/memory/gaining-closure/#captured-constraints) describes that distinction for native flat environments.
 
 ## Beyond the Abelian Fragment
 
-The dimensional type system does its work in a specific algebraic corner: the free abelian group on the base units, with operations that preserve the group structure. Within that corner, every consistency check reduces to integer linear algebra, every inference is [decidable in polynomial time](https://arxiv.org/abs/2603.25414), and parametricity guarantees that the result of the check survives every parametric lowering pass. The engineer pays no annotation cost, because the type structure does the proof.
+Clef's measure equality follows the free Abelian-group laws on its base units. Products and quotients normalize to exponent equations, which form the decidable measure-inference fragment described in [Units of Measure](/spec/draft/units-of-measure/) and the [DTS/DMM paper](https://arxiv.org/abs/2603.16437). Source-level numeric kind and dimension remain separate from the analyzed range and selected representation.
 
-The corner has a boundary, and the properties that fall outside it are where the free check stops. Properties that involve *non-abelian* group actions (rotor conjugation in the Clifford algebra, gauge transformations in physics-aware models, permutation symmetries in graph neural networks) are equivariance properties rather than equality properties, and parametricity over the abelian dimensional group is silent about them. Mehta and Hsu's recent symmetry Hoare logic [(arXiv:2509.00587, OOPSLA '25)](https://arxiv.org/abs/2509.00587) is the natural assertional layer for this case: it generalizes Hoare's pre/postcondition discipline to group actions, where the precondition is "the input is in this orbit" and the postcondition is "the operation is equivariant under this group." The dimensional fragment is the abelian special case of that framework, where the group is free abelian and the equivariance reduces to vector equality. Equivariant neural networks, conservation-law verification, and gauge-aware physics models live one step further out, in the non-abelian regime where assertions become load-bearing.
+That algebra checks dimensional consistency. A guarded range or a claim about mutation requires additional evidence. The [tiered verification design](/docs/design/categorical-foundations/the-compilation-sheaf/) distinguishes those obligations from the parametricity results available in the Abelian fragment. Our implementation must preserve the conditions under which each result applies across lowering.
 
-The Fidelity framework treats both fragments as compatible *sheaves over the same compilation poset*: the abelian sheaf is checked for free by Tier 1, and the symmetry sheaf would be checked by an assertional layer that reuses the same staged-discharge mechanism with a different stalk category. The cases that exceed the free fragment are the ones that call for the higher verification tiers. [between a Rocq and a hard case](/blog/between-a-rocq-and-a-hard-case/) examines the boundary between what the abelian algebra decides for free and what a Rocq-class proof assistant carries when a property leaves that corner. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) makes this categorical view precise, and the [triangle without mystery](/blog/a-triangle-without-mystery/) post sketches why the abelian and non-abelian cases share enough structure to live in the same framework. One concrete non-abelian case is the crossing order of concurrent work, treated as a proposed sheaf in [the braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/), where the abelian projection stays free and only observable crossings carry an assembled obligation.
+Non-Abelian symmetry and the negative and fractional type directions extend the research horizon. They motivate keeping constraint provenance and source identity available now, without claiming that the current dimensional implementation already decides those properties. [The braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/) develops one such proposed extension.
 
-## The Path Forward
+## Validation Horizon
 
-The Fidelity framework's multi-architecture targeting is not complete - we're building toward it. The current implementation focuses on native compilation through MLIR to LLVM targets (x86_64, ARM64, RISC-V). But the architectural choices we've made - particularly the intrinsic dimensional type system - are designed with the broader vision in mind.
+An engineer should be able to keep a quantity's meaning intact while changing where its calculation runs. Our current dimensional work establishes that continuity through the supported native language surface: measures must survive elaboration, participate in type identity, and remain available to joint range and representation constraints. Compiler regressions and native acceptance cases exercise the implemented paths, with each additional CPU, GPU, or spatial pathway responsible for its own preservation checks.
 
-The path forward includes:
-
-1. **Current**: Native compilation preserving dimensional types through MLIR -> LLVM
-2. **Near-term**: GPU targeting via MLIR's gpu and nvvm dialects
-3. **Medium-term**: Exploration of HLS-style dataflow synthesis
-4. **Long-term**: Direct CGRA/spatial architecture targeting
-
-At each stage, the dimensional types provide semantic information that improves code generation. For LLVM targets, they enable better memory layout and access pattern optimization. For GPU targets, they inform memory hierarchy usage (shared vs. global memory, texture sampling). For dataflow targets, they directly guide the graph construction.
-
-## Carried Semantics
-
-Ada established that dimensional type safety catches real bugs in real systems, and VHDL showed that the same dimensional information can guide hardware synthesis. FSharp.UMX extended dimensional constraints to non-numeric types, and decades of HLS research demonstrated that control-flow programs can be transformed automatically into dataflow execution.
-
-Our Fidelity framework combines these proven techniques with Clef's expressive type system and MLIR's flexible compilation infrastructure. By making dimensional types intrinsic to the compiler rather than a library feature, we preserve semantic information that has traditionally been lost during compilation.
-
-The pieces this rests on are not speculative. The control-flow to dataflow transformation is implemented in production HLS tools. The dimensional type systems are proven in safety-critical Ada and VHDL codebases. The MLIR infrastructure provides a principled path to diverse backends.
-
-What is new is putting these pieces together under one language designed for developer productivity. Clef developers write expressive, concurrent code with rich type safety. That code can target CPUs today, GPUs soon, and spatial architectures as the ecosystem matures. The dimensional types carry semantic intent through the entire compilation pipeline rather than catching bugs alone.
-
-This is the reason we built Clef as its own compilation path: to carry Clef's semantic richness into a form that can flow to any computational substrate. That is the design we will keep building toward as the framework reaches each new target.
+The next tooling step is to expose those actual Clef facts in the editor. A dimensional type, a pending range obligation, a selected physical layout, and a discharged proof should appear as distinct observations of the same program. That would let the developer inspect how a target choice affects the realization while continuing to write in the quantities of the problem.
 
 ---
 
@@ -432,7 +324,7 @@ This is the reason we built Clef as its own compilation path: to carry Clef's se
 
 [^1]: Mars Climate Orbiter Mishap Investigation Board. (1999). [*Phase I Report*](https://llis.nasa.gov/llis_lib/pdf/1009464main1_0641-mr.pdf). NASA. The spacecraft was lost due to a navigation error caused by ground software producing thrust data in pound-force seconds while the spacecraft expected newton-seconds.
 
-[^2]: U.S. Department of Defense. (1983). [*Reference Manual for the Ada Programming Language*](https://swtch.com/ada-mil-std-1815a.pdf) (MIL-STD-1815A). Ada's derived type mechanism was specifically designed to prevent the kind of unit confusion that would later doom Mars Climate Orbiter. See also: [Ada - Wikipedia](https://en.wikipedia.org/wiki/Ada_(programming_language)).
+[^2]: U.S. Department of Defense. (1983). [*Reference Manual for the Ada Programming Language*](https://swtch.com/ada-mil-std-1815a.pdf) (MIL-STD-1815A). Ada's derived types establish distinct nominal identities. See also: [Ada - Wikipedia](https://en.wikipedia.org/wiki/Ada_(programming_language)).
 
 [^3]: IEEE. (1987). [*IEEE Standard VHDL Language Reference Manual*](https://en.wikipedia.org/wiki/VHDL) (IEEE Std 1076-1987). VHDL's physical type system extended Ada's strong typing to hardware description with concurrent dataflow semantics. Current standard: [IEEE 1076-2019](https://standards.ieee.org/ieee/1076/5179/).
 

@@ -3,10 +3,8 @@ title: Categorical Foundations
 weight: 60
 ---
 
-Fidelity's type system and memory model were designed from engineering requirements: dimensional preservation through compilation, deterministic allocation without a garbage collector, and multi-target code generation from a single source. The categorical deep learning paper by Gavranović et al. provided the formal recognition that these properties instantiate a 2-categorical structure. Its adjoint correspondences place gradient computation, sensitivity analysis, and quantum evolution under a single algebraic framework.
+Our Fidelity framework grew from engineering requirements: preserving dimensional meaning through compilation, determining memory placement, and supporting different targets from a shared source. We want an engineer to express a physical operation once and retain its constraints while choosing how it runs.
 
-These articles follow that correspondence into the compiler, where it does concrete work: choosing posit representations, closing the gradient memory wall through exact accumulation, moving inference and training onto spatial and neuromorphic hardware, and turning verification into a byproduct of compilation. The quantum entry marks the near edge of that reach, scoping what categorical compatibility provides today against the hardware maturity gap.
+[Categorical deep learning](/blog/categorical-deep-learning/) helped us recognize a related problem in model design: connecting a model's required structure with its parameterized implementation. Our [adjoint correspondence entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) develops that connection through parameter sharing and differentiation, keeping the laws of each construction explicit.
 
-The algebraic substrate under all of this is abelian. Its boundary is the edge where the observable crossing order of concurrent work turns non-abelian, and the later entries reach for that edge and hold it coherent with the framework.
-
-What binds together is a single interlocking construction. The formalisms carry meaning for certification, and they give efficient compilation its material support.
+We are extending this inquiry to the relationships between compilation stages and reasoning modes. A library result should remain usable when its premises hold for the transformed operation. Numeric representation and memory layout add conditions that must be checked at their respective boundaries. Our [compilation sheaf design](/docs/design/categorical-foundations/the-compilation-sheaf/) explores how to organize that evidence across the program and its target realizations.

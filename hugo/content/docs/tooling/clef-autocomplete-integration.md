@@ -1,7 +1,7 @@
 ---
-title: "Bridging Clef AutoComplete To The Fidelity Ecosystem"
-linkTitle: "Clef AutoComplete Integration"
-description: "Extending Clef Language Services to Support Native Compilation Workflows"
+title: "Earlier Clef AutoComplete Integration Design"
+linkTitle: "Earlier AutoComplete Design"
+description: "Historical FSAC bridge proposal, superseded by the CCS-backed Lattice integration"
 date: 2025-12-06
 authors: ["Houston Haynes"]
 tags: ["Design", "Innovation", "Architecture"]
@@ -10,6 +10,9 @@ params:
   originally_published: 2025-12-06
   migration_date: 2026-03-12
 ---
+
+> **Historical design.** This December 2025 proposal explored an FSAC project-loader bridge. The current [Lattice design](/docs/tooling/leveling-up-with-lattice/) uses a thin server against CCS, which owns `.fidproj` loading and Clef semantics. The examples below document the earlier approach and are not current setup instructions. See the [shared integration work](https://github.com/FidelityFramework/Composer/blob/main/docs/Lattice_Integration.md) for the repository responsibilities and first implementation gates.
+
 
 Editor tooling is what turns a compiler into a usable development platform. As the Fidelity Framework matures from experimental compiler to practical development platform, we face a critical question: how do we provide the developer experience that [the Clef language](https://clef-lang.com) programmers expect while building something distinct from the .NET and Fable ecosystems? We extend F# language services to support the Fidelity compilation model, preserving developer productivity while making clear that the compilation model underneath is new.
 

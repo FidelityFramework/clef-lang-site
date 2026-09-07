@@ -15,1209 +15,339 @@ params:
 
 > A personal note from the founder of SpeakEZ Technologies, Houston Haynes
 
-I must admit something upfront: when I began design of the Fidelity framework in 2020, I was driven by practical engineering frustrations, particularly with AI development. The limitations of a managed runtime, the endless battle with numeric precision, machine learning framework quirks, constant bug chasing; these weren't just inconveniences, they felt like fundamental architectural flaws. So I started building something different, guided more by engineering intuition than mathematical theory. Then I recently encountered the position paper ["Categorical Deep Learning is an Algebraic Theory of All Architectures"](https://arxiv.org/pdf/2402.15332) by Gavranović et al., and experienced that rare moment of recognition: the mathematical foundations for what I have been building *already existed*.
+I must admit something upfront: when I began designing the Fidelity framework in 2020, I was driven by practical engineering frustrations, particularly with AI development. A managed runtime made some memory decisions difficult to control. Numerical errors accumulated across operations that looked harmless in isolation. Machine learning framework conventions could obscure the physical meaning of the data. I started building from those experiences, guided more by engineering intuition than mathematical theory.
 
-Like many other of the recent advances and discoveries I've made, a significant credit is owed to [Paul Snively, for his polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557) that led to many of the connections made as formalism has taken a greater role in the framework. You can see more about him here [Paul Snively on Programming Languages, Reliable Code and Good Taste in Software Engineering](https://www.youtube.com/watch?v=Cq_IstGhUv4). While I *may* have *eventually* connected the dots on my own, Paul's decades of lived experience with the practicalities of functional programming, and more specifically with formal verification has been a force multiplier for the speed at which my grasp of the domain has expanded over the past few months. A great deal of credit for this synthesis rests with him, while mistakes and omissions remain my own.
+Encountering Gavranović et al.'s [*Categorical Deep Learning is an Algebraic Theory of All Architectures*](https://arxiv.org/abs/2402.15332) felt like recognition. The authors connect constraints on a model with the operations used to implement it. I had been approaching that relationship from the compiler side, trying to keep the meaning of a computation available while changing how it runs.
 
-As for the reading, the authors of the CDL paper go through their process (as I currently understand it) of formalizing neural networks as morphisms in a 2-category. This provides a condensed theoretical underpinning I had been assembling piece by piece in the Fidelity framework. It was both humbling and exhilarating; humbling because I had been unknowingly fumbling in the dark where category theory sheds light, but it's also exhilarating because it validated my framework's architectural direction in a way that was completely unexpected.
+A significant credit belongs to [Paul Snively and his polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557). His experience with functional programming and formal verification helped me connect practical design decisions with results I might otherwise have taken years to find. [Paul's conversation on programming languages, reliable code, and good taste](https://www.youtube.com/watch?v=Cq_IstGhUv4) gives a sense of that perspective. I may eventually have connected some of these ideas on my own, but Paul helped me reach them much sooner and with a better sense of their practical history. Much of this synthesis owes its development to our conversations. Mistakes and omissions remain my own.
 
-This document represents my attempt to synthesize years of practical framework development with these theoretical underpinnings. It's forward-looking and aspirational, and shouldn't be taken as making light of the many technical hurdles still to overcome. I believe it points toward the convergence of classical systems with High-Performance Computing, Artificial Intelligence and Quantum as a single, mathematically unified paradigm.
+I found that recognition both humbling and exhilarating. I had been assembling pieces from practical compiler problems, and here was a body of work that could help me explain why they belonged together. It encouraged me to keep exploring the connections and to share what I was learning along the way.
 
-This would, in effect, provide a coherent framework to explore them all from a single, hardware-aware software platform. I'm sharing a summation of what I've learned and the future directions I see.
+The categorical vocabulary can take some getting used to. My way into it was through ordinary questions about functions and data: which values are shared, what can change, and what must remain true after a transformation? Those questions give the notation something familiar to describe.
+
+I want a developer to combine a physical simulation with a learned component without having to reconstruct the model's meaning at every library or hardware boundary. The same platform should leave room for quantum and other specialized targets as their implementations become useful. That ambition has driven our choices in Clef, its compiler, and the Fidelity framework.
 
 ## The Journey So Far
 
-Over the past several years, SpeakEZ has been designing components that form the foundation for a unified vision. Each piece on its own was solving a technical problem, and each was removing a source of computational inefficiency:
+Our early explorations of [alternatives to transformer architectures](/blog/beyond-transformers/) encouraged me to treat tensor operations as implementation choices. A recurrent update, a sparse geometric product, and a dense matrix multiplication have different structure. The compiler needs enough information to distinguish them before selecting an implementation.
 
-The exploration of [matmul-free architectures](/blog/beyond-transformers/) demonstrated that the industry's obsession with matrix multiplication was more historical accident than mathematical necessity. It showed how [ternary quantization and sub-quadratic models](https://arxiv.org/abs/2406.02528) could achieve comparable performance with dramatically lower computational requirements, often 10-100x more efficient.
+The explorations of [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) and [discriminated unions for post-transformer AI](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/) were part of that process. I wanted to give different kinds of computation a suitable representation and then see how they could work together. That was also the ambition behind [Fidelity as an AI Refinery](/blog/fidelity-as-ai-refinery/): a platform on which the shape of the problem could guide the use of the hardware.
 
-And work on [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) speculated on how AMD's unified memory architecture could enable new paradigms for distributed AI inference, with BAREWire providing the zero-copy substrate for efficient model orchestration, eliminating the memory bandwidth bottleneck that consumes up to 90% of cycle wait times in current systems.
+Work on the [Program Hypergraph](/docs/internals/pipeline/hyping-hypergraphs/) addressed relationships involving several operations at once. A buffer shared by a producer and multiple consumers has a joint lifetime and access contract. A conservation law may constrain the input, output, and internal state of a physical process. Keeping only isolated operation annotations makes those relationships difficult to check.
 
-The investigation into [discriminated unions for post-transformer AI](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/) revealed how type-safe heterogeneous representations could better capture the diverse computational patterns emerging in modern architectures, reducing the "representation overhead" that forces complex patterns through inappropriate abstractions.
+BAREWire brought the same concern to memory layout, interprocess communication, and network contracts. A quantity's representation affects the bytes in memory and the agreement between systems exchanging those bytes. Our [proof-aware compilation design](/docs/internals/pipeline/proof-aware-compilation/) extends that agreement through the transformations that produce executable code.
 
-Insights into [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/) showed how preserving multi-way relationships enables data-flow computation that can be orders of magnitude more efficient than control-flow paradigms.
+These engineering problems gave me a reason to study the categorical account. I wanted to understand which relationships could be established once and safely reused as the program changes form.
 
-Our patent-pending [proof-aware compilation design](/docs/internals/pipeline/proof-aware-compilation/) demonstrated that verification doesn't add overhead; it removes it by enabling aggressive optimizations impossible without formal guarantees.
+<a id="the-current-crisis-divergent-paths"></a>
+<a id="hpcs-challenges"></a>
+<a id="ais-challenges"></a>
 
-And the early vision of [Fidelity as an AI Refinery](/blog/fidelity-as-ai-refinery/) established the framework's role in transforming raw computational capabilities into efficient intelligent systems.
+## Physical Models and Learned Components
 
-Each of these efforts was solving a specific problem, but looking back, they were all converging on the same observation:
+A simulation engineer may know that an update must conserve a quantity or respect a symmetry. A learning engineer may have a procedure that fits observations well. Combining their work requires an interface that states both the physical commitments and the freedoms left to the learned component.
 
-> The artificial separation among classical, HPC and AI is holding the industry back.
+Consider a learned force correction in a mechanical simulation. Its output must have units of force. Its dependence on orientation may need to respect a rotation law. Its magnitude may be bounded by the operating envelope of an actuator. Training data can guide the correction within those conditions. Good average prediction error alone establishes none of those three properties.
 
-It also makes each technical domain less efficient than it could be.
+For our framework, this suggests a practical division of work. Keep the admissible structure explicit, check the conditions needed by the implementation, and let learning select among the remaining possibilities. We are developing this direction in our work on [Adaptive Domain Models](https://arxiv.org/abs/2603.18104), where a model has a stated structure and deployment envelope.
 
-## The Current Crisis: Divergent Paths
+<a id="the-solution-categorical-deep-learning"></a>
 
-Modern computing faces a long-standing schism. High-Performance Computing (HPC) and Artificial Intelligence (AI) have evolved along divergent paths, each developing its own tools, techniques, and staffing constituencies:
+## Parameterized Composition
 
-### HPC's Challenges
+Suppose two layers of a model are meant to use the same learned weight. Keeping that sharing intact is a familiar programming concern, and it gives us a small example of what the categorical description records.
 
-- **Verification Burden**: Safety-critical simulations require formal proofs
-- **Numerical Precision**: IEEE-754 limitations cause accumulation errors
-- **Scalability Walls**: Traditional methods hit complexity barriers
-- **Rigid Models**: Physics equations can't adapt to real-world complexity
+Let one layer multiply its input by a learned scalar:
 
-### AI's Challenges
+\[
+f(p,x)=px.
+\]
 
-- **Black Box Problem**: No proofs about model behavior
-- **Numerical Instability**: Gradient underflow, training irreproducibility
-- **Semantic Loss**: Meaning disappears in tensor operations
+Two independently parameterized layers give \(g((p,q),x)=qpx\). Sharing their parameter gives \(h(p,x)=g((p,p),x)=p^2x\). The map \(p\mapsto(p,p)\) expresses the sharing. An implementation must preserve that relationship when it lays out parameters or generates updates. Allocating two independently updated weights would change the model.
 
-These aren't separate problems; they're symptoms of the same underlying issue: **the lack of a unified mathematical foundation for computation**.
+The CDL paper's [Para construction](https://arxiv.org/html/2402.15332#S3.SS1) uses the base category's objects as data spaces. A 1-cell from \(A\) to \(B\) contains a parameter space \(P\) and a map \(f:P\times A\to B\). Its 2-cells describe reparameterizations. Parameters belong to the map, rather than replacing its input and output spaces.
 
-## The Solution: Categorical Deep Learning
+The compiler can distinguish a shared parameter from two parameters that happen to have equal initial values. A model author can require a symmetry or recurrence law while leaving the particular parameter values open to training.
 
-As articulated in the paper by Gavranović et al., neural networks are not just computational graphs; they are **morphisms in a 2-category**. This insight provides the bridge between HPC's rigorous mathematics and AI's adaptive learning.
+<a id="implementing-the-core-insight"></a>
+<a id="key-cdl-principles-applied-to-hpcai"></a>
 
-In mathematical terms, they show that a neural network is a morphism \(f: \mathcal{P} \to \mathcal{L}\) where \(\mathcal{P}\) is the parameter space and \(\mathcal{L}\) is the learner category. Backpropagation itself is the canonical 2-cell:
+### Differentiation and Feedback
 
-\[\text{Para}(\mathcal{P}) \xrightarrow{\text{forward}} \mathcal{L} \xrightarrow{\text{backward}} \text{Para}(\mathcal{P})\]
+Training also needs to account for every place a shared weight was used. If changing one value affects two layers, both contributions belong in its derivative.
 
-Where \(\text{Para}\) is the parameterized category construction that enables gradient flow. This is the structure our Fidelity framework is designed to express through [the Clef language](https://clef-lang.com)'s type system.
+Reverse differentiation has a related categorical account through [lenses and reverse differential structure](https://arxiv.org/html/2103.01931#S2.Thmtheorem7). A forward map is paired with a reverse derivative, and lens composition expresses the reverse chain rule. Applying the parameterized construction also accounts for sensitivity to learned parameters.
 
-### Why Clef Is a Natural Choice for This Domain
+For the shared layer above, differentiation must include both uses of \(p\):
 
-Clef is designed to express these higher-order mathematical structures directly. The functional foundation comes by way of F# and OCaml, the same ML lineage whose OCaml branch also bootstrapped Rust's first compiler. Clef carries capabilities aimed specifically at categorical deep learning:
+\[
+\frac{\partial h}{\partial p}=2px,
+\qquad
+\frac{\partial h}{\partial x}=p^2.
+\]
 
-#### Computation Expressions: Native Categorical Structures
+The reverse calculation needs information from the forward calculation. Even the simpler function \(x\mapsto x^2\) demonstrates why. Given a sensitivity \(\bar y\), its reverse derivative returns \(2x\bar y\). The primal value \(x\) participates in that calculation. Trying to recover \(x\) from \(x^2\) would be a different problem, with two possible signs for a positive result.
 
-Clef's computation expressions are a direct encoding of monadic and categorical patterns. Where other languages require extensive type encoding to express categorical operations, Clef expresses them directly:
+Differentiation needs rules for primal values and sensitivities. Memory analysis needs rules for retaining, recomputing, or releasing those values. Both analyses concern the same program, with different facts and different composition laws.
 
-```fsharp
-// A 2-categorical morphism expressed naturally in Clef
-type NeuralMorphism<'Input, 'Hidden, 'Output> =
-    categorical {
-        // Computation expressions model the 2-category structure
-        let! layer1 = Morphism<'Input, 'Hidden>
-        let! layer2 = Morphism<'Hidden, 'Output>
+<a id="quantum-computing-the-natural-beneficiary"></a>
 
-        // Horizontal composition (functor composition): (g ∘ f)
-        let! forward = compose layer1 layer2
+### Adjoint Structure
 
-        // Vertical composition (natural transformations): α ∙ β
-        let! transform = naturalTransform forward
+The word *adjoint* appears in several relevant settings. In numerical sensitivity analysis, an adjoint calculation propagates information through the transpose of a derivative, with the appropriate pairing between spaces. For a complex linear operator, the dagger is its conjugate transpose. A unitary operator has the additional property that its dagger is its inverse.
 
-        // The 2-cell (modification between natural transformations)
-        return! modification transform
-    }
-```
+A [categorical adjunction](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/#the-adjoint-correspondence) has functors, a unit, and a counit satisfying triangle identities. Those laws describe a correspondence between constructions. They do not make every backward computation an inverse.
 
-This directly implements the mathematical structure from the CDL paper where neural networks form a 2-category \(\mathbf{Learn}\) with:
-- Objects: Parameterized types (our Clef types with measures)
-- 1-morphisms: Learners (our typed functions)
-- 2-morphisms: Updates/reparameterizations (our gradient transformations)
+I see value in giving these structures a common place in the framework while retaining the laws specific to each. A compiler should preserve a valid reverse derivative through a transformation. A quantum lowering should preserve the stated circuit semantics. Sharing a graph infrastructure can support both jobs, provided each transformation carries the appropriate justification.
 
-This requires extensive encoding in OCaml, and the ownership model in Rust constrains the composition that category theory relies on.
+<a id="why-clef-is-a-natural-choice-for-this-domain"></a>
+<a id="beyond-functional-the-engineering-bridge"></a>
 
-#### Units of Measure: Dimensional Analysis for Free
+## Clef's Source-Level Commitments
 
-Clef goes beyond OCaml with zero-cost units of measure that naturally express the dimensional analysis inherent in physical simulations and neural architectures:
+Our language design draws from several lines of work. Kennedy's dimensional inference provides the measure algebra. OCaml and F# contribute practical ML experience, including the quotation facilities that influenced Clef's design. Scheme's nanopass tradition informs small compiler transformations. MLKit supplies experience with region inference, while the verification work in F* and Dafny informs how proofs can participate in ordinary programming.
 
-```fsharp
-// Dimensional correctness in neural architectures
-[<Measure>] type neuron
-[<Measure>] type layer
-[<Measure>] type activation
+I want those influences to reduce the number of decisions a developer must repeat. The source should express the mathematical operation and the conditions under which it is meaningful. The compiler can then use platform information to determine storage and execution details.
 
-type CategoricalLayer<[<Measure>] 'input, [<Measure>] 'output> = {
-    Weights: Matrix<float<'output/neuron>, float<'input/neuron>>
-    Transform: Morphism<'input, 'output>
-    Adjoint: ContravariantFunctor<'output, 'input>
-}
-```
+<a id="units-of-measure-dimensional-analysis-for-free"></a>
 
-This dimensional typing keeps our categorical structures tied to physical and mathematical meaning at compile time, which neither OCaml nor Rust expresses as directly.
+### Dimensions and Numeric Kinds
 
-#### Type Providers: Bridging Abstract and Concrete
-
-Clef's type providers generate categorical structures from external schemas, connecting the mathematics directly to real-world data:
+A work calculation can state its physical inputs directly:
 
 ```fsharp
-// Type provider generates categorical structure from neural architecture
-type NeuralArchitecture = JsonProvider<"model.json">
+[<Measure>] type kg
+[<Measure>] type m
+[<Measure>] type s
+[<Measure>] type N = kg * m / s^2
 
-let model = NeuralArchitecture.Load("transformer.json")
-
-// Automatically derived categorical morphisms from architecture
-let categoricalModel =
-    model.Layers
-    |> Seq.map (fun layer ->
-        Morphism.fromStructure layer.Type layer.Parameters)
-    |> Morphism.compose2Category
+let work (force: float<N>) (distance: float<m>) =
+    force * distance
 ```
 
-This capability extends to emerging standards like the [Hypergraph Interchange Format (HIF)](https://arxiv.org/html/2507.11520v1), which provides a unified JSON schema for higher-order network data.
+The product has dimension \(\mathrm{kg}\,\mathrm{m}^2/\mathrm{s}^2\). Measure equality follows the Abelian-group laws, so equivalent products and quotients identify the same dimension. A width choice such as 32 or 64 bits belongs to later representation selection. Here `float` identifies the source numeric kind.
 
-Our implementation of Clef's type providers is designed to ingest type-safe representations from HIF-compliant datasets, integrating relational data from co-authorship networks, chemical reactions, or biological interactions directly into HPC simulations and AI training pipelines. This could ease the interchange of data and concepts across academic disciplines and industry verticals.
+The units establish compatibility. Values, guards, and justified domain laws establish numerical bounds. A force measured in newtons could have a small operating range or an astronomical one. Our [units-of-measure specification](/spec/draft/units-of-measure/) and [width-inference specification](/spec/draft/width-inference/) keep those responsibilities explicit.
 
-#### Active Patterns: Recognizing Categorical Structures
+For a learned layer \(y=Wx+b\), the same reasoning determines the units of \(W\) and \(b\) from the input and output quantities. A gradient has the units of the loss divided by the units of the differentiated parameter. An update rule must supply the remaining factors needed to produce a value with the parameter's units. A learning rate is only dimensionless when that particular update permits it.
 
-Clef's active patterns let us recognize and destructure categorical patterns in ways that would require verbose visitor patterns in other languages:
+<a id="computation-expressions-native-categorical-structures"></a>
+<a id="active-patterns-recognizing-categorical-structures"></a>
+<a id="type-providers-bridging-abstract-and-concrete"></a>
+<a id="quotations-preserving-mathematical-semantics"></a>
 
-```fsharp
-// Recognize categorical patterns in neural networks
-let (|Functor|Monad|Adjunction|) morphism =
-    match morphism with
-    | HasLeftAdjoint adj -> Adjunction(morphism, adj)
-    | HasBindOperation bind -> Monad(morphism, bind)
-    | _ -> Functor(morphism)
+### Quoted Structure and Library Laws
 
-// Use pattern matching to optimize based on categorical structure
-let optimize = function
-    | Adjunction(f, g) ->
-        // Exploit adjunction for perfect backpropagation
-        optimizeAdjoint f g
-    | Monad(m, bind) ->
-        // Use monadic structure for sequential optimization
-        optimizeMonadic m bind
-    | Functor f ->
-        // Standard functorial optimization
-        optimizeFunctor f
-```
+Clef's quotation-based design gives libraries a way to present operations and their requirements for analysis. A builder can make a domain's syntax convenient. Pattern recognition can identify a known operation. The associated laws still need a checked definition or a proved library result. Recognizing a method named `Bind`, for example, establishes a syntactic shape, while associativity is a property of its behavior.
 
-#### Quotations: Preserving Mathematical Semantics
+For a matrix product, a library contract could state compatible shapes, element dimensions, and the relationship between the result and its inputs. Platform quotations would supply available arithmetic and layout facts. Keeping those sources of information distinct lets the compiler report a missing shape premise at the source operation, or an unsupported representation at the target boundary.
 
-Clef's quotations preserve the mathematical structure of expressions, enabling us to analyze and transform categorical operations at compile time:
+A domain library can establish a lemma once and expose its parameters and premises for automatic application. The intended editor experience is ordinary programming with that library: the analyzer proposes a relevant lemma for a region, the developer accepts its application, and the compiler checks the instantiated premises. An annotation may be folded away while a marker retains the obligation's scope and current or stale status.
 
-```fsharp
-// Quotations preserve categorical structure for analysis
-let neuralOperation =
-    <@ fun (input: Tensor<'n, 'd>) (weights: Morphism<'d, 'h>) ->
-        categorical {
-            let! forward = weights.Apply input
-            let! backward = weights.Adjoint forward
-            return (forward, backward)
-        } @>
+This is the kind of assistance I want from proofs. A developer using a conservation-preserving update should benefit from the library's established result each time it applies. Explicit proof development extends the library when a new operation requires new justification.
 
-// Analyze the categorical structure at compile time
-let structure = analyzeCategoricalStructure neuralOperation
-// Generates optimized MLIR based on mathematical properties
-let optimizedMLIR = compileToMLIR structure
-```
+<a id="universal-numbers-solving-the-numerical-problem"></a>
+<a id="posit-arithmetic-the-best-of-both-worlds"></a>
+<a id="clef-type-safe-integration"></a>
 
-#### Beyond Functional: The Engineering Bridge
+## Numerical Representation and Accumulation
 
-What sets Clef apart is its pragmatic bridge to software engineering reality. We carefully and selectively extend that with specific design choices in the Fidelity framework:
+This brings me back to one of the frustrations that started the project: a calculation can be correctly assembled and still lose useful information through repeated rounding. I wanted numerical representation to be something we could reason about alongside the calculation, with the hardware choices available for inspection.
 
-1. **Shared Edges with .NET**: We have gone to great lengths to preserve F# idioms in our framework. By extension this will offer many "shared edges" with .NET based solutions, allowing teams currently using F# for machine learning and HPC workloads a gradual transition path with manageable source modifications, including pathways for implementing classical compute with higher integrity and efficiency.
+The [Universal Numbers library](https://github.com/stillwater-sc/universal) provides arithmetic implementations for exploring a variety of number systems and mixed-precision algorithms. I see it as a useful part of making representation a deliberate target decision. IEEE formats, posits, integers, and other representations have different properties that a platform can declare.
 
-2. **Mutable Optimization**: When needed, Clef allows controlled mutation which Fidelity framework and Composer compiler leverages for performance-critical sections without breaking the categorical abstraction. This hybrid approach, detailed in our [reactive model design](/blog/fidelityrx-native-reactivity/) (now [absorbed into CCS](/docs/design/language/absorbing-alloy/)), presents developers with pure, immutable interfaces while allowing the compiler to selectively introduce mutation based on scope analysis in the computation graph. This "immutability at design time, verified mutation at runtime" strategy means the categorical abstractions remain pure for reasoning and composition, while achieving the same performance as hand-optimized imperative code. The compiler's scope analysis ensures mutations only occur when mathematically equivalent to the pure version, preserving all categorical properties while eliminating allocation overhead.
+Posits offer tapered precision. A quire can accumulate products of represented operands exactly within its finite capacity and round when converting the result. The [2022 Posit Standard](https://posithub.org/docs/posit_standard-2.pdf) specifies a 512-bit quire for posit32, giving 64 bytes of accumulator storage before any enclosing layout requirements.
 
-3. **True Concurrency & Parallelism**: Clef's async expressions naturally model the parallel structure of categorical compositions, and as we explored in [Delimited Continuations](/docs/design/concurrency/delimited-continuations/), this goes far beyond traditional managed runtime implementations. Through delimited continuations, cold computations transform into explicit categorical morphisms that can be verified, traced, and compiled to platform-native code without runtime overhead. The delimited continuations make the "rest of the computation" a first-class value that can be inspected, transformed, and verified, turning what was once managed runtime magic into compile-time certainty.
+For a dot product,
 
-4. **Interop**: The FFI in Rust is verbose and the ecosystem in OCaml is narrower, where Clef provides direct interop with C/C++ libraries, extended through our [Farscape CLI](/blog/the-farscape-bridge/) tool. As detailed in [Farscape's Modular Entry Points](/docs/internals/farscape/farscape-modular-entry-points/), this goes beyond simple bindings; we can generate drop-in replacements for tools like OpenSSL that maintain API compatibility while adding type safety. The established ecosystem of HPC libraries, from PETSc for scientific computing to FFTW for signal processing, becomes available with Clef's type safety. The categorical structures we're implementing integrate with numerical libraries that have been optimized over decades. We have found no other functional language that pairs this combination in the standing literature we have reviewed: expressing 2-categorical morphisms while calling directly into established HPC kernels, with compile-time type safety and no additional overhead.
+\[
+s=\sum_{i=1}^{n} a_i b_i,
+\]
 
-Clef is a strong fit for implementing categorical deep learning: it combines the expressiveness to represent 2-categories with the engineering capabilities to deploy them at scale. OCaml carries the theory with a narrower ecosystem. Rust carries the performance with friction against the abstractions. Haskell carries the categories with a harder interop story. Through close alignment to F# idioms and our Composer compiler, the Fidelity framework is designed to bridge these worlds.
+exact accumulation requires the operand formats, product range, and accumulation length to fit the chosen quire. Every partial sum needs coverage. A sequence \(A,A,-A,-A\) has final sum zero but reaches \(2A\) along the way. A proof about the final range alone would miss that requirement.
 
-### Quantum Computing: The Natural Beneficiary
+Finite capacity therefore belongs in the operation's contract. If the target's available accumulator cannot cover the justified range, the compiler needs a different valid implementation or a diagnostic. Our [numeric-selection rules](/spec/draft/numeric-selection/) require a hard error when a committed representation leaves the known range uncovered.
 
-As we explored in our [quantum optionality](/blog/quantum-optionality/) analysis, this 2-categorical foundation is not limited to classical computation. Quantum computing emerges as a beneficiary of the same mathematical framework, and the alignment follows from the mathematics rather than from forcing a fit.
+A quire's exact accumulation concerns products and sums of the represented inputs. Input conversion, a nonlinear activation, a matrix solve, and final rounding can each introduce error. A numerical error budget should account for those operations individually. The full computation inherits only the guarantees that compose across them.
 
-Quantum computations are categorical. Quantum circuits are morphisms, quantum gates are natural transformations, and quantum mechanics is expressed in the language of monoidal categories. The same 2-categorical structure that unifies HPC and AI extends to quantum:
+### Training Cost
 
-```fsharp
-// Quantum operations ARE 2-categorical morphisms
-type QuantumMorphism<'Input, 'Output> =
-    | Unitary of U: UnitaryOperator<'Input, 'Output> * U†: Adjoint<'Output, 'Input>
-    | Measurement of Projector<'Input, Classical<'Output>>
+A quire changes accumulation behavior and storage requirements. Its execution cost depends on the target's arithmetic support and the shape of the workload. Software emulation, a CPU instruction, and a synthesized arithmetic unit can have quite different costs for the same mathematical operation.
 
-// The SAME categorical structure works for quantum
-let quantumCategorical = categorical {
-    // Prepare quantum state (functor)
-    let! prepared = QuantumFunctor.prepare classicalData
+Forward-mode differentiation offers another choice. It can avoid the activation tape associated with a reverse pass, while still requiring primal state, tangent state, parameters, and optimizer storage. Several tangent directions increase both memory and arithmetic work. A projection built from \(k\) explicit tangents in \(n\) dimensions also requires a Gram matrix. Forming it directly takes \(O(nk^2)\) arithmetic, and a dense solve adds \(O(k^3)\) work.
 
-    // Apply quantum circuit (morphism composition)
-    let! evolved = QuantumMorphism.compose [
-        Hadamard
-        CNOT
-        PhaseShift(π/4)
-    ]
+A useful comparison should measure peak live storage, arithmetic work, and training quality on the same task. It should also report numerical error under the selected formats. Those measurements can guide target selection and future library implementations.
 
-    // The adjoint is built-in (2-category structure)
-    let! adjoint = evolved.Adjoint
+<a id="formal-verification-provable-numerics"></a>
+<a id="the-missing-link"></a>
+<a id="proof-carrying-code-in-the-hypergraph"></a>
 
-    // Measurement (natural transformation to classical)
-    return! Measurement.collapse evolved
-}
-```
+## Proofs in the Program Graph
 
-This is not shoe-horning quantum into our framework; the mathematical foundations of quantum mechanics are categorical. Unitarity describes morphisms that compose with their adjoints to give identity. Entanglement describes the monoidal structure of tensor products. The language of quantum mechanics is the language of category theory.
+From the developer's side, a proof should often feel like using a well-chosen library operation. The library author has established a result, and our program supplies the inputs and conditions under which it applies. A *lemma* is one of those reusable proved results. I want the compiler to handle the repeated application work so the engineer can concentrate on the model.
 
-Our categorical foundation for unifying HPC and AI is designed to encompass quantum without modification. The same Clef computation expressions that model neural network training are meant to model quantum circuit evolution. The same proof systems that verify conservation laws are meant to verify quantum unitarity. The same Universal numbers that handle HPC precision are meant to handle quantum amplitudes. [Microsoft Research's own work to create the Q# language](https://johnazariah.github.io/2018/12/04/tale-of-two-languages.html) from F# points to that alignment.
+Our Program Semantic Graph is intended to carry the joint constraints of the computation, including the relationships that justify an operation. The Program Hypergraph makes relationships involving several nodes explicit. A matrix product, for example, connects two input shapes with an output shape, an element operation, and the storage on which its implementation depends.
 
-While others are building separate classical and quantum stacks, hoping to integrate them later, our categorical approach is designed as a single framework that covers all four paradigms.
+That graph should carry a proof obligation's premises, scope, and discharge status. An external verification ledger currently provides comparison scaffolding while we establish the integrity of this mechanism. Recording that a proof was requested is distinct from recording a checked result. The canonical mechanism belongs with the graph's joint constraints.
 
-> Organizations using Fidelity platform won't need to adopt new abstractions or rewrite their systems for quantum-classical hybrid workloads.
+Our [proof-mode design](/docs/internals/verification/mode-shifts/) connects library results with the obligations their applications generate. Reusing a lemma reduces repeated proof construction for the developer. The compiler still checks that the application refers to the right operation and that its premises hold in the current program.
 
-In our design, the Fidelity framework would offer that degree of freedom by adding another backend to the same software semantics.
+<a id="proofs-as-optimization-catalysts"></a>
+<a id="calendar-time-the-hidden-multiplier"></a>
+<a id="the-compounding-effect"></a>
 
-### Implementing the Core Insight
+### Reusable Justification
 
-With those Clef capabilities in place, we can express the unified view directly:
+Consider a matrix kernel whose inner loop indexes \(A_{ik}\) and \(B_{kj}\). Compatible dimensions alone leave several implementation facts to establish: the loop bounds, the layout's address calculation, and the lifetime of each allocation. Once those premises are checked, the kernel can use a bounds-check elimination justified by that particular loop and layout.
 
-```fsharp
-// The unified view: All computation as categorical morphisms
-type UnifiedComputation<'Input, 'Output> = {
-    // Forward computation (HPC simulation OR AI inference)
-    Forward: Functor<'Input, 'Output>
+The developer should be able to inspect one applied library result instead of rebuilding the indexing argument at every call. In the editor, changing a shape or a layout invalidates the affected application and triggers the relevant checks again. An unchanged proof identity is insufficient if its premises have changed.
 
-    // Backward computation (Adjoint methods OR backpropagation)
-    Backward: ContravariantFunctor<'Output, 'Input>
+A lemma application can identify an existing result and supply its arguments instead of repeating a long derivation. A [conditional information-theoretic account](https://homepages.cwi.nl/~paulv/papers/info.pdf) makes the role of shared context explicit. Fix a library and a computable decoding convention. A self-delimiting application description that reconstructs a derivation supplies a description-length upper bound, with a fixed additional cost for the decoder. Library construction and checking still have their own costs.
 
-    // the duality: Forward ⊣ Backward
-    Adjunction: AdjointPair<'Input, 'Output>
+<a id="fidelity-framework-unifying-implementation"></a>
+<a id="coeffect-analysis-for-unified-optimization"></a>
+<a id="beyond-moores-law-the-data-flow-advantage"></a>
 
-    // Preserved invariants (Conservation laws OR learned constraints)
-    Invariants: Set<CategoricalProperty>
-}
+### Layout and Transfer
 
-and AdjointPair<'Input, 'Output> = {
-    // unit of the adjunction: η: Id → G∘F
-    Unit: 'Input -> 'Input
+Our coeffect analysis connects required facts about values with decisions about their realization. Range affects numeric representation. Lifetime affects placement. Access requirements affect whether a value may be shared or transferred. These decisions interact, so the compiler must reconcile them before committing to a target layout.
 
-    // counit of the adjunction: ε: F∘G → Id
-    Counit: 'Output -> 'Output
+A flat closure environment has a finite set of capture fields. Immutable values can be captured by value, while a shared mutable binding requires storage whose lifetime covers its uses. Concrete field sizes and alignment also need instantiated types and target facts. Capturing a reference adds requirements about its referent. Copying the reference's bits to another device or process does not establish valid access there.
 
-    // triangle identities, verifier-discharged
-    Certificate: SMTCertificate
-}
+BAREWire's three roles belong in this analysis: memory layout within a process, IPC contracts between processes, and network contracts across machines. Compatible layouts and access rights may permit a shared-memory path. Different address spaces or representations may require translation or copying. Those boundary operations should retain the same dimensional and protocol commitments as the source computation.
 
-// Clef supports custom operators for the mathematical notation
-let inline (⊣) forward backward =
-    { Unit = fun x -> backward.Apply(forward.Apply x)
-      Counit = fun y -> forward.Apply(backward.Apply y)
-      Certificate = checkAdjunction forward backward }  // the solver discharges the triangle identities
+<a id="proof-aware-compilation-through-hypergraphs"></a>
+<a id="layer-1-hypergraph-optimization-with-proofs"></a>
+<a id="layer-2-mlir-with-constraint-preservation"></a>
+<a id="layer-3-hardware-specific-verified-code"></a>
 
-let computation = {
-    Forward = myForwardFunctor
-    Backward = myBackwardFunctor
-    Adjunction = myForwardFunctor ⊣ myBackwardFunctor  // Optional operator syntax
-    Invariants = Set.ofList [EnergyConservation; MomentumConservation]
-}
-```
+## Lowering and Reasoning Modes
 
-This implements the fundamental theorem from CDL: every differentiable function \(f: A \to B\) gives rise to an adjunction:
+A checked source operation still needs a correct target realization. Lowering a mathematical integer operation to a bounded machine operation introduces a representability condition. Moving a buffer between memories introduces layout and access conditions. Each transformation needs evidence connecting the source claim to the property checked at the next stage.
 
-\[\text{Fwd}_f \dashv \text{Bwd}_f : \text{Para}(A) \rightleftarrows \text{Para}(B)\]
-
-Where the forward pass \(\text{Fwd}_f\) and backward pass \(\text{Bwd}_f\) form an adjoint pair. In HPC, this manifests as the adjoint method for sensitivity analysis. In AI, it's backpropagation. In quantum computing, it's the unitary conjugate.
-
-> The mathematics are identical. Only the ***substrate*** differs.
-
-This is a blueprint for unification that Clef is designed to express through its computation expressions, type providers, and quotation system. As we explored in our [Beyond Transformers](/blog/beyond-transformers/) work, the shift away from matrix multiplication opens the door to other representations. Category theory provides that representation, and Clef provides the engineering vehicle.
-
-### Key CDL Principles Applied to HPC+AI
-
-The CDL paper establishes four principles that our Fidelity framework is designed to implement:
-
-1. **Compositional Structure**: Both simulations and neural networks compose functorially
-   \[f: A \to B, \quad g: B \to C \quad \Rightarrow \quad g \circ f: A \to C\]
-
-2. **Duality**: Every forward computation has a dual (adjoints in HPC, gradients in AI)
-   \[\text{Forward}: \mathcal{C} \to \mathcal{D} \quad \dashv \quad \text{Backward}: \mathcal{D} \to \mathcal{C}\]
-
-3. **Algebraic Properties**: Conservation laws and weight tying emerge from the same structures
-   \[\text{Invariant}(f \circ g) = \text{Invariant}(f) \wedge \text{Invariant}(g)\]
-
-4. **Equivariance**: Symmetries in physics and neural architectures share mathematical roots
-   \[\rho(g) \cdot f(x) = f(\rho(g) \cdot x) \quad \text{for all } g \in G\]
-
-These aren't separate implementations in Fidelity; they're different views of the same categorical structure encoded in our Clef type system.
-
-## Universal Numbers: Solving the Numerical Problem
-
-[The Universal Numbers Library](https://github.com/stillwater-sc/universal) provides the numerical foundation that makes both HPC and AI practical at scale. This addresses one of the core challenges we identified in our [ternary models exploration](https://speakez.tech/blog/a-unified-vision-for-ternary-models/): maintaining numerical fidelity across heterogeneous computing environments.
-
-### Posit Arithmetic: The Best of Both Worlds
-
-While Fidelity is rooted in Clef, the Universal Numbers library exists as optimized C++ code that we integrate through our compilation pipeline. MLIR itself is implemented in C++, and when our Clef code lowers through the compilation stack, it interfaces with these numerical primitives:
-
-```cpp
-// C++ Universal posit - perfect for both domains
-template<unsigned nbits, unsigned es>
-class posit {
-    // Tapered accuracy: More precision near 1.0 (AI's operating point)
-    // Wide dynamic range: Handles HPC's extreme scales
-    // Exact accumulation: Via quire for reproducibility
-};
-```
-
-Think of this as the numerical "engine" that drives our type-safe Clef abstractions. Just as you don't need to understand the assembly instructions your CPU executes, you interact with posits through Clef's type system while the C++ implementation handles the bit-level arithmetic. The MLIR lowering strategy is designed so that the C++ posit operations become direct hardware instructions rather than library calls.
-
-### Clef Type-Safe Integration
-
-Building on our work with [discriminated unions](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/), we can create type-safe numerical representations that respect the categorical structure:
-
-```fsharp
-// Type-safe wrapper preserves semantics
-type Posit<[<Literal>] nbits: int, [<Literal>] es: int> =
-    private | PositValue of uint64
-
-    // For HPC: Preserve conservation laws
-    static member ConservationSum (values: Posit<'n,'e> array) =
-        use quire = Quire<'n, 512>.Zero
-        for v in values do quire.Add(v)  // Exact!
-        quire.ToPosit()  // Single rounding
-
-    // For AI: Stable gradients
-    static member StableGradient (loss: Posit<32,2>) =
-        // Tapered accuracy prevents underflow
-        Gradient.compute loss
-```
-
-This connects to the CDL paper's requirement for a symmetric monoidal category with biproducts. The Universal numbers provide the numerical semiring \((\mathbb{R}, +, \times)\) with the crucial property that our morphisms preserve the algebraic structure:
-
-\[\text{Hom}_{\text{Posit}}(A \oplus B, C) \cong \text{Hom}_{\text{Posit}}(A, C) \times \text{Hom}_{\text{Posit}}(B, C)\]
-
-This biproduct structure is essential for gradient decomposition and is automatically preserved by our type-safe implementation.
-
-## Formal Verification: Provable Numerics
-
-#### The Missing Link
-
-F* and its SMT backend provide the formal verification layer for the unified framework. The point often missed is that **proofs don't just ensure correctness; they inform optimization patterns that can be up to 100x more efficient**. This extends the work we outlined in [Transforming AI Efficiency](/blog/fidelity-as-ai-refinery/) where we show that proofs are also lowered in MLIR to execute through SMTLIB.
-
-### Proof-Carrying Code in the Hypergraph
-
-This abstract should be considered an advanced example, something that would be opt-in, going above and beyond the MISRA-C-class proofs that would ride along with most classical Clef code in this framework. But it's an example of how extensible the framework can be when the use case calls for this level of specialization.
-
-```fsharp
-// Hypergraph edges carry both algorithmic and numerical proofs
-type ProofHyperedge =
-    // HPC proofs
-    | ConservationProof of system: Node * law: ConservationLaw * cert: SMTCertificate
-    | StabilityProof of solver: Node * condition: StabilityCondition * cert: SMTProof
-
-    // AI proofs
-    | ConvergenceProof of training: Node * bound: ConvergenceBound * cert: SMTProof
-    | RobustnessProof of model: Node * perturbation: Epsilon * cert: SMTCertificate
-
-    // Unified proofs
-    | NumericalExactnessProof of computation: Node * error: ErrorBound * cert: Universal
-    | CompositionCorrectnessProof of components: Node list * property: Property * cert: SMTProof
-```
-#### Beyond Moore's Law: The Data-Flow Advantage
-
-Traditional Von Neumann and Modified Harvard architectures force a control-flow paradigm where computation and memory are separated, creating endless cycles of fetch-decode-execute with associated wait states and heat dissipation. As we explored in our [hypergraph architecture](/docs/internals/pipeline/hyping-hypergraphs/), data-flow representations can be significantly more efficient because computation happens where the data lives.
-
-This isn't theoretical. I've witnessed the inverse cost of this firsthand in digital audio engineering, where 16-bit representation for Compact Disc authoring required heroic efforts to "dither" floating point truncation. The computational gymnastics needed to mask quantization noise consumed more engineering time than the actual audio post-production flow. We'd spend 90% of our cycles compensating for representation limitations. The parallel with current AI/HPC is stark: we waste enormous computational resources managing the impedance mismatch between our mathematical intentions and our computational substrates.
-
-#### Proofs as Optimization Catalysts
-
-As detailed in our [proof-aware compilation](/docs/internals/pipeline/proof-aware-compilation/) work, mathematical proofs don't just verify correctness; they reveal optimization opportunities invisible to traditional compilers:
-
-```fsharp
-// Traditional approach: defensive programming with runtime checks
-let traditional_matrix_multiply A B =
-    // Runtime dimension checks
-    assert (A.Cols = B.Rows)
-    // Bounds checking on every access
-    for i in 0..A.Rows-1 do
-        for j in 0..B.Cols-1 do
-            for k in 0..A.Cols-1 do
-                // Each access checks bounds
-                result.[i,j] <- result.[i,j] + A.[i,k] * B.[k,j]
-
-// Categorical approach with proofs
-let categorical_matrix_multiply
-    (A: Matrix<'n, 'm>)
-    (B: Matrix<'m, 'p>)
-    : Matrix<'n, 'p> =
-    // dimensions checked at compile time; proofs remove the runtime bounds checks
-    categorical {
-        return! matmul A B
-    }
-```
-
-The proofs give the compiler permission to optimize aggressively. This connects to the CDL paper's observation that gradient flow is a natural transformation \(\eta: \text{Id} \Rightarrow T\) where \(T\) is the gradient operator. When we prove properties about \(\eta\), we're proving properties about the available optimizations:
-
-\[\text{Optimize}(f) = g \quad \text{iff} \quad \eta_f = \eta_g \text{ and } \text{Invariants}(f) = \text{Invariants}(g)\]
-
-Safety and performance line up here as aspects of the same mathematical correctness. When the framework aligns with the structure of the computation, the engineering burden of the defensive patterns drops away. Those patterns turn out to be the cost of working against the underlying mathematics rather than with it.
-
-#### Calendar Time: The Hidden Multiplier
-
-The efficiency gains won't just be found during training and inference; they will also be multiplied by shifts in development time. Current AI/HPC development follows assumptions around costly patterns:
-
-1. Write initial code (teams, for weeks)
-2. Debug tensor shape errors (teams, for weeks)
-3. Track down numerical instabilities (separate team, for weeks)
-4. Optimize bottlenecks (separate team, for weeks)
-5. Re-verify after optimization (days)
-6. Deploy and remediate edge cases (ongoing)
-
-With Fidelity's proposed approach:
-
-1. Write type-safe categorical code (one team, for weeks)
-2. Compiler catches all shape/dimension errors ( -- )
-3. Universal numbers prevent instabilities ( -- )
-4. Proofs guide optimizations automatically ( -- )
-5. Verification is built-in ( -- )
-6. Edge cases caught at compile time ( -- )
-
-**The same functionality would ship in weeks instead of months**. Smaller, more tightly aligned teams could iterate faster, with more room to adapt the code and the data it's trained on, exploring solution spaces that were previously infeasible to reach.
-
-#### The Compounding Effect
-
-These gains compound across their domains rather than adding. A system that's 10x more efficient at runtime, developed 6x faster, with 10x fewer bugs, running on hardware that dissipates 10x less heat, multiplies its advantage at each layer. Modern AI/HPC systems carry a great deal of "computational dithering," cycles spent managing accidental complexity rather than solving the problem at hand:
-
-- **Memory management overhead**: Copying data between CPU/GPU
-- **Synchronization waste**: Barriers and locks for incorrect abstractions
-- **Precision management**: Converting between float16/32/64
-- **Framework translation**: PyTorch -> ONNX -> TensorRT -> Hardware
-
-Each layer adds overhead, heat, and opportunity for error, all while leadership is watching sand drop through the hourglass. The categorical approach with Universal numbers eliminates these layers:
-
-```fsharp
-// Direct path from mathematics to hardware
-let QCE molecule =
-    // Mathematics expressed directly
-    let hamiltonian = constructHamiltonian molecule
-
-    // Universal numbers handle precision automatically
-    let groundState = Posit<32,2>.DiagonalizeExactly hamiltonian
-
-    // Category theory ensures correct composition
-    let correlation = categorical {
-        let! hartreeFock = HF.compute molecule
-        let! correction = Neural.correlationEnergy molecule
-        return hartreeFock + correction
-    }
-
-    // lowers straight to hardware through MLIR, no intermediate copies or conversions
-    Fidelity.compile correlation |> Execute.on GPU
-```
-
-And rather than waiting on a new silicon process node, these gains are within reach on today's hardware through mathematical and architectural work.
-
-> Everything Fidelity framework establishes for the ***next*** generation of hardware can **also** target the current generation of hardware with some in-compiler adjustments to target appropriate hardware.
-
-Our goal is to make the design-time experience substantially the same in either case.
-
-## Fidelity Framework: Unifying Implementation
-
-The Fidelity framework is designed to carry these concepts into working engineering, building on all our previous work:
-
-### Coeffect Analysis for Unified Optimization
-
-As we explored in our [ternary models work](https://speakez.tech/blog/a-unified-vision-for-ternary-models/), different computational patterns require different execution strategies:
-
-```fsharp
-// Coeffects determine optimal execution strategy
-type UnifiedCoeffects =
-    | SimulationPattern of timesteps: int * conservation: Laws
-    | LearningPattern of epochs: int * gradients: Flow
-    | HybridPattern of physics: Simulation * correction: Learning
-
-    member this.CompilationStrategy =
-        match this with
-        | SimulationPattern(_, laws) when laws.AreLinear ->
-            InteractionNets  // Parallel physical simulation
-        | LearningPattern(_, flow) when flow.IsSparse ->
-            DelimitedContinuations  // Sequential gradient flow
-        | HybridPattern(physics, learning) ->
-            HeterogeneousExecution(physics.OnHPC(), learning.OnGPU())
-```
-
-## Proof-Aware Compilation Through Hypergraphs
-
-The hypergraph architecture is designed to optimize while preserving proofs:
-
-#### Layer 1: Hypergraph Optimization with Proofs
-
-```fsharp
-// Optimize while maintaining verified properties
-let optimizeWithProofs (graph: Hypergraph) =
-    // Extract proof obligations
-    let proofs = graph.Hyperedges |> filterProofs
-
-    // For HPC: Maintain conservation laws
-    let physicsProofs = proofs |> filterPhysics
-    let optimizedPhysics =
-        graph
-        |> fuseOperations physicsProofs
-        |> parallelizeTimeSteps physicsProofs
-
-    // For AI: maintain convergence bounds
-    let learningProofs = proofs |> filterLearning
-    let optimizedLearning =
-        graph
-        |> fuseGradients learningProofs
-        |> quantizeWeights learningProofs
-
-    // Unified: Both optimized with proofs preserved
-    combineOptimized optimizedPhysics optimizedLearning proofs
-```
-
-#### Layer 2: MLIR with Constraint Preservation
+We also change reasoning modes. Measure equality uses algebraic normalization. A bounded index calculation can use arithmetic constraints. A domain result may supply a proved lemma, and a relational argument may compare two executions. Our intended categorical account includes both directions:
 
 ```mermaid
-graph TD
-    A[Clef Source with Proofs] --> B[Alex AST Transform]
-    B --> C[High-Level MLIR]
-    C --> D[Proof-Preserving Lowering]
-    D --> E[Hardware-Specific MLIR]
-    E --> F[Verified Machine Code]
-
-    G[cvc5 Verification] --> D
-    H[SMT Proofs] --> D
-    I[Universal Numerics] --> D
+flowchart LR
+    A[Source claim in one reasoning mode] -->|Lowering correspondence| B[Target claim in that mode]
+    A -->|Justified change of reasoning mode| C[Source claim with additional structure]
+    B -->|Justified change of reasoning mode| D[Target claim with additional structure]
+    C -->|Lowering correspondence| D
 ```
 
-At the MLIR level, proof obligations once satisfied transform into optimization constraints using standard MLIR infrastructure. Rather than custom dialects, we leverage MLIR's existing attribute system and transformation framework, including the SMT dialect for encoding verification conditions that can be checked by an SMT solver during lowering. Proof metadata travels as function and operation attributes that standard MLIR passes respect but don't need to understand.
-
-For example, when lowering HPC simulations, we use standard `linalg` and `affine` dialects for the computation, with satisfied proof obligations encoded as attributes that prevent unsafe transformations. The `affine` dialect's polyhedral model naturally preserves loop invariants that correspond to conservation laws. The SMT dialect encodes these invariants as assertions that can be verified at compile time. Similarly, AI operations lower through `tensor` and `linalg` dialects with attributes marking gradient-critical paths that must maintain numerical stability.
+When both routes apply, the evidence should relate the property established before lowering to the translated property established afterward. A two-categorical or fibered description would organize these correspondences and their compatibility. The [adjoint correspondence entry](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/) and [compilation sheaf design](/docs/design/categorical-foundations/the-compilation-sheaf/) develop that direction.
 
-MLIR's pass infrastructure already supports preserving unknown attributes through transformations. These attributes flow all the way through to LLVM as metadata and function attributes that constrain backend optimizations. For instance, a conservation law verified by the solver becomes both an affine constraint in MLIR and a `llvm.loop.invariant` metadata node in LLVM IR. A convergence bound becomes both a barrier to certain MLIR transformations and an `llvm.assume` intrinsic that enables safe optimizations while preventing unsafe ones. The mathematical properties guide the lowering without requiring MLIR or LLVM to understand the proofs themselves. They respect the constraints that our PHG-guided proofs impose, based on their satisfaction through MLIR and F*.
-
-#### Layer 3: Hardware-Specific Verified Code
+Some type metadata has served its purpose by the time native instructions are produced. The compiler can release it at a justified boundary while retaining the correspondence needed to validate the lowering. The target need not carry dimensional runtime tags to preserve the source program's dimensional contract.
 
-```fsharp
-// Generate verified code for specific hardware
-let generateVerifiedCode (target: HardwareTarget) (graph: OptimizedGraph) =
-    match target with
-    | CPU ->
-        // HPC kernels with vector intrinsics
-        generateCPUWithProofs graph "AVX-512" "OpenMP"
-    | GPU ->
-        // AI kernels with tensor cores
-        generateGPUWithProofs graph "CUDA" "TensorRT"
-    | FPGA ->
-        // Custom datapaths for both
-        generateFPGAWithProofs graph "Verilog" "HLS"
-    | Heterogeneous(cpu, gpu) ->
-        // Split verified computation
-        let hpcPart = extractHPC graph |> generateCPU
-        let aiPart = extractAI graph |> generateGPU
-        combineWithProofs hpcPart aiPart
-```
-
-## The HPC-AI Convergence
-
-#### Why Convergence Follows
-
-HPC and AI are discovering they need each other, and the CDL mathematics shows why. Both domains are working with the same underlying structure:
-
-\[\mathbf{HPC}: \text{Phys} \xrightarrow{F} \text{Comp} \xrightarrow{F^*} \text{Phys}\]
-\[\mathbf{AI}: \text{Data} \xrightarrow{N} \text{Latent} \xrightarrow{N^*} \text{Data}\]
-
-Where \(F^*\) and \(N^*\) are the adjoints (sensitivity analysis and backpropagation respectively). The convergence occurs when we recognize these are the same pattern:
-
-\[\mathbf{Unified}: \mathcal{A} \xrightarrow{\Phi} \mathcal{B} \xrightarrow{\Phi^{\dagger}} \mathcal{A}\]
-
-### New Computational Primitives
-
-The convergence creates new primitives that transcend the HPC/AI divide:
-
-```fsharp
-// Differentiable simulation - gradients through physics
-type DifferentiableSimulation<'State> = {
-    // Forward: HPC simulation
-    Simulate: 'State -> 'State
-
-    // Backward: Automatic differentiation
-    Gradient: 'State -> Gradient<'State>
-
-    // Certificates: the solver discharges energy conservation and gradient correctness
-    ForwardCertificate: SMTCertificate
-    BackwardCertificate: SMTCertificate
-
-    // Numerics: Unified representation
-    Arithmetic: Posit<32,2>
-}
-
-// Verified neural operators - learning with proofs
-type VerifiedNeuralOperator<'Domain> = {
-    // Learn: AI optimization
-    Train: Dataset<'Domain> -> Model<'Domain>
-
-    // Verify: the solver discharges the safety property and returns a certificate
-    Certify: Model<'Domain> -> SMTCertificate
-
-    // Execute: HPC performance
-    Run: 'Domain -> 'Domain
-
-    // Numerics: Same substrate
-    Computation: Universal.Quire<32, 1024>
-}
-```
-
-### Unified Applications
-
-#### Digital Twins with Verified Learning
-
-Building on our exploration of [heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/), we can create unified digital twins:
-
-```fsharp
-module JetEngineDigitalTwin =
-    // Clef implementation with SMT verification attributes
-    [<SMT Requires("valid_state(engine)")>]
-    [<SMT Ensures("energy_conserved(result)")>]
-    [<SMT Ensures("wear_monotonic(result)")>]
-    [<SMT Ensures("safe_operating_envelope(result)")>]
-    let implementation (engine: EngineState) (sensorData: SensorStream) =
-        // HPC: Computational fluid dynamics
-        let cfd = VerifiedCFD<Posit<64,3>>(
-            proof = ConservationProof.Energy
-        )
-
-        // AI: Learn degradation patterns
-        let degradation = LearnedDegradation<Posit<32,2>>(
-            proof = MonotonicityProof.Wear
-        )
-
-        // Unified: Compose with verification
-        let unified = categorical {
-            let! flow = cfd.Simulate
-            let! wear = degradation.Predict
-
-            // the solver verifies composition preserves properties
-            let! composed = verifyComposition flow wear
-
-            return composed
-        }
-
-        // Compile to efficient implementation
-        unified
-        |> Fidelity.BuildHypergraph
-        |> Fidelity.AttachProofs [cfd.Proof; degradation.Proof]
-        |> Fidelity.OptimizeWithProofs
-        |> Universal.GenerateCode
-```
-
-#### Climate Modeling with Physics-Informed Learning
-
-```fsharp
-module ClimateModel =
-    // Verification specification
-    type ClimateInvariants = {
-        EnergyBalance: bool  // RadiationIn = RadiationOut + Storage
-        MassConservation: bool  // TotalMass = Constant
-        ThermodynamicLaws: bool  // EntropyNonDecreasing
-    }
-
-    // Hybrid implementation with SMT verification
-    [<SMT Requires("valid_initial_state(atmosphere)")>]
-    [<SMT Ensures("energy_balance(result)")>]
-    [<SMT Ensures("mass_conserved(result)")>]
-    [<SMT Ensures("entropy_nondecreasing(result)")>]
-    let climatePredictor (initialState: ClimateState) =
-        // HPC: Atmospheric dynamics
-        [<SMT Invariant("conserves_energy(atmospheric)")>]
-        [<SMT Invariant("conserves_angular_momentum(atmospheric)")>]
-        let atmospheric = NavierStokesOnSphere<Posit<32,2>>()
-
-        // AI: Sub-grid phenomena
-        [<SMT Ensures("preserves_mass_balance(subgrid)")>]
-        [<SMT Ensures("bounded_output(subgrid, -100.0, 100.0)")>]
-        let subgrid = NeuralParameterization<Posit<16,1>>()
-
-        // Verification through composition
-        [<SMT Assert("no_overflow(atmospheric.Compute)")>]
-        [<SMT Assert("no_underflow(subgrid.Compute)")>]
-        [<SMT Assert("composition_preserves_invariants(atmospheric, subgrid)")>]
-        let verifiedComposition =
-            {
-                Atmospheric = atmospheric
-                SubGrid = subgrid
-                Invariants = {
-                    EnergyBalance = true
-                    MassConservation = true
-                    ThermodynamicLaws = true
-                }
-            }
-
-        // Execute with verified invariants
-        VerifiedExecution(verifiedComposition)
-```
-
-#### Autonomous Systems with Certified Safety
-
-As we explored in our [post-transformer architectures](/blog/beyond-transformers/), safety-critical systems benefit from unified verification:
-
-```fsharp
-module AutonomousVehicle =
-    // Clef implementation with SMT verification annotations
-    [<SMT Requires("perception.Accuracy > 0.99 && perception.Latency < 10ms")>]
-    [<SMT Ensures("forall obstacle in scene.Obstacles.
-                  distance(cmd.Trajectory, obstacle) > safety_margin")>]
-    [<SMT Ensures("cmd.Velocity <= speed_limit && cmd.Acceleration <= comfort_threshold")>]
-    let safe_trajectory (perception: SceneUnderstanding)
-                       (planning: TrajectoryOptimization)
-                       : VehicleCommand =
-
-        // AI: perception with verified detection bounds
-        let verifiedPerception =
-            [<SMT Invariant("forall obj. obj.IsObstacle => detected(obj)")>]
-            let transformer = VerifiedVisionTransformer<Posit<16,1>>()
-            transformer.Configure({
-                MinDetectionConfidence = 0.99
-                MaxLatency = 10<ms>
-            })
-            transformer
-
-        // HPC: Real-time trajectory optimization
-        [<SMT Ensures("trajectory.IsDynamicallyFeasible()")>]
-        [<SMT Ensures("forall t. trajectory.MinDistance(t) > margin")>]
-        let optimizeTrajectory (scene: Scene) =
-            let controller = OptimalControl<Posit<32,2>>()
-            controller.SetConstraints({
-                VehicleDynamics = getVehicleModel()
-                SafetyMargin = 2.0<m>
-                ComfortLimits = getComfortProfile()
-            })
-            controller.Optimize(scene)
-
-        // Unified: Compose with safety proof
-        let integrated = categorical {
-            // Process sensor data
-            let! scene = verifiedPerception.Process(perception.SensorData)
-
-            // Plan trajectory with verification
-            let! path = optimizeTrajectory scene
-
-            // End-to-end safety verification
-            [<SMT Assert("collision_free(path) && traffic_compliant(path)")>]
-            let! verifiedPath = validatePath scene path
-
-            return VehicleCommand(verifiedPath, ProofCertificate = true)
-        }
-
-        integrated |> Async.RunSynchronously
-```
-
-### Advanced Implementation Examples
-
-The following examples showcase the depth of verification possible within the Fidelity framework, though we emphasize these are forward-looking implementations that will evolve as we refine the integration between Clef, F*, and our compilation pipeline. Importantly:
-
-> The extensive proof annotations shown here represent the ***maximum*** verification depth available, ***not* the minimum required**.
-
-The Fidelity framework embraces a "verification by choice" philosophy: most Clef developers will write standard Clef code with optional type safety features, adding verification attributes only where their domain demands it. A web application might use no proofs at all, a financial system might verify key invariants, while safety-critical aerospace systems could leverage the full depth shown below. This graduated approach lets teams adopt formal methods incrementally, starting with type safety and adding verification where the business value justifies the effort. The same framework spans casual scripting through stringent certification requirements.
-
-#### Verified Fluid-Structure Interaction
-
-```fsharp
-module FluidStructureInteraction =
-    // The problem: Coupling fluid dynamics with structural mechanics
-    // Traditional: Separate solvers with weak coupling
-    // Unified: Single verified computation
-
-    // Define numerical representation
-    type FluidNumber = Posit<32, 2>
-    type StructureNumber = Posit<64, 3>  // Higher precision for structure
-
-    // Clef implementation with SMT verification annotations
-    [<SMT Requires("compatible_interface(fluid, structure)")>]
-    [<SMT Ensures("momentum_conserved(result.Fluid, result.Structure)")>]
-    [<SMT Ensures("energy_conserved(result.Fluid, result.Structure)")>]
-    [<SMT Ensures("stable_coupling(result.Fluid, result.Structure)")>]
-    let coupled_system (fluid: FluidState) (structure: StructuralState) =
-
-        // HPC: Fluid solver with conservation verification
-        [<SMT Invariant("conserves_momentum(state)")>]
-        [<SMT Invariant("conserves_mass(state)")>]
-        let solveFluid (initialState: FluidState) = categorical {
-            // Use quire for exact pressure accumulation
-            use pressureAccumulator = Quire<32, 1024>.Zero
-
-            // Solve Navier-Stokes with verified conservation
-            let! solution = solveNavierStokes<FluidNumber> initialState
-
-            // Assert conservation properties
-            [<SMT Assert("momentum(solution) = momentum(initialState)")>]
-            let! verified = verifyConservation solution
-
-            return verified
-        }
-
-        // HPC: Structure solver with AI-enhanced fatigue prediction
-        [<SMT Ensures("stress.MaxValue < yield_strength")>]
-        [<SMT Ensures("fatigue.Cycles > design_life")>]
-        let solveStructure (load: StructuralLoad) = categorical {
-            // High-precision stress computation
-            let! stress = computeStress<StructureNumber> load
-
-            // AI: Learn fatigue from data with bounded prediction
-            [<SMT Ensures("fatigue.Confidence > 0.95")>]
-            let! fatigue = neuralFatigueModel.Predict stress
-
-            // Verify stress-fatigue relationship
-            [<SMT Assert("fatigue_valid(stress, fatigue)")>]
-            let! verified = validateFatigue stress fatigue
-
-            return (stress, fatigue)
-        }
-
-        // Coupled system with interface verification
-        [<SMT Invariant("interface_continuity(fluid, structure)")>]
-        let coupled = categorical {
-            // Solve fluid domain
-            let! fluidSolution = solveFluid fluid
-
-            // Transfer loads at interface
-            [<SMT Assert("load_balance(fluidSolution.Pressure, structureLoad)")>]
-            let structureLoad = extractInterfaceLoad fluidSolution
-
-            // Solve structure with transferred loads
-            let! (stress, fatigue) = solveStructure structureLoad
-
-            // Update fluid boundary from structural deformation
-            [<SMT Assert("geometric_compatibility(fluidSolution, deformation)")>]
-            let deformation = computeDeformation stress
-            let! updatedFluid = updateFluidBoundary fluidSolution deformation
-
-            // Verify coupling maintains all properties
-            [<SMT Assert("energy(updatedFluid) + energy(stress) = energy(fluid) + energy(structure)")>]
-            let! verifiedResult = {
-                Fluid = updatedFluid
-                Structure = { Stress = stress; Fatigue = fatigue }
-                InterfaceForces = structureLoad
-                CouplingStable = true
-            }
-
-            return verifiedResult
-        }
-
-        // Execute with automatic proof generation
-        coupled |> Categorical.RunWithProofs
-```
-
-#### Quantum Chemistry with Neural Corrections
-
-This shows how quantum chemical calculations integrate SMT verification as attributes, ensuring physical constraints (Hermiticity, normalization, variational principle) are maintained throughout the computation while combining HPC (Hartree-Fock) with AI (neural correlation) methods.
-
-```fsharp
-module QuantumChemistry =
-    // The challenge: Ab initio calculations are exponentially expensive
-    // Solution: Verified neural corrections to approximate methods
-
-    // Quantum invariants as type constraints
-    type QuantumInvariants = {
-        Hermiticity: bool  // H = H†
-        Normalization: bool  // ⟨ψ|ψ⟩ = 1
-        Variational: bool  // E_approx ≥ E_exact
-    }
-
-    // Clef implementation with SMT verification
-    [<SMT Requires("molecule.IsValid && molecule.Electrons > 0")>]
-    [<SMT Ensures("result.Energy >= exact_ground_state_energy(molecule)")>]
-    [<SMT Ensures("abs(result.Energy - exact_energy) < 1e-6<Hartree>")>]
-    [<SMT Ensures("result.Wavefunction.IsNormalized()")>]
-    let molecular_energy (molecule: Molecule) =
-
-        // HPC: Hartree-Fock baseline with variational guarantee
-        [<SMT Ensures("energy >= exact_ground_state")>]
-        [<SMT Invariant("hamiltonian.IsHermitian()")>]
-        let computeHartreeFock (mol: Molecule) =
-            let hf = HartreeFock<Posit<64,4>>()
-            hf.Configure({
-                BasisSet = "cc-pVTZ"
-                ConvergenceThreshold = 1e-10<Hartree>
-                MaxIterations = 100
-            })
-
-            // Self-consistent field iteration
-            [<SMT Invariant("density_matrix.IsIdempotent()")>]
-            let energy = hf.SolveSCF(mol)
-
-            // Verify variational principle
-            [<SMT Assert("energy >= exact_ground_state_energy(mol)")>]
-            { Energy = energy; Orbitals = hf.Orbitals }
-
-        // AI: Neural correction with bounded error
-        [<SMT Ensures("abs(correction) < max_correlation_energy")>]
-        [<SMT Ensures("sign(correction) = -1")>]  // Correlation always lowers energy
-        let computeCorrelation (hfResult: HartreeFockResult) =
-            let nn = NeuralCorrelation<Posit<32,2>>()
-            nn.Configure({
-                Architecture = "EquivariantGNN"  // Respects molecular symmetries
-                TrainedOn = "CCSD(T)_G4_dataset"
-                ErrorBound = 1.0<kcal/mol>
-            })
-
-            // Predict with uncertainty quantification
-            [<SMT Invariant("nn.PreservesSymmetry(molecule.PointGroup)")>]
-            let (correction, uncertainty) = nn.PredictWithUncertainty(hfResult)
-
-            // Verify correction is physically reasonable
-            [<SMT Assert("correction <= 0.0<Hartree>")>]  // Always negative
-            [<SMT Assert("abs(correction) < 0.5 * hfResult.Energy")>]  // Bounded
-
-            { Correction = correction; Uncertainty = uncertainty }
-
-        // Combine with verified accuracy bounds
-        [<SMT Ensures("result.TotalEnergy = hf.Energy + correlation.Correction")>]
-        [<SMT Ensures("result.ErrorBound < 1.0<kcal/mol>")>]
-        let combineWithProof (hf: HartreeFockResult) (corr: CorrelationResult) =
-            // Total energy with SMT-discharged error bound
-            let totalEnergy = hf.Energy + corr.Correction
-
-            // Error propagation
-            [<SMT Assert("total_error = sqrt(hf_error^2 + correlation_error^2)")>]
-            let errorBound =
-                sqrt(hf.ConvergenceError ** 2.0 + corr.Uncertainty ** 2.0)
-
-            // Package with quantum invariants verified
-            {
-                TotalEnergy = totalEnergy
-                HartreeFock = hf
-                Correlation = corr
-                ErrorBound = errorBound
-                QuantumInvariants = {
-                    Hermiticity = true  // Guaranteed by HF
-                    Normalization = true  // Maintained throughout
-                    Variational = true  // HF+correction ≥ exact
-                }
-            }
-
-        // Execute computation with all verifications
-        let hfResult = computeHartreeFock molecule
-        let correlation = computeCorrelation hfResult
-        let verified = combineWithProof hfResult correlation
-
-        verified
-```
-
-#### Verified Kalman Filter with Learning
-
-Building on our [discriminated unions exploration](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/), we can create verified filters with learned components:
-
-```fsharp
-// Classic algorithm enhanced with verified learning
-module VerifiedKalmanFilter =
-    open Universal.Posit
-
-    // Clef implementation with SMT verification attributes
-    [<SMT Requires("positive_definite(state.Covariance)")>]
-    [<SMT Ensures("positive_definite(result.Covariance)")>]
-    [<SMT Ensures("result.Error <= state.Error + measurement.Noise")>]
-    [<SMT Ensures("numerically_stable(result)")>]
-    let kalman_update (state: KalmanState<Posit<32,2>>)
-                     (measurement: Measurement<Posit<16,1>>)
-                     : KalmanState<Posit<32,2>> =
-
-        // Predict step with covariance propagation
-        [<SMT Invariant("positive_definite(predicted.Covariance)")>]
-        let predictState (current: KalmanState<Posit<32,2>>) =
-            let F = current.TransitionMatrix
-            let Q = current.ProcessNoise
-
-            // State prediction: x̂ₖ₊₁|ₖ = F * x̂ₖ|ₖ
-            let predictedState = F * current.State
-
-            // Covariance prediction: Pₖ₊₁|ₖ = F * Pₖ|ₖ * F' + Q
-            [<SMT Assert("symmetric(predictedCovariance)")>]
-            let predictedCovariance = F * current.Covariance * F.Transpose + Q
-
-            { State = predictedState
-              Covariance = predictedCovariance
-              TransitionMatrix = F
-              ProcessNoise = Q
-              Error = current.Error }
-
-        // AI: Learn adaptive measurement noise
-        [<SMT Ensures("noise.Mean > 0.0 && noise.Variance < max_variance")>]
-        [<SMT Ensures("noise.IsStationary || noise.AdaptsSlowly")>]
-        let learnNoisePattern (history: Measurement<Posit<16,1>> array) =
-            let nn = NoiseEstimator<Posit<16,1>>()
-            nn.Configure({
-                WindowSize = 100
-                Architecture = "LSTM"
-                MaxVariance = 1.0<unit^2>
-            })
-
-            // Learn noise characteristics with bounds
-            [<SMT Invariant("forall t. noise(t) > 0")>]
-            let noiseModel = nn.EstimateNoise(history)
-
-            // Verify learned model is physically reasonable
-            [<SMT Assert("noise.AutoCorrelation < 0.95")>]  // Not perfectly correlated
-            noiseModel
-
-        // Update step with numerical stability
-        [<SMT Ensures("result.Covariance = (I - K*H) * predicted.Covariance")>]
-        [<SMT Invariant("no_overflow(computation)")>]
-        let computeUpdate (predicted: KalmanState<Posit<32,2>>)
-                         (meas: Measurement<Posit<16,1>>)
-                         (noise: NoiseModel<Posit<16,1>>) =
-
-            // Use quire for exact accumulation in critical computation
-            use covarianceAccumulator = Quire<32, 2048>.Zero
-
-            let H = meas.ObservationMatrix
-            let R = noise.CovarianceMatrix
-
-            // Innovation covariance: S = H * P * H' + R
-            [<SMT Assert("positive_definite(S)")>]
-            let S = H * predicted.Covariance * H.Transpose + R
-
-            // Kalman gain: K = P * H' * S⁻¹
-            [<SMT Assert("well_conditioned(S)")>]  // Invertibility check
-            let K = predicted.Covariance * H.Transpose * S.Inverse
-
-            // State update: x̂ₖ₊₁ = x̂ₖ₊₁|ₖ + K * (z - H * x̂ₖ₊₁|ₖ)
-            let innovation = meas.Value - H * predicted.State
-            let updatedState = predicted.State + K * innovation
-
-            // Covariance update (Joseph form for numerical stability)
-            [<SMT Assert("positive_definite(updatedCovariance)")>]
-            let I_KH = Matrix.Identity - K * H
-            let updatedCovariance =
-                I_KH * predicted.Covariance * I_KH.Transpose + K * R * K.Transpose
-
-            // Error bound propagation
-            [<SMT Assert("updatedError <= predicted.Error + noise.Bound")>]
-            let updatedError = sqrt(predicted.Error ** 2.0 + noise.Bound ** 2.0)
-
-            { State = updatedState
-              Covariance = updatedCovariance
-              TransitionMatrix = predicted.TransitionMatrix
-              ProcessNoise = predicted.ProcessNoise
-              Error = updatedError }
-
-        // Main implementation with all verifications
-        categorical {
-            // Prediction step
-            let! predicted = predictState state
-
-            // Learn measurement noise from recent history
-            let! noiseModel = learnNoisePattern measurement.History
-
-            // Update with learned noise model
-            let! updated = computeUpdate predicted measurement noiseModel
-
-            // Verify all properties maintained
-            [<SMT Assert("positive_definite(updated.Covariance)")>]
-            [<SMT Assert("updated.Error <= state.Error + measurement.Noise")>]
-            [<SMT Assert("numerically_stable(updated)")>]
-
-            return updated
-        }
-```
-
-This implementation shows how the Kalman filter's mathematical properties (positive definiteness, error bounds, numerical stability) are verified through SMT attributes that **also*** transfer to inline proofs in MLIR, integrating learned noise models and using Universal numbers for exact computation in critical sections.
-
-## The Unified Computational Future
-
-### The Convergence Timeline
-
-```mermaid
-graph TB
-    B --> C[2027-2028: Production Systems]
-    C --> D[2029+: Unified Paradigm]
-    A[2024-2025: Separate Worlds] --> B[2025-2026: Early Field Tests]
-
-    A -->|"HPC: Case Studies"| A1[FPGA + GPU]
-    A -->|"AI: LLVM<br>CUDA & SPIR-V"| A2[BFloat16,8,4]
-
-    B -->|"Universal Numbers"| B1[Research on Result<br>Equivalence & Supremecy]
-    B -->|"Fidelity Prototypes"| B2[Hybird Hardare<br>Experiments]
-
-    C -->|"Unified Clusters"| C1[New Hardware Platforms]
-    C -->|"Amortizable Value"| C2[Extant/Hybrid Systems]
-
-    D -->|"No HPC vs AI vs Quantum<br>vs Conventional"| D1[Full Platform Convergence]
-```
-
-## A Natural Path to General Quantum Compute
-
-As we explored in our [quantum optionality](/blog/quantum-optionality/) analysis, this categorical foundation does more than unify classical HPC and AI; it provides an algorithmic bridge to quantum computing. The same categorical morphisms that describe neural networks and physical simulations also describe quantum circuits.
-
-The alignment is algorithmic rather than aspirational. Quantum mechanics was categorical before computer scientists discovered category theory. When Heisenberg developed matrix mechanics and Schrödinger wave mechanics in the 1920s, they were unknowingly working with functors between categories. When Dirac showed these were equivalent formulations, he was proving a categorical equivalence:
-
-```fsharp
-// All backends preserve the same categorical properties
-[<SMT Assert("forall backend. factorize(n).Result.p * factorize(n).Result.q = n")>]
-type UniversalComputation<'Input, 'Output> =
-    | Classical of CPUComputation<'Input, 'Output>
-    | Parallel of GPUComputation<'Input, 'Output>
-    | Quantum of QuantumCircuit<'Input, 'Output>
-    | Hybrid of (Classical * Quantum)<'Input, 'Output>
-
-    // All share the same categorical structure
-    [<SMT Ensures("result.Forward.Domain = this.InputType")>]
-    [<SMT Ensures("result.Forward.Codomain = this.OutputType")>]
-    [<SMT Ensures("adjoint(result.Forward) = result.Backward")>]
-    member this.AsCategorical() =
-        categorical {
-            // Forward morphism
-            let! forward = this.Forward
-
-            // Adjoint (backward/inverse)
-            let! adjoint = this.Adjoint
-
-            // adjunction laws discharged by the verifier
-            [<SMT Assert("compose(forward, adjoint) = identity(codomain(forward))")>]
-            [<SMT Assert("compose(adjoint, forward) = identity(domain(forward))")>]
-            return Morphism(forward, adjoint)
-        }
-
-// Concrete example: Prime factorization with automatic backend selection
-[<SMT Requires("n > 1 && not isPrime(n)")>]
-[<SMT Ensures("result.p * result.q = n")>]
-[<SMT Ensures("isPrime(result.p) && isPrime(result.q)")>]
-let factorize (n: bigint) : UniversalComputation<bigint, Factor * Factor> =
-    match n with
-    | SmallNumber when n < 10_000I ->
-        // Classical trial division for small numbers
-        Classical (CPUComputation.trialDivision n)
-    | MediumNumber when n < 1_000_000_000I ->
-        // Parallel Pollard's rho for medium numbers
-        Parallel (GPUComputation.pollardRho n)
-    | LargeNumber when quantumAvailable() && n.BitLength > 128 ->
-        // Shor's algorithm for cryptographic-scale numbers
-        Quantum (QuantumCircuit.shor n)
-    | _ ->
-        // Hybrid: classical preprocessing + quantum period finding
-        Hybrid (Classical.reduce n, Quantum.periodFind)
-
-
-```
-
-We're not adapting our framework to include quantum computing; quantum computing was already part of this mathematical structure. The 2-categorical framework that unifies HPC and AI is designed to encompass quantum without extension. As quantum hardware reaches practical maturity, our design intends for it to slot into the same categorical infrastructure as another instance of the patterns that already cover HPC and AI.
-
-The categorical framework captures the structure of computation across substrates. As quantum hardware matures, we intend our systems to be ready through the same principles that unify HPC and AI.
-
-## Technical Hurdles and Open Questions
-
-While this vision is compelling, we must be honest about the challenges ahead:
-
-**Mathematical Foundations**: Translating category theory into efficient implementations remains an active research area. The gap between mathematical elegance and machine level computational efficiency is non-trivial.
-
-**Tool Maturity**: F*, SMT solvers, and MLIR are capable and in many cases well aligned, but integrating them cleanly for production use will require concerted effort. Our Fidelity framework implementation is still evolving to meet the challenges that each "corner case" will present.
-
-**Performance Validation**: Theoretical advantages don't always translate to equal speedups in material implementation. Bottlenecks emerge in unexpected places when targeting complex hardware. Extensive benchmarking across diverse workloads on extant and emerging hardware architectures will be necessary.
-
-**Ecosystem Integration**: The machine learning community has massive investment in Python and adjacent ecosystems. Creating migration paths and interoperability layers is essential for adoption. The impedence mismatches between Python and principled use of the Fidelity framework will create challenges and opportunities for professional training, code conversion and migration tooling.
-
-**Hardware Co-design**: To fully embody this vision will ultimately require new hardware architectures that natively support categorical operations and data flow based execution. While we see many vendors that show promise in this direction, it's a growing field that will require considerable coordination, evaluations, prototyping and testing.
-
-Despite these challenges, we believe the convergence is achievable. The inefficiencies of maintaining separate HPC and AI stacks, combined with the increasing demand for verified, efficient computation, will drive this unification.
-
-## The Unified Future is Now
-
-The convergence of Categorical Deep Learning, Universal Numbers, and low-burden formal verification in the Fidelity framework points toward a unified way to build verified, efficient systems. Its underlying elements are available today:
-
-- **CDL** provides the theoretical underpinnings
-- **Universal** addresses the numerical challenges
-- **F\* with SMT discharge** provides formal verification
-- **Fidelity** unifies the implementation through Clef
-
-Our journey toward this unified vision wasn't planned; it emerged from solving real engineering problems. That these solutions align with established mathematical principles gives us confidence in the direction.
-
-What remains is the engineering effort to realize this integration, working from the position that classical compute, AI, HPC, and quantum are complementary aspects of a single computational science.
-
-### The Path Forward
-
-We see the next generation of software platforms as a unified, verified, numerically correct landscape that combines algorithmic integration with hardware-aware engineering. For SpeakEZ Technologies, that direction begins with the design summarized in this document.
-
-The open question is not whether quantum, classical, HPC, and AI will merge, but how quickly we can build the infrastructure to support a unified paradigm. Organizations that work in this convergence stand to compute faster, adapt more readily, and build on a verified foundation: digital twins held to physical conservation laws, autonomous systems with certified safety properties, and scientific tools that learn under formal constraints.
-
-> This convergence offers a path to efficiency improvements without waiting for Moore's Law.
-
-Moving from control-flow to data-flow can yield order-of-magnitude improvements, compile-time verification removes weeks of debugging, and Universal numbers cut the computational "dithering" that wastes development cycles. The direction we see is not more transistors and more engineers, but correctness in the algorithms delivering efficiency at scales that matter.
-
-This is the work we are building toward in the Fidelity framework through Categorical Deep Learning, Universal Numbers, and formal verification: computation that is rigorous and adaptive, verified and efficient. The standing trade-off between systems that compute exactly but cannot learn and systems that learn but cannot prove is the one we are setting out to close.
-
-I'll keep developing this design at SpeakEZ as the framework matures, and I expect the work to keep finding confirmation in the mathematics, the same way the CDL paper did. That's where my interest lies as the work continues.
+MLIR gives us infrastructure for representing and transforming operations. Preservation depends on the particular operation definitions, conversion rules, and checks. An annotation attached to an operation needs a defined treatment when that operation is replaced. Our validation work must demonstrate that treatment across the actual pipeline.
+
+<a id="the-hpc-ai-convergence"></a>
+<a id="why-convergence-follows"></a>
+<a id="new-computational-primitives"></a>
+<a id="unified-applications"></a>
+<a id="digital-twins-with-verified-learning"></a>
+<a id="climate-modeling-with-physics-informed-learning"></a>
+<a id="autonomous-systems-with-certified-safety"></a>
+<a id="advanced-implementation-examples"></a>
+
+## Physical Learning Contracts
+
+I find the design easier to assess through applications where the learned component has a specific job. A digital twin may estimate an uncertain material parameter. A climate model may use a learned subgrid correction. An autonomous system may estimate observation noise. Each can expose an operating envelope and the physical conditions that the learned output must respect.
+
+| Application | Fixed commitment | Learned quantity | Additional evidence |
+|---|---|---|---|
+| Digital twin | Consistent geometry, units, and interface balance | Material or response parameters | Admissible parameter range and model discrepancy |
+| Climate model | Stated discrete balance law and boundary conditions | Unresolved-scale contribution | Compatibility with that balance and numerical error budget |
+| State estimation | Valid covariance construction and update | Noise model or correction | Statistical calibration under the operating conditions |
+
+The learned range can remain broad during exploration. Observations and checked premises can narrow it later. A probability model can rank admissible choices, with its prior and likelihood made explicit. A hard physical constraint remains binding throughout that process. The [deferred-inference design](/blog/deferred-inference/) preserves room for later evidence before a particular execution requires a committed fact.
+
+<a id="verified-fluid-structure-interaction"></a>
+
+### Fluid-Structure Coupling
+
+Think of airflow bending a wing. One solver describes the fluid, another describes the structure, and their agreement at the surface determines whether the coupled calculation makes physical sense.
+
+Suppose a fluid solver and a structural solver exchange forces and velocities at an interface. Their meshes may differ. Let a transfer matrix \(T\) map structural interface velocities to fluid interface velocities:
+
+\[
+v_f=T v_s.
+\]
+
+Using compatible coordinates and a work pairing, transfer the corresponding fluid force back as \(f_s=T^\top f_f\). Then
+
+\[
+f_s^\top v_s=f_f^\top T v_s=f_f^\top v_f.
+\]
+
+This gives an interface power identity. Opposite action and reaction signs must be included according to which subsystem's balance is being written. With weighted discrete inner products, the transfer uses the corresponding weighted adjoint.
+
+A library can establish this identity for the chosen transfer construction. The caller supplies compatible spaces and the required pairing. A learned interface model must produce forces or parameters that fit that construction. It can then benefit from the existing result without changing the transfer law.
+
+Conservation for a full time step also depends on the integration scheme, boundary work, and the remaining operations. Finite-precision realization adds its numerical conditions. The interface identity is a useful reusable result with a clearly defined scope.
+
+<a id="verified-kalman-filter-with-learning"></a>
+
+### Learned Noise in a Kalman Filter
+
+Imagine a sensor becoming noisier as a machine heats up. A learned model could help an estimator adjust how much confidence it places in the next reading. The covariance matrix records those uncertainties and their relationships, so keeping it mathematically valid is part of making that adaptation useful.
+
+Suppose the model and gain are selected from information available before the observation, and observation noise is uncorrelated with predicted-state error under that conditioning. For predicted covariance \(P^-\), observation matrix \(H\), and observation-noise covariance \(R\), the innovation covariance is
+
+\[
+S=HP^-H^\top+R.
+\]
+
+If \(P^-\) is positive semidefinite and \(R\) is positive definite, then \(S\) is positive definite. The gain calculation can use that property when choosing a solve. For observations expressed in a common unit, a learned model could produce a factor \(C\) and a strictly positive \(\epsilon\), with \(R=CC^\top+\epsilon I\). The factor has the observation units and \(\epsilon\) has their square, giving the required covariance units.
+
+Under those assumptions, the Joseph form of the covariance update is
+
+\[
+P^+=(I-KH)P^-(I-KH)^\top+KRK^\top.
+\]
+
+For positive semidefinite \(P^-\) and \(R\), this expression is positive semidefinite for any gain \(K\) in exact arithmetic. The factorization and update identities make useful library lemmas. A target implementation must also establish an adequate numerical realization, including the solve's conditioning and the effect of rounding.
+
+That algebraic contract supports a valid covariance update. Whether the learned noise model accurately describes the sensor is a further statistical question. The estimator should retain the model's evidence and operating assumptions so that changing conditions can trigger reconsideration.
+
+<a id="quantum-chemistry-with-neural-corrections"></a>
+
+### Variational Chemistry
+
+In a chemistry calculation, we might ask a learned model to propose a better description of a molecule's state. A lower trial energy can guide that search, provided the way we calculate it retains the variational bound.
+
+A quantum chemistry model gives another concrete reason to constrain the learned component's interface. For a Hermitian Hamiltonian \(H\) with ground energy \(E_0\), a normalized trial state \(\psi\) satisfies
+
+\[
+\langle\psi,H\psi\rangle\ge E_0.
+\]
+
+A learned model can propose parameters for the trial state. A state construction that preserves normalization keeps the variational premise available as those parameters change. An arbitrary learned scalar correction to the energy needs its own justification before inheriting the upper-bound claim.
+
+Evaluation adds error from any approximation of the Hamiltonian and from numerical calculation of the expectation. A certified enclosure of the exact trial-state expectation retains an upper bound through its upper endpoint. Quantum measurements instead require a stated statistical confidence argument. Deterministic error bounds add according to their propagation rules, while statistical uncertainties require their dependence assumptions.
+
+This example gives classical simulation and quantum execution a shared source-level question: which state, operator, and error conditions justify the reported energy? Their implementations can differ while exposing evidence for that same question.
+
+<a id="a-natural-path-to-general-quantum-compute"></a>
+
+## Heterogeneous Targets
+
+Our target architecture is intended to accommodate conventional processors alongside GPU, FPGA, NPU, and more specialized execution. A device implementation would declare its arithmetic, memory, and operation capabilities. Target selection can then check whether those capabilities realize the required computation within its numerical and resource constraints.
+
+Quantum execution also needs a contract for the interaction with its classical host. State preparation, circuit transformation, measurement, and feedback have distinct semantics. A unitary subcircuit can support reasoning about an inverse. Measurement requires a probabilistic account and a classical result boundary. The [quantum substrate design](/docs/design/categorical-foundations/quantum-substrate-categorical-structure/) develops those target-specific requirements.
+
+A JavaScript lowering path presents different realization choices again. Runtime objects and memory management can discharge some responsibilities that native lowering must decide explicitly. The same source commitment should remain traceable through either path, even where the relevant type structure is released at different stages.
+
+<a id="the-unified-computational-future"></a>
+<a id="the-convergence-timeline"></a>
+<a id="technical-hurdles-and-open-questions"></a>
+<a id="the-unified-future-is-now"></a>
+<a id="the-path-forward"></a>
+
+## Practical Milestones
+
+I want the progress of this work to be visible in small, complete examples. A measured primitive should retain its type identity through elaboration, select a covering representation, and produce a validated native result. A layout-dependent operation should carry the BAREWire premises used to justify its addresses. A proof should remain associated with the corresponding operation through lowering and be reconsidered when a relevant premise changes.
+
+The next application-level examples should combine those mechanisms. An estimator with a checked covariance construction would exercise learning, algebra, and numerical selection. A coupled simulation would exercise a spanning interface law and transfer contracts. Running those examples on another target would test whether the preserved evidence actually supports heterogeneous compilation.
+
+I would like an engineer opening one of those programs to see the physical operation first, then inspect the dimensions, ranges, and applied proofs when needed. Changing a sensor model or trying a different target should feel like continuing work on the same problem, with the compiler explaining the new decisions that arise. That is the engineering experience I had in mind when I began this project, and the mathematical connections have given me more reason to pursue it.

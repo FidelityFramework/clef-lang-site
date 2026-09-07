@@ -10,9 +10,11 @@ params:
   migration_date: 2026-02-15
 ---
 
-Every language that supports first-class functions faces the same question: where do captured variables live? Rust closures require explicit lifetime annotations, Go functions capture by reference, and Python lambdas use late binding that creates unexpected state sharing. JavaScript has the classic loop-variable trap; C# generates hidden closure classes. The syntax varies. The underlying tension is common to all of them. Our approach to this problem in Fidelity draws from decades of compiler research, specifically the Standard ML tradition and the MLKit project's "flat closure" representation, to generate native code that is memory-safe, runtime-free, and [null-free by construction](/docs/design/language/null-free-by-construction/). Null-freedom also lets the same closure cross between substrates, a consequence worked out in [Null-Free by Construction](/docs/design/language/null-free-by-construction/).
+A function that captures a variable may outlive the scope that created it. A counter returned from a factory should keep counting after the factory returns. A callback should still have the values it needs when it is finally invoked. The developer writes those functions for what they do, while the compiler and runtime must arrange for their captured state to remain available.
 
-When a function captures variables from its enclosing scope, those variables must live somewhere. They often persist beyond the stack frame that created them. In managed runtime environments, this is straightforward: the garbage collector keeps captured variables alive as long as any closure references them. In native compilation without a runtime, the question becomes an architectural one.
+Our Fidelity framework uses the Standard ML and MLKit tradition of [flat closures](/spec/draft/closure-representation/) to make those captures explicit in native compilation. Clef specifies which values are copied, which storage is shared, and how long that storage must remain valid. Its [null-free construction rule](/docs/design/language/null-free-by-construction/) applies to the resulting function and environment.
+
+In a managed runtime, garbage collection can keep captured state alive for as long as it remains reachable. Our native design instead makes lifetime and placement decisions explicit in the compiler. The same function syntax can then work with storage appropriate to a desktop application, an embedded device, or another target with a different memory contract.
 
 ## The Closure Problem in Native Compilation
 
@@ -32,11 +34,11 @@ Whether a value becomes a closure at all is decided upstream, by arity analysis:
 
 In .NET, this works transparently. The runtime allocates a heap object to hold captured variables, and garbage collection ensures that object lives as long as any closure references it. The developer writes the code. The runtime handles memory.
 
-Native compilation has no such support. Without garbage collection, the compiler must decide at compile time where captured variables live, how closures reference them, and how memory is reclaimed. This is an architectural decision that affects correctness, performance, and memory safety.
+Clef's native path needs to settle that memory contract before it lowers the closure: where the captured state lives, how each closure references it, and when the storage can be reclaimed. The counter should behave the same way whichever placement satisfies those requirements.
 
 ## Linked and Flat Closure Representations
 
-The academic literature presents two approaches to closure representation: linked and flat. Fidelity uses the flat representation, and the two subsections here explain the trade-off.
+Linked and flat closure representations make different trade-offs in capture access and retained storage. Our Fidelity framework uses the flat representation.
 
 ### Linked Closures
 
@@ -61,11 +63,11 @@ flowchart LR
 
 This representation is simple to implement. Creating a closure requires only storing a pointer to the current environment. Variable access follows the chain to find the appropriate binding.
 
-The problem emerges in the presence of garbage collection, or more precisely, in its absence. Linked closures keep entire environment chains alive. A closure that captures only one variable from an outer scope nonetheless prevents that entire outer environment from being reclaimed. In systems programming contexts, this "space leak" is unacceptable.
+An environment link can keep bindings alive even when the closure uses only one of them. A compiler must account for that retained reachability when deciding whether storage can be reclaimed.
 
 ### Flat Closures
 
-The alternative, developed by Appel and Shao in their 1992 work on Standard ML of New Jersey and refined in the MLKit compiler project, is the [flat closure](/spec/draft/closure-representation/). All captured variables are copied directly into the closure structure itself.
+A [flat closure](/spec/draft/closure-representation/) stores its captures in one environment. Immutable values are copied into fields. Mutable bindings contribute references to their shared storage cells. The field list records the captures directly, without a chain of enclosing environments.
 
 ```mermaid
 flowchart LR
@@ -78,29 +80,29 @@ flowchart LR
     end
 ```
 
-No pointers to outer environments. No chains to traverse. Each closure is self-contained.
+Each capture is accessed through a field of the flat environment. A field can itself hold a reference, so a flat field list does not imply that all reachable data lives inside that environment.
 
-The trade-off is creation cost: building a flat closure requires copying all captured values where a linked closure stores a single pointer. For closures that capture many large values, this could be expensive. In practice, most closures capture few values, and the flat representation fits in a single cache line. Access is a direct offset, not a pointer chase.
+Constructing a flat environment copies its capture entries, which can cost more than retaining one environment link. Its size depends on the captures and their selected layouts. Each capture then has a known field offset.
 
-For Fidelity, flat closures are "safe for space" in the formal sense defined by Shao and Appel. A closure holds references only to what it actually uses, so the reachability frontier the compiler must reason over is exactly the field list. When the closure becomes unreachable, all captured values become unreachable. There is no hidden retention of environment chains. The environment is not merely space-efficient; it is finite and enumerated by construction, a fact the realization story later on this page depends on.
+Our Fidelity design uses the explicit field list to avoid retaining unused enclosing bindings. This is the motivation of the safe-for-space closure-conversion work discussed below. Reclaiming one closure removes its references. Captured objects remain live wherever another reference still reaches them, including through another closure. The lifetime analysis must account for that sharing.
 
 ## The MLKit Heritage
 
-The MLKit compiler, developed at the IT University of Copenhagen, pioneered region-based memory management for Standard ML. In place of garbage collection, MLKit statically infers memory regions and their lifetimes. Values are allocated into regions; entire regions are deallocated at once when their lifetime ends.
+The MLKit compiler, developed at the IT University of Copenhagen, pioneered region-based memory management for Standard ML. In place of garbage collection, MLKit statically infers memory regions and their lifetimes. Values are allocated into regions, which are reclaimed when their lifetimes end.
 
-Closures in MLKit use the flat representation precisely because it integrates cleanly with region analysis. A flat closure's lifetime is straightforward: it lives in some region, and when that region is reclaimed, the closure and its captured values go with it. Linked closures would complicate this analysis by creating cross-region references that might extend lifetimes unexpectedly.
+Flat environments fit region analysis because their direct capture dependencies are explicit. Reclaiming an environment's region also requires that no remaining use depends on storage in that region. A capture can refer to a value in another region, whose lifetime remains a separate obligation.
 
 The MLKit approach influenced our design significantly. While our current implementation uses stack allocation and explicit region management in place of MLKit's full region inference, the flat closure representation leaves room for future adoption of more involved region-based schemes.
 
 ## ByValue and ByRef Capture Semantics
 
-Our closure implementation handles mutable and immutable captures differently. This section summarizes the key points; for a fuller treatment of reference semantics in native compilation, see [ByRef Resolved](/docs/design/types/byref-resolved/).
+Clef specifies different capture modes for mutable and immutable bindings. [ByRef Resolved](/docs/design/types/byref-resolved/) develops the native reference semantics.
 
-When a closure captures an immutable binding, the value is copied into the closure structure. This is straightforward; the closure receives its own copy, and modifications to the original binding (were they possible) would not affect the closure's copy.
+When a closure captures an immutable binding, it copies the value into the environment. If that value is a reference to mutable storage, the reference is copied and the underlying storage remains shared.
 
-Mutable bindings require different treatment. A mutable variable captured by multiple closures must share state; all closures must see the same value. Copying the value would break this contract.
+Mutable bindings require different treatment. A mutable variable captured by multiple closures must share state. All closures must see the same value. Copying the value would break this contract.
 
-The solution is to capture mutable bindings by reference. The closure stores a pointer to the original variable's storage location, not a copy of its value.
+The solution is to capture mutable bindings by reference. The portable middle end carries a view of the binding's storage cell (`memref<1xT>`). The target pathway realizes the address. The value is not copied into an independent mutable cell.
 
 ```fsharp
 let makeCounter (start: int) =
@@ -110,13 +112,19 @@ let makeCounter (start: int) =
         count
 ```
 
-In the generated code, `count` lives in stack memory allocated by `makeCounter`. The returned closure contains a pointer to that memory location. When the closure increments `count`, it does so through that pointer, mutating the original storage.
+The returned closure must share `count` with every other closure over that binding. Its storage must outlive the invocation of `makeCounter`. A pointer into a reclaimed stack frame would violate the contract. The [lifetime classification](/spec/draft/closure-representation/#33-escape-analysis) places the storage where its lifetime covers the closure: stack, region, static storage, or heap as justified by the graph and target capabilities. Arena allocation is one realization of the region case.
 
-When `makeCounter` returns, its stack frame is gone and the pointer would dangle. Our compiler handles this through closure lifetimes. When a mutable capture escapes its defining scope (as it does when returned from `makeCounter`), the compiler hoists that storage to a location with appropriate lifetime. In the current implementation, this means arena allocation. The captured variable lives in the arena until the arena is released, ensuring the pointer remains valid as long as any closure references it.
+## Captured Constraints
+
+Clef's flat closure representation carries the source binding's dimensional identity together with its capture mode. An immutable scalar is captured by value, so a range constraint established for that value remains valid inside the closure. A mutable binding is captured by reference to shared storage, so a guard checked when the closure is constructed does not automatically constrain a later read. Writes through an alias or another closure matter just as direct assignment does. These are the [normative capture semantics](/spec/draft/closure-representation/#22-capture-semantics), independent of whether the backend uses a native flat environment or a JavaScript host closure.
+
+The distinction applies to [lazy values](/spec/draft/lazy-representation/) and sequences as well. Deferring a computation preserves its dimensional type and pending obligations. Mutable inputs still require validity at the relevant reads. Memoization shares the result already computed. It does not make a shared mutable object inside that result independently polymorphic for each consumer. An immutable binding and immutable reachable storage are different properties, specified in [generalization and deferred computation](/spec/draft/inference-constraint-solving/#generalization-immutable-sharing-and-deferred-computation).
+
+[Width Inference §2](/spec/draft/width-inference/#2-value-range-analysis) requires range constraints to retain their guard and dependency provenance on the PSG. If a callback captures an immutable slice length, a bound already established for that value remains useful when the callback runs. If it reads a shared counter, the compiler must account for intervening writes before reusing a bound on the counter's contents. Retaining those dependencies lets ordinary closure code reuse the facts that still hold and request a fresh check where one is needed.
 
 ## The Two-Pass Architecture
 
-Implementing flat closures in our Composer compiler required careful orchestration. The challenge stems from a circular dependency: closure layout depends on SSA (Static Single Assignment) identifiers for captured variables, but SSA assignment traditionally precedes structural analysis.
+Our Composer implementation separates capture identification from the allocation of SSA (Static Single Assignment) identifiers and concrete environment layout. The layout needs stable identifiers for the captured values and their storage.
 
 The solution is a two-pass architecture in the Alex preprocessing phase.
 
@@ -126,21 +134,19 @@ The solution is a two-pass architecture in the Alex preprocessing phase.
 
 **Pass 2: Closure Layout** runs after SSA assignment. With SSA identifiers now available, this pass computes the concrete layout of each closure's environment structure: field offsets, struct types, and the synthetic SSA identifiers for environment allocation and field access.
 
-This separation conforms to our Composer principle that the PSG should be complete before witnessing. The Zipper and witness system observe pre-computed coeffects; they do not compute structure during code generation. Closure layout is data flowing through the pipeline, not logic embedded in MLIR emission.
+Our PSG must carry settled capture and layout facts before witnessing. The Zipper and witnesses read those facts when producing portable IR. A proof ledger currently cross-checks preservation while the proof-carrying graph mechanism is validated. That scaffold does not transfer responsibility for the constraints out of the PSG.
 
 ## The Witnessed Form
 
-What that layout data becomes deserves careful statement. The MiddleEnd, through Alex and the Zipper, represents a closure as two SSA values: the code, a `func.constant` naming the lifted implementation function, and the environment, a `memref` of the extent saturation settled. The dialects are the standard ones, `func`, `memref`, `arith`, `index`, and `scf`, and nothing else. Nothing is deferred: there is no cast in the listing, because there is no question left for a target to answer about what a closure *is*.
+The portable middle end represents a closure as a function value and an environment buffer. The example below illustrates the shape after lifetime analysis has supplied fresh storage for this particular counter. Its four-byte cell assumes that the selected representation of `count` is 32 bits. Both the extent and that width must come from the graph.
 
 ```mlir
-// The closure as witnessed: two SSA values, never packed, never cast.
-func.func @makeCounter(%start: i32) -> ((memref<4xi8>) -> i32, memref<4xi8>) {
+// Illustrative lowered helper: caller supplies distinct, lifetime-checked storage.
+func.func @makeCounter(%start: i32, %env: memref<4xi8>)
+    -> ((memref<4xi8>) -> i32, memref<4xi8>) {
   %c0 = arith.constant 0 : index
 
-  // count escapes with the returned closure, so its cell is an arena slot.
-  // The environment is the arena view itself: extent 4, settled at saturation.
-  %arena = memref.get_global @counter_arena : memref<64xi8>
-  %env = memref.subview %arena[0][4][1] : memref<64xi8> to memref<4xi8>
+  // The environment belongs to this counter and outlives every use of it.
   %count = memref.view %env[%c0][] : memref<4xi8> to memref<1xi32>
   memref.store %start, %count[%c0] : memref<1xi32>
 
@@ -151,23 +157,23 @@ func.func @makeCounter(%start: i32) -> ((memref<4xi8>) -> i32, memref<4xi8>) {
 }
 ```
 
-The absence of any cast deserves a direct explanation, because an earlier revision of this chapter carried two. That revision packed the pair into a `memref<2xindex>` and marked each half with `builtin.unrealized_conversion_cast`, on the reasoning that what a function value is *as data* is a target commitment. The reasoning was right about the commitment and wrong about the need: in the interior of a Clef program a function value is never data. The environment is a byte buffer of captured *values*, and the code is a symbol. `func.constant` is already a first-class value in the portable dialect, `func.call_indirect` already consumes it, and two values cross a function boundary as two parameters. Where a closure must reside in memory — an aggregate field, a container element — the environment buffer resides there and the closure *form*, decided at saturation, fixes the code component; that is a graph decision, not an emission-time cast. So the witnessed form no longer records open questions, because there are none.
+The [closure representation contract](/spec/draft/closure-representation/#63-middle-end-encoding-and-lowering) carries the function and environment as two values. `func.constant` names the implementation and `func.call_indirect` consumes a function value. When an aggregate stores a closure, its settled closure form must also preserve the code identity. An environment buffer alone cannot distinguish closures with the same layout and different implementations.
 
-This listing is the witness boundary made concrete. It is what Alex and the Zipper witness out of the saturated Program Semantic Graph, and it is complete: no llvm dialect appears in it, because no llvm dialect exists anywhere in the MLIR the witness produces. The pair is target-agnostic by construction. Target commitment happens below this line, in the target conversion pipeline, after witnessing is done, and it happens through the standard lowerings for `func` and `memref` — no resolution pass, no plugin.
+This portable form uses `func`, `memref`, and `arith`. The target pathway later realizes those operations with its documented conversions. A settled source property must retain its checked correspondence across that conversion boundary, even when its original type representation has served its purpose.
 
-Every slot in the environment is written. The environment carries valid storage for every capture, and the code value names a defined function. No slot is left null. The layout carries no "uninitialized closure" state, no sentinel values, no null checks at call sites. [Null-Free by Construction](/docs/design/language/null-free-by-construction/) states the reasoning in full; here it is a structural property of the witnessed IR, not a surface-level API convention.
+The construction rule requires every environment slot to be initialized and the function value to identify an implementation. Possible absence is represented explicitly in the source type. [Null-Free by Construction](/docs/design/language/null-free-by-construction/) develops that contract, which the witness and target conversion must preserve.
 
-This property is designed to survive target conversion into the final native code, so that the emitted binary carries no null pointer checks for closure invocation. Our type system, through CCS and Alex, establishes at compile time that closures are well-formed. The runtime cost of this safety is zero.
+The construction rule excludes a null-function case from a valid Clef closure. Lowering must preserve that guarantee. Allocation, capture initialization, and invocation still have the costs of their selected realization.
 
-Compare this with managed runtime implementations, where closure objects may be null, where captured variable references may be null, where every access potentially requires defensive checking. The overhead accumulates invisibly, scattered across the codebase in null guards that the JIT may or may not optimize away.
+Managed implementations often represent closures with heap objects whose lifetimes are maintained by garbage collection. Clef's native path instead requires explicit lifetime and placement facts for the environment and any shared captures.
 
 ## One Witnessed Form, Three Realizations
 
-Because the witnessed pair commits to no target, one representation can be realized on very different substrates. Flat closures have deterministic size and layout, so they can be serialized without runtime metadata and copied between memory spaces without GC coordination, which is what makes the heterogeneous landscape we explored in [The Return of the Compiler](/blog/the-return-of-the-compiler/) addressable at all. The MLKit research behind our approach was itself motivated by bringing functional programming to environments where garbage collection is impractical or impossible. Three realizations of the same witnessed pair illustrate the range.
+Our closure design admits several target realizations. A known environment extent gives a target a concrete layout to work with. Moving the closure to another memory space additionally requires usable code identity and a valid mapping for every captured reference. A byte copy alone cannot relocate a storage cell or preserve its shared identity. Those transfer obligations connect closure placement to BAREWire's memory, IPC, and network contracts.
 
 ### LLVM: The Common Case
 
-The most common case is native CPU code through LLVM, and it is the path that runs today. Below the witness boundary, the target conversion pipeline applies the standard lowering passes for `func`, `memref`, and `arith`, and nothing else is needed: `func.constant` becomes `llvm.mlir.addressof`, the environment `memref` becomes a pointer plus the memref descriptor the standard lowering already produces, and `func.call_indirect` becomes an `llvm.call` through the function value.
+The native CPU pathway uses LLVM. Its conversion pipeline realizes portable function values and environment views using the target's function pointers and memory representation. The following fragment illustrates that target-level form. Details such as the memref calling convention depend on the pathway's settled lowering contract.
 
 ```mlir
 // Below the witness boundary: produced by standard target conversion, not by Alex.
@@ -177,21 +183,21 @@ The most common case is native CPU code through LLVM, and it is the path that ru
 %r = llvm.call %fn_ptr(%env_ptr) : !llvm.ptr, (!llvm.ptr) -> i32
 ```
 
-This is the first point in the pipeline where the llvm dialect exists at all. Every guarantee the listing exhibits, the fully initialized fields above all, was established in the witnessed form before any llvm operation was created.
+The LLVM operations belong below the portable witness boundary. Capture initialization and source identity must already have their evidence before this target realization is chosen.
 
 ### CIRCT: The Hardware Direction
 
-For hardware targets, the framework's design points the same pair at CIRCT. The environment is enumerated, so it maps to a `hw.struct` of known width, carried on wires or held in registers, and applying the closure becomes instantiating the module that implements its code. State the dependency plainly: an environment chain of unbounded reachability cannot be synthesized. There is no netlist for "follow the pointer until you stop." The finiteness the flat closure provides is what makes a hardware realization expressible at all. This is design intent, a direction the framework targets.
+For hardware targets, our design points toward CIRCT. An environment with synthesizable captures can become a structure carried on wires or held in registers. Applying a closure also requires an available implementation of its code and an established schedule. Flat layout supplies a finite list of direct captures, while referenced storage and stateful effects require their own hardware treatment. The explicit captures give the hardware pathway a concrete set of dependencies to realize.
 
 ### MLIR-AIE: The NPU Direction
 
-For NPU targets in the MLIR-AIE mold, the environment's literal extent is the enabling fact. An environment of enumerated size becomes a tile-local buffer with a known DMA descriptor, and moving a closure to a tile is a bounded copy the tooling can schedule. A linked environment could not travel; there is no DMA descriptor for a chain whose extent is unknowable at compile time. As with the hardware direction, this is design intent, while the LLVM path is the working case today.
+For an MLIR-AIE-style target, an environment with a known byte extent offers a candidate tile-local buffer and DMA transfer size. That transfer must also establish where captured references point and whether the closure's code can execute at the destination. We want to extend the native LLVM implementation's explicit capture contract to this setting, so an offloaded function arrives with both the state it needs and a checked account of how it may use that state.
 
-The claim beneath all three realizations is worth stating once, directly. LLVM is a backend choice, not the MiddleEnd's identity. The witnessed form commits to no target, and the finiteness lemma, an environment that is always an enumerated field list of known extent, is what keeps all three realizations reachable from one representation.
+The same source capture contract applies across these realizations. Each pathway must establish its storage, code, and sharing correspondence before accepting the closure.
 
 ## The Developer-Facing API
 
-This machinery sits beneath a familiar API. Clef developers write closures exactly as they would for .NET:
+Clef developers use ordinary function syntax:
 
 ```fsharp
 let greetAlice = makeGreeter "Alice"
@@ -201,11 +207,11 @@ Console.writeln (greetBob "Welcome, ")   // "Welcome, Bob"
  
 ```
 
-The syntax is unchanged. The semantics are unchanged. What differs is the underlying representation: stack-allocated flat closures instead of heap-allocated reference types, explicit lifetime management instead of garbage collection, zero runtime overhead instead of GC pause potential.
+The source syntax leaves placement to the compiler. Scope-bounded environments may use the stack, while escaping closures need storage whose lifetime covers their use. Native flat environments and JavaScript host closures must preserve the same observable immutable-copy and mutable-sharing semantics.
 
-We are building Fidelity toward familiar Clef idioms at design time and native performance at runtime. The compiler handles the translation, and the developer writes the code they already know.
+Our tooling should expose these Clef capture and lifetime facts directly, so developers can inspect the native consequences without inheriting assumptions from the .NET host.
 
-## Basis in Proven Research
+## Research Basis
 
 Our closure implementation builds on decades of research. The key sources include:
 
@@ -215,19 +221,18 @@ Tofte and Talpin's 1997 paper "Region-Based Memory Management" established the t
 
 The MLKit compiler itself, documented in "Programming with Regions in the MLKit" (Elsman, 2021), provides a production-quality implementation of these ideas for Standard ML.
 
-More recently, Perconti and Ahmed's 2019 paper "Closure Conversion is Safe for Space" provides formal verification that flat closure representations maintain the asymptotic space bounds of the original program, a property that linked closures cannot guarantee.
+More recently, Perconti and Ahmed's 2019 paper "Closure Conversion is Safe for Space" provides formal verification that flat closure representations maintain the asymptotic space bounds of the original program, under the conditions of that conversion.
 
-This body of work grounds our approach in well-established techniques, applied here to Clef compilation. What is new is the integration: bringing these ideas into a pipeline that preserves Clef semantics while targeting MLIR and native code. We have found no other representative implementations of this combination in the standing literature we have reviewed.
+We apply this research to Clef's capture contract and its compilation through the PSG into portable MLIR. The representation choice supplies a basis for lifetime reasoning. Correctness of the resulting implementation still depends on its capture, allocation, and lowering behavior.
 
-## What Comes Next
+## Validation Scope
 
-Our current ramp-up of the Fidelity framework exercises closures across a set of samples: counter factories, greeting generators, accumulators, range checkers. Each "hello world" check verifies different aspects of capture semantics and closure invocation. When these samples pass, we will have shown that Clef closures compile correctly without runtime dependencies.
+The counter factory gives us a useful first test: two returned counters must keep independent state, while two closures over the same binding must observe their shared state. Delayed callbacks add another: an immutable captured constraint should remain usable, while a stale fact about mutable contents should prompt a new check. These regression cases complement the preservation checks required at each lowering boundary.
 
-Closures are a foundation that the rest of the language builds on. Higher-order functions build on closures. Sequences and lazy evaluation depend on them. The concurrent async machinery we have initially planned, using LLVM coroutines in the common-case realization instead of managed task infrastructure, will use closures for callback representation.
+Higher-order functions, sequences, and lazy values extend the closure mechanism. Each introduces additional demand or sharing behavior that must preserve the source capture contract.
 
-The flat closure architecture supports this progression. Its space efficiency keeps closure-heavy code patterns, common in functional programming, under low memory pressure. Because the representation is null-free, closure-based APIs need no defensive coding. The deterministic layout carries closures cleanly into the region-based memory model we will adopt in Fidelity for more involved scenarios.
+A flat field list makes those direct dependencies inspectable. We can extend the language's higher-order features while keeping the same promise to the developer: the values a function needs remain available for its uses, with the intended copying and sharing behavior intact.
 
-With the closure foundation correct, our attention turns next to the higher-order machinery that builds on it.
 
 ## Related Reading
 

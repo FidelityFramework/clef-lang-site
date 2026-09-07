@@ -11,151 +11,150 @@ params:
   migration_date: 2026-05-12
 ---
 
-Recent work by Aram Hăvărneanu on adjoint classical logic with uniform mode connectives, extending Pfenning's adjoint logic and Paykin and Zdancewic's polarized classical linear logic, has recently been published on X. 
+We want a developer to be able to accept a useful proof suggestion while continuing to work in ordinary Clef. An analyzer might identify a region whose bound could be established by a reusable Tier 3 lemma. The editor would show the affected region and the proposed theorem application, with the premises that need checking. Accepting it would add that application to the program's verification structure and dispatch the proof work.
 
-{{< x user="aramh" id="2053874165795405860" >}}
+Our **mode-shift** proposal describes the interface between the reasoning involved. A mode shift would record which judgment is available, which judgment the next step requires, and how evidence can be translated between them. It belongs to the joint constraint mechanism of the Program Semantic Graph (PSG), where the source identities and the facts needed by lowering remain available.
 
-Encountering this work prompted deeper consideration of how the Fidelity Framework describes the connections between its four verification tiers. 
+Aram Hăvărneanu's *Classical Adjoint Logic* (AL) describes lawful interfaces between reasoning modes, including the contexts in which their proofs can compose. We intend to use that structure to make library-assisted verification inspectable at design time and accountable through compilation.
 
-As shown above, Hăvărneanu's system introduces mode-uniform shift operators (↑ and ↓) that provide explicit, typed coercions between modes in a preorder. The shift \(\uparrow^{k}_{m}\, A\) lifts a value at mode \(k\) to mode \(m\) when \(m \geq k\), and the dual \(\downarrow^{m}_{k}\, A\) projects in the opposite direction. The interesting structural feature is that exponentials are derived rather than primitive: \(!A\) becomes \(\downarrow\uparrow A\) and \(?A\) becomes \(\uparrow\downarrow A\), with the shift discipline doing the work that linear logic traditionally assigns to exponential connectives.
+## Proof suggestions and visibility {#what-mode-shifts-could-provide}
 
-Our tiered proof architecture, as articulated so far in the [DTS+DMM whitepaper](/arxiv/2603.16437) and the [compilation sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/) design notes, treats each tier as a sheaf over a shared compilation poset with its own stalk category. Tier 1 carries dimensional types and memory lifetimes through abelian group structure. Tier 2 carries QF_LIA constraints (for dimensional algebra, range bounds, and lifetime orderings) and QF_BV constraints (for bit-level reasoning that emerges from representation selection and word-width decisions) through the SMT solver. Tier 3 carries probabilistic reasoning through distributional refinement. Tier 4 carries relational properties through pRHL judgments.
+The proposed editor workflow has four steps:
 
-Our layered articulation in papers and blog entries communicated the framework's scope and constrained the engineering space. Connecting the tiers was always a central architectural question, and the layered presentation set it aside for later rather than settling it. Hăvărneanu's shift discipline suggests a structural form the answer might take.
+1. **Offer an applicable lemma.** Identify the spanning obligation and the source region it concerns. Show the lemma's conclusion and the premises that remain to be established.
+2. **Record the application.** On acceptance, instantiate the lemma with the program's actual types and values. Preserve dimensional arguments and any refinement assumptions in the PSG.
+3. **Dispatch its premises.** Use the lemma's registered verification procedure and the supported procedures for its side conditions. The application remains pending until the required evidence is available.
+4. **Keep the result inspectable.** Allow proof annotations to be expanded or folded. A folded annotation retains a marker with its scope and current status, and access to its premises.
 
-## What Mode Shifts Could Provide
+The visible annotation is a view of the proof application. Hiding it leaves the application in the PSG. If an edit changes a premise or the operation being justified, the affected evidence must be invalidated and checked again. Acceptance authorizes the application and its dispatch. The resulting proof status depends on that dispatch.
 
-This proposal would add a single structural element to the PHG: the **mode shift**, an explicit transition between verification tiers carried as a hyperedge in the graph. Adapted to the Fidelity Framework's tier system, a mode shift \(\uparrow_{2,3}\) would mark a transition from Tier 2 verification to Tier 3 verification at a specific PSG node, carrying with it the proof obligation that the Tier 2 structure at the node admits the Tier 3 refinement claimed. The contribution Hăvărneanu's work could make to this framework is structural: explicit shifts as first-class elements with their own composition laws, their own duality properties, and their own discipline for how they interact with other connectives.
+Tier 3 already provides the library pattern for restricted probabilistic reasoning. A domain author establishes a reusable theorem, and application code supplies the parameters at each use. Tier 4 would extend the same workflow to relational properties. A relational proof system specifies the judgment and its rules, while a proof assistant such as Rocq can establish the reusable rules or library theorems. Automatic application coverage depends on matching those rules and proving their premises.
 
-In implementation terms the addition stays minimal. Mode shifts would name transitions the framework already performs implicitly through operational decisions, introducing no new tier, logic, or verification fragment. The contribution would be surfacing those transitions in the graph structure rather than leaving them buried in compiler decision logic.
+We envision typed quotations as one Clef-facing form for these declarations. A quotation would carry the proposition and its parameters, together with the premises and an accepted justification. Our elaborator would retain that structure for checking. The quotation makes a proposition available to the compiler. Its truth requires the justification and the applicable premises.
 
-The addition would be non-trivial because of what mode shifts must respect. A mode shift applied to a value must preserve the value's complete joint constraint structure across the shift. For a flat closure, this means the closure's captured environment, region annotation, and dimensional type must all lift coherently to the target tier's verification structure. For an actor message, this means the message's region annotation, captured environment, and the receiving actor's lifetime constraints must all transit the shift together. The shift discipline operates on hyperedges, not on individual nodes.
+## Compilation and reasoning coordinates {#extending-the-phgs-structural-dimensions}
 
-Mode shifts would extend what the PHG already carries. The hyperedge structure that flat closures, regions, and actor lifetimes produce is already the right shape for mode shifts to operate on. The framework would not be adding a new structural element to the PHG; it would be recognizing that the existing hypergraph structure can carry verification transitions as well as joint constraints.
+An engineer may first establish a useful bound with a library theorem, then want that bound to remain available when the program becomes a native memory access or arithmetic operation. There are two kinds of translation to keep track of here: using the theorem's result in another form of reasoning, and preserving the result as the code is lowered.
 
-## Extending the PHG's Structural Dimensions
+Our design has two coordinates. The **compilation stage** identifies the program representation, from the PSG through a target's lowering path. The **reasoning mode** identifies a judgment discipline and the contexts in which its evidence may be used. Joint constraints connect the participating values and regions at those coordinates.
 
-The PHG already carries hyperedge structure along multiple dimensions. Mode shifts would add another. Three dimensions are visible in the current discussion, though the framework's longer development may reveal others:
+A proof of a record access, for example, can depend on the field's dimensional type and its instantiated layout. If the access crosses an actor boundary, the message contract and the receiving region also participate. A mode edge should retain references to every fact used by its rule, including shared facts whose identity must remain the same on both sides.
 
-**The compilation axis (temporal)**: The existing compilation poset connecting source through MLIR levels to binary. This axis carries the framework's existing concern with how representations transform through lowering passes.
-
-**The joint constraint axis (structural)**: The existing hyperedge structure connecting values, closures, regions, and actors. This axis carries the framework's existing concern with how values relate through shared regions and captured environments. Message-passing relationships between actors belong to the same axis.
-
-**The verification strength axis (tier)**: The dimension that mode shifts would introduce, connecting different verification tiers' stalks at each compilation stage. This axis would carry the framework's concern with how verification strength varies across a computation.
-
-A single PSG node would participate in hyperedges along all these dimensions simultaneously. The staged-discharge architecture, which currently verifies preservation along the compilation and joint constraint dimensions, could extend naturally to verify preservation along the verification strength dimension as well. The local-edge-check strategy that makes the existing staged-discharge tractable would continue to apply: each lowering pass verifies its local edges along all relevant dimensions, and the compositionality of the cell complex propagates the guarantee through longer chains.
-
-This would fit how the framework already operates. The PHG's hyperedge structure handles the joint constraint dimension and the compilation poset handles the temporal dimension. Adding the verification strength dimension would introduce no new architectural pattern, only another instance of one already in place.
-
-## SMT Dialect Integration
-
-The practical question is how mode shifts would get represented in MLIR for joint constraint resolution during lowering. The framework's existing use of MLIR's SMT dialect provides the natural representation path.
-
-The SMT dialect in MLIR provides operations for constructing SMT-LIB2 formulas as IR, with operations corresponding to the standard SMT theories: `smt.declare_fun` for sort declarations, `smt.assert` for axiom assertions, `smt.check` for satisfiability queries, and operations for the boolean, integer, bitvector, and array theories. The dialect's design allows SMT reasoning to participate in the MLIR pass pipeline as first-class IR, with cvc5 invoked as the backend solver. This is the same infrastructure the framework already uses for Tier 1 and Tier 2 verification, where QF_LIA handles the linear arithmetic of dimensional constraints and QF_BV handles the bit-level constraints that representation selection introduces.
-
-Mode shifts would extend this existing pattern through conjunctive composition of SMT constraints. A mode shift \(\uparrow_{2,3}\) at a PSG node would correspond to an SMT-LIB2 fragment that conjoins the source tier's constraint with the obligation that justifies the shift:
-
-```
-;; Mode shift ↑₂₃ at a PSG node:
-;; The Tier 2 constraint that holds before the shift
-(assert (and 
-  ;; Tier 2 constraint on the value
-  (< x_value upper_bound)
-  (> x_value lower_bound)
-  
-  ;; Shift justification: the value admits the Tier 3 refinement
-  ;; (this is the proof obligation the shift carries)
-  (refines_to_distribution x_value distribution_params)))
+```mermaid
+graph LR
+  P["PSG judgment"] -->|"witnessed lowering"| L["Lowered judgment"]
+  P -->|"checked mode interface"| Q["PSG with a justified refinement"]
+  L -->|"corresponding mode interface"| R["Lowered realization of the refinement"]
+  Q -->|"preservation or validation"| R
 ```
 
-The shift itself would not be a new dialect operation. It would be the conjunctive extension of the existing constraint system with the additional obligation that the transition between tiers requires. The SMT dialect already supports this composition through its standard boolean connectives. The solver would discharge the conjoined constraint in the same query that it would discharge the source tier's constraint alone, with the shift obligation either satisfied (the shift is valid) or producing an unsat core (the shift cannot be justified and the framework reports the failure as a conservative finding).
+Where both routes are defined, they must agree under the selected semantic or proof equivalence. This is the compatibility we intend the [compilation sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/) account to express. A certificate for a source refinement must still refer to the operation that realizes it after lowering.
 
-The integration would reuse the existing pipeline. The framework's existing verification operates through SMT-LIB2 formulas constructed during PSG elaboration, lowered through the SMT dialect, and discharged by the solver. Mode shifts would participate in this same pipeline by extending the formulas with shift obligations rather than introducing parallel infrastructure. The conjunctive composition means mode shifts would compose with existing constraints automatically: the solver would see a single SMT problem to solve, not a tier-specific problem followed by a separate shift problem.
+Tier numbers describe groups of verification methods. They do not, by themselves, define AL's mode preorder or its structural permissions. A deterministic mathematical lemma, a probabilistic bound, and a relation between two executions have different premises. Their registered interfaces determine which compositions are available.
 
-The Hăvărneanu correspondence would make this composition principled. The adjoint classical logic's shift operators have well-defined composition laws (consecutive ups compose, round-trip shifts cancel, identity shifts collapse), and these laws would translate directly into how the SMT-LIB2 fragments combine. A shift \(\uparrow_{2,3}; \uparrow_{3,4}\) would compose into \(\uparrow_{2,4}\) with the corresponding conjunctive composition of the two shifts' obligations. A round-trip \(\downarrow_{2,3}; \uparrow_{3,2}\) would cancel with the conjunction simplifying back to the source constraint alone. The shift algebra would constrain how the SMT formulas can be constructed and simplified.
+## Solver obligations {#smt-dialect-integration}
 
-## Implications for the Baker Component
+MLIR's [SMT dialect](https://mlir.llvm.org/docs/Dialects/SMT/) can represent solver formulas within the IR. Operations such as `smt.assert` and `smt.check` provide a representation for assertions and satisfiability queries. A mode transition whose side conditions fit the selected solver fragment can use this path. The transition's rule and evidence dependencies still need to be retained by our compiler.
 
-The Baker component of the Clef Compiler Service is responsible for elaborating syntactic Clef code into the saturated PSG that downstream components consume. The PSG that Baker produces carries dimensional annotations, lifetime coeffects, and the joint constraint structure that flat closures and region inference generate.
+To establish a goal \(G\) from assumptions \(\Gamma\), the validity query asks whether a counterexample exists:
 
-Adding mode shifts to the PHG would extend Baker's responsibilities in specific ways. The elaboration would need to identify points where verification tier transitions are required, mark them with explicit mode shift hyperedges, and ensure the shifts respect the joint constraint structure they cross. This is delicate work because the tier transitions would need to be identified at principled, low levels in the compute graph rather than imposed retroactively by analysis decisions.
+\[
+\Gamma\land\neg G.
+\]
 
-The principled identification would operate on specific structural signals. When the elaboration encounters an arithmetic operation whose interval propagation produces a conservative bound that interval arithmetic alone cannot tighten, Baker would mark the operation with an explicit mode shift toward Tier 3's distributional verification. When the elaboration encounters a relational property that requires reasoning across multiple program states, Baker would mark the corresponding hyperedge with a mode shift toward Tier 4's pRHL verification. These identifications would not be heuristic; they would emerge from structural patterns in the code that Baker can recognize during elaboration.
+The outcomes have different meanings:
 
-The precision this would demand is significant. A mode shift inserted at the wrong place either over-verifies (invoking a higher tier when a lower tier would suffice) or under-verifies (failing to mark a transition that the verification certificate must record). Both failures would undermine the framework's compositionality guarantees. Over-verification would add spurious obligations that the staged-discharge architecture must discharge. Under-verification would leave gaps in the certificate that the reconciliation tool cannot bridge.
+| Solver result | Interpretation for this query | Verification state |
+|---|---|---|
+| `unsat` | No interpretation satisfies the assumptions while violating the goal | The encoded implication is established, subject to its assumptions and semantic mapping |
+| `sat` | A model satisfies the assumptions and violates the goal | Inspect the counterexample and its correspondence to the program |
+| `unknown` | The procedure returned no decision | Retain the unresolved obligation |
 
-The work Baker does to identify mode shifts would be structurally similar to the work it already does to identify joint constraints. When Baker recognizes a flat closure during elaboration, it generates a hyperedge connecting the function part, the captured environment, and the region annotation. This identification is principled because the closure's structure makes the hyperedge inevitable. Mode shift identification would operate on the same principle: when Baker recognizes a tier transition during elaboration, it would generate a mode shift hyperedge connecting the source and target tier annotations along with the joint constraint structure they preserve.
+Asserting \(\Gamma\land G\) and finding a model establishes their joint satisfiability. It leaves open whether every state allowed by \(\Gamma\) satisfies \(G\). The compiler also needs to identify inconsistent premises, since a contradictory \(\Gamma\) makes an implication vacuously valid.
 
-The Baker layer's XParsec-based composability makes this extension tractable. The same combinator pattern that handles dimensional type elaboration and lifetime coeffect inference can handle mode shift identification. The four pillars pattern used throughout Baker's existing implementation applies directly. Baker would parse the structural signal, elaborate the mode shift annotation, propagate the joint constraint references, then emit the hyperedge into the saturated graph. The SMT-LIB2 generation that Baker already performs for Tier 1 and Tier 2 constraints would extend to include the conjunctive shift obligations that mode shifts introduce.
+A verified lemma may supply additional premises for this query. Each imported premise must remain associated with its derivation or accepted contract. A predicate representing distributional refinement needs a specified probability model and rules that justify the refinement. A probabilistic or relational derivation uses its registered rule system, with cvc5 handling the supported arithmetic leaves.
 
-## What This Might Look Like in Practice
+An unsatisfiable core can help identify the assertions involved in an `unsat` result. A replayable proof is a different evidence form. Our record of the obligation should identify which was returned and which solver or checker the result depends on. The [cvc5 output documentation](https://cvc5.github.io/tutorials/beginners/outputs.html) describes these distinctions.
 
-Consider the clinical dosing calculation from earlier work. The computation involves arithmetic on patient state values (weight, creatinine clearance, infusion rate) that Baker can verify at Tier 1 through dimensional types and at Tier 2 through interval propagation. The computation reaches the `exp()` term, where interval propagation alone produces a conservative bound.
+## Joint constraints in Baker {#implications-for-the-baker-component}
 
-With mode shifts as first-class structure, Baker would elaborate this transition explicitly. At the PSG level, the elaboration would produce hyperedges marking the tier transitions. At the SMT dialect level, the resulting formulas would conjoin Tier 2 interval constraints with Tier 3 distributional obligations and back again:
+Our Baker elaboration and joint constraint resolution would construct a mode edge from an applicable rule and its instantiated premises. The edge needs a source location and a stable obligation identity. It also needs references to the participating judgments and the evidence on which the application depends. An analyzer can use search or ranking to offer a candidate. The compiler must check the application before marking its obligation as discharged.
 
+A conservative interval may prompt a search for a stronger deterministic analysis or a library lemma. A probabilistic theorem additionally needs a declared probability model. A relational theorem needs the executions and relation described by its judgment. The compiler should choose the registered procedure that matches those facts, preserving an unresolved obligation when the required premises remain unavailable.
+
+For memory operations, BAREWire's mapping must be applied before Alex witnesses the operation. The PSG needs the instantiated field layout and the target's representation facts, with the associated access obligations dispatched at that level. Later validation must relate the realized offsets and extents to the same contract. BAREWire's local memory, IPC, and network roles each require this association, including any encoding or decoding at a boundary.
+
+The canonical mechanism is our proof-carrying PSG. A separate ledger serves as a temporary reconciliation scaffold, checked against the graph and the lowered artifact. It must not supply an independent default for a missing dimension or layout fact.
+
+A flat closure has a finite set of capture fields, whose layout still depends on their instantiated types and the target. Its fields may refer to dynamically sized storage. Immutable bindings can also refer to shared mutable storage, including a memoized result. The mode interface must preserve these identities and lifetime requirements across any change in reasoning discipline.
+
+## A deterministic library lemma {#what-this-might-look-like-in-practice}
+
+Consider a decay term \(y=\exp(x)\) used in a physical model. The engineer may need an upper bound for a later threshold check, even though a basic interval pass has no rule for the exponential. With an established real-valued bound \(L\le x\le0\), a library theorem can supply the missing relationship. If the source computes \(x=-kt\), dimensional checking must establish that \(kt\) is dimensionless before applying the exponential.
+
+A library theorem for monotonicity gives
+
+\[
+L\le x\le0\quad\Longrightarrow\quad
+0<\exp(L)\le y\le1.
+\]
+
+This is a deterministic theorem about the real exponential. Its registered proof and the checked bounds justify the result. The use of a library lemma does not require introducing a distribution or assigning every such application to a probabilistic tier.
+
+A target implementation may return an approximation \(\widehat y\). Suppose its accepted arithmetic contract, for the applicable input range, establishes \(\widehat y\le y+\epsilon\), with \(0\le\epsilon\le1/1000\). The resulting upper bound \(\widehat y\le1001/1000\) has this arithmetic check:
+
+```smtlib
+(set-logic QF_LRA)
+(declare-fun y () Real)
+(declare-fun rounded_y () Real)
+(declare-fun error () Real)
+(assert (> y 0))
+(assert (<= y 1))
+(assert (>= error 0))
+(assert (<= error (/ 1 1000)))
+(assert (<= rounded_y (+ y error)))
+(assert (> rounded_y (/ 1001 1000)))
+(check-sat)
 ```
-;; Constraint structure for the dosing calculation:
 
-;; Tier 2 portion: infusion_rate * patient_weight
-(assert (and 
-  (>= infusion_rate 0.5) (<= infusion_rate 2.0)
-  (>= patient_weight 2.5) (<= patient_weight 4.0)))
+This query returns `unsat`. It checks the arithmetic consequence of the imported facts. The exponential theorem and the target's error contract require their own justifications, retained with those facts in the PSG. In particular, the query does not assert a transcendental exponential operation inside QF_LRA.
 
-;; Mode shift ↑₂₃ at the exp node:
-;; Conjunctive extension with the shift obligation
-(assert (and
-  ;; Source Tier 2 constraint on the exponent argument
-  (<= elim_rate_times_t 0.0)
-  (>= elim_rate_times_t exponent_lower_bound)
-  
-  ;; Shift obligation: exp on a negative interval has monotonic bounds
-  ;; (This is the Tier 3 lemma the shift invokes)
-  (and (>= exp_result (exp exponent_lower_bound))
-       (<= exp_result 1.0))))
+The same downstream bound can support a later threshold check or a representation decision. Reusing it through a declared interface preserves its dependence on the input range and the target arithmetic. A change to either requires the affected application to be checked again.
 
-;; Mode shift ↓₃₂ back to Tier 2 for the threshold comparison:
-;; The distributional structure projects back to interval bounds
-(assert (and
-  (= peak_concentration (* k_factor exp_result))
-  (>= peak_concentration 5.0)
-  (<= peak_concentration 20.0)))
-```
+## Mode interfaces and fibers {#the-verification-cell-complex}
 
-The solver would discharge this entire formula as a single conjunctive constraint. The mode shifts would be visible in the formula's structure (the shift obligations are explicit), but they would not require separate verification machinery. The shift discipline would ensure the formula is well-formed according to Hăvărneanu's composition laws, and the SMT dialect would ensure the solver can discharge it efficiently.
+The developer can use the resulting bound without managing the translation between proof systems by hand. The compiler still needs an exact account of that translation: which premises survive, where the resulting judgment can be used, and which compositions are valid. This is where the adjoint-logic account helps us specify the interface.
 
-For the existing [HelloArty](https://github.com/FidelityFramework/HelloArty) target, this extension would be invisible at the source code level. The dimensional type checking, width inference, and combinational depth analysis all operate within Tier 1's structural verification, with no tier transitions required. The mode shift infrastructure would exist but would not engage because the computation does not demand it. This would be the right behavior: the extension would add capability for computations that need multiple tiers without imposing overhead on computations that don't.
+Hăvărneanu's *Classical Adjoint Logic* gives the mode theory more structure than an ordering by strength. Section 2 specifies a preorder with an order-reversing involution and a monotone structural signature. That signature governs weakening and contraction. Our proposed mapping must identify the corresponding contexts and evidence rules for the Clef judgments it covers.
 
-## The Verification Cell Complex
+For a declared comparison \(m\ge k\), Theorems 3.18 and 4.20 use \(F=\downarrow^m_k\) and \(G=\uparrow^m_k\). Their adjunction states
 
-The mathematical structure that mode shifts could complete is what the [compilation sheaf](/docs/design/categorical-foundations/the-compilation-sheaf/) framework called a stack of sheaves with explicit coercions between them. In categorical terms, this would be a fibration of sheaves over a mode preorder, where the base remains the compilation poset and the fibers are the verification tiers connected by mode shifts.
+\[
+F(B)\preceq_k A\quad\Longleftrightarrow\quad B\preceq_m G(A).
+\]
 
-Hăvărneanu's adjoint classical logic provides the proof-theoretic vocabulary for this fibration. His mode preorder (Producer > Linear > Consumer in his original system) generalizes to any preorder of verification tiers, and his shift operators provide the structural element that the fibration requires. The framework's adaptation would specialize his system to the verification tier preorder while keeping the underlying discipline intact: shifts as explicit, typed, composable transitions with well-defined duality.
+This provides a correspondence between proofs on the two sides of the interface. The unit \(B\to GF(B)\) and counit \(FG(A)\to A\) justify particular compositions. General round trips can retain modal structure, as the paper's derived exponentials illustrate. Treating a round trip as an equivalence requires the additional inverse laws for that interface.
 
-The PHG, understood as a cellular structure, could be read as a cell complex with additional dimensions corresponding to verification transitions. The cells of dimension zero would be PSG nodes. The cells of dimension one would be edges along any of the relevant dimensions (compilation, joint constraint, verification strength). The cells of higher dimension would be hyperedges that connect multiple nodes along multiple dimensions simultaneously: a flat closure with mode shift annotations crossing multiple compilation stages would be a higher-dimensional cell connecting nodes along all the relevant dimensions.
+Theorem 4.20 applies within declared compositional interfaces containing the relevant formulas. Its proof uses the interface cut discipline, and the categorical account identifies proofs under cut equations and commuting conversions. These conditions are useful design constraints for our mode edges: a proof must carry the context in which its composition is valid.
 
-The verification certificate that the staged-discharge architecture produces could be understood as a section of this cell complex: an assignment of properties to each cell such that the boundaries of higher-dimensional cells respect the properties of their lower-dimensional boundaries. This would be the categorical version of what the framework already implements operationally. The certificate's structure would be dictated by the cell complex's structure, and the reconciliation tool's job would be to verify that the binary realizes this structure faithfully.
+The fiber account keeps the compilation and reasoning coordinates distinct. Over a mode, we can organize a diagram of verification structures across compilation stages. At a fixed stage, mode interfaces relate the available judgments. A formal fibration would require the projection and transport laws for this family, including compatibility with lowering. We intend to use the commuting square above to specify that compatibility for each supported interface.
 
-The mathematical formalism is already established. What the cell complex framing adds is predictive power: mode shifts must operate on hyperedges (because they're higher-dimensional cells), their preservation through lowering follows the same rules as joint constraint preservation (because both are properties of higher-dimensional cells), and their collapse rules must respect the cell complex's structural integrity (because incoherent collapses would violate the boundary conditions that make the complex well-defined).
+Likewise, a hyperedge records the participants in a joint constraint. Reading a collection of those relations as a cell complex requires defined incidence and boundary maps. Once the diagrams are coherent, checking a compatible assignment on cover edges can establish compatibility along longer chains. The maps and the evidence for those checks remain part of the construction.
 
-## Boundary and Scope
+The current *Fixed-Point Scaffolding* working manuscript develops this account in Section 5. Its [published preprint](https://arxiv.org/abs/2606.02854) records the project's earlier formulation. The accessible [Adjoint Logic manuscript by Pruiksma and colleagues](https://ncatlab.org/nlab/files/PCPR18-AdjointLogic.pdf) provides further background on combining reasoning modes through shifts.
 
-This extension is not foundational to the framework's current operation. [HelloArty](https://github.com/FidelityFramework/HelloArty) compiles and synthesizes without mode shift infrastructure. The dimensional type system, the Mealy machine model, the two-layer timing analysis, all of these operate within Tier 1's structural verification and don't require explicit tier transitions. The framework as it exists today is sound and complete within its current scope. It already demonstrates the architectural patterns the mode shift extension would build on.
+## Decision boundaries {#boundary-and-scope}
 
-What mode shifts could add is the ability to express computations that span multiple verification tiers without losing the compositionality guarantees that the staged-discharge architecture provides. This would become important for the framework's longer trajectory: clinical decision support requires Tier 3 for probabilistic safety properties, cryptographic verification requires Tier 4 for relational reasoning, and physics-informed AI training requires both. Each of these applications produces computations where some portions fall naturally within [Tier 1 or Tier 2 decidability](https://arxiv.org/abs/2603.25414) while other portions require higher-tier verification.
+Our intended interface allows an engineer to leave a proof application pending while developing a region of code. Its marker should identify what remains unresolved and which later decision depends on it. Proof visibility is optional, while a required compilation check remains required.
 
-The extension would be delicate because it would operate at the elaboration boundary where Baker constructs the saturated graph. Errors at this layer propagate throughout the rest of the compilation pipeline and undermine the verification certificate's integrity. The precision required would be comparable to the precision required for joint constraint identification: principled, structural, and based on patterns that the elaboration can recognize from the code's mathematical structure rather than from heuristic guesses about intent.
+At representation selection, the compiler must diagnose an empty coverage set as an error. At a memory boundary, it must report an unresolved layout prerequisite instead of fabricating one. The [conformance requirements](/spec/draft/conformance/) define those obligations and require preservation or re-checking through lowering.
 
-The work would be justified by the architectural coherence it could provide. Without mode shifts, the verification tiers operate as separate concerns connected operationally. With mode shifts as fiber between sheaves, the tiers could become an interlocking proof construction where transitions are first-class structural elements verified through the same staged-discharge discipline that handles compilation and joint constraint preservation. The framework's tier story could become uniform rather than layered: hypergraph structure throughout, with mode shifts marking the verification strength variations that some computations require.
-
-We would pursue this integration point for the framework's longer arc. It extends established art with no new architectural pattern, applying the disciplines the existing implementation already demonstrates: XParsec elaboration, SMT dialect representation, staged-discharge verification, and hypergraph structure. The Hăvărneanu correspondence provides the structural insight that would make the extension principled: explicit shifts as fiber between sheaves, with composition laws that translate directly into how SMT formulas combine and simplify. The integration would complete an architectural picture consistent with the framework's other design decisions, giving the verification system the structural scaffolding that makes its tier transitions explicit, verifiable, and compositionally sound.
+Library proofs would make more of these decisions automatic for application developers. A domain author can provide a theorem and its accepted justification once, with precise premises that the compiler can instantiate at each use. The editor should expose those premises wherever an application needs attention, preserving the source region and the evidence dependencies that make the result reviewable.
 
 ## References
 
-Hăvărneanu, A. (2026). Classical SNAX: An adjoint classical logic with uniform mode connectives. Working notes.
-
-Pfenning, F. (2015). A logical foundation for session-based concurrent computation. Working draft.
-
-Paykin, J., & Zdancewic, S. (2016). The linearity monad. In *Proceedings of the 2016 ACM SIGPLAN International Symposium on Haskell*.
-
-Tofte, M., & Talpin, J. P. (1997). Region-based memory management. *Information and Computation*, 132(2), 109-176.
+- Hăvărneanu, A. (2026). *Classical Adjoint Logic*. Research manuscript dated July 12, Section 2 and Theorems 3.18 and 4.20. Research copy maintained with the project as `arxiv-papers/research/adjoint-logic/AL.pdf`.
+- Pruiksma, K., Chargin, W., Pfenning, F., and Reed, J. (2018). [*Adjoint Logic*](https://ncatlab.org/nlab/files/PCPR18-AdjointLogic.pdf).
+- Haynes, H. (2026). *Fixed-Point Scaffolding in the Clef Programming Language*, working manuscript, Section 5. [Published preprint](https://arxiv.org/abs/2606.02854).
+- MLIR project. [SMT dialect documentation](https://mlir.llvm.org/docs/Dialects/SMT/).
+- cvc5 project. [SMT solver outputs](https://cvc5.github.io/tutorials/beginners/outputs.html).

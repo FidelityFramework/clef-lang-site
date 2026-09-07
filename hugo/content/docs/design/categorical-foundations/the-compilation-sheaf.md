@@ -1,7 +1,7 @@
 ---
 title: "The Compilation Sheaf"
 linkTitle: "The Compilation Sheaf"
-description: "Cohomological Foundations of the Tier Architecture"
+description: "Compatible Program Facts Across Compilation Stages"
 date: 2026-04-08T10:00:00+06:00
 weight: 08
 authors: ["Houston Haynes"]
@@ -10,122 +10,121 @@ tags: ["Architecture", "Innovation", "Verification"]
 
 ## Why a Sheaf
 
-Our Fidelity framework's verification story has, until this entry, been told in two registers. The first register is operational: our Program Semantic Graph (PSG) computes annotations during elaboration, our staged-discharge architecture re-verifies them at each MLIR lowering, and the reconciliation tool checks the binary against a certificate produced at the end of the pipeline. The second register is logical: the [four-tier Hoare correspondence](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/#the-four-tiers) assigns each verification obligation to a decidable fragment, from Gaussian elimination over \(\mathbb{Z}^n\) at Tier 1 to probabilistic relational Hoare logic at Tier 4.
+When our compiler proves that a buffer access is within bounds, we want that result to remain meaningful after the buffer acquires a physical layout and the access becomes a native instruction. The facts change vocabulary along the way. A source-level index may become an address calculation, and its safety depends on the selected layout as well as the original range.
 
-The third register is the formal one. The mechanical account of why annotations are carried through lowering rather than discarded, in the engineering terms of arity, closures, and dimensional types, is [Information Is Not Discarded](/docs/design/structure-and-performance/information-is-not-discarded/); what follows is the categorical structure underneath it, in which that carrying is a monotone sheaf and a dropped annotation is a broken structure map.
+We are designing our compilation sheaf around this continuity: each compilation stage has a space of facts, and each lowering step has a declared interpretation of those facts at the next stage. A compatible assignment across the stages records how one program's evidence survives those translations. This gives us a way to organize the preservation obligations in [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering), with checks located at the transformations that could affect a property.
 
-These two registers describe the same architecture, and neither, on its own, explains *why the architecture composes*. The operational story takes compositionality as a design assumption ("the staged discharge keeps things consistent"). The logical story takes it as a proof rule ("the consequence rule applies at each lowering"). Both are correct, and both elide the underlying structure that makes them correct simultaneously.
-
-That structure is a sheaf. The compilation pipeline carries a cellular sheaf whose stalks are the annotation bundles produced by elaboration, whose structure maps are the lowering passes, and whose global sections are exactly the certificates the pipeline emits. Our staged-discharge architecture is the witnessing mechanism for a global section of this sheaf. Our tier architecture is a graduated refinement of the stalk category over a fixed base poset.
-
-The sheaf framing sharpens four claims the operational and logical accounts state without proving: why the staged discharge works, why the tiers compose, why our Program Hypergraph (PHG) requires hyperedges rather than binary edges, and what a "conservative" range finding actually is.
+Our [Fixed-Point Scaffolding preprint](https://arxiv.org/abs/2606.02854) studies this continuity across compilation stages. For an engineer extending the compiler, the useful questions are concrete: which facts does this pass consume, how does it translate them, and what justifies the resulting operation? The appeal of the sheaf account is that we can describe continuity across the pipeline while checking the particular transformations responsible for preserving it.
 
 ## The Compilation Poset
 
-The base of the compilation sheaf is the partial order of compilation stages:
+A selected lowering route gives us an ordered sequence of stages:
 
 ```mermaid
 graph LR
-    SRC["Source"] --> PSG["PSG Elaboration"]
-    PSG --> HI["MLIR<br>High Level"]
-    HI --> MID["MLIR<br>Mid Level"]
-    MID --> LO["MLIR<br>Low Level"]
-    LO --> NAT["Native Binary"]
+    SRC["Source<br>Declared requirements"] -->|Elaborate| PSG["PSG<br>Joint constraints and evidence"]
+    PSG -->|Witness| HI["MLIR<br>High Level"]
+    HI -->|Lower| MID["MLIR<br>Mid Level"]
+    MID -->|Lower| LO["MLIR<br>Low Level"]
+    LO -->|Realize| NAT["Native Binary<br>Artifact obligations"]
 ```
 
-This is a finite poset. Each node is a compilation stage, and each edge is a lowering pass. The order is the temporal order of compilation: source precedes elaboration, elaboration precedes high-level MLIR, and so on, down to the binary. This poset is the Hasse diagram of the base category for the compilation sheaf.
+The arrows form the Hasse diagram of this finite order: they show adjacent stages, with the longer translations obtained by composition. Source order within a program and dependencies among its operations are separate structures carried at these stages.
+
+Our target pipelines can offer several routes between representations. To describe those routes by a poset, we must establish that their translations agree under the chosen semantic interpretation. Keeping the routes explicit is useful while establishing that agreement. The diagrams may contain different intermediate operations even when their interpretations coincide.
 
 ## Stalks: The Annotation Bundles
 
-At each node of the compilation poset, our framework attaches a set of values: the *stalk* at that node. For the PSG node, the stalk is the bundle of annotations elaboration produces (dimensional vectors in \(\mathbb{Z}^n\), escape classifications, grade assignments in the Clifford algebra, coeffect requirements). For the high-level MLIR node, the stalk is the same data translated into MLIR attributes attached to operations. For the native binary node, the stalk is the residual evidence (assume intrinsics, alignment guarantees, the absence of bounds checks at sites where bounds were proved).
+A *stalk* is the space of facts available at one stage. A particular program supplies a value in that space. At our PSG stage, that value includes source types and their dimensional identities. Range refinements refer to the relevant bindings, while layout constraints connect those bindings to the selected target.
 
-The stalk category changes with the tier. At Tier 1, the stalk values live in the category of finitely generated abelian groups and group homomorphisms: \(\mathbb{Z}^n\) vectors and dimensional consistency relations. At Tier 2, the stalks live in the category of QF_LIA constraint systems and their satisfying assignments. At Tier 3, the stalks live in a category of distributions whose support is defined by QF_LIA constraints over abelian subgroups. At Tier 4, the stalks live in a category of pairs of program memories with pRHL judgments between them.
+These facts have different mathematical representations. Dimensional exponents use the free abelian group \(\mathbb Z^n\) over the declared base measures. Escape classifications use an ordered domain. A range may be represented by an interval or by a predicate that retains relationships between values. Probability models add weights to a support. Our joint constraint mechanism needs the connections between these domains without identifying them with one another.
 
-The compilation poset is the same at every tier. The stalks above it differ. The tiers are different sheaves over a shared base, the cohomological version of the four-tier Hoare correspondence.
+We place platform and BAREWire facts into that mechanism before the middle end witnesses a memory operation. BAREWire's local memory layouts determine physical access requirements. Its IPC and network contracts also describe representation boundaries, where a codec may relate the local value to a different wire format. The [dimensional architecture](/spec/draft/ntu-dimensional-architecture/) specifies this upstream settlement of source and platform facts.
+
+At later stages, a fact may appear as an operation attribute or as evidence associated with a lowering decision. For the binary, the relevant observations include instruction behavior and the realized layout. An instruction's absence, such as an eliminated bounds check, requires a justification tied to that access.
 
 ## Structure Maps: The Lowering Passes
 
-For each ordered pair \(s_1 < s_2\) of compilation stages, the sheaf provides a *structure map* \(D(s_1 < s_2)\) sending stalk values at \(s_1\) to stalk values at \(s_2\). These structure maps are the lowering passes: the translation of PSG annotations into MLIR attributes, the propagation of MLIR attributes through dialect lowerings, the materialization of MLIR attributes as LLVM metadata in the binary.
+Write \(D_{s,t}\) for the translation of facts from stage \(s\) to stage \(t\). The maps obey identity and composition laws:
 
-The defining axiom of a sheaf is the compositionality equation: for any chain \(s_0 < s_1 < s_2\),
+\[
+D_{s,s}=\mathrm{id}, \qquad
+D_{t,u}\circ D_{s,t}=D_{s,u}.
+\]
 
-\[D(s_0 < s_1) \,;\, D(s_1 < s_2) \;=\; D(s_0 < s_2).\]
+These laws concern the selected interpretation of a lowering. For example, translating a bounds fact through two dialect conversions must agree with the interpretation of their composite. The compiler must also connect that interpretation to the operations those conversions actually produce.
 
-In our framework's terms: lowering from PSG to mid-level MLIR via the tensor path's high-level dialects must produce the same annotations as lowering directly from PSG to mid-level MLIR. This is the property our staged-discharge architecture *enforces*. Each lowering pass is required to preserve the annotations of the stage above it, and the SMT re-discharge at each pass is the local check that compositionality holds across that edge of the compilation poset.
+A pass can supply a preservation theorem that covers the affected property. Otherwise, we require validation of its result at that edge. Rechecking an arithmetic formula is useful only with the corresponding state mapping and operation semantics: an unbounded integer addition and a machine addition with overflow can have different behavior even when the printed formulas resemble one another.
 
-A theorem about finite posets makes this enforcement strategy efficient. To verify that a global section exists, it suffices to check the structure-map equations on the edges of the Hasse diagram; transitivity propagates through compositionality. The staged-discharge architecture's computational cost is therefore proportional to the number of lowering passes, not to the number of pairs of compilation stages, and this is a categorical fact rather than an engineering optimization.
+Once the maps satisfy the functor laws, checking one candidate assignment on every adjacent edge establishes compatibility throughout a finite stage order. This is the cover-edge result in [Remark 2.19 of *Sheaf theory: from deep geometry to deep learning*](https://arxiv.org/html/2502.15476#S2.SS3). The checks must use the same assignment at shared stages. Their cost still depends on the obligations and evidence at each edge.
+
+Information can be released after the obligations that need it have been discharged, provided the remaining representation preserves their required consequences. A dimensional annotation may guide representation selection and then give way to a checked physical operation. Its release needs a traceable justification, and later passes remain responsible for the properties they could perturb. Ordinary executable code need not retain every source annotation as runtime metadata.
 
 ## Global Sections and the Certificate
 
-A *global section* of a sheaf is an assignment of one stalk value to each node of the base poset such that, for every ordered pair \(s_1 < s_2\), the structure map sends the value at \(s_1\) to the value at \(s_2\). In the compilation sheaf, a global section is what the verification certificate records: a consistent set of annotations at every compilation stage, compatible with every lowering pass.
+A compatible family \(x_s\), with \(D_{s,t}(x_s)=x_t\), is a *global section*. Our intended certificate records such compatibility for the prescribed source facts and the observed lowering results, together with the evidence needed to justify the translations.
 
-A global section certifies that *consistent annotations exist*. It does not, by itself, certify that the binary realizes those annotations; that is the reconciliation tool's job. The global section is a *necessary* condition for the binary to be correct with respect to the source-level specification. Sufficiency requires the additional check that the binary is a faithful implementation of the section. The reconciliation tool, in sheaf-theoretic terms, verifies that the binary and the certificate are witnesses to the same global section over the same base poset.
+The source requirements and the actual artifacts fix what this certificate must describe. On the simple chain above, total maps can propagate a starting annotation into a compatible family, but we still have to show that each annotation describes the code produced at that stage. For the buffer example, the certificate must connect the original bounds and layout to the particular address calculation in the resulting program.
 
-This is the categorical version of the consequence rule applied at each lowering, and it is also the categorical reason our staged-discharge architecture cannot be replaced by a single end-of-pipeline check. A single check at the binary stage would verify only the stalk at the bottom of the poset, leaving the structure maps that connect it to the source unverified. A break in the structure-map chain (a lowering pass that silently changes a dimensional annotation, an MLIR transformation that drops a coeffect attribute) would be invisible. The staged discharge is the witness that no such break occurs.
+Our proof-carrying PSG is the canonical home for joint constraints and their evidence. The separate ledger serves as a temporary reconciliation scaffold: we compare it with graph-carried facts and with the lowered artifact while validating that mechanism. Witnesses observe the settled facts. They must report a missing dimensional or layout fact at the point that requires it.
 
-## Tiers as Stalk-Category Refinements
+A certificate should identify the property and the exact artifact to which it applies. It also records the selected target and platform declaration. Each obligation has a tier and an evidence form, with the assumptions and proof dependencies needed to interpret the result. A solver verdict has different trust requirements from an independently replayed proof. The frontend's interpretation and the boundary mappings remain part of that account unless separately justified.
 
-With the sheaf in place, the [four tiers](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/#the-four-tiers), whose fragments and decision procedures that entry defines, read as a family of stalk categories over the one base poset.
+## Tiers as Evidence Domains {#tiers-as-stalk-category-refinements}
 
-**Tier 1** is the abelian-group sheaf. Stalks are \(\mathbb{Z}^n\) vectors (dimensional types, grade assignments, escape lattice elements), and structure maps are abelian group homomorphisms. The global section problem is the system of linear equations Gaussian elimination decides, and there is no annotation cost because parametricity over the abelian-group structure makes the result a free theorem in Wadler's sense: consistency follows from the type structure alone, with no property the engineer must declare.
+Our four tiers organize the reasoning available for an obligation. The same program may use several, with an established result from one becoming a premise for another.
 
-The abelian group carries inverses, and admitting them as first-class constructors, the additive inverse of a [negative type](/docs/design/types/negative-fractional-types/) and the multiplicative inverse of a fractional type, moves the dimensional exponents from \(\mathbb{Z}\) to \(\mathbb{Q}\). The stalk vectors widen from \(\mathbb{Z}^n\) to \(\mathbb{Q}^n\). The multiplicative inverse forces the passage from the integers to the rationals, since a fractional exponent is a reciprocal power. The stalk category is still finitely generated abelian groups (now \(\mathbb{Q}\)-vector spaces under addition of exponents), and the structure maps are still homomorphisms. The change is the coefficient field, not the shape of the sheaf. Unification at the \(\eta\) introduction and \(\varepsilon\) annihilation sites reduces to the same algebraic identity checking the integer case already performs, so the widening from \(\mathbb{Z}\) to \(\mathbb{Q}\) leaves the polynomial-time decision procedure of this tier intact.
+| Tier | Typical obligation | Evidence carried forward |
+|---|---|---|
+| 1 | Dimensional equality and declared algebraic structure | A kinded substitution or derivation under the declared laws |
+| 2 | Range, layout, or arithmetic conditions in a supported fragment | The checked condition and its assumptions, with the analysis result or available solver proof |
+| 3 | A restricted probabilistic property | A library theorem instance, its probability model, and discharged premises |
+| 4 | A relational property of executions or compilation | A derivation in the applicable relational logic and evidence for its leaves |
 
-**Tier 2** is the QF_LIA sheaf over the same base poset. Stalks now carry inequality constraints (bounds, ranges, bit patterns), and the structure maps must preserve them across lowering, so the global section problem becomes a satisfiability question rather than the linear system of Tier 1. When rational exponents enter through the negative and fractional duals, the constraint coefficients move from \(\mathbb{Z}\) to \(\mathbb{Q}\) and the stalk category admits QF_LRA beside QF_LIA. The edge check is the same kind of query over a wider theory, because combining dimensions is addition of exponents and addition stays linear no matter how many reciprocals are stacked. The solver handles it at the same class of cost. The obligation-level treatment is the subject of the [Negative and Fractional Types pre-print](https://arxiv.org/abs/2606.04352); its carriage through lowering, as the structure maps of this sheaf propagate the dual structure, is developed in the [Fixed-Point Scaffolding pre-print](https://arxiv.org/abs/2606.02854).
+For dimensional inference, integer exponents require integer-preserving solving, including divisibility conditions. Grade and escape information have their own rules. Arithmetic obligations may use cvc5 or a sound specialized analysis. The selected theory determines which conditions a procedure can establish and at what cost.
 
-**Tier 3** is a sheaf whose stalk category includes uniform distributions over lattice cosets. The structure maps relate distributions, so the lowering must preserve not only the support but the acceptance probability of any rejection-sampling loop, which is why the tier lives in the abelian-group fragment Tiers 1 and 2 already handle. The distinctively Tier 3 claim, that a rejection-sampling loop terminates with probability 1, is a section of this distributional sheaf rather than of the Tier 2 one.
+Tier 3 supports reusable probabilistic results, such as almost-sure termination under stated assumptions about a loop's trials. Tier 4 extends the library workflow to relational judgments. Probabilistic relational Hoare logic, pRHL, relates distributions of executions. A compiler-relational logic relates source and target computations under specified semantics. Rocq is a proof assistant in which authors can establish the soundness of those rules or prove reusable domain theorems.
 
-**Tier 4** is a relational sheaf. Stalks are pairs of program memories (one real, one simulated), and structure maps preserve pRHL judgments between them, so the global section is a relational property of the pair rather than a value-level property of one program. The discharge is a derivation in the pRHL rule language rather than a solver query, which is the reason Rocq's kernel enters the trusted computing base at this tier and not below it.
+We intend application developers to receive automatic coverage wherever the available rules and libraries cover their program, including Tier 4. Domain authors provide the reusable proofs. The compiler instantiates them and checks their premises at each application. The accepted proof and the conditions of each application remain available to later lowering checks.
 
-The four tiers are four sheaves over the same compilation poset. The base poset (source, PSG, MLIR levels, binary) is what our framework keeps constant. The stalk category is what the engineer's choice of verification tier changes. What stays fixed through the pipeline is the base poset and the decidable discipline, not one particular theory: the workhorse target is QF_LIA, the duals widen it to QF_LRA, and both are checked by the same solver at the same edges. The compilation poset is invariant, and that invariance is what makes the consequence rule applicable at every tier boundary and every lowering pass, whichever theory the stalks at a given tier draw on.
+## Duality and Mode Translations {#the-duality-dimension-as-a-stalk-refinement}
 
-## The Duality Dimension as a Stalk Refinement
+Our [Negative and Fractional Types preprint](https://arxiv.org/abs/2606.04352) explores resource structures for quantum and AI applications. In the current manuscript, we propose value-indexed fractional operations with matching-resource conditions. Compact duality requires the corresponding evaluation and coevaluation laws in a suitable semantic model. We need explicit interpretations of these structures through lowering.
 
-The negative and fractional duals refine the stalk category along an axis the tiers do not touch. A tier changes what a stalk value *is* (a vector, a constraint system, a distribution, a relational judgment). The duals change what algebraic structure the stalk objects *carry*: they promote the framework's symmetric-monoidal PSG semantics to compact closed, giving every object a dual, with the `η` and `ε` morphisms introducing and annihilating a type-and-its-inverse pair. In the [Negative and Fractional Types](/docs/design/types/negative-fractional-types/) account this is a fourth structural dimension, the duality dimension, parallel to the compilation, joint-constraint, and verification-strength dimensions the hypergraph already carries.
+Measure exponents remain a separate algebraic choice. An inverse measure subtracts integer exponents. Permitting rational powers would extend that measure algebra explicitly. Neither resource modalities nor compact duals automatically make that extension.
 
-In sheaf terms the duality dimension is a refinement of the stalk category that leaves the base poset and the structure-map discipline unchanged. The `η` and `ε` operations are type-level transitions, not new structure maps. Baker settles them on the graph as codata, which the middle end witnesses and elides into MLIR by the same mechanism the dimensional and lifetime annotations already use. Compact-closed structure is what admits a dual value as a legitimate stalk element rather than an escape hatch, because the compilation sheaf's compositionality equation still has to hold across every edge, duals included. The pairing cancellations, `('T + Neg<'T>) ↔ 0` and its multiplicative variant, are the type-level instance of a pattern already present elsewhere in the architecture: the Program Hypergraph's grade annihilation \((a \wedge a = 0)\) and the mode-shift discipline's round-trip tier coercions collapse the same way. The duality dimension adds the pattern to the stalk objects. It does not add a tier, and it does not change the poset the sheaf is built over.
+A change of reasoning mode also needs a translation between judgments. For instance, passing from a probability distribution to its support retains possible outcomes while releasing their weights. An adjunction between suitable modes supplies unit and counit laws, which are weaker than an invertible round trip. Our [mode-shift account](/docs/internals/verification/mode-shifts/) describes how the translated judgment can support a later proof. [A Triangle Without Mystery](/blog/a-triangle-without-mystery/) places these connections alongside the encoding and composition disciplines behind the design.
 
-## The PHG as a Cellular Sheaf on a Hypergraph
+## Joint Constraints and Incidence Structure {#the-phg-as-a-cellular-sheaf-on-a-hypergraph}
 
-Our Program Hypergraph extends the PSG with hyperedges: joint constraints linking three or more nodes. Co-location constraints for spatial tile placement, k-ary geometric product constraints in Clifford algebra computation, kernel fusion's joint resource constraints. Our PHG inflection-point argument observes that these constraints cannot be decomposed into binary edges without losing information.
+Our Program Hypergraph makes a constraint's participants explicit. A fused kernel's capacity requirement can depend on every buffer resident together. Three buffers of four units each fit pairwise within a capacity of ten, while their combined requirement is twelve. Checking those pairwise capacity inequalities would accept a placement that violates the joint requirement.
 
-The cellular-sheaf framing turns this engineering observation into a categorical impossibility. A graph is a 1-dimensional cell complex, and the cohomology of a sheaf on a graph lives in degrees 0 and 1. A hypergraph, treated as a bipartite poset where vertex \(v\) is below hyperedge \(h\) when \(v \in h\), is a cell complex of higher dimension whose sheaf cohomology lives in degrees that a graph cannot represent.
+A hyperedge can retain the aggregate predicate and its participant identities. An auxiliary constraint node in an ordinary graph can also retain that same relation. We favor first-class joint constraints because subsequent placement and proof passes need their full scope and provenance. The representation must preserve a shared buffer's identity wherever the buffer participates.
 
-The joint resource constraints in kernel fusion generate cocycles of degree higher than 1. They are obstructions to extending local consistency at individual operations to global consistency across the fused kernel. A graph-based representation cannot carry these obstructions because the relevant cohomology groups do not exist on a 1-dimensional complex. Our PHG is the minimal cell complex on which the joint constraints' cohomology is non-trivial.
+For a sheaf model, the vertex-to-hyperedge membership relation gives a two-level poset. Hyperedge size does not increase its cohomological dimension: its normalized Roos complex has no terms above degree one. [Construction D.23](https://arxiv.org/html/2502.15476#A4.SS5) gives this complex explicitly. The engineering benefit here is faithful carriage of the joint predicate.
 
-This sharpens the inflection-point argument. The previous statement was that binary edges become inadequate when constraints are k-ary. The cohomological statement is that binary edges are incapable of representing the obstruction classes that k-ary joint constraints generate, because the cohomology groups in which those obstructions live do not exist on a 1-dimensional cell complex.
+## Range Refinement {#conservative-findings-as-uncharacterized-cohomology}
 
-## Conservative Findings as Uncharacterized Cohomology
+A sound interval bound can overestimate the values a computation can reach. With nonnegative `offset` and `count`, consider an access guarded by `offset + count <= length`. Recording separate intervals for `offset` and `count` can lose the relationship that justifies the access. Our PSG should retain the guard and its binding identities so the range analysis can use that relationship at the operation.
 
-When the Tier 2 range analysis returns a conservative bound (a loop's output range that interval arithmetic alone cannot tighten further), the operational story has called this a "limitation of the analysis." The cohomological story is more precise: the analysis has detected that the global section problem for this sheaf has a non-trivial \(H^1\) obstruction that the current stalk category cannot resolve.
+A more precise transfer rule or an applicable library lemma can refine the bound. Its premises remain attached to the derived fact. Facts about immutable values remain available across delayed demand. A captured reference to mutable storage requires revalidation of facts that depend on its contents when those contents can change. The relevant lifetime is the lifetime of the evidence's premises.
 
-The resolution is to refine the stalk category, moving the problem from the Tier 2 sheaf to the Tier 3 sheaf, where the stalks include the distributional information that kills the obstruction. In practice this means invoking a Tier 3 lemma from `Fidelity.Lemmas.Mathematics`, proved once in Rocq, that supplies the cocycle witness. The conservative diagnostic is therefore an honest acknowledgment that the relevant lemma is not yet in the library. Our response is to add the lemma.
+During editing, an unresolved obligation can remain pending until the boundary that requires a decision. At representation selection, an empty coverage set requires a hard error under [Numeric Selection](/spec/draft/numeric-selection/) and [Conformance §5](/spec/draft/conformance/#5-the-diagnostic-obligation). Refining an overestimate may establish coverage. Choosing an uncovered representation would violate the contract.
 
-The space of conservative findings is exactly the space of obstruction classes for which no witness has yet been added to the library. The obstruction is an element of a cohomology group, and the lemma that kills it is a witness the library catalogs for the compiler.
+We are also interested in whether cohomological diagnostics can help locate failures of compatibility across analyses. To make such a diagnostic useful to an engineer, we need a proved correspondence between the computed class and the program property it reports. Ordinary sheaf cohomology uses suitable abelian coefficients, such as modules, with the hypotheses needed for its construction. General constraint sets and distributions require additional structure for that interpretation. [Appendix C of the sheaf survey](https://arxiv.org/html/2502.15476#A3) develops the mathematical requirements.
 
-## Three Sheaves, Three Hoare Logics
+## Multiple Analyses and Shared Premises {#three-sheaves-three-hoare-logics}
 
-The four-tier correspondence describes Hoare logic over the values a program computes. Two recent Hoare-logic variants describe orthogonal axes:
+The same compilation stages can support several kinds of reasoning. [Access Hoare Logic](https://arxiv.org/abs/2511.01754), by Beckmann and Setzer, concerns access security. [A Hoare Logic for Symmetry Properties](https://arxiv.org/abs/2509.00587), by Mehta and Hsu, reasons about program symmetries expressed through group actions. These are useful sources for domain-specific judgments and their preservation rules.
 
-- **Access Hoare logic** [(Beckmann & Setzer, arXiv:2511.01754)](https://arxiv.org/abs/2511.01754) reasons about *who may execute*: capabilities, access rights, authorization invariants.
-- **Symmetry Hoare logic** [(Mehta & Hsu, OOPSLA '25, arXiv:2509.00587)](https://arxiv.org/abs/2509.00587) reasons about *under what transformations a program is invariant*: group actions, equivariance, conservation laws.
+We can organize such analyses over a common stage order while retaining each analysis's interpretation. Combining them also requires tracking shared premises. A representation change can alter layout, which can change the alignment condition used by a memory proof. A permission fact can restrict which operation is legal at that address. The joint mechanism must reconsider the affected obligations when one of those facts changes.
 
-In the sheaf framing these are *different sheaves over the same compilation poset*, with different stalk categories, rather than new tiers added to the existing four. Access Hoare logic is the sheaf whose stalks are capability lattices and whose structure maps preserve access discipline through lowering. Symmetry Hoare logic is the sheaf whose stalks carry group actions and whose structure maps are equivariant.
+Independent analyses can run separately when their assumptions justify that independence. Where an analysis imports another's result, the dependency belongs in the graph. Similarly, translating a judgment between modes and then lowering the program requires an agreement law whenever we intend the opposite order to yield the same judgment. The [mode-shift account](/docs/internals/verification/mode-shifts/) describes these two directions of translation.
 
-The compilation poset is shared across all three sheaves. Our framework verifies a program by checking that global sections exist for whichever sheaves the engineer's domain requires: the four-tier functional sheaf for correctness, the access sheaf for authorization, the symmetry sheaf for conservation laws and equivariance. The staged-discharge architecture witnesses each of these global sections by the same mechanism: local structure-map equations checked at the edges of the compilation poset, with compositionality propagating the structural check through the rest. The PSG and PHG are committed to the base poset over which any number of compatible sheaves can live. [The braid as a fourth sheaf](/docs/design/categorical-foundations/braid-as-a-fourth-sheaf/) proposes one such addition, a non-abelian sheaf whose stalks carry the crossing order of concurrent work.
+## Reusable Evidence {#what-this-reframes}
 
-## What This Reframes
+An engineer should be able to use a proved library operation without reconstructing its domain proof at every call. In our intended editing workflow, a lemma application instantiates the theorem's parameters and dispatches its premises. The resulting evidence remains associated with the relevant region of the PSG. Folding its display in the editor changes the view, while dependency changes trigger the required revalidation.
 
-Our cohomological framing leaves the implementation unchanged and changes what the implementation is *about*:
+A short application can reconstruct evidence relative to an established library, a concrete example of [description length relative to supplied context](https://homepages.cwi.nl/~paulv/papers/info.pdf). Our [deferred inference account](/blog/deferred-inference/) also distinguishes exact admissibility from selection among the admissible choices. A Bayesian model can rank those choices when its evidence and probability model are supplied, while dimensional contradictions and unmet range obligations retain their diagnostic force.
 
-Our staged-discharge architecture is the witnessing mechanism for global sections of the compilation sheaf, and the local-edge-check strategy is forced by the finite-poset cohomology theorem.
-
-The tier architecture is a graduated refinement of the stalk category over a fixed base poset, with each tier corresponding to a categorically natural choice of stalks (abelian groups, QF_LIA models, distributions over lattice cosets, relational pRHL judgments).
-
-The PHG is the minimal cell complex on which the cohomology groups carrying joint-constraint obstructions are non-trivial.
-
-Conservative findings are uncharacterized obstruction classes awaiting witnesses from the lemma library.
-
-The verification certificate is a global section of the compilation sheaf, and the reconciliation tool's job is to check that the binary is a faithful realization of that section.
-
-The sheaf reading is where our current interest lies as we keep building out the lemma library and the sheaves an engineer's domain may call for. We expect the cohomological account to stay useful as we carry the work further, and we will report what we find as the architecture grows.
+For a new lowering pass, we require a declared interpretation of the affected facts and evidence relating its result to that interpretation. Once the pass justifies a metadata release, downstream checks follow the surviving obligations through to the artifact. The engineer implementing the pass gets a concrete boundary to review. The application developer gets to keep using the checked library operation as its implementation changes beneath them.

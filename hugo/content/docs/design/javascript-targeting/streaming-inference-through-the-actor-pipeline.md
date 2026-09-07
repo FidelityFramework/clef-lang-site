@@ -10,7 +10,7 @@ weight: 50
 
 ## The Streaming Problem in Inference
 
-Autoregressive models produce output one token at a time. A BitNet ADM running inside a container generates tokens sequentially, each conditioned on the preceding sequence. The full response may be hundreds of tokens. The client should not wait for the last token before seeing the first. The [unified actor architecture](/blog/unified-actor-architecture/) establishes how Prospero supervisors and Olivier workers communicate over BAREWire. A single request and its response exchange one frame each. A streamed inference reply is hundreds of frames, one per token, arriving as they are generated, and each frame must carry enough structure on its own, a tag identifying its case, a correlation ID tying it to its request, a fixed payload layout, for the receiver to route and read it without waiting for the rest. This page describes that per-frame structure and follows it from the container's inference loop to the client's screen.
+Autoregressive models produce output one token at a time. A BitNet ADM inside a container can deliver each token as it is generated, through a Worker to the client. The [unified actor architecture](/blog/unified-actor-architecture/) establishes the proposed Prospero/Olivier path over BAREWire. In this streaming design, a declared response envelope carries correlation and a union case identifies the payload shape. The wire does not carry compiler type, schema, dimension, or proof tags. This page follows that design from the inference loop to the client's screen; Composer's JavaScript lowering remains proposed work.
 
 Every LLM deployment solves this, and the standard approach is Server-Sent Events with JSON payloads:
 
@@ -20,9 +20,9 @@ data: {"token": " answer", "index": 43, "finish_reason": null}\n\n
 data: {"token": "", "index": 44, "finish_reason": "stop"}\n\n
 ```
 
-Every frame carries field names as strings, redundantly, because JSON is self-describing. The receiver parses each line, finds the `data:` prefix, parses the JSON, looks up `"token"` by string key, checks `"finish_reason"` by string key. The schema is rediscovered from every message.
+This SSE/JSON example repeats field names and requires JSON parsing. A declared binary layout can avoid those names and lookups; either protocol can use generated validators and a schema agreed outside each message.
 
-The question is whether our Fidelity framework's compilation pipeline offers something structurally better. It does, and the mechanism is BAREWire.
+BAREWire gives the proposed compilation pipeline a compact, shared representation for this path.
 
 ## BAREWire Frames for Token Streaming
 
@@ -30,22 +30,22 @@ The inference response is a discriminated union:
 
 ```fsharp
 type InferenceResponse =
-    | Token of text: string * index: int     // tag 0
-    | StreamEnd of totalTokens: int          // tag 1
-    | StreamError of message: string         // tag 2
+    | Token of text: string * index: int     // case 0
+    | StreamEnd of totalTokens: int          // case 1
+    | StreamError of message: string         // case 2
  
 ```
 
-The Clef compiler verifies this type at design time. The BAREWire schema is derived from it: [three cases, three tags, each with a fixed payload layout](/spec/draft/discriminated-union-representation/). Each token becomes a single frame:
+The declared union supplies [three cases and their payload layouts](/spec/draft/discriminated-union-representation/). A case index selects the application variant; it is not a type or schema identifier. Strings make the payload length variable. A conceptual frame separates the stream framing, protocol envelope, and encoded union:
 
 ```
-┌────────────┬────────┬───────────────┬──────────────────────────┐
-│ Header     │ Tag: 0 │ Corr: 7      │ Payload: " the", 42     │
-│ (4 bytes)  │ (1 B)  │ (4 bytes)    │ (len-prefix str + varint)│
-└────────────┴────────┴───────────────┴──────────────────────────┘
+┌────────────────┬────────────────────┬─────────────────────────────┐
+│ Stream framing │ Protocol envelope  │ BARE application payload    │
+│ message length │ kind, correlation  │ Token case, text, index     │
+└────────────────┴────────────────────┴─────────────────────────────┘
 ```
 
-A typical token frame is roughly 18 bytes versus 60+ for the SSE/JSON equivalent. No field names. No string key lookup. No JSON parsing. The receiver reads the tag, knows it is a `Token`, reads the string length, reads the string, reads the varint index. The stream ends when a frame with tag 1 (`StreamEnd`) arrives. An error is tag 2.
+Exact byte counts depend on the pinned framing format, envelope, integer encoding, and token text. The receiver uses the agreed layout to decode the `Token` case, string, and index. `StreamEnd` and `StreamError` are other cases of that layout; their indices do not certify that both endpoints share the same schema.
 
 The correlation ID ties the entire stream to the original request. The client sent a request with correlation ID 7. Every response frame carries correlation ID 7. The client's WebSocket handler matches on correlation ID and routes all frames to the same response handler. Multiple concurrent inference requests multiplex over the same WebSocket, each with a different correlation ID, each accumulating its own token stream independently.
 
@@ -55,73 +55,73 @@ The [spatial mechanics](/docs/design/memory/spatial-mechanics/) article describe
 
 ### Inside the Container: Spatial
 
-The inference pipeline is spatial. The BitNet model processes through layers as a spatial dataflow pipeline. Data flows through processing stages with bounded buffering. On native hardware with SIMD, this is the materialized/spatial hybrid described in the spatial mechanics article: fixed-size tensors flowing through vectorized stages. The container runs native code compiled through LLVM. Dimensional types governed the range analysis. Representation selection chose the numeric format. Our coeffect system verified the memory lifetimes. All of this happened at compile time.
+The intended native inference pipeline combines spatial dataflow with bounded buffers and vectorized stages. Dimensional analysis, representation selection, and lifetime checking supply obligations for native lowering. Their metadata stays in the PSG/codata until each obligation has fulfilled its role; successful source analysis alone is not a proof that every target lowering preserves it.
 
 Each generated token exits the inference pipeline as a value with a known type. The container's BAREWire serializer encodes it as a frame and sends it over the container binding.
 
 ### Container to Worker: Demand-Driven
 
-Each generated token is a BAREWire frame. This is demand-driven in the spatial mechanics terminology: the container produces output incrementally, and each increment becomes a self-contained frame. The frame header gives the length. No accumulation is required. No schema negotiation occurs at the transport boundary.
+Each generated token becomes a self-contained frame, permitting incremental delivery. The stream framing gives a declared message length; receiving code must still enforce available bytes and admitted bounds. Endpoint/schema agreement is established separately from the payload, rather than negotiated by a case index.
 
-The container does not wait for acknowledgment between tokens. It generates, serializes, sends. Generates, serializes, sends. This is the tell-first architecture described in the [BAREWire signal article](/blog/getting-the-signal-with-barewire/). The Worker receives each frame as it arrives.
+Tell-first delivery avoids a request/reply acknowledgment for each token, as described in the [BAREWire signal article](/blog/getting-the-signal-with-barewire/). It does not waive transport completion, backpressure, or buffer lifetimes: a send may need awaiting, and its storage must remain valid until the transport has finished with it.
 
 ### Worker to Client: Protocol Relay
 
 The Worker receives BAREWire frames from the container and forwards them over WebSocket. The Worker is a protocol adapter. It does not buffer the full response. Each BAREWire frame from the container becomes a WebSocket frame to the client. The streaming is transparent: the Worker relays frames as they arrive.
 
-The Worker's JavaScript is compiled through JSIR as described in [JSIR: JavaScript as an MLIR Backend](../jsir-javascript-as-mlir-backend/). The BAREWire deserializer and WebSocket serializer both derived from the same MLIR ops in the shared middle-end. The Worker does not inspect the payload. It reads the frame header, determines the length, and forwards.
+The proposed [JSIR backend](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) would derive JavaScript boundary code from the same declared protocol as native code. A relay can forward payload bytes without decoding their values after checking the framing needed for its role. Shared derivation supports a correspondence argument; each target lowering must still preserve the contract.
 
 ## Contrast with Conventional Streaming
 
 The wire savings are the smaller difference. What separates the two patterns is structural, and it shows in how each handles change.
 
-In the SSE/JSON pattern, the client must parse each message to determine its type. The string `"finish_reason"` appears in every message. The receiver must check whether its value is `null` or `"stop"` by string comparison. If the API adds a new field, every consumer must be updated to handle JSON objects with an unexpected key. If a field is renamed, the consumer silently gets `undefined` and fails downstream.
+In the SSE/JSON example, the client parses each object and interprets `finish_reason`. Generated validation can make that interpretation explicit. Compatibility under added or renamed fields depends on the chosen schema and consumer policy.
 
-In the BAREWire pattern, the discriminated union is the schema. Adding a new case (`| StreamMetrics of latency: float<ms>`, tag 3) produces a new tag. Existing clients that do not know tag 3 reject it at the frame level before any handler code executes. Renaming a field changes nothing on the wire because fields are positional, not named. Removing a case changes the tag mapping, which changes the schema, which breaks the schema identity check. Every structural change is visible at the type level, verified at compile time, and enforced at the wire level.
+In the BAREWire design, adding a union case changes the declared layout. A decoder can reject an unknown case, but two incompatible schemas may reuse the same case index. A positional field rename need not change bytes; reordered fields or changed payload types can. Versioned endpoint/schema agreement must account for those differences separately from frame decoding.
 
-The [schema identity proxy](../jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) holds for every frame in the stream, not just the first one. A stream of 500 token frames is 500 independently typed, independently parseable messages, each retaining the same schema guarantee.
+The [schema agreement model](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/#schema-identity-as-a-proxy-for-dimensional-agreement) applies across the stream under its endpoint and lowering premises. Each frame remains independently parseable under that agreed layout; no per-frame type or schema tag supplies the agreement.
 
 ## Multiplexing and Correlation
 
 A single WebSocket connection between a client and a Worker can carry multiple concurrent inference streams. The correlation ID is the multiplexing key. Request 7 produces token frames with correlation ID 7. Request 12 produces token frames with correlation ID 12. Both flow over the same WebSocket. The client demultiplexes on correlation ID and routes each stream to its own handler.
 
-This matters for interactive applications where a user might issue multiple queries in rapid succession, or where a supervisor issues parallel inference requests to different ADM instances. The WebSocket is a single connection. The BAREWire frames are independent messages on that connection. No stream interferes with another.
+This matters for interactive applications where a user might issue multiple queries in rapid succession, or where a supervisor issues parallel inference requests to different ADM instances. The WebSocket is a single connection. The BAREWire frames are independent messages on that connection. Correlation separates routing; streams still share transport and resource budgets.
 
 With MoQ/QUIC in the future, each inference stream could become a separate QUIC stream with independent ordering. No head-of-line blocking from other traffic on the connection. The frame format does not change. The transport changes. The BAREWire frames are transport-agnostic by design.
 
 ## Design-Time Spec for Runtime Reliability
 
-The entire path from inference output to client display is specified at design time and enforced at runtime without runtime validation code.
+The aim is to carry one declared contract from inference output to client display, discharging static obligations and generating the checks that remain at open boundaries. The [contract-to-artifact example](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/#from-contract-to-emitted-artifact) separates current evidence from proposed lowering.
 
-**Dimensional consistency**: the inference model's output types were verified at compile time, as described in the [decidability sweet spot](/docs/internals/verification/decidability-sweet-spot/). Our DTS rejected every program that could produce dimensionally inconsistent results. The runtime does not check dimensions.
+**Dimensional consistency**: source verification establishes admitted dimensional relations, and lowering must preserve their meaning. Dimensions need not become wire tags; their compiler obligations remain available until fulfilled.
 
-**BAREWire schema**: derived at design time from the verified `InferenceResponse` type definition. Enforced at runtime by byte layout, not by validation code. The receiver does not inspect field names. It reads positions determined by the compiled schema.
+**BAREWire schema**: a shared declaration determines positional encoding. The final payload is untagged with respect to type, schema, dimensions, and proof metadata. Receivers still check open input bounds and any narrowing premises not otherwise discharged.
 
-**Frame structure**: fixed at design time by the type definition. Self-enforcing at runtime because the tag-to-layout mapping is compiled into both the serializer and the deserializer.
+**Frame structure**: the framing prefix, protocol envelope kind, and application union case serve different roles. A compiled case-to-layout mapping guides decoding; it does not make malformed or truncated bytes impossible.
 
-**Cross-substrate compatibility**: guaranteed at design time by shared MLIR ops, following the [pipeline unification](../jsir-javascript-as-mlir-backend/#what-jsir-changes) described in the JSIR article. The container's native serializer and the Worker's JavaScript deserializer both derived from the same BAREWire dialect ops. Byte-identical output is a structural property of the pipeline, not a property verified by testing.
+**Cross-substrate compatibility**: shared derivation gives native and JavaScript codecs one contract to preserve. Current JavaScript-generated SMT evidence proves declaration models, not JavaScript execution. Establishing correspondence to emitted artifacts requires the separate lowering and implementation evidence described in the shared example.
 
-**Representation selection**: decided at design time from dimensional range analysis, as detailed in the [posit arithmetic design](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/). On the native container, the compiler selected the optimal numeric format. On the JavaScript Worker, the representation is IEEE 754 float64. The [Representation Fidelity section](../jsir-javascript-as-mlir-backend/#representation-fidelity-across-substrates) of the JSIR article describes the diagnostic that surfaces this divergence at design time.
+**Representation selection**: native and JavaScript representations must satisfy the declared transfer contract. JavaScript may use `Number`, `BigInt`, or byte storage according to that contract; relaying raw posit bytes does not require converting them to float64. Representation obligations include exactness or admitted error, not just range coverage.
 
-The runtime does not check dimensions. It does not validate schemas. It does not negotiate representations. It does not inspect frame structure. It runs the code the compiler emitted, which is correct because the compiler verified the specification that the code implements.
+Checks can be removed when their premises have been discharged for the admitted path. Open network input still needs the relevant framing, bounds, and narrowing checks. Untagged payloads and retained compiler metadata make that division possible without carrying a proof certificate in each token.
 
-The DTS paper states the principle formally: "Decidability is not a property the framework discovers; it is a property the framework enforces through the structure of its type language." The streaming inference pipeline is the distributed systems application of that principle. The compiler enforces structure. The runtime inherits reliability. The wire format bridges the gap where the compiler's jurisdiction ends and the runtime's begins.
+The intended result is a small streaming runtime whose operations follow an explicit contract. The compiler retains the information needed to justify those operations through lowering, and the wire carries the application data and protocol structure needed for delivery.
 
 ## Where This Architecture Has Limits
 
-The design-time guarantees cover type safety, schema identity, and dimensional consistency of the streaming path. They do not reach the operational concerns that arise from deploying streams across distributed infrastructure.
+The contract addresses modeled type, schema, and dimensional obligations together with preservation through lowering. Streaming also needs explicit operational policies for resource limits, reconnection, and delivery.
 
 ### Backpressure
 
 Tell-first semantics mean the container does not wait for acknowledgment between tokens. If the container produces tokens faster than the Worker can relay or the client can consume, frames accumulate in the WebSocket send buffer. TCP flow control provides coarse-grained backpressure at the transport level, but it operates on byte volume, not on frame boundaries. A slow client causes the Worker's outbound buffer to grow until the runtime intervenes.
 
-Cloudflare Workers have memory limits per isolate. A sustained backpressure situation can cause the Worker to exceed its memory budget and be evicted. The BAREWire frame format does not address this. Backpressure is a runtime concern that the compiler cannot verify. The practical mitigation is rate limiting at the container: the container tracks how many unacknowledged frames are in flight and pauses generation when the count exceeds a threshold. This requires a feedback channel from the Worker to the container, which inverts the tell-first model for flow control while preserving it for data delivery.
+A sustained backlog can exhaust an isolate's memory budget. Bounded queues, rate limits, and credit-based flow control can make the resource policy explicit. Static bounds can justify part of it, while runtime checks enforce variable production and consumption rates. A feedback channel for credits can coexist with tell-first data delivery.
 
 ### Ordering and Reconnection
 
 TCP guarantees in-order delivery on a single connection. A stream of token frames arrives in the order the container sent them as long as the WebSocket connection remains open. If the connection drops mid-stream, the ordering guarantee disappears. The client reconnects and receives a new WebSocket connection. Frames sent before the disconnect are lost unless the Worker buffered them.
 
-Durable Objects have persistent state. A Worker could maintain a stream ledger: correlation ID, last acknowledged frame index, buffered frames pending delivery. On reconnection, the client sends its last received frame index, and the Worker replays from the ledger. This adds complexity. The BAREWire frame format supports it (the correlation ID and index field in each `Token` frame provide the necessary bookkeeping), but the replay logic is application code, not a property the compiler can verify.
+Durable Objects can persist a stream ledger: correlation ID, last acknowledged index, and frames pending delivery. On reconnection, the client supplies its received position and the Worker replays according to an explicit duplicate-handling policy. Correlation and token indices support that protocol; the byte layout alone does not prove replay correctness.
 
 For applications where dropped tokens are acceptable (interactive chat where the user can re-query), the simpler approach is to abandon the stream on disconnect and let the client issue a new request. For applications where every token matters (clinical decision support, financial computation), the stream ledger pattern is necessary. The choice is an architectural decision that belongs to the developer.
 
@@ -133,17 +133,17 @@ This is not specific to BAREWire or the Fidelity framework. Every containerized 
 
 ### Payload Boundaries
 
-A typical token frame is 18 bytes. Cloudflare Workers support WebSocket messages up to 1 MB. For token streaming, the frame size is never a concern. For other inference outputs, the frame size may matter.
+Choose a frame budget against the pinned transport's message limit, including envelope and framing overhead. Token text and diagnostics vary in length, so even token streaming needs an admitted bound or a checked chunking policy.
 
-An embedding vector (1024 float64 values) is 8 KB per frame. A batch of embeddings could approach the WebSocket message limit. A `StreamError` frame with a detailed diagnostic message is unlikely to exceed the limit but is unbounded in principle. The BAREWire frame header encodes the length, so the receiver always knows the frame size before reading the payload. But if a single frame exceeds the WebSocket message limit, the Worker must fragment it, which breaks the one-frame-per-WebSocket-message assumption.
+An embedding vector of 1024 float64 values has 8192 payload bytes before framing and other fields. Larger batches or diagnostic strings can exceed the chosen budget. A length prefix reports size; it does not establish that the size fits the transport or available input. Chunking requires a declared reassembly protocol when one output spans messages.
 
-The practical response is to keep inference outputs within the frame size budget. For autoregressive token streaming, this is naturally satisfied. For bulk outputs (embeddings, logits, attention maps), the discriminated union should define a chunked variant that splits the output across multiple frames, each within the size limit. The compiler cannot enforce this because the payload size depends on the model's output, which is a runtime value. The developer must design the discriminated union with the transport constraints in mind.
+Declare a bounded or chunked output variant for bulk outputs such as embeddings, logits, and attention maps. The compiler can use static capacity information where available and generate runtime bound checks where size depends on model output. Both paths must account for framing overhead and the receiver's reassembly budget.
 
 ### Non-Autoregressive Models
 
 The streaming architecture is motivated by autoregressive generation: each token is produced sequentially and can be delivered as it is generated. Not all inference models produce output this way.
 
-A classification model produces a single output. An embedding model produces a single vector. A regression model produces a single value. For these models, the BAREWire frame format still works. The response is a single frame rather than a stream. The correlation ID still ties request to response. The schema identity still holds. But the streaming infrastructure (the token-by-token relay through the Worker, the client-side accumulation, the `StreamEnd` sentinel) is unnecessary overhead. A single request/response frame pair is simpler and more appropriate.
+A classification model produces a single output. An embedding model produces a single vector. A regression model produces a single value. For these models, the BAREWire frame format still works. The response is a single frame rather than a stream. The correlation ID still ties request to response. The same endpoint/schema agreement applies. But the streaming infrastructure (the token-by-token relay through the Worker, the client-side accumulation, the `StreamEnd` sentinel) is unnecessary overhead. A single request/response frame pair is simpler and more appropriate.
 
 The type definition handles both patterns naturally:
 
@@ -157,11 +157,11 @@ type InferenceResponse =
  
 ```
 
-The compiler verifies all cases. The BAREWire schema admits all tags. The Worker relays whatever frames arrive. The distinction between streaming and single-response is a property of which tags the container actually sends, not a property of the frame format or the transport layer.
+The declared schema covers both response patterns. The Worker can relay admitted frames using the same framing rules. Application union cases distinguish streaming and single-response output without adding compiler type tags to the wire.
 
 ### What Testing Must Cover
 
-The design-time guarantees establish that every frame is typed, every schema is derived from verified types, and every cross-substrate serialization is structurally consistent. Testing must cover everything else:
+Verification must connect the declared layout to actual emitted codecs and malformed-input behavior, as well as exercise the operational path. Useful integration checks include:
 
 **Latency under load.** How many concurrent inference streams can a single Worker relay before response times degrade? This depends on the Worker's compute budget per request, V8's scheduling behavior, and the container's throughput.
 
@@ -171,4 +171,4 @@ The design-time guarantees establish that every frame is typed, every schema is 
 
 **Model-specific output.** Does the model produce tokens within the expected size range? Does the response type account for all output cases the model can produce?
 
-These are the concerns that the compiler's type system cannot express. They require integration testing, load testing, and operational monitoring. The compiler removed the structural failure modes. Testing validates the operational characteristics that remain.
+Integration tests, load tests, and monitoring provide evidence for these operational policies. They complement declaration-model proofs and the separate evidence that generated code preserves the boundary contract.

@@ -23,7 +23,7 @@ for (long i = 0; i < n; i++) {
 }
 ```
 
-The algorithm is correct. The format is not. A `float` carries about seven significant digits. Once `total` has grown to a few million while each `sample[i]` is still around one, the value `total + sample[i]` rounds back to `total`. The increment is smaller than the gap between two representable floats at that magnitude, so it is swallowed whole. The sum stops advancing while the loop keeps running, and a reading that should have climbed sits frozen, off by an amount that grows with every step. Nothing in the language objected. This is not unstable math that a better algorithm would rescue; the same loop in `double` runs for far longer before it stalls, and a format matched to the real magnitude of `total` does not stall at all. The format was named at the keyboard, before anyone knew how large the total would grow, and the format was the bug.
+A `float` carries about seven significant decimal digits. Once `total` is large enough, adding a small `sample[i]` can round back to `total`. The sum then stops advancing while the loop keeps running. A wider format postpones that point, and an accumulation method that preserves the small contributions can address it directly. Either choice requires information about the values and the calculation. Naming a format before that information exists leaves the developer carrying the numerical obligation by hand.
 
 The other extreme exacts the same tax in a different currency. Take a numerical staple, the variance of a sample, written in APL close to its mathematical definition and a pleasure to read:
 
@@ -33,13 +33,15 @@ var ← {(+/(⍵-(+/⍵)÷≢⍵)*2)÷≢⍵}   ⍝ mean of squared deviations
 
 That one line is the entire computation: subtract the mean from each element, square, sum, divide by the count, with `≢` the tally and `+/` the sum across the array. Nothing on the page names a width, a shape, a length, or a format, and that economy is what draws people to it. But none of it is gone. The rank of the argument, whether `⍵` is a vector or a matrix, which axis a reduction folds along, whether the result is a scalar or an array the next stage can consume, all of it has to be true for the line to mean what the author intended, and none of it is stated where the language could hold the author to it. The discipline did not disappear. It moved into the developer's head, and it stays there, carried from the keyboard through every later call. C makes the developer commit the format too early. APL lets the developer commit almost nothing and carry the rest by hand instead. The expressive distance between the two poles is enormous, and the tax at both ends is the same: whatever the language leaves unstated, the human holds in their head.
 
-Clef splits the static guarantee from the up-front decision, so the developer keeps the choice open until the latest, best-informed moment. The type stays fully present and fully checked, `float<newtons>` is as statically typed as anything in the program. What it does not carry is a representation the developer had to commit to before the range was known. The goal is to write in the units the problem is stated in, `float<newtons>`, `float<volt>`, a velocity in meters per second, and the compiler decides the representation from the range those units carry, per target, and shows its work in the editor while the code is being written. The decision is still made, statically, before anything runs. It is simply not made by the developer at design time. While the range is still open the editor says as much. Once it resolves, the editor shows the selected representation and the range that drove it, with the accuracy each target keeps alongside. Two kinds of target pull the experience to its sharpest, at opposite ends. On a fixed-instruction part, a CPU or a RISC-V board, naming the destination collapses a finite, stated menu of formats. Most of the choice is made the moment the developer names the target. On an FPGA there is no "subset" to collapse. The representation is laid down as the circuit itself, and the discipline that keeps the choice out of runtime is what makes the design synthesizable at all.
+Clef splits the static guarantee from the up-front decision, so the developer can keep the choice open until there is enough information to settle it. Write a force in newtons, a velocity in meters per second, or a voltage from a sensor. `float<newtons>` carries a checked dimensional type while the rest of the calculation supplies the context for its representation. We want the editor to show that decision as it develops: the pending range obligation, then the selected representation and the evidence behind it. The developer can keep working on the model while those facts become available.
 
-## Delayed Specification Preserves Information
+The destination makes that freedom particularly useful. A CPU offers a menu of arithmetic formats and register widths. On an FPGA, a width can determine the circuit itself, down to the number of flip-flops and carry stages. Our integer width-inference path already gives us a working example of that second case. The real-valued selector would extend the same discipline to choosing an arithmetic format: gather the range and target facts, then make the decision where it can be checked.
 
-The intuition most people carry is that being more specific means supplying more information, so an early, concrete commitment looks like the informed move. In the information-theoretic sense it is the opposite. A commitment removes options, and the option space is the information. Pinning a representation before the range is known does not add knowledge, it discards the alternatives that the range, once known, would have chosen among. Holding the choice open preserves that space until there is something to narrow it on. Software has a familiar name for the discipline, if not for the information-theoretic reading of it. Mary and Tom Poppendieck's "decide as late as possible," from *Lean Software Development*, is the same instinct a working engineer comes to trust through experience. It makes a comfortable doorway into what follows, though the mechanism here is in our compiler service rather than in a team's process.
+## Deliberate Optionality
 
-Poppendieck names when to decide. The question of what must hold while the decision waits was settled earlier, by Barbara Liskov. Designing CLU in the 1970s, she attached operations to the type rather than to the object and left inheritance out of the language entirely, and her 1987 account of subtyping drew the line that matters here: a value of one type may stand in wherever another is expected only when the substitution preserves what the using code relies on.[^liskov] Deferring a representation is that obligation read forward. While `float<newtons>` waits for its range, every representation the selector may later pick has to be substitutable for the dimension the developer wrote, and the feasibility filter below is where that obligation is discharged. A format whose dynamic range cannot cover the interval is dropped before selection, because it could not stand in for the others without changing the result. Clef reaches the property through a parameter constraint and an interval rather than a class hierarchy, which is the CLU side of Liskov's distinction and not the inheritance side she spent that paper untangling.
+The intuition most people carry is that being more specific means supplying more information, so an early, concrete commitment looks like the informed move. But writing down a format does not tell us more about the values it will need to hold. Pinning a representation before the range is known discards alternatives that the range, once known, would have helped us choose among. Holding the choice open preserves that space until there is something to narrow it on. Software has a familiar name for the discipline. Mary and Tom Poppendieck's "decide as late as possible," from *Lean Software Development*, is the same instinct a working engineer comes to trust through experience. It makes a comfortable doorway into what follows, though the mechanism here is in our compiler service rather than in a team's process.
+
+Poppendieck's advice concerns when to decide. Liskov's substitution principle gives us a related obligation: a replacement must preserve the properties its clients rely on.[^liskov] If the compiler chooses a different representation for my force calculation on another target, I still need a force, with the numerical guarantees the calculation requires. Coverage establishes that the interval is within the format's envelope. The error model describes the rounding that remains. Together with the retained dimension, those checks make the later choice accountable to the original program.
 
 For decades the range of options was short enough that the format choice barely *was* one. A real number was an IEEE `float` or an IEEE `double`, and which one a value got was decided less by the value than by what the target register held. 
 
@@ -47,17 +49,17 @@ For decades the range of options was short enough that the format choice barely 
 
 The C programmer choosing between `float`, `double`, and `long double` was choosing register widths. To choose well they had to know the target. Was this platform's `long double` eighty bits or sixty-four? Which width landed in a register, and which spilled? What was the precision once the hardware had its say? The knowledge that should have decided the format lived in the engineer, not in the toolchain, and the engineer carried it by being hardware-cognizant on every line.
 
-That scarcity is gone, and the knowledge no longer has to be a standing engineering burden. [Posit](/docs/design/types/posit-arithmetic/), IEEE, and fixed-point each answer to range in a different way. The choice between them is now real, and our spec states the contest in three lines:
+That scarcity is gone, and the knowledge no longer has to be a standing engineering burden. [Posit](/docs/design/types/posit-arithmetic/), IEEE, and fixed-point each answer to range in a different way. The choice between them is now real, and our spec distinguishes their precision profiles:
 
-> **IEEE-754** distributes relative error approximately uniformly (≈ `2⁻ᵖ`) across its normal range — a representation that makes *no bet* on where values cluster. **Posits** taper: precision is maximal near magnitude `1.0` and degrades toward the regime extremes — a *bet on locality*. **Fixed-point** fixes a scale, trading dynamic range for uniform absolute spacing.
+> **IEEE-754** has approximately uniform relative precision across its normal range. **Posits** taper, with the greatest precision near magnitude `1.0`. **Fixed-point** fixes a scale and therefore an absolute spacing.
 
-That is the concept in total, and the chosen option is decided entirely by *where the range sits*. IEEE-754 makes no bet. It is the right answer when nothing is known about where the values cluster, which is why a bare `float` of unknown range lowers to a double and stays there. A posit makes a bet on locality. It wins, sometimes by a wide margin, when a domain's values live near magnitude one. After natural-unit normalization, that holds for most physics and for normalized machine-learning activations.
+The range and the offered formats determine which representation is selected. Posit precision is concentrated near magnitude one, while IEEE relative precision is approximately uniform over its normal range. Neither observation establishes a winner without comparing the candidates over the actual interval. For a bare `float` whose range remains unknown, [Numeric Selection §6](/spec/draft/numeric-selection/#6-the-default-and-unobservable-case) explicitly permits the IEEE `f64` default when the target offers it and the capability policy allows it. That language rule does not establish a bound or override a known coverage error.
 
-A developer staring at `float<newtons>` cannot see which of these applies. The dimension *newtons* does not tell them the range. The same dimension covers the gravitational tug between two grains of dust and the force binding a star to its galaxy. Knowing the kind is not knowing the range, and only the range decides the representation. That relationship between a quantity's dimension and the representation its range selects is the subject of the [DTS/DMM paper](https://arxiv.org/abs/2603.16437), worked through for the framework in [posit arithmetic and dimensional type systems](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/).
+A developer staring at `float<newtons>` cannot see which of these applies. The dimension *newtons* does not tell them the range. The same dimension covers the gravitational tug between two grains of dust and the force binding a star to its galaxy. Knowing the kind is not knowing the range, and the target declarations must be known before selection. That relationship between a quantity's dimension and the representation its range selects is the subject of the [DTS/DMM paper](https://arxiv.org/abs/2603.16437), worked through for the framework in [posit arithmetic and dimensional type systems](/docs/design/categorical-foundations/posit-arithmetic-dimensional-type-systems/).
 
-The compiler can know the range. It reads the range off the structure three ways: from the dataflow when the arithmetic itself bounds the values, from a domain library that states the physics, or from an annotation the developer writes to pin it explicitly. Once it has the range, the choice is not a judgment call. It is a deterministic function: pick the representation that minimizes worst-case relative error across the interval.
+Our design obtains ranges from three sources: from the dataflow when the arithmetic itself bounds the values, from a domain library that states the physics, or from an annotation the developer writes to pin it explicitly. Once it has the range, the choice is not a judgment call. It is a deterministic function: pick the representation that minimizes worst-case relative error across the interval.
 
-For a real value with range \([a, b]\) on a target \(T\) offering the representation set \(R(T)\), the selected representation is
+For a real value with range \([a, b]\) on a target \(T\) with permitted representation set \(R(T)\), the selected representation is
 
 $$
 r^{*} \;=\; \operatorname*{arg\,min}_{\,r \,\in\, R_{\mathrm{cov}}(T,\,[a,b])}\;\;\max_{\,x \,\in\, [a,b]}\;\; \mathrm{err}_{r}(x)
@@ -65,13 +67,13 @@ $$
 
 Pick the representation, among those whose dynamic range covers the interval, whose worst case over the interval is least. The score is accuracy alone: no cost, latency, or area term enters it.
 
-The candidate set is feasibility-filtered before the argmin, so a format that cannot cover the range can never win it:
+Here `R(T)` includes only offered formats permitted by the build's emulation policy. Coverage further filters the candidates before selection:
 
 $$
 R_{\mathrm{cov}}(T,\,[a,b]) \;=\; \bigl\{\, r \in R(T) \;:\; \mathrm{dynrange}(r) \supseteq [a, b] \,\bigr\}
 $$
 
-Keep only the representations whose dynamic range contains the entire interval. An empty \(R_{\mathrm{cov}}\) is a reported error, not a silent fallback.
+Keep only the representations whose dynamic range contains the interval. An empty \(R_{\mathrm{cov}}\) requires a reported error.
 
 The error term is a mixed absolute and relative form with an ULP floor, so a range that straddles zero does not send the worst case to infinity:
 
@@ -79,11 +81,21 @@ $$
 \mathrm{err}_{r}(x) \;=\; \frac{\lvert\, x - \mathrm{round}_{r}(x) \,\rvert}{\max\bigl(\lvert x \rvert,\; \mathrm{ulp_{min}}(r)\bigr)}
 $$
 
-Below a representation's smallest representable magnitude the metric becomes effectively absolute, which is the correct near-zero semantics. The contest there is whose smallest magnitude best resolves the cluster near zero, not which format is precise near zero, since posits taper toward magnitude \(1.0\) and lose precision at zero like every other representation.
+The floor keeps the denominator positive at zero, where a purely relative-error formula is undefined. Zero itself can be represented exactly. Near-zero absolute spacing and relative precision are different properties, so the selector evaluates the stated metric over the interval rather than treating a cluster near zero as a posit advantage.
 
-The developer's contribution stays with the code that had to be written anyway, the [units](/docs/design/types/dimensional-type-safety/) the problem already demanded, and the representation falls out of it. The range and the representation it selects ride the program graph as [coeffects](/docs/internals/concepts/coeffects-and-codata/), read by later passes rather than recomputed. This is the same bargain [fearless concurrency](/blog/fearless-concurrency-gets-real/) strikes for memory placement, where `let mutable x = 0` is ordinary syntax and the compiler classifies the escape and places the value, and the same one the [Rocq companion piece](/blog/between-a-rocq-and-a-hard-case/) strikes for proof, where the developer writes the routine and the compiler assembles the terms. The burden moves off the person and into the analysis. The developer writes intent; the compiler carries the consequence.
+The developer writes the [units](/docs/design/types/dimensional-type-safety/) the problem requires and supplies the context needed to establish ranges. The range and the representation it selects ride the program graph as [coeffects](/docs/internals/concepts/coeffects-and-codata/), read by later passes rather than recomputed. This is the same bargain [fearless concurrency](/blog/fearless-concurrency-gets-real/) strikes for memory placement, where `let mutable x = 0` is ordinary syntax and the compiler classifies the escape and places the value, and the same one the [proof companion piece](/blog/between-a-rocq-and-a-hard-case/) strikes for proof, where the developer writes the routine and the compiler assembles the terms. The burden moves off the person and into the analysis. The developer writes intent. The compiler carries the consequence.
 
-## A force, end to end
+## Immutable Evidence
+
+A useful deferred decision depends on keeping what we already know. If the developer has established a relationship between two values, the compiler should retain it as the program grows. A dimension, a guarded range, and a selected representation each contribute something different. We can know that a value is a force before we know its range, and know its range before the target has been chosen. [Width Inference §6](/spec/draft/width-inference/#6-unobservable-ranges) and [Conformance §5](/spec/draft/conformance/#5-the-diagnostic-obligation) specify where those pending decisions must be settled.
+
+Immutability makes many of those facts reusable. Suppose a buffer routine checks `count <= length - offset` before accessing a slice. For the same unchanged integer values, that guard also establishes `offset + count <= length`. Keeping only separate intervals for `offset` and `count` can forget what the guard proved, leaving the developer to explain the same relationship again. Clef's [relational range rule](/spec/draft/width-inference/#21-relational-guards-and-immutable-values) keeps the relationship, its guard, and its dependencies with the program graph. That is the kind of ordinary, local reasoning we want the compiler to preserve on the developer's behalf.
+
+The same reasoning should remain useful when the work is delayed. A [flat closure](/spec/draft/closure-representation/#22-capture-semantics) copies an immutable captured value and shares a mutable captured storage cell. A [lazy value](/spec/draft/lazy-representation/) memoizes the result when demanded. A fact about an immutable scalar can survive that delay. A fact about mutable contents must still hold when those contents are read. An immutable binding to a mutable array does not freeze the array. Tracking sharing, effects, and demand lets us keep valid facts without mistaking an earlier snapshot for the current contents.
+
+Our proof-carrying PSG is designed to keep those constraints together with their evidence. We currently cross-check that mechanism with a separate proof ledger, a temporary scaffold for verifying the graph's own preservation work. As a checked buffer slice becomes a physical memory access, lowering must preserve its established property or re-check it at the affected edge, as [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering) requires. The developer's guard should still justify the access after the compiler has finished translating it.
+
+## A Force in Context
 
 Take the simplest thing a developer can write here and follow it from source to silicon. A program needs the gravitational pull between two masses, so the developer writes it in the units the problem is stated in:
 
@@ -94,127 +106,117 @@ let gravForce (m1: float<kg>) (m2: float<kg>) (r: float<m>) : float<N> =
     GravConst * m1 * m2 / (r * r)
 ```
 
-The dimension is settled the moment that line is written. Kennedy unit-of-measure inference reads `kg × kg / m²` against the gravitational constant and infers `newtons` for the result, with no annotation and no proof to write. What the dimension does not settle is the range. The word *newtons* covers the tug between two grains of dust and the force binding a star to its galaxy, and the same word covers everything between. Knowing the quantity is a force says nothing about whether its values are tiny, enormous, or spread across both.
+Kennedy-style unit-of-measure inference checks the result as a force: the gravitational constant supplies `m³/(kg·s²)`, and the expression produces `kg·m/s²`, or newtons. The same result dimension can be inferred if its annotation is omitted. The force law alone supplies no finite range, however. Its inputs still need bounds, including a positive lower bound on separation.
 
-The range is exactly what decides the representation, and on this expression the compiler cannot read it from the code alone. The denominator is `r * r`, and nothing in the dataflow puts a floor under `r`, so the interval analysis cannot bound `1 / r²` from the structure. This is where the domain library is meant to step in. `Fidelity.Physics` states the physics the developer would otherwise have to tabulate themselves, and from the gravitation law it supplies the range `[1e-11, 1e30]`, from the gravitational constant at the small end through stellar masses at the large.
+A domain library would supply the applicable law together with its preconditions. For example, bounded masses and a separation bounded away from zero permit a finite force interval. Opening a physics module cannot establish those preconditions for arbitrary inputs. The compiler must check them where the law is applied.
 
-With a range in hand the choice stops being a judgment call and becomes the argmin: across the representations the named target offers, pick the one whose worst-case relative error over `[1e-11, 1e30]` is smallest. Run it per target and the same `float<N>` lands two different ways:
+Suppose a particular model establishes `[1e-11, 1e30]` newtons. A proposed editor readout could show:
 
 ```
 gravForce result : float<newtons>
-  dimensional range  [1e-11, 1e30]   (gravitational constant through stellar masses; Tier 2)
-  ├─ x86_64   float64          worst-case rel error 1.1e-16, uniform      [wide dynamic → IEEE]
-  ├─ xilinx   posit<32,es=2>   ~2.3e-8 at the extremes, ~1.5e-9 near 1.0   [near-unity taper]
-  └─ note     posit holds ~10x more precision in [0.01, 100], where most forces actually fall
+  value range       [1e-11, 1e30]
+  provenance        checked bounds on masses and positive separation
+  representation    selected from this target's covering, permitted formats
+  accuracy          worst-case error over that same interval
 ```
 
-On the wide-dynamic host the range is spread too far for any one bet to pay, so IEEE `float64`, which spends its precision uniformly and bets on nothing, is what the argmin returns. On the Xilinx part, once the forces are carried in natural units and cluster near magnitude `1.0`, the posit's taper concentrates its precision exactly where the values sit, and in the band `[0.01, 100]` where most of the forces actually fall it holds roughly ten times the precision of an equal-width float. Same source line, same dimension, two representations, each correct for where its values live.
+The editor would let us follow that same interval through the decision. If we normalize the model into natural units, the source calculation establishes a transformed range that can be inspected in turn. If most observations cluster near one, the extremes still participate in the worst-case comparison. Native posit hardware may make a format available, but the selector still compares its accuracy against the other permitted formats, including a wider IEEE format where one is offered.
 
-What the developer did is the sum of their contribution. They wrote the masses and the radius in kilograms and meters, named the part the code was going to, and opened the orbital-mechanics module so the range had a source. What they got back, per target, read in the editor while typing, is the representation, the range that drove it, and how much accuracy each target preserves. The most consequential numerical decision in the program was latent in the code all along, and it arrives as something to read rather than something to guess.
+What the developer contributes is still familiar: the masses and separation in the problem's units, the model's valid input domain, and the intended target. We want the editor to make the resulting numerical choice reviewable without asking the developer to guess it before that context exists.
 
-## Naming the target does most of the work
+## Target Knowledge
 
-One line pays off more than any other the developer writes here. They name the part they are building for. A RISC-V core with the extended posit instructions, an x86-64 host without them, an ARM64 board. From that line on, the editor stops floating options the machine was never going to honor. The readout that listed every representation in the abstract narrows to the ones this part actually runs, and the rest fall away without ever becoming the developer's problem.
+Naming a target supplies facts the source quantity does not carry. Our `Fidelity.Platform` description declares the formats that target offers and classifies each as native, emulated, or unavailable. The build's capability policy determines whether emulated candidates participate. The selector then compares accuracy across the permitted candidates that cover the range.
 
-What does the narrowing is the part of the toolchain that already knows the machine. `Fidelity.Platform` carries a description of each target, what its registers are, which numeric formats it runs in hardware, which it would have to emulate, whether it has a quire instruction or none. The developer does not write that description or consult it. They name a target and inherit it. Selection then runs against what the part offers rather than against the entire catalogue, so on a host with no posit hardware the editor quietly stops proposing posits, and on a RISC-V part that has the instruction it proposes them first. The same `float<newtons>` resolves differently on the two boards, and the developer reads which without having memorized either datasheet.
-
-Naming the part is one line in the project file:
+A target declaration might look like this:
 
 ```toml
 [compilation]
-target = "riscv64-posit"   # RISC-V core with the extended posit instructions
+target = "riscv64-posit"   # Illustrative platform binding
 ```
 
-Naming `riscv64-posit` is the entire act. `Fidelity.Platform` reads the entry, hands the selector the offered set `R(T) = { r : capability(T, r) ≠ unavailable }`, and the editor stops floating the formats this part cannot run at all. Swap the line for `target = "x86_64"` and the same `float<newtons>` resolves to `f64` instead, because that host's table reports no posit hardware.
+Hardware support alone does not determine the winner. If an emulated format is permitted and scores best, the specified accuracy objective selects it. The tooling can report its cost separately. If no permitted candidate covers the range, compilation reports the missing coverage.
 
 ```mermaid
 flowchart TD
-    Q["float‹newtons›<br>range [1e-11, 1e30]<br>one written quantity"]
-    Plat["Fidelity.Platform<br>per-target capability table"]
-
-    Q --> Name{"name a target"}
-    Plat -.->|"supplies R(T)"| Name
-
-    Name -->|"x86-64 host"| H["R(T) = { f32, f64 }<br>posit capability = unavailable"]
-    Name -->|"RISC-V + extended posit"| R["R(T) = { f32, f64, posit‹32,es=2› }<br>posit capability = native"]
-
-    H --> HSel["argmin over R_cov<br>wide dynamic, no locality bet"]
-    R --> RSel["argmin over R_cov<br>values near 1.0, locality bet pays"]
-
-    HSel --> HOut["resolves to f64<br>rel error ~1.1e-16, uniform"]
-    RSel --> ROut["resolves to posit‹32,es=2›<br>~1.5e-9 near 1.0, ~2.3e-8 at extremes"]
+    Q["float‹newtons›<br>analyzed value range"]
+    Plat["Fidelity.Platform<br>offered formats and capabilities"]
+    Policy["Build policy<br>permitted emulation"]
+    Candidates["Covering, permitted candidates"]
+    Select["Minimize worst-case error<br>over the analyzed range"]
+    Result["Representation coeffect<br>with range and selection evidence"]
+    Error["Hard coverage or capability error"]
+    Q --> Candidates
+    Plat --> Candidates
+    Policy --> Candidates
+    Candidates -->|"nonempty"| Select --> Result
+    Candidates -->|"empty"| Error
 ```
 
-The more concretely the work is pinned to a destination, the more the choice closes on its own. An abstract program keeps every representation live; a program aimed at a known part keeps only the ones that part can keep, and the range then decides among those. Most of a representation decision, on most targets, is made the instant the developer says where the code is going. The fixed-instruction parts are where this lands cleanly, because their menu is finite and stated, and naming the part is enough to collapse it.
+A concrete destination narrows the choice without putting hardware type names into the source. `float<newtons>` retains its dimensional identity while the selected representation becomes a fact for later lowering.
 
-## What the editor shows while the range is still open
+## Pending Obligations
 
-When the representation cannot resolve yet, a lesser design quietly guesses and this one speaks up instead. Consider the seam the spec singles out, where a bare value with no established range flows into a dimensioned one:
+A developer should be able to write a consistent partial program before every representation question has an answer. Consider a bare value flowing into a dimensioned expression:
 
 ```fsharp
-let x : float = bareInput in
+let x : float = bareInput
 let y : float<newtons> = x * oneNewton
 ```
 
-Here `x` is a bare `float`. Bare floats are allowed to have unknown ranges and lower to a double without complaint, because IEEE making no bet is the correct answer for an unknown range. But `y` is dimensioned, and a dimension, in this framework, is a *promise that a domain range exists*. The moment the unbounded `x` is asked to become a `newtons`, that promise comes due, and `y`'s range cannot be established because it derives from an `x` that was never bounded. Under a weaker design `y` would silently fall back to a double and the build would move on. Ours stops, at the dimensioning boundary, and the developer sees it in the editor while typing, the same place a type error shows up, not at the end of a batch compile:
+The bare `x` has the specified IEEE default available under the target conditions described above. The dimensioned `y` introduces a range obligation whose provenance leads back to `x`. Its dimension tells us the kind of quantity. Bounds must come from further context, a checked domain law, or an applicable boundary declaration. During editing, that obligation may remain pending. If it is still unresolved when a concrete representation must be committed, the compiler must report it at its origin.
+
+The designed readout would make the distinction visible:
 
 ```
-E_RANGE_UNBOUNDED  y : float<newtons> requires a bounded range to select a representation.
-  y's range derives from x (bare float), which is unbounded at line 1.
-  The dimension <newtons> promises a domain range; none is in scope to fulfill it.
+y : float<newtons>
+  pending range obligation
+  derives from x (bare float), whose input range is unresolved
+  needed before representation commitment
 
-  to resolve, choose one:
-    - bound x at its source            (annotate or constrain bareInput)
-    - import a domain library          (open Fidelity.Physics.<X> to supply the range)
-    - seal y's representation by hand   (state the format and accept its envelope)
+  possible sources of evidence:
+    - a bound on bareInput, established at its source or by a guard
+    - a domain law whose preconditions hold for this input
+    - an applicable platform or interface boundary declaration
 ```
 
-That diagnostic is the experience. It is not an error about a missing type; the type is fine. It is an error about a missing *range*, traced across the dimensioning boundary back to the bare source that never had one, with the three honest ways out named in place. The developer is never told "I picked a double for you." They are told "I cannot choose yet, and here is exactly why, and here is what would let me." The unknown does not get papered over and it does not get deferred to runtime. It surfaces, located, at the moment of authorship.
+A boundary declaration must still cover the established range. Clef has no source-level representation seal. The source continues to describe arithmetic and dimensions, while the platform or interface states its representation requirements.
 
-When the range *is* available, the editor stops asking and starts showing. The same surfacing pass that flags the gap renders, on a resolved quantity, the comparison the developer would otherwise have to work out and almost never does:
-
-```
-force : float<newtons>
-  dimensional range  [1e-11, 1e30]   (gravitational constant through stellar masses)
-  ├─ x86_64   float64          worst-case rel error 1.1e-16, uniform     [wide dynamic → IEEE]
-  ├─ xilinx   posit<32,es=2>   ~2.3e-8 at the extremes, ~1.5e-9 near 1.0  [near-unity taper]
-  └─ note     posit holds ~10x more precision in [0.01, 100], where most forces actually fall
-```
-
-The two error columns differ because the formats spend their bits on different bets. IEEE-754 holds relative error near \(2^{-p}\) uniformly across its normal range, so it never concentrates precision anywhere. A posit concentrates precision near magnitude \(1.0\) and lets it taper toward its regime extremes: for `posit<32,es=2>` the relative error is about \(2^{-27}\) near unity and degrades toward about \(2^{-8}\) at the far edges of its full dynamic range near \(10^{\pm 36}\). The readout's figures are the worst case over the narrower dimensional range \([1\mathrm{e}{-}11, 1\mathrm{e}30]\), which does not reach those regime edges. The selection pass scores each format by its worst case over the actual range, \(\max_{x \in [a,b]} \mathrm{err}_r(x)\), so the winner is decided by where \([a, b]\) sits on that taper rather than by either endpoint alone.
-
-A developer reads that without opening a numerical-analysis textbook. The taper-versus-uniform tradeoff, the thing that usually gets discovered empirically after a long run drifts, is made quantitative at authoring time, per target, against the actual range. And when the chosen format cannot cover the range, the editor says so plainly and suggests the dimensional move that would fix it:
+A known range with no covering candidate is a different condition. Its diagnostic is a hard error:
 
 ```
-W_COVERAGE  posit<32,es=2> dynamic range [1e-36, 1e36] does not cover the full
-  dimensional range [1e-11, 1e72] of astronomicalDistance<meters>.
-  consider: float64 (covers the range), or rescale to AU (1 AU ≈ 1.5e11 m) to fit posit range.
+E_COVERAGE  no permitted representation covers the established range
+  value             astronomicalDistance : float<meters>
+  range             [1e-11, 1e72]
+  target candidates each fail the coverage check
+
+  establish a smaller valid domain or change the platform/interface declaration
 ```
 
-The "rescale to AU" suggestion is itself a dimensional operation, and the compiler can offer it only because it reasons about the quantity in the terms the developer wrote it in, so the remedy it proposes is one a domain expert would recognize. None of this requires the developer to know what a regime bit is. It requires them to have written the units, which they were going to write anyway.
+Rescaling is useful only when the transformed range is established and checked again. Expressing that example in astronomical units would leave the upper magnitude around `1e61`, so it would not fit a format whose upper magnitude is around `1e36`. The editor should offer remedies supported by the same analysis that found the problem.
 
-## On the FPGA, the choice becomes the circuit
+## Inferred Fabric
 
-This is where the experience stops being a convenience and becomes the only way the thing can work at all. [FPGA and hardware inference](/blog/fpga-and-hardware-inference/) makes the foundational observation for integers, and it transfers wholesale to reals: on a CPU, a numeric type means "whatever the machine register holds," and the width is a platform property fixed before the program runs. On an FPGA there are no machine registers. Every wire and every flip-flop is exactly as wide as the design requires, so width, and now representation, is a design property, read from the structure. The counter in HelloArty that resets against a roughly four-hundred-million modulus has range `[0, 399,999,999]`, and the compiler reads it off the structure as 29 bits, not the 64 a CPU would have spent. Every narrower width is fewer flip-flops, shorter carry chains, and less LUT-based logic; the post walks a 17-by-64 multiply collapsing to 17-by-29 and the carry-chain depth halving. The representation choice is not bookkeeping there. It is the gate count.
+On an FPGA, inferred width becomes circuit structure. [FPGA and hardware inference](/blog/fpga-and-hardware-inference/) follows the integer case in HelloArty: a counter bounded by `[0, 399999999]` needs 29 bits. A target with fixed instruction widths may realize it in a wider register. A synthesized datapath can instead use the required number of flip-flops and carry stages. Real-valued representation selection would extend that discipline to the arithmetic format, subject to an available hardware realization.
 
-One honest qualification belongs here, because a hardware engineer will reach for it. Width inference does not shrink everything in equal measure. Flip-flops, routing, carry chains, and LUT-based arithmetic scale with the inferred width directly, and that is most of a design. A multiply is the exception when it lands in a hardened DSP slice, a Xilinx `DSP48` natively spanning roughly eighteen by twenty-seven bits: a 17-by-29 multiply maps into one such slice and spends the same silicon a wider multiply would, because the slice is a fixed block. The inference still pays there, just in a different coin. It frees fabric the synthesizer would otherwise burn building a multiplier out of LUTs, and it packs more of the design's arithmetic into the slices a part actually has. Width is the gate count everywhere the logic is built from gates, and a negotiation with the hard blocks everywhere it is not.
+Hardened arithmetic blocks add a separate mapping constraint. A multiplier with 17-bit and 29-bit inputs does not fit directly into an 18-by-27-bit block. The synthesis tool may decompose it or use additional fabric, depending on the device. A narrower inferred range can reduce the work, but neither a dimensional annotation nor a width calculation establishes the final DSP count or timing.
 
 ```mermaid
 flowchart TB
     subgraph SRC["Idiomatic Clef (BlinkState, no widths declared)"]
-        C0["Counter : int64<br>resets mod ~4e8"]
-        T0["ticksPerMs : int64<br>literal-bounded"]
+        C0["Counter : int<br>resets mod ~4e8"]
+        T0["ticksPerMs : int<br>literal-bounded"]
     end
 
-    subgraph IA["IntervalAnalysis nanopass (reads the PSG)"]
+    subgraph IA["PSG range analysis (retains constraints)"]
         CR["Counter range [0, 399999999]<br>ceil(log2(400000000)) = 29"]
         TR["ticksPerMs range fits 17"]
     end
 
     subgraph DP["Synthesized datapath (widths are the structure)"]
-        REG["seq.compreg Counter<br>29 flip-flops, not 64"]
-        MUL["multiplier 17 x 29<br>collapsed from 17 x 64"]
-        ADD["adder 29-bit<br>8 CARRY4 stages, not 16"]
+        REG["seq.compreg Counter<br>29 flip-flops"]
+        MUL["multiplier 17 x 29<br>bounded operand widths"]
+        ADD["adder 29-bit<br>carry stages follow target mapping"]
     end
 
     C0 --> CR --> REG
@@ -224,11 +226,11 @@ flowchart TB
     ADD -->|"next-state, settled at synthesis"| REG
 ```
 
-The framework reads that hardware as a Mealy machine, `State × Inputs → State × Outputs`, off idiomatic functional Clef, and the inferred widths become the widths of the synthesized datapath. The shape of that machine is what makes the non-gradual discipline concrete instead of philosophical. A Mealy machine's *output* depends on state and current input, which is what lets it answer within a clock cycle. Its *representation*, the width and format of each state field, does not. The 29-bit counter does not renegotiate its width at clock-tick time depending on the value it is holding. The width is settled at synthesis and baked into the fabric, and a datapath whose representation could change while the circuit runs is not a datapath at all. It cannot be laid down in silicon. That the inferred facts survive every lowering step down to the gate is the same property the framework leans on to carry verification [from proofs to silicon](/docs/internals/verification/proofs-to-silicon/).
+Our hardware path represents this computation as a state transition, `State × Inputs → State × Outputs`. The counter's inferred 29-bit width is settled before synthesis, independently of its current value at a clock tick. The lowering checks described in [From Proofs to Silicon](/docs/internals/verification/proofs-to-silicon/) are intended to preserve the relevant bounds through the hardware pathway.
 
 [Each state field gets the width its range requires](/spec/draft/width-inference/#3-width-derivation-integers), read off the PSG rather than taken from a host register. The integer width inference behind this ships today in HelloArty:
 
-| State field | Inferred range | Width | A host would spend |
+| State field | Inferred range | Width | Example 64-bit host realization |
 |---|---|---|---|
 | `Counter` | `[0, 399999999]` | `i29` | `i64` |
 | `ticksPerMs` | literal-bounded | `i17` | `i64` |
@@ -243,109 +245,75 @@ Those widths land directly in the synthesized register declarations. The width i
 hw.output %report : !hw.struct<counter: i29, periodMs: i11>   // Moore: state-only, registered
 ```
 
-So the FPGA is the place to take the gradual-typing worry seriously and watch it dissolve. A careful designer is right to be wary that a representation "decided after the graph is analyzed" is really a representation decided at runtime in disguise. On fabric, the proof that it is not is physical. Picture the gradual version: a circuit that checks every tick whether a value has outgrown its inferred format and, on overflow, coerces itself into a wider one with a blame signal routed back to the source. No one builds that, because on fabric the cost of a runtime representation cast is not hidden behind a cache and a branch predictor. It is visible, physical, and absurd. A CPU hides that cost well enough that gradual typing is a tenable idea there. An FPGA does not hide it at all. The representation is inferred late, after the graph is known, and fixed hard, before the circuit runs, and the second of those is not a stylistic choice. It is what synthesis requires. The discipline that keeps the framework out of gradual typing is the same discipline that lets the design become a circuit, and the developer experiences it not as a restriction but as the reason their `float<volt>` array turned into a pipeline whose widths they never had to count.
+The distinction from runtime representation change is concrete on fabric. This datapath's widths are settled before synthesis. Hardware can implement dynamic precision when a design explicitly provides the necessary storage and control logic, but that is a different mechanism with its own cost and contract. Deferred inference asks the compiler to decide later in compilation, after gathering more evidence. It does not ask the circuit to choose its own representation at each clock tick.
 
-## The quire is where stating intent closes the rest
+## Exact Accumulation
 
-There is a point in numerical code where the developer wants to say something that is a choice rather than a fact, and it is not a representation. It is an *intent*: that an accumulation must be exact. A dot product, a force sum over an *n*-body step, a fold of products that in ordinary floating point bleeds precision, whether through small terms swallowed by a large running sum or through the cancellation of nearly-equal quantities. The posit standard answers this with a quire, a wide fixed accumulator that holds the sum without rounding until a single conversion at the end.
+Sometimes the developer needs to state a numerical intent: this sum must accumulate without intermediate rounding. A dot product or force sum can lose small contributions when each addition rounds separately. A quire holds exact products in a wide fixed accumulator and rounds when the result is converted to the selected real representation.
 
-The compiler can recognize the shape that would use one. A fold or reduce of products over a posit is a pattern the pass already matches. What it cannot read off the structure is whether exactness is wanted here, and that is the part that has to be said. The quire is not a saving the analysis would find on its own; it is a deliberate spend, a fixed wide accumulator allocated unconditionally so the accumulation length never bounds the result. The range analysis tracks worst-case bounds, and worst-case bounds cannot tell a subtraction that will cancel from two intervals that merely overlap, so inferring exactness from intervals alone would either promote every fold of products to a wide accumulator or miss the ones that matter. Exactness is therefore a declaration, not a forecast. The developer is not predicting a failure mode the graph will hit; they are opting into a guarantee and the resource it costs. In Clef the developer reaches for the quire to declare the one thing that is genuinely theirs to declare: *this sum is exact*.
+That is a useful guarantee, with a capacity obligation. A finite accumulator can overflow if enough same-sign products are added. Showing that each product fits does not show that their accumulated sum fits, and cancellation at the end does not bound every earlier partial sum. The compiler needs evidence for the partial sums as well as the product layout.
 
-Once they have, almost nothing is left to decide. Stating exactness is stating the intent, and the structure falls out of it almost completely. The quire pairs with a posit, so the representation is implied. The posit width fixes the accumulator: the quire is `n²/2` bits, 512 of them for a 32-bit posit, which is exactly one cache line, and the pass verifies that each per-product intermediate fits that field independent of how long the accumulation runs.
-
-$$
-\text{quire}(n) \;=\; \frac{n^2}{2} \text{ bits}, \qquad
-\text{quire}(32) \;=\; \frac{32^2}{2} \;=\; 512 \text{ bits} \;=\; \text{one cache line.}
-$$
-
-The invariant the sizing pass discharges is *adequacy*, not a length cap. For a sum of \(k\) products \(\sum_{i=1}^{k} a_i b_i\) over the selected posit width \(n\), the obligation verifies that a single per-product intermediate (the full-width product with its carry and guard bits) fits the quire field, and that bound does not mention \(k\):
+For products \(a_i b_i\), let the exact running sum be
 
 $$
-\mathrm{bits}\big(a_i b_i\big) \;+\; \mathrm{guard} \;\le\; \frac{n^2}{2}
-\qquad\text{for every } i, \;\text{ independent of } k.
+S_j = \sum_{i=1}^{j} a_i b_i.
 $$
 
-A bound of the form \(k \cdot \mathrm{bits}(a_i b_i) \le n^2/2\) is rejected: it would re-impose on \(k\) exactly the limit the \(n^2/2\) field was sized to remove. Accumulation length is bounded by nothing in the accumulator.
+Exact accumulation in a fixed quire requires every reached \(S_j\) to remain within its representable envelope. A bound on the number and magnitude of terms can establish that fact. A stronger invariant may establish it even when the number of iterations is open, for example when the partial sums themselves remain bounded. The requirement is capacity, rather than an arbitrary source-level length cap.
 
-The dimensions carry through the accumulation, so a sum of `newtons × meters` accumulates as `joules` and the single rounding lands at the conversion out, with the dimension checked at the boundary. The [escape class](/docs/design/memory/inferring-memory-lifetimes/) decides where the accumulator lives, stack or arena. One declaration of intent, exactness, and the representation, the accumulator size, the cache-line footprint, the result's dimension, and the rounding point are all consequences. The developer wrote what they meant. The compiler wrote everything that followed from it.
+Our [numeric-selection design](/spec/draft/numeric-selection/#1021-the-quire-adequacy-invariant) keeps quire sizing with the selected format. A 512-bit accumulator occupies 64 bytes, but its placement and the machine's cache-line size are separate target facts. Selecting that storage does not make its capacity infinite.
 
-An *n*-body step makes the cascade concrete. The developer states one thing the compiler cannot infer, that this sum is exact, by accumulating into a quire instead of a running posit. Everything else is a consequence of that single choice:
+The dimensional result remains available throughout. Products of `newtons × meters` accumulate as `joules`, and the final rounding preserves that result dimension. The source describes the quantities and the exact-accumulation intent. The platform declaration and selected format determine the concrete quire configuration.
 
-| Declaration | What falls out |
+| Source intent or established fact | Compiler obligation or consequence |
 |---|---|
-| accumulate into `Quire32` | representation is `Posit32`; `Quire32.fma` takes `Posit32` operands by construction |
-| `Quire32<newtons>` | products of `Posit32<newtons>` accumulate with no per-step rounding |
-| `Quire.toPosit` at the end | the single rounding for the entire sum lands here, dimension checked: `newtons` in, `newtons` out |
-| products of `newtons × meters` | accumulate as `Quire32<joules>`, the dimension carried through to a `Posit32<joules>` result |
+| Exact accumulation requested | Require an offered native or emulated exact accumulator |
+| Products of `float<newtons>` and `float<meters>` | Accumulate a quantity with dimension `joules` |
+| Bounds or an invariant over partial sums | Check capacity throughout the accumulation |
+| Selected numeric representation | Determine the format's quire layout and final rounding |
+| Captured values and lifetime | Place storage under the platform's lifetime contract |
 
-```fsharp
-let netForce (i: Body) (others: Body[]) : float<newtons> =
-    let q =
-        others
-        |> Array.fold
-            (fun (acc: Quire32<newtons>) (j: Body) ->
-                let f = pairwiseForce i j        // Posit32<newtons>, range-matched
-                Quire32.fma acc f oneP)          // exact MAC, no rounding here
-            Quire32.zero
-    Quire.toPosit q                              // single rounding, newtons -> Posit32<newtons>
-
-let workAlong (forces: Posit32<newtons>[]) (steps: Posit32<meters>[]) : float<joules> =
-    Array.zip forces steps
-    |> Array.fold
-        (fun (acc: Quire32<joules>) (f, ds) ->
-            Quire32.fma acc f ds)                // newtons * meters -> joules, exact
-        Quire32.zero
-    |> Quire.toPosit                             // single rounding -> Posit32<joules>
-     
-```
-
-On the targets this matters most for, that cascade is the design. On an FPGA the quire is a 512-bit fabric pipeline running a multiply-accumulate every cycle; the declaration of exactness *is* the datapath, and there is nothing left to lower but the wires. On a RISC-V part with the extended posit instructions it is an architectural register and a single hardware operation. On an x86 host without quire hardware it is emulated on the stack, slower but exact, and if a target offers no exact accumulation at all the compiler says so rather than silently falling back to a lossy sum. The same one word means a circuit, an instruction, or an emulation depending on where it lands, and the developer reads which one in the editor before choosing a target, the way they read everything else.
+We want to request that guarantee in terms of the calculation: accumulate these products exactly, then round the result. The selected platform representation supplies the concrete format and storage, including names such as `Posit32`. Exactness begins at the operations carried out in the accumulator. If an operand has already been rounded, the accumulator preserves that represented value faithfully, with the earlier error still part of the calculation's numerical contract.
 
 ```mermaid
 flowchart TD
-    Intent["Developer states intent<br>this sum is exact (reach for the quire)"]
-    Pass["Quire pass<br>recognize fma/fold of products<br>size quire = n²/2 = 512 bits for posit32"]
-    Cap{"Target quire<br>capability?"}
-
-    x86["x86_64<br>software emulation"]
-    xil["Xilinx FPGA<br>512-bit fabric pipeline"]
-    rv["RISC-V + extended posit<br>hardware quire instruction"]
-    neuro["Neuromorphic<br>no exact accumulation"]
-
-    x86r["64 B on stack<br>≈ 50 cycles / FMA · exact"]
-    xilr["fabric MAC<br>1 cycle / FMA · exact"]
-    rvr["architectural register<br>1 cycle / FMA · exact"]
-    neuror["⚠ Capability failure<br>reported, never a lossy fallback"]
-
-    Intent --> Pass --> Cap
-    Cap -->|"emulated"| x86 --> x86r
-    Cap -->|"native (fabric)"| xil --> xilr
-    Cap -->|"native (instruction)"| rv --> rvr
-    Cap -->|"unavailable"| neuro --> neuror
+    Intent["Exact-accumulation intent<br>with dimensional operands"]
+    Facts["Checked product layout<br>and partial-sum capacity"]
+    Cap{"Target capability"}
+    CPU["Permitted software realization<br>declared storage and cost"]
+    FPGA["Hardware realization<br>validated layout and timing"]
+    ISA["Native accumulator operation<br>declared instruction semantics"]
+    Error["Capability or capacity error<br>before representation commitment"]
+    Intent --> Facts --> Cap
+    Cap -->|"emulated"| CPU
+    Cap -->|"fabric"| FPGA
+    Cap -->|"native instruction"| ISA
+    Cap -->|"missing required facts"| Error
 ```
 
-The quire buys exactness of accumulation, and the temptation to claim more than that is worth resisting, because the spec resists it too. Deferring all rounding to one final step keeps the structural zeros of a geometric-algebra computation structurally zero through training, and defeats the cancellation in a close gravitational encounter. It buys no magical precision near zero, which posits do not have; zero is a regime extreme where a posit, like every representation, loses precision. The accuracy a quire delivers comes from exact accumulation and from a representation that was range-matched at design time, and from nothing else. The benefit is real and large at exactly that size, and the framework states it at that size and no larger.
+We want the editor to show the resource commitment alongside the guarantee. That lets a developer request exact accumulation without inventing a storage layout, while keeping the compiler accountable for the capacity and capability evidence.
 
-## What is built, and what is reached toward
+## Implementation Horizon
 
-The honest accounting, in the spirit the [flow loss](/blog/going-deep-with-flow-loss-analysis/) and [Rocq](/blog/between-a-rocq-and-a-hard-case/) pieces hold to, is that the integer half of this discipline runs today and the real-valued half is largely ahead of it. Width inference ships: it lowers to fabric in HelloArty, down to the 29-bit counter and the post-route timing, and the coeffect carriage it rides, the graph traversal that reads ranges and the escape analysis that places values, is operational. The real-valued sibling, the interval domain over reals and the selection pass that consumes it, is a new abstract interpreter of materially heavier weight than the integer one it sits beside, and it is design-stage work, not yet a shipping pass. The editor readouts above are the designed experience, drawn to the shape the existing width-inference and FPGA diagnostics already take, not screenshots from a build that exists today. The domain library that would derive a force interval from a gravitation law, sparing the developer the tabulation, is planned and not built, and the surface form for sealing a representation explicitly is still being settled. Naming those gaps keeps the design honest, and it sharpens rather than blunts the claim, because what the design fixes ahead of the pass that implements it is not a feature list. It is the shape of one chain, run end to end.
+HelloArty's 29-bit counter gives us a concrete starting point: source-level arithmetic, an inferred range, and a width realized in hardware. Extending that experience to real-valued selection means keeping the source dimension and the evidence for its range available through compilation. The selector and editor readouts above describe the experience we are building toward, with domain libraries supplying checked laws that ordinary application code can use. The source remains about quantities and calculations, while the platform supplies its representation choices.
 
 ```mermaid
 flowchart LR
     Dim["Dimension<br><code>float‹newtons›</code><br><i>DTS authority</i>"]
-    Rep["Representation<br>posit / IEEE / fixed-point<br><i>selection coeffect</i><br>Tier 1 / 2 / 3 · argmin / seal"]
-    Foot["Footprint<br>width · quire size n²/2 bits<br><i>quire pass</i>"]
-    Alloc["Allocation<br>stack / arena · register / fabric<br><i>escape analysis</i>"]
+    Rep["Representation<br>posit / IEEE / fixed-point<br><i>selection coeffect</i><br>checked range · target declarations"]
+    Foot["Footprint<br>width · selected accumulator layout<br><i>quire pass</i>"]
+    Alloc["Allocation<br>lifetime and target storage<br><i>escape analysis</i>"]
 
-    Dim -->|"(range)"| Rep
+    Range["Analyzed range<br>guards, domain laws, boundaries"] --> Rep
+    Dim -->|"quantity identity"| Rep
     Rep -->|"(width)"| Foot
     Foot -->|"(escape)"| Alloc
 ```
 
-Each arrow is a coeffect on the Program Semantic Graph, deferred to target-binding because each later stage has strictly more information. The dimension establishes the kind under DTS authority; the analyzed range selects the representation; the selected width fixes the footprint, including a quire of `n²/2` bits, 512 for a 32-bit posit; the escape class decides where the value lives. The integer reading of this chain runs on fabric today; the real-valued reading is design-stage. Either way the developer wrote only the first box, the dimension, and the rest of the chain is the compiler's to carry.
+Our PSG carries the source dimension and the constraints used to establish a range. Target declarations constrain selection, and the selected representation determines the footprint. Lifetime analysis determines placement. These are related decisions with distinct evidence. Their representations may be released at different lowering boundaries once the properties needed below that boundary have been preserved or re-checked.
 
-That chain is the shape of the developer's day, and it answers the reputation static typing carries. They write the units the problem is stated in. They name the part the code is going to. They reach for a quire when a sum has to be exact, and in doing so decide almost everything downstream without deciding any of it by hand. The editor shows them, while they type, which representation resolves for each target and how much accuracy it preserves, and where a range is still unbounded it tells them so and traces it to the source rather than guessing. Every one of those decisions is made statically, before anything runs, with the full guarantee a type system is supposed to give. None of them is the up-front commitment static typing is assumed to demand in exchange. The developer wrote the dimension and the intent; the representation, the footprint, and the allocation were structural facts about the code from the start.
+We want the developer to retain room to work: write the quantity, establish the model, and inspect the consequences as the context develops. A pending range should remain visible while that work is consistent. A contradiction or an uncovered representation should have a precise location and a traceable reason before compilation commits it.
 
-That is the gift in deferring inference. Holding the representation open is not a loss of rigor, it is what keeps the information the choice needs alive long enough to use it, and a target named late carries more of that information than any early reflexive decision. The same range that selects a representation also [generates safety proofs](/blog/proofs-from-dimensional-types/) from the computation graph, and the analysis stays [decidable by construction](/docs/internals/verification/decidability-sweet-spot/). The preserved information has a second life at design time as well, taken up in [Opining Upon Reflection](/blog/opining-upon-reflection/), where the graph the selector reads becomes the surface the developer observes. We will keep building toward the day the real-valued pass stands beside the integer and provides the same responsive design ergonomics and build-time integrity.
+The same preserved information can support [safety proofs](/blog/proofs-from-dimensional-types/) and the editor observations explored in [Opining Upon Reflection](/blog/opining-upon-reflection/). That is the gift we want deferred inference to offer: enough room to discover the computation, with increasingly useful guidance as the compiler learns what the developer already knows.
 
 [^liskov]: Liskov, Barbara, and Jeannette Wing. ["A Behavioral Notion of Subtyping."](https://doi.org/10.1145/197320.197383) ACM Transactions on Programming Languages and Systems 16.6 (1994): 1811-1841. The subtyping requirement traces to Liskov's 1987 OOPSLA keynote, recounted in her 2009 Turing Award lecture ["The Power of Abstraction,"](https://www.youtube.com/watch?v=GDVAHA0oyJU) where she separates implementation inheritance, which breaks encapsulation, from the substitution relation a type hierarchy actually requires.

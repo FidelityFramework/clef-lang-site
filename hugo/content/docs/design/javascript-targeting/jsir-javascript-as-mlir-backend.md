@@ -8,17 +8,19 @@ tags: ["Architecture", "Innovation", "Design"]
 weight: 10
 ---
 
-The Fidelity framework compiles to hardware natively, and it also targets a runtime: Cloudflare Workers run JavaScript, and Workers are how the framework deploys actors to the edge. That JavaScript path has been separate from the rest of the compilation pipeline, maintained as a standing compromise.
+The Fidelity framework reaches toward hardware and hosted runtimes in one design. Cloudflare Workers give its actors an edge home; native processes and accelerators give them other places to compute. JavaScript belongs in that picture. The interesting question is how much of the compiler's reasoning can follow a program there.
 
-On April 6, 2026, Google published an RFC to upstream JSIR (JavaScript Intermediate Representation) into MLIR, in a single post on the LLVM Discourse by Zhixun Tan of Google's compiler team. JSIR is an out-of-tree MLIR dialect that represents JavaScript with full AST fidelity and lossless round-trip conversion between JavaScript source, Babel AST, and MLIR ops. Google runs it in production for Hermes bytecode decompilation, JavaScript deobfuscation, and malicious code detection. It removes the reason the JavaScript path was separate.
+Google's April 2026 [JSIR RFC](https://discourse.llvm.org/t/rfc-jsir-a-high-level-ir-for-javascript/90456) offers a practical opening: represent JavaScript inside MLIR, with source regeneration as well as analysis. Google's production uses include deobfuscation and decompilation. Its reported round-trip fidelity is substantial empirical evidence, not a semantic translation proof.
+
+**Status, September 2026.** The F#/Fable path and BAREWire's JavaScript implementation can be exercised today. Composer's Clef → JSHIR/JSIR path and the associated proof-preservation work remain design and implementation work. The [JavaScript Substrate profile](/spec/draft/javascript-boundary/) explicitly has no conforming implementation yet. This page describes the architecture and the checks that would earn that claim.
 
 ## The Problem JSIR Solves
 
-Clef compiles through our Composer middle-end, which is built on MLIR. Our Program Semantic Graph lowers into Alex, a set of MLIR dialects that carry dimensional annotations, escape classifications, BAREWire schemas, and concurrency primitives through progressive lowering. At the end of the pipeline, Alex fans out to target-specific backends: LLVM for CPUs and GPUs, CIRCT for FPGA synthesis, MLIR-AIE for spatial accelerators. Every target is reached through MLIR's dialect infrastructure. Every optimization pass, every verification step, every analysis framework applies uniformly across targets.
+Composer's design lowers the Program Semantic Graph through Alex and MLIR toward LLVM, CIRCT and other target backends. The PSG carries facts about dimensions, ranges, effects, escape and representation. Sharing that information makes target-specific reasoning possible; it does not make every analysis or transformation valid for every target.
 
 JavaScript was the exception.
 
-Our framework operates across two substrates. Native actors compile through LLVM and run as OS processes with IPC and shared memory. Edge actors compile to JavaScript and run as Cloudflare Workers, specifically Durable Objects executing in V8 isolates at the network edge. The same Clef source defines both. The same BAREWire protocol connects them. But the compilation paths diverged completely.
+The intended actor network spans native processes, shared memory and IPC, and Cloudflare Workers. BAREWire is the glue across memory layout, IPC and network contracts. Conclave is the platform for intelligent distributed systems on Cloudflare. These roles meet at a declared contract, while each substrate retains its own allocation, scheduling and host constraints.
 
 The original plan for JavaScript emission was to bypass the Alex middle-end entirely. Clef's PSG would lower to an Oak-like JavaScript AST (analogous to Fable's approach for F#) and emit JavaScript directly. This meant that every optimization and verification pass written against Alex would not apply to the JavaScript target. JavaScript would be a side door, separate from the MLIR pipeline, maintained independently, verified independently.
 
@@ -26,45 +28,45 @@ The original plan for JavaScript emission was to bypass the Alex middle-end enti
 Previous architecture:
 
   Clef PSG ──▶ Alex MiddleEnd ──▶ LLVM ──▶ native binary
-                                          (verified)
+                                          (native lowering)
 
   Clef PSG ──▶ (bypass Alex) ──▶ Oak-like JS AST ──▶ JavaScript
-                                          (separate pipeline, unverified)
+                                          (separate lowering)
 ```
 
-This is the architectural equivalent of maintaining two compilers. One is the real compiler with the full verification story. The other is a translation layer that happens to produce JavaScript. The two share a front-end and nothing else.
+Two paths can share a language contract and still require separate preservation work. The opportunity is to share more of that work before the target-specific decisions begin.
 
 ## What JSIR Changes
 
 JSIR places JavaScript inside MLIR as a first-class dialect. It is structurally the same kind of thing as EmitC, the MLIR dialect already upstream that lowers MLIR to C source code. EmitC established the pattern: an MLIR dialect can serve as a source language emission target, not just an analysis or optimization substrate. JSIR applies that pattern to JavaScript.
 
-The architecture becomes:
+The proposed architecture becomes:
 
 ```
-With JSIR:
+Proposed JSIR path:
 
   Clef PSG ──▶ Alex MiddleEnd ──▶ LLVM ──▶ native binary
 
   Clef PSG ──▶ Alex MiddleEnd ──▶ JSIR ──▶ JavaScript source
 ```
 
-Both paths go through Alex. Both consume the same dialect ops. Both are subject to the same pass infrastructure, the same verification framework, the same dataflow analysis. The JavaScript target is no longer a side door. It is a backend, in exactly the same sense that LLVM is a backend.
+Both paths would go through Alex and use MLIR's pass infrastructure. A pass can preserve a carried property, or a check at its output can establish it again. That is the obligation in [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering); merely placing a pass in MLIR establishes neither.
 
-This matters because of what lives in Alex. Dimensional annotations, carried as PSG codata through every lowering stage, are available at the point where JSIR emission occurs. Escape classifications, resolved during elaboration, inform the JavaScript code generator. BAREWire schema derivation, expressed as MLIR ops, produces both the native serializer (via LLVM) and the JavaScript serializer (via JSIR) from the same IR representation. The verification that both serializers produce byte-identical output is no longer a testing concern. It is a structural property of the pipeline.
+This matters because representation and contract metadata can remain in PSG/codata until all reasoning that needs it is complete. A common codec derivation can choose field order and byte encodings once. The native and JavaScript lowerings must then preserve that choice, including bounds, endian order and numeric conversions. Shared derivation reduces opportunities for drift and gives the checks a common reference. Cross-target byte tests and lowering evidence still have work to do.
 
 ## JSIR's Design
 
-JSIR maintains a nearly 1:1 mapping with Babel AST nodes. It uses MLIR regions to model JavaScript control flow structures (`if`/`while`/logical short-circuit) and SSA values for expression results. It distinguishes l-values (`jsir.identifier_ref`) from r-values (`jsir.identifier`), achieving 99.9%+ fidelity on round-trip conversion across billions of samples at Google. JSIR ships as a single binary, `jsir_gen`, whose `--passes` argument names a pipeline among four representations: JavaScript source, Babel AST, JSHIR (region-based high-level IR), and JSIR (flat SSA-shaped low-level IR). The forward pipeline is `source2ast,ast2hir`; the reverse pipeline used for backend emission is `hir2ast,ast2source`.
+JSIR maps JavaScript syntax into MLIR operations, distinguishing references from values and using JSHIR regions for high-level control flow. In the reviewed upstream revision [`1488d9b`](https://github.com/google/jsir/tree/1488d9bd408ec9163ac7051252dfe80e40a4e26a), the driver exposes source, Babel AST and high-level IR. The CLI spells the forward route `source2ast,ast2jsir` and the reverse route `jsir2ast,ast2source`. The April checkout used `ast2hir` and `hir2ast`; commands must be paired with the pinned tool revision. The presence of both `jsir` and `jshir` dialects is not a promise of a separately supported low-level emission route. [Driver source](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_gen.cc).
 
-One consequence of this bidirectionality is worth registering, with the caveat that it is not part of the build model and not planned work. The emission path this document describes runs the machinery in reverse. The forward path is the one Google built first, lifting JavaScript *into* the IR. That forward path opens a conceptual avenue beyond binding a library: a JavaScript library could in principle be lifted into the IR and lowered into Clef constructs, absorbing its logic as first-party Clef source that then compiles dependency-free like any other Clef code. Where binding takes a build-time dependency on a library's surface and shipping takes a runtime dependency on its code, absorption would convert the library into Clef and take neither. This is noted because the bidirectional foundation makes it conceptually coherent, not because it is on a roadmap. Like artifact-level binary verification, it is a substantial undertaking that would be pursued only under business demand and community support, and it is mentioned here once, and tied off, precisely so it is not mistaken for a commitment.
+The forward route also opens an avenue beyond bindings: lift a small library fragment, recover candidate Clef code, and maintain that code locally. That would require an explicit semantic contract, preservation evidence, licensing and an update policy. Neither a successful lift nor a round trip proves that the recovered program behaves the same. [Fully Informed Bindings](/docs/design/javascript-targeting/fully-informed-bindings/) explores bounded experiments; whole-library absorption is not a commitment of this backend plan.
 
-The contributor list confirms the design pedigree. Jacques Pienaar is a core MLIR contributor who mentioned JavaScript-to-MLIR round-trip work "not yet fully open source" in a 2022 RFC discussion. Mehdi Amini, now at NVIDIA, is another core MLIR infrastructure engineer. Jeff Niu, now at OpenAI, contributed to IRDL and other MLIR infrastructure. JSIR was built by people who understand MLIR's architecture, and it was built as a production system, tested against billions of JavaScript samples.
+The work builds on MLIR's established dialect and analysis machinery. Its [design document](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/docs/intermediate_representation_design.md) is a useful starting point for that engineering, especially the distinction between faithful syntax representation and analysis of JavaScript behavior.
 
-What JSIR is not: a type system for JavaScript. JSIR has no type representation. It is structurally and syntactically faithful, not semantically typed. Type erasure is an explicit design boundary. This is the correct decision for the dialect's purpose of representing JavaScript at the AST level, and it is the reason that type safety in the Clef-to-JavaScript pipeline cannot come from JSIR itself. It must come from what happens before JSIR, in the shared middle-end, where types still exist.
+JSIR is not TypeScript's semantic type system. Its current type machinery includes a placeholder `JsirAny`; it does not carry Clef dimensions, range proofs or boundary grades for us. Composer must retain those facts alongside the lowering and connect them to the operations whose behavior they constrain. Erasing metadata is safe only after its preservation obligations have been fulfilled. [IR type definitions](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_types.td).
 
 ## The Trust Chain
 
-Our framework's actor model deploys Clef actors as Cloudflare Durable Objects, JavaScript classes running in V8 isolates with infrastructure-enforced single-concurrency. Actors communicate via WebSocket using BAREWire, our structured interchange contract at the runtime boundary. For a discriminated union, the wire tag is the compile-time case index, not a runtime discriminator: the serializer and deserializer are generated from the same type definition at compile time, so both endpoints agree on the case set and per-case payload layout by construction. The [spec's DU representation](/spec/draft/discriminated-union-representation/) gives the contract in §7.
+The actor design maps edge actors to Durable Objects and exchanges BAREWire payloads over suitable transports. The final payload is untagged with respect to types, schemas, dimensions and proofs: the communicating parties already have the contract. A union case index or optional-value presence bit selects an alternative *within* that contract. It is not a schema identifier. Internal JavaScript objects may use tags too; this says nothing against internal tags or metadata retained during compilation. The [DU representation](/spec/draft/discriminated-union-representation/) specifies the union encoding.
 
 This architecture creates a specific trust question: how much can you trust JavaScript that was emitted by a compiler whose verification properties are defined at the MLIR level?
 
@@ -72,130 +74,119 @@ The answer requires distinguishing three boundaries.
 
 ### Boundary 1: Type Erasure
 
-JavaScript has no type system at runtime. When Clef compiles to JavaScript, whether via Fable today or via JSIR in the future, the type information is erased. A discriminated union becomes a JavaScript object with an integer tag and an untyped fields array. JavaScript imposes no constraint on what appears in those fields. A malformed message, a version-drifted sender, or a compromised intermediary could deliver structurally invalid data, and the JavaScript runtime would not object.
+JavaScript retains runtime value classifications and object properties, but those do not establish a Clef declaration's meaning. A generated JavaScript union may use a tag and fields; a final BAREWire payload uses only the encoding elements its external contract requires. Neither representation makes an arbitrary inbound value trustworthy.
 
-BAREWire addresses this boundary for messages on the wire. It is a typed contract both endpoints derive from the same type at compile time: tag as the positional case index, fixed payload layout per case, no schema negotiation at runtime. The deserializer does not validate; it reads, because conformance is guaranteed by construction on the serializer's side. The wire format supplies what a runtime type system would supply in a context where JavaScript's own type system is absent. This is not a metaphor. The message tag associates data with a type, the layout constrains operations, and unrecognized tags are rejected before dispatch. A runtime type system does this work per message during execution. Resolving the same guarantees at compile time performs the work before the program runs, so the runtime does less than an untyped equivalent would. This is the negative cost of abstraction in Stroustrup's sense: the abstraction leaves the runtime doing less than the untyped mechanism it replaces.
+BAREWire's current codecs check cursor bounds and malformed encodings, including invalid boolean and optional-value flags; framing rejects unknown envelope kinds, and full decoding checks consumption of the input. A generic union case index still needs the client codec to check membership in its declared case set. Those checks remain necessary for truncated or hostile bytes, even when both correct endpoints derive codecs from one declaration. The untagged payload cannot by itself reveal that two deployments assigned different meanings to the same layout. Contract agreement belongs to build/deployment coordination or an explicit session control exchange. It need not be paid for with a type or proof tag on every payload.
 
-Some values arrive as JavaScript objects rather than as BAREWire frames: Cloudflare API responses, KV-stored values parsed from JSON, third-party library return values. For these, the complementary mechanism is schema-directed narrowing. Clef has no `obj` type and no `null`. The type system is closed. But every JavaScript value arriving at the interop boundary exposes runtime tags that a disciplined compiler can read: property-name tags (the object's keys, accessible through standard reflection) and value type-tags (`typeof`, `Array.isArray`, `instanceof`, strict null checks). When a Clef expression declares a target type at the boundary, as in `response.Json() : UserProfile`, the compiler inspects our PSG to see what `UserProfile` is structurally and emits a validator that walks the runtime's tags according to the declared shape. The return type is `Result<UserProfile, DeserializationError>`, not a raw record. Missing required field? `Error` with path information. Wrong type for a field? `Error`. `null` or `undefined` for an `Option<T>` field? `None`. The programmer pattern-matches on `Result`, and the validator is compiler-generated code derived from the type annotation. Rust's `serde` plus `serde-wasm-bindgen` is the production-proven version of this exact pattern; Clef's schema-directed narrowing is the same mechanism generated by the compiler rather than declared via derive macros. The validator is one instance of a wider discipline, a premise discharged statically where the world is closed and by constructed code where it is not, which [Constructed Witnesses](/docs/design/javascript-targeting/constructed-witnesses/) develops across this section.
+The current JavaScript implementation is concrete ground for this design: Fable compiles the shared codec and framing sources, and JavaScript tests exercise exact byte vectors, round trips and selected rejection cases, including an out-of-bounds read and a truncated frame. Other tests construct SMT formulas from platform declarations and invoke cvc5. These prove those declaration formulas, not the correctness of the JavaScript constructing them. The proof inventory in `BAREWire/docs/12 Intersection Subset.md`, §5.1, records the present scope. At source revision `14e46f6d4023b630c4d4d0f6c773cea019f4d9bc`, the Fable 5.13.0 JavaScript gate makes 22 cvc5 calls: 15 `unsat` and 7 `sat`, over Linux declaration examples and solver-emitter edge cases. These are not transport or stack proofs over emitted JavaScript.
+
+JavaScript objects arriving from APIs, JSON, storage or callbacks need a different boundary operation: narrowing. The proposed [JavaScript boundary](/spec/draft/javascript-boundary/#3-injection-and-elimination) generates a total check from the declared target shape, returning `Result` with a failed path instead of admitting a partial record. Callback parameters receive the same check. Host throws and awaited rejections are converted to typed errors. Absence follows the binding's per-position contract; missing, `undefined` and `null` are not interchangeable for every API. Libraries such as `serde` illustrate the practical value of generated conversion code. [Constructed Witnesses](/docs/design/javascript-targeting/constructed-witnesses/) explains how such checks can supply observable premises of a larger argument.
 
 ### The Academic Twist: JavaScript's Tagged-Structure Heritage
 
-This works because of JavaScript's own history. JavaScript was designed in 1995 with Scheme as one of Brendan Eich's explicit references. JavaScript's `Object`, in its essential structure, is a direct descendant of LISP's association lists and hash tables: a tagged associative structure where keys are observable at runtime and values carry their own type tags. V8's hidden classes, which specialize access for stable-shape objects, are the modern rediscovery of Common Lisp's `DEFSTRUCT` with declared slots. The same pattern, different vocabulary, forty years apart.
+JavaScript's early Scheme influence makes a useful connection: dynamic values retain evidence that a statically typed boundary can inspect. Property presence, value classifications and explicit null tests give narrowing code something to work with. The connection to the LISP and contract traditions is a design precedent, not a proof about V8's representation.
 
-Clef's schema-directed narrowing is the technique LISP-family languages with static-typed refinements (Typed Racket most clearly) have refined for two decades. The tags JavaScript retains at runtime, property names and `typeof` results, are the handles our compiler-generated validators need. If JavaScript were genuinely untyped at runtime, the approach would not work. Because JavaScript's `Object` is structurally a tagged associative value in the LISP tradition, the mature LISP-family techniques for narrowing dynamic tagged data to static records transfer directly.
-
-Clef has no obj in the .NET sense (no universal root, no implicit boxing, no runtime reflection over arbitrary values) anywhere in the language. Clef has obj in the LISP sense only at the JavaScript/WASM interop boundary, through specific structured constructs (`JsValue`, `JsRef<'T>`, schema-directed narrowing). [At the FFI boundary with C](/spec/draft/ffi-boundary/#11-core-invariant), at the wire boundary with our BAREWire, and on every native target, the type system is closed. The narrowing works because V8 retains type tags at runtime: the property names and `typeof` results are the data the generated validators read, supplying what the static erasure removed.
+The Clef profile keeps that dynamic work at declared boundaries, through `JsValue`, opaque `JsRef<'T>` and narrowing. It does not introduce a universal interior `obj`. The generated checks still need to account for JavaScript behavior such as getters, proxies and thrown values; a property name alone is not a proof of a record's shape.
 
 ### Boundary 2: Lowering Fidelity
 
-JSIR's formality is real. It is an MLIR dialect with ODS-defined ops, region semantics, and SSA values. A `jsir.call_expression` has operands and results with defined structure. The MLIR pass infrastructure verifies that these ops are well-formed. Within the MLIR pipeline, the JavaScript representation is as formally rigorous as any other dialect.
+MLIR can check operation structure, region invariants and value use. These are useful checks, with a narrower scope than semantic preservation. At the pinned upstream revision, [AST-to-JSHIR conversion invokes `mlir::verify`](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/conversion/utils.cc), while [the transformation runner disables pass-manager verification](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/transforms/transform.cc) pending an IR-design fix. The two paths must not be described as a universally verified pipeline.
 
-The formality ends at emission. JSIR lifts to readable JavaScript source. That source is syntactically faithful to the IR, with round-trip fidelity above 99.9%, but the fidelity is syntactic, not semantic. If a lowering pass emits the wrong byte offset for a BAREWire payload field, the emitted JavaScript will faithfully reproduce that error. The MLIR pipeline can verify that the call structure is correct, but it cannot verify that the emitted `DataView.setUint8(offset, value)` call uses the right offset. That correctness depends on the lowering pass, which is C++ code in the MLIR infrastructure, trusted by convention and testing, not verified by construction.
+A well-formed call to `DataView.getFloat64` can still use the wrong offset or endian flag. Preservation work therefore starts at each affected lowering edge, not only at final emission. Composer would need a certified transformation or a re-check connecting the source operation to its target behavior. Source regeneration and empirical round trips are useful additional evidence; neither discharges that correspondence by itself.
 
-This is the same boundary every compiler exhibits. LLVM verifies IR properties and emits machine code that depends on the CPU honoring its ISA. CIRCT verifies hardware descriptions and emits Verilog that depends on Vivado synthesizing correctly. The question is never whether the entire stack is verified. It is where the verified region ends.
-
-For Clef targeting JSIR, the verified region ends at JSIR emission. The trust chain is:
+The intended chain is:
 
 ```
-Clef types ──── decidable (Z^n, polynomial, principal)
-BAREWire ops ── structural (same MLIR ops, both targets)
-JSIR ops ────── well-formed (ODS-defined, pass-verified)
-
-────── emission boundary ──────
-
-JavaScript ──── syntactically faithful, semantically dependent
-V8 isolate ──── opaque
-workerd ──────── opaque
+Declared source / library / platform facts
+  → PSG obligations, with premises and provenance
+  → target operations, preserving or re-checking affected facts
+  → JSHIR/JSIR and emitted JavaScript under a stated semantic relation
+  → execution under explicit host and external-library assumptions
 ```
 
-Each link is weaker than the one before it. The formality degrades gracefully from decidable verification to contractual assumption. The degradation is the universal structure of compilation, and the design's contribution is keeping it explicit, with each boundary identified.
+The same responsibility exists on native backends. Shared IR makes it easier to locate and reuse the contract; Composer owns the preservation argument for its lowerings.
 
 ### Boundary 3: Runtime Contract
 
-The emitted JavaScript calls Cloudflare's runtime APIs: `fetch()`, `WebSocket.send()`, `DurableObjectState.storage.put()`. These APIs are defined by Cloudflare's documentation, implemented in workerd's C++ runtime, and versioned with compatibility dates. The MLIR pipeline can verify that the call is structurally correct (right number of arguments, right SSA value flow) but it cannot verify that `storage.put()` persists the value or that the V8 event loop schedules handlers in the order the actor model assumes.
+The emitted JavaScript calls host APIs such as `fetch`, WebSocket operations and storage. A TypeScript declaration constrains the interface a binding exposes; it does not prove persistence, scheduling, purity or delivery. A library body may be available for analysis, but dynamic calls and unavailable host implementations still require conservative summaries or explicit assumptions.
 
-This is an external contract, taken on faith, the same way LLVM-emitted code takes the x86 ISA on faith. Cloudflare mitigates it with compatibility dates (no silent behavioral changes), the open-source workerd runtime (the implementation is inspectable), and the Workers runtime test suite. These are not formal guarantees. They are engineering practice.
+Compatibility dates, pinned library versions, inspectable workerd source and runtime tests make these assumptions manageable. They do not turn a host promise into a theorem. Actor lowering must model reentrancy at suspension points and retain or await asynchronous work according to the host lifecycle; a tell-style message without an application acknowledgment still needs a valid completion policy.
 
 ### Embodying a Durable Object: Per-Instance State
 
-A third emission-model concern is specific to the actor target, and it determines how a Durable Object is embodied, not only how its boundary is checked. A Durable Object is a class, not a `fetch` handler, instantiated once per object ID, and many instances are live in the same V8 isolate at once. Each instance owns isolated state. That is the entire point of the primitive: `idFromName("a")` and `idFromName("b")` address two actors that must not see each other's memory.
+An emission concern specific to the actor target is per-instance state. A Durable Object class must attach the appropriate state to each host-created instance. The contract is independent of where the host places instances or how often it recreates them.
 
 This constrains the emission model in a way the stateless `fetch` target does not. A compiler that emits a single script with module-level state runs that script once per isolate and installs one set of state cells shared by every instance. Reaching the DO model from there means hand-building a factory protocol across the FFI boundary: the compiler-emitted code has to expose a constructor that yields a fresh, isolated state cell per instance, and the host class has to anchor that cell to `this` and route each method call back to the right instance. Done by hand, this is error-prone, and the naive version, a module-level reference shared across instances, silently bleeds state between actors in production. The structural-layout convenience of clean module output does nothing to prevent this. It is an instance-lifecycle problem, not a layout problem.
 
-The JSIR path embodies the instance model directly. A Clef actor lowers to a Durable Object class whose constructor instantiates that actor's state, and the per-instance state cell is what the generated class holds, not a global the script installs once. The actor lifecycle (construction with `(state, env)`, message dispatch through `fetch`, WebSocket and alarm hooks, `storage` access) is generated from the Clef actor definition and the BAREWire schema, the same way the narrowing validator is. Isolation is then a property of the generated class instances, as it is for any hand-written JavaScript DO class, with nothing reconstructed by hand on top of a single shared script. The actor-lifecycle generation is upcoming work in the JSIR back-end, the natural extension of the principle that produces the narrowing validators and the schema-derived serializers above.
+The proposed JSIR path would emit a class whose constructor owns the actor's state, with dispatch and lifecycle hooks tied to that instance. Tests with distinct object IDs, suspension and recreation would check that no mutable module-level cell accidentally becomes actor state. This generation remains upcoming work; it is not supplied by JSIR's class operations alone.
 
-## Schema Identity as a Proxy for Dimensional Agreement
+<a id="schema-identity-as-a-proxy-for-dimensional-agreement"></a>
+## Agreement Before the Untagged Payload
 
-Dimensional types are erased through compilation. This is by design. The DTS paper specifies that dimensional annotations persist through multi-stage lowering as PSG codata, inform representation selection and memory placement, and are then consumed. At Stage 5, dimensions are lowered to debug metadata. They do not affect operational semantics. A dimensioned and undimensioned compilation of the same program produces identical instructions. This property holds for every target, including JavaScript via JSIR.
+Dimensions, ranges and message roles belong to the contract before lowering. Keep them in PSG/codata through representation selection and every affected preservation check. Once those obligations are fulfilled, the final payload can omit that metadata. That is BAREWire's useful economy: the endpoints know how to interpret the bytes without making each message describe itself.
 
-But the message boundary introduces a subtlety that pure compilation does not. When an actor sends a BAREWire frame, the frame's schema (which fields exist, in what order, with what encoding) was derived from a discriminated union whose fields carried dimensional annotations. Consider:
+Consider a force and a distance, each assigned a binary64 wire field by a boundary declaration. Replacing distance with time can leave exactly the same two-field encoding. Both record declarations are valid in isolation; an incompatible use is where dimensional checking has work to do. No union case index detects this semantic substitution. Contract agreement must include the declarations' meaning, not only their byte shape, and deployments must establish that agreement outside the payload.
 
-```fsharp
-type TorqueInput =
-    | ComputeTorque of force: float<newtons> * distance: float<meters>
-```
-
-The Clef compiler verifies during elaboration that `force * distance` produces `float<newton-meters>`, not `float<newtons * seconds>` or any other dimensionally inconsistent result. The BAREWire schema is then derived from this verified type: tag 0, payload is two float64 values in field order. The dimensional annotations are not present in the schema. There is no "this field is in newtons" metadata in the wire format. But the schema's *structure* is a consequence of the dimensional verification having passed.
-
-Now consider what happens if the sender's type definition were different:
-
-```fsharp
-type TorqueInput =
-    | ComputeTorque of force: float<newtons> * time: float<seconds>
-```
-
-The compiler rejects this because the dimensional types are inconsistent. But set that aside and consider the structural consequence: a different type definition produces a different BAREWire schema. Different schemas produce different tags. Different tags are rejected at the transport level, before the receiving actor's `Handle` method is ever called.
-
-The enforcement is indirect but real. BAREWire does not check dimensions. It checks schema identity: the tag matches, the payload layout matches, the frame is well-formed. But schema identity is causally downstream of dimensional verification. If the dimensional structure of the source type changes, the schema changes. If the schema changes, the tag changes. If the tag changes, the receiver rejects the frame. Dimensional disagreement between sender and receiver surfaces as schema disagreement, which surfaces as tag mismatch, which surfaces as transport-level rejection.
-
-This is a property that silent erasure through compilation does not provide on its own. In F#, dimensions are erased and the runtime has no mechanism, not even an indirect one, to detect that a sender and receiver disagree about what the fields mean semantically. Two `float` values arrive. The receiver trusts that the first is force and the second is distance. If the sender's code was refactored and the field order changed, or if the sender's type was modified to pass time instead of distance, the F# runtime accepts the message and the computation proceeds with wrong inputs.
-
-BAREWire closes this gap by carrying schema structure that is a projection of a dimensionally verified type, without ever placing dimensional metadata on the wire. Schema identity serves as a proxy for dimensional agreement. The proxy is imperfect. Two dimensionally distinct types could in principle produce structurally identical schemas (same number of fields, same encodings, different dimensional meaning). But in practice, dimensional changes alter field types, field counts, or case structure, and these changes propagate to the schema. The proxy is not a formal guarantee. It is a structural consequence that obtains for the common case and fails loudly in the uncommon case.
+BAREWire's framing includes a control `Hello` carrying an epoch and build text. Decoding that control frame is not the same as enforcing epoch agreement, session order or reply correlation. Those are explicit endpoint/session responsibilities. A deployment may use them to reject incompatible peers while keeping ordinary data payloads untagged.
 
 ## Representation Fidelity Across Substrates
 
-Dimensional erasure is not the concern. The concern is representation selection under target constraint.
+Representation selection connects dimension, range, width and allocation, but these are joint obligations with different premises. Facts may remain pending while the graph is elaborated. A concrete lowering needs them resolved at the point it commits to a representation; no source seal or width-named numeric type is required to supply them.
 
-The DTS compilation chain is: dimension determines range, range determines representation, representation determines width, width determines footprint, footprint and escape classification determine allocation. Each step consumes the output of the preceding inference. On native targets, the representation selection step does substantive work. The compiler evaluates worst-case relative error across the dimensional range and selects the representation that minimizes it. A value with dimensional range `[1e-3, 1e6]` might be selected as `posit<32,2>` on an FPGA target, where tapered precision concentrates bits in the primary operating range, or `float64` on x86, where uniform precision is adequate.
+JavaScript's default real carrier is binary64. Integer realization follows [Width Inference §8](/spec/draft/width-inference/#8-target-lowering): the exact host-number envelope must be respected, with a documented wide-integer realization such as `BigInt` or emulation above it. A target can advertise additional emulated capabilities under its declared policy. "Always Number" is not an adequate lowering rule, and JavaScript bitwise coercions cannot silently truncate a wider integer.
 
-On JavaScript via JSIR, the representation selection step runs and produces a trivial result. JavaScript's `Number` type is IEEE 754 float64. There is no posit arithmetic, no fixed-point, no tapered precision. The dimensional range analysis executes, and the answer is always the same. The representation selection machinery fires and has nothing to decide.
+A cross-target transfer may change representation. Its contract must distinguish bit preservation of the chosen wire encoding from preservation of the original numeric value. Exact transfer needs both coverage and exact representability; a lossy transfer needs a justified error bound. Equal dimensions do not imply equal arithmetic results. [Numeric Selection §10](/spec/draft/numeric-selection/#10-the-preservation-chain-and-the-quire-pass) makes that distinction explicit.
 
-This creates a concrete concern in a heterogeneous actor network. A native actor computing torque with `posit<32,2>` and an edge actor computing the same torque with `float64` perform the same arithmetic over the same dimensional types but produce results that diverge at the bit level. Not wrong results, since both are within their respective precision envelopes, but different results. If a Prospero supervisor compares outputs from native and edge Oliviers, the comparison fails at the bit level even though both computations are dimensionally correct.
+For a posit/quire computation, exact accumulation additionally requires exact representation of each product and coverage of every reachable partial sum in the finite accumulator. The final conversion can round, and exact accumulation does not recover input error or prove a simulation's useful horizon. A target without a required exact-accumulation capability must produce a capability error. An empty coverage set is also an error. A comparative IDE display can help a developer choose among admissible targets; it cannot downgrade these requirements to advice.
 
-The BAREWire wire format is not the source of this divergence. BAREWire faithfully serializes the sender's computed value, every bit preserved, and faithfully delivers it to the receiver. The divergence originates in the arithmetic itself, because the two substrates performed the arithmetic with different numeric representations. The wire format carries the *result* of a computation, not the *precision characteristics* of the computation that produced it.
-
-A second concern is more subtle. The decidable-by-construction paper identifies a specific failure mode of IEEE 754 arithmetic in geometric algebra computations: "IEEE 754 rounding can corrupt structural zeros across training steps. A component that is algebraically zero in grade-1 acquires a numerically non-zero value through accumulated rounding error." The [b-posit quire](https://arxiv.org/abs/2603.01615) provides exact accumulation that prevents this drift. JavaScript has no quire. An edge actor performing iterated Clifford algebra operations accumulates IEEE 754 rounding errors that a native actor with quire accumulation does not. Over many iterations, the native actor preserves grade structure. The edge actor drifts. Both actors are dimensionally correct. The dimensional types are identical. The numeric behavior is not.
-
-The right design response is not to disallow dimensional types on edge targets. That would discard the dimensional verification, which is valuable regardless of representation constraints. Nor is it to warn generically about "type erasure reducing efficacy." The erasure is working as designed, and the warning would be imprecise about what is actually lost. The right response is a representation fidelity diagnostic that surfaces when an actor deploys cross-substrate:
-
-```
-TorqueActor deploys to both native (x86_64) and edge (Cloudflare Worker):
-  force<newtons> range [1e-3, 1e6]:
-    native:  posit<32,2>   worst-case relative error 1.5e-9 in primary range
-    edge:    float64        worst-case relative error 1.11e-16 (uniform)
-  
-  torque<newton-meters> range [1e-6, 1e12]:
-    native:  posit<32,2>   precision concentrated in [0.01, 1e4]
-    edge:    float64        precision uniform across range
-  
-  Note: cross-substrate comparison of computed values will diverge
-  at the representation level. BAREWire preserves exact bit patterns
-  in transport; the divergence originates in the arithmetic.
-```
-
-This diagnostic is a natural extension of the representation selection display described in the DTS paper: the same information, shown comparatively across targets, surfaced at design time through the language server. The developer sees, before deployment, where precision will diverge and by how much. The decision to deploy a computation to the edge is then informed, not blind.
-
-For computations that require grade preservation or exact accumulation, where posit arithmetic and quire accumulators provide properties that IEEE 754 cannot, the diagnostic can be stronger: an explicit note that the edge target does not support the numeric properties that the native target provides. This is not an error. It is a design-time constraint that the developer should see and decide about, the same way the DTS language server surfaces escape promotions and allocation strategy changes. The compiler provides information. The developer makes the architectural decision.
+A useful display would show the selected carrier, the source of range facts, transfer fidelity, required capabilities and any unresolved premises. Quantitative error claims belong there only when supported by the selected format and analysis. That keeps the design-time feedback useful without inventing precision numbers.
 
 ## What This Means for Cross-Substrate Actors
 
-What we are building toward in our Fidelity.CloudEdge is a hybrid actor network where one stratum runs as native processes and the other runs as Cloudflare Workers, with BAREWire contracts governing communication between them. A Prospero supervisor running on bare metal supervises Olivier workers running at the edge, and vice versa. The message protocol is byte-identical across substrates because both serializers derive from the same Clef discriminated union definition.
+The hybrid actor network would let native processes and edge actors share contracts while doing useful work on different substrates. BAREWire supplies the glue for memory description, IPC and network encoding; Conclave supplies the Cloudflare platform. A native BFF can be as thin as forwarding or as substantial as local inference and numeric computation.
 
-In the current architecture, where F# compiles to JavaScript via Fable and to native code via .NET or Fidelity, the byte-identical guarantee depends on two separate compilers agreeing on the BAREWire wire format. This is verified by testing. If the Fable-compiled serializer and the native serializer produce different byte layouts for the same discriminated union, the mismatch is discovered at runtime, in production, under load.
+The existing F#/Fable BAREWire path already checks cross-runtime byte examples before deployment. A shared Composer derivation could strengthen that foundation by exposing the same obligations to both backends. It would still need evidence that each backend implements them.
 
-With JSIR in Alex, both serializers are lowered from the same BAREWire dialect ops in the shared MLIR middle-end. The pipeline forks after the schema is derived, not before. The native path lowers BAREWire ops to memory-mapped struct writes via LLVM. The Worker path lowers the same BAREWire ops to `DataView`/`ArrayBuffer` operations emitted as JSIR ops. The byte layout is identical because both lowering paths consumed the same IR representation. Cross-substrate compatibility is a structural property of the compiler, not a property verified by testing.
+A wire layout also differs from an in-memory ABI. Native structures can have padding, alignment and pointer or lifetime requirements. Ordinary JavaScript objects have structural property access under a managed runtime, not a specified native byte size. `ArrayBuffer`/`DataView` access does have explicit offsets and bounds; a zero-copy or shared-memory path additionally needs ownership and host capability premises. Reusing a declaration does not make these representations interchangeable.
 
-This is what JSIR offers our framework. It does not make the JavaScript "trustworthy." The JavaScript is still untyped, still garbage-collected, still running in a runtime whose behavior is an external contract. What JSIR does is unify the compilation pipeline: one source, one middle-end, one set of verification passes, two backends. The JavaScript happens to be the output format for one of those backends. The trust lives in the pipeline, and the artifact inherits only what the pipeline could establish.
+## From Contract to Emitted Artifact
+
+A small example makes the proposed work tangible. Suppose an endpoint contract assigns two unsigned four-byte integer fields at offsets 0 and 4 in an eight-byte payload, in little-endian order. The boundary declaration fixes the encoding; the source value must have an admitted range within `0…2³²−1`. This example separates an *access-extent* query from the stronger claim that two lowerings write the same bytes. Neither claim proves peer agreement or message delivery.
+
+| Step | Concrete evidence to retain |
+|---|---|
+| Contract | Field meaning, order, offsets, encoding, eight-byte extent, admitted numeric ranges and the declared origin of each fact |
+| Operation | Read/write four bytes at the chosen offset; require sufficient input/output storage; establish the declared numeric conversion |
+| Query | Negate the extent claim under the operation's premises; record its source/PSG obligation and supported arithmetic fragment |
+| Lowering | Relate that operation to native byte access, `DataView.setUint32` or four indexed stores with the same offset and little-endian encoding; preserve the bounds guard and conversion behavior |
+| Artifact | Bind evidence to the emitted module and dependency closure, target policy and exact tool revisions; record unresolved or external premises separately |
+
+For the fixed access, this illustrative SMT query asks whether either declared field can cross the payload extent:
+
+```smt
+(set-logic QF_LIA)
+(declare-const offset Int)
+(assert (or (= offset 0) (= offset 4)))
+(assert (> (+ offset 4) 8))
+(check-sat)
+; unsat
+```
+
+The stronger byte claim is concrete too: for admitted value `v`, both a `DataView.setUint32(offset, v, true)` write and four indexed stores must produce `floor(v / 256ⁱ) mod 256` at `offset + i`, for `i` from 0 through 3, and leave every other byte unchanged. Both views must refer to the same payload origin. The value is exact as a host number within this range. A universal proof would need semantics for these target operations and their conversion behavior; the bounds query above supplies only one premise.
+
+That result concerns mathematical integers and the declared offsets. Connecting it to a JavaScript access requires more: the actual buffer must contain the payload; the lowering must emit that offset without a truncating coercion; the view must remain valid through the access, without detachment or interfering aliases; and the encoded conversion must meet the numeric contract. Invalid values and spans can make the two JavaScript forms behave differently, so admission checks and failure behavior must be included in the contract. Exactness in this bounded example cannot be generalized to all integer widths. An unavailable premise remains pending or becomes a located failure when commitment requires it. A timeout or unknown solver result is not a proof.
+
+The record in the final row is an acceptance requirement for the proposed Composer path, not an existing JavaScript proof-certificate format. The current BAREWire tests establish selected byte behavior and declaration-level queries; they do not yet pair a semantic proof with an emitted JS artifact.
+
+An incremental acceptance sequence can keep this work reviewable:
+
+1. Pin the JSIR/tool/runtime revisions and characterize one codec plus malformed, truncated and mismatched-contract inputs against the working Fable/native reference tests.
+2. Carry the contract and pending obligations through PSG, then implement one target operation with a stated semantics and explicit external premises.
+3. Check the relevant JSHIR path for structural validity, and establish preservation or re-check each affected lowering edge. Introduce wrong-offset, endian and truncation mutations to show the checks reject them.
+4. Run native and emitted-JS behavior tests against the contract: bytes, accepted/rejected inputs, results and errors. Add numeric and asynchronous cases as their operation families enter the supported subset. Normalized IR is a comparison aid, not the equivalence theorem.
+5. Bind results to the emitted artifacts and dependency closure. Expand the supported subset only with corresponding evidence; claim the JavaScript Substrate profile only when its full requirements are met.
+
+This reaches beyond codecs. The same discipline can connect a callback's narrowing, an integer realization, a library effect summary or an actor's completion policy to the operation that implements it.
 
 ## The Precedents
 
@@ -211,9 +202,9 @@ JSIR does not arrive in isolation. It follows a pattern that MLIR has been estab
 
 In 2024 the same project shipped `wasm_of_ocaml`, a WebAssembly backend. The critical detail: `wasm_of_ocaml` shares `Code.program` with `js_of_ocaml`. Both backends sit atop the same IR and consume the same upstream optimization passes. This is the multi-target-from-shared-IR pattern in miniature, one frontend and one middle-end feeding two backends, and it is structurally what our Composer generalizes over MLIR's dialect infrastructure to reach four backends (LLVM, CIRCT, MLIR-AIE, JSIR) from one Clef source. The architecture Composer adopts is the pattern js_of_ocaml has been proving at production scale for fifteen years, adapted to MLIR's substrate and extended to more targets.
 
-**Fable** took a different tactical route than js_of_ocaml, and the reason is architectural rather than preferential. Fable was built for F#, and F#'s post-compile representation is .NET CLR IL, an IR designed around C#'s semantics (reified generics, sealed class hierarchies, boxing rules, structural variance). By the time F# source has been lowered to IL, F# idioms (pipes, curried functions, discriminated unions as sealed types, pattern matching expanded into cascading type tests) have been translated into CLR-shaped constructs. A hypothetical IL-to-JavaScript compiler would be compiling the CLR, not F#. The F# source AST is the last representation where F# idioms are still visible as F# idioms, and Fable emits from that AST because F# has no analogue to the stable, ML-preserving bytecode OCaml provides. Fable is the right answer for F# for that reason, and it is staying. Composer's JSIR path applies the js_of_ocaml approach to Clef, which, like OCaml, owns its post-frontend representation end-to-end.
+**Fable** is an established F# compiler with its own intermediate AST and target transformations, including JavaScript emission through Babel-shaped output. It does not compile CLR IL to JavaScript, and it is not limited to raw source walking or string templates. Its existing interop patterns and runtime tests are valuable references for Composer. The architectural difference here is which compiler owns the semantic graph and preservation work, not the presence or absence of an IR.
 
-**Melange** is the OCaml-ecosystem path that gets closest on the surface, and it is worth being precise about where it lands, because a reader evaluating Cloudflare targets will reach for it. Melange compiles each OCaml module to one idiomatic ES module file, so it produces clean class exports without the global side-channel and `Js.Unsafe` boilerplate that a script-emitting compiler needs to bridge to Cloudflare's ES Module expectation. For the structural problem (emit a Durable Object class, export it natively, no shim), Melange is a clean answer, and its `external` bindings propagate OCaml types through the compiler at design time. What Melange does not provide is a runtime-verified boundary. A Melange `external` is an unchecked assertion about the shape of a runtime value: the compiler treats the declaration as given and never emits code to confirm it against the value that actually arrives. If an inbound payload drifts by a field, or the `workerd` API shifts under a binding, the mismatch surfaces as an unhandled runtime error inside the compiled module, not as a checked rejection at the boundary. This is the OCaml analogue of TypeScript's erasure: the types are real at design time and gone on the wire. The distinction between Melange and the JSIR path is not the module layout, which Melange handles well, but whether the boundary contract is a declaration the developer is trusted to keep or code the compiler generates to enforce. Our schema-directed narrowing and BAREWire schema identity are the latter; Melange's `external` is the former.
+**Melange** brings OCaml's module and type system to JavaScript, including direct ES module output and foreign bindings. Like a TypeScript declaration or an F# binding, an `external` declaration alone does not validate an inbound runtime value. Applications in these ecosystems can and do add validators. Composer's proposed distinction is to make the declared narrowing and preservation requirements part of its JavaScript profile, including callbacks and failure paths, rather than leaving their coverage to each application.
 
 The transformations that both js_of_ocaml and Fable perform (pattern matching to switch/if chains, algebraic data types to object construction, tail calls, currying) are thoroughly characterized. These serve as direct blueprints for MLIR lowering passes that target JSIR.
 
@@ -221,11 +212,9 @@ The transformations that both js_of_ocaml and Fable perform (pattern matching to
 
 JSIR affects the compilation pipeline. It does not affect the actor model's design, the management API surface, or the deployment infrastructure.
 
-Fable continues as the F#-to-JavaScript path for everything already built on it: Partas.Solid frontends, WrenHello's Fable-rendered WebView layer, the F# Worker bindings in Fidelity.CloudEdge. Two coexisting models reach JavaScript through different routes. The F#/.NET path goes through Fable, forced to source-AST walking because the CLR's IL erases F# idioms before any IR stage could recover them. The Clef path goes through our Composer and JSIR, free to use a compiler IR because Clef owns its post-frontend representation end-to-end. Neither replaces the other. Each serves the source language it was built for.
+Fable continues as the F#-to-JavaScript path for Partas.Solid, WrenHello's WebView layer and FSharp.CloudEdge bindings. Composer's proposed JSIR backend serves Clef code. The two paths can share useful contract tests while remaining distinct implementations.
 
-Related to this, Fidelity.CloudEdge itself will likely transition to **FSharp.CloudEdge** at some point, distinguishing itself as a direct F# implementation for the F#/.NET ecosystem. The current naming conflates the F# binding layer with the broader Fidelity framework. The rename better reflects what the package actually is, the F# community's Cloudflare SDK, independent of what Clef and Composer are doing. Details on timing and community maintenance (likely through fsprojects) will be worked out over time. The technical content of this document is unaffected by the rename.
-
-The Fidelity.CloudEdge management layer (currently 40 Management-tier REST clients and 2 Tenancy-tier clients, generated from Cloudflare's OpenAPI specification, with runtime types covering Workers, Durable Objects, Containers, and Facets) runs externally, not inside Workers. It provisions Queues, creates D1 databases, configures tunnels, deploys Worker scripts. Whether the Worker code was compiled by Fable or by Composer via JSIR is invisible to the management layer. The deployment pipeline uploads JavaScript either way.
+FSharp.CloudEdge is the F# binding and management-tooling layer. Conclave is the platform for intelligent distributed systems on Cloudflare. The management client provisions resources and deploys artifacts externally; it need not care which compiler produced a Worker's JavaScript.
 
 The actor model's semantic design (Olivier workers, Prospero supervisors, WebSocket transport, BAREWire serialization, elastic scaling with Queue pivot, event-sourced persistence) is unchanged. These are runtime patterns, not compilation patterns. They exist at the Clef source level and in the Cloudflare runtime contract. JSIR changes how the compiler produces the JavaScript that implements them. It does not change what they are.
 
@@ -233,33 +222,23 @@ Firetower, the monitoring tool, is similarly unaffected. It consumes management 
 
 ## Practical Next Steps
 
-JSIR is available today as an out-of-tree MLIR dialect. The RFC was posted on April 6, 2026. Upstream status is pending. Inclusion alongside dialects like WasmSSA is proposed but not yet decided. This does not block evaluation.
+The [acceptance sequence above](#from-contract-to-emitted-artifact) starts with a small experiment: pin and build JSIR, lift a Worker-shaped program, and confirm the supported path back to executable JavaScript. Then connect one Composer operation to it. This can proceed while the upstream RFC remains under discussion.
 
-**Immediate.** Clone `google/jsir`, build via Docker, feed it JavaScript resembling Fable output for a Cloudflare Worker: a `fetch` handler with `async`/`await` and `Response` construction. Inspect the MLIR. This validates whether the op set maps naturally to Worker-shaped JavaScript.
-
-**Short-term.** Extract the TableGen dialect definitions and integrate them into the Composer MLIR build. The dialect is build-system agnostic. The Bazel dependency is for Google's parser tooling, not for the dialect itself. Write a single lowering pass from an Alex dialect op to JSIR ops (a let-binding or function definition) and walk the resulting JSIR to emit JavaScript.
-
-**Medium-term.** Use the existing Fidelity.CloudEdge patterns, every Worker instrumentation pattern already built in F# and compiled by Fable, as lowering pass specifications. The Fable-compiled JavaScript is the expected output. The MLIR pipeline is the mechanism that produces it. Every Worker that runs today validates what the compiler must produce tomorrow.
+Fable-compiled binding tests supply behavior to compare, not a required textual output. Keep their original API and runtime assertions so a discrepancy can be investigated against the host contract instead of assuming either compiler is the oracle. The [transition plan](../from-fable-to-jsir/) develops that comparison.
 
 ## The Adjacent Capability: WASM and Stack Switching
 
-JavaScript is not the only target that benefits from the unified middle-end. Our Composer's MLIR pipeline also reaches WebAssembly, through two pathways that parallel the situation JSIR creates for JavaScript. The **LLVM WASM pathway** lowers Alex's dialects through the conventional MLIR-to-LLVM IR path and emits WASM via LLVM's WASM backend. This is production-ready today for any runtime that supports standard WASM. The **WAMI pathway** (defined in the "WebAssembly through MLIR" research project) stays within MLIR's infrastructure end-to-end, using `SsaWasm` and `Wasm` dialects to emit WASM directly without touching LLVM. This is horizon-2 engineering, but it is the pathway that preserves delimited-continuation semantics through to WASM's stack-switching primitives rather than reifying them into state machines. [WebAssembly Targeting](/docs/design/wasm-targeting/) now develops both pathways in their own section, with the fork itself weighed in [Coroutines Versus Stack Switching](/docs/design/wasm-targeting/coroutine-versus-stack-switching/).
+WebAssembly is another possible consumer of the shared middle-end, through LLVM or an MLIR-specific route. [WebAssembly Targeting](/docs/design/wasm-targeting/) and [Coroutines Versus Stack Switching](/docs/design/wasm-targeting/coroutine-versus-stack-switching/) discuss those designs. Stack switching is especially relevant to the framework's continuation model; the availability and semantics of a chosen runtime feature must be checked for the deployment target.
 
-The WebAssembly Stack Switching proposal (Phase 2 as of August 2024, advancing toward Phase 3, with Wasmtime shipping a production-grade implementation showing 6x micro-benchmark improvements over CPS-transformation fallbacks) enumerates its own use cases as *coroutines, async/await, generators, lightweight threads, and other advanced non-local control flow idioms*. That list is our DCont unification almost verbatim. The WebAssembly community and our framework are converging on the same abstraction from different directions, and once Stack Switching reaches broad availability, delimited continuations would become a runtime-native capability everywhere WASM runs.
-
-For Cloudflare specifically, WASM sits in Tier 2 of a step-graded compute model that spans pure JavaScript Workers (Tier 1), WASM-in-Workers (Tier 2), and Containers (Tier 3). WASM is not a separate deployable unit on Cloudflare. It is a library bundled inside a Worker's deployment, instantiated by a JavaScript shim that handles the runtime API binding. The Cloudflare Workers runtime supports WebAssembly SIMD (enabling data parallelism within the single-threaded isolate), JSPI (a shipping subset of Stack Switching that allows suspension at Promise boundaries), and mature tooling via `workers-rs` for Rust Workers that demonstrate the pattern. Clef WASM deployments adopt the same pattern. The LLVM or WAMI pathway emits a `.wasm` module, a Fidelity bundler generates the JS shim that instantiates it and exposes Cloudflare bindings as imports, and `cfs` uploads the bundle through the Management API.
-
-JSIR solves the JavaScript path, not the WASM path, but the WASM path uses the same Alex middle-end, the same verification passes, the same BAREWire schema derivation. The schema identity argument and the type-erasure boundary analysis here apply to WASM targets with the same structure, changed only by WASM's runtime model: typed linear memory in place of tagged JavaScript objects, BAREWire codecs through `memref` ops in place of `DataView` ops, Component Model WIT types for cross-module boundaries in place of JavaScript's property-bag convention. A forthcoming companion document covers the WASM-specific build, bundling, and execution-model details, including the freestanding ([unikernel-style](/blog/getting-to-the-heart-of-unikernels/), no host runtime beneath it) execution pattern the DCont scheduler enables inside a WASM instance, and the fan-out model that coordinates multiple instances over BAREWire-framed messages when compute demand exceeds what one instance's thread of control can serve.
+A WASM module hosted by a Worker also crosses a JavaScript boundary. Linear-memory bounds, host imports, suspension and numeric transfers create their own preservation obligations. BAREWire can supply the agreed encoding there too, with untagged final payloads; a common contract does not eliminate the distinction between linear memory, JavaScript objects and native ABI layouts.
 
 ## Honest Framing
 
-JSIR is not "JavaScript you can trust." It is not a type system for JavaScript. It is not a formal verification framework for browser code. It is an MLIR dialect that represents JavaScript's AST with high fidelity, built by core MLIR engineers, tested at production scale inside Google.
+JSIR gives Composer a place to express JavaScript operations within the compiler architecture it is already pursuing. BAREWire gives that work a small, useful contract to start with, spanning memory, IPC and network use without making every final payload describe its types.
 
-What it provides for Clef is architectural unification. The JavaScript target joins the same pipeline as every other target. The verification properties that are established in the shared middle-end (dimensional consistency, BAREWire schema agreement, escape classification, concurrency primitive validation) apply to the JavaScript path because the JavaScript path goes through the same middle-end. Those properties do not survive emission. The JavaScript that comes out is still JavaScript: dynamically typed, garbage-collected, dependent on Cloudflare's runtime contract. But the pipeline that produced it is the same pipeline that produces native binaries. And BAREWire, our typed interchange contract, carries the case and dimensional structure across the erasure boundary by construction, so both endpoints agree on it without JavaScript's own type system being present.
+The opportunity is to carry more reasoning to the point where it matters: dimensions through numeric selection, buffer extents through actual accesses, foreign-value premises through narrowing, and asynchronous effects through host completion. A pass that preserves an obligation can carry its evidence onward; a pass that can disturb it needs a re-check. Neither erasure nor a change of substrate makes an unresolved obligation disappear.
 
-The result is not JavaScript you can trust. It is JavaScript that won't keep you awake at night, because the things that would keep you awake (message type mismatches, cross-substrate serialization drift, verification gaps between native and edge code) are addressed in the compiler, before any JavaScript is emitted. The rest is Cloudflare's contract, and they've been keeping that contract for millions of Workers in production.
-
-Our Composer is designed to target CPUs, GPUs, FPGAs, and spatial accelerators through MLIR. JSIR lets JavaScript join that set as one more backend, reached through the same dialect infrastructure, subject to the same pass pipeline, verified by the same middle-end. The JavaScript does not become trustworthy in the process. The compiler reaches the point where it does not have to care that the artifact isn't, because everything it can verify has already been settled upstream. That is the property we will keep building toward as the Alex backends fill in and the cross-substrate actor network takes shape.
+That is a practical direction for engineering: keep the current byte and runtime tests, add explicit lowering relations, and grow the supported operation set with evidence attached. JavaScript becomes another place the framework can do useful work, with the guarantees earned by its compiler and boundary implementation rather than borrowed from the name of an IR.
 
 ## See also
 
