@@ -23,6 +23,12 @@ clef-lang-site/
 | Documentation | `content/docs/` | Guides, reference, compiler internals |
 | Blog | `content/blog/` | Announcements, releases, analysis |
 
+Specification refresh and change detection follow `clef-lang-spec`'s `main`
+branch. `hugo/go.mod` and `hugo/go.sum` pin the resolved revision; the deployment
+CLI re-vendors it under `hugo/_vendor/` before building. The vendor directory is
+generated and ignored by Git. The specification repository no longer publishes
+through a separate `gh-pages` branch.
+
 ## Prerequisites
 
 - [Hugo](https://gohugo.io/) (extended) v0.128.0+

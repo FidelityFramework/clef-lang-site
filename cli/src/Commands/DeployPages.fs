@@ -83,9 +83,9 @@ module DeployPages =
         else
 
         // 3. Fetch latest from Git directly (no proxy, no cache)
-        printfn "        Pulling latest spec from fidelity branch (direct, no proxy)..."
+        printfn "        Pulling latest spec from main (direct, no proxy)..."
         let exitCode, _, stderr =
-            runProcessWithEnv "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@fidelity" hugoDir goDirectEnv verbose
+            runProcessWithEnv "hugo" "mod get -u github.com/FidelityFramework/clef-lang-spec@main" hugoDir goDirectEnv verbose
 
         if exitCode <> 0 then
             Error $"hugo mod get failed: {stderr}"

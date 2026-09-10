@@ -66,7 +66,7 @@ module SmartDeploy =
                 else None)
         else None
 
-    /// The latest upstream spec version on the fidelity branch, resolved via go's
+    /// The latest upstream spec version on main, resolved via go's
     /// module machinery. Host-agnostic and read-only: `go list -m` follows whatever
     /// GOPROXY/insteadOf is configured and does not mutate go.mod/go.sum, so it can
     /// run BEFORE the deploy pulls the module — fixing the chicken-and-egg where
@@ -76,7 +76,7 @@ module SmartDeploy =
         | None -> None
         | Some modulePath ->
             let hugoDir = Path.Combine(workingDir, "hugo")
-            // Bypass the Go module proxy so we resolve the fidelity branch directly from
+            // Bypass the Go module proxy so we resolve main directly from
             // Git, matching the deploy's refresh (the proxy can serve stale branch HEADs).
             // Derive the no-proxy pattern from the module's org prefix so it follows the
             // remote if the host moves (e.g. github.com → forge.spkez.dev).
@@ -88,7 +88,7 @@ module SmartDeploy =
                 "GONOSUMDB", orgPrefix
                 "GONOSUMCHECK", orgPrefix
             ]
-            match runProcessOut "go" $"list -m {modulePath}@fidelity" hugoDir env with
+            match runProcessOut "go" $"list -m {modulePath}@main" hugoDir env with
             | Ok out ->
                 let parts = out.Trim().Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
                 if parts.Length >= 2 then Some parts.[1] else None
@@ -210,7 +210,7 @@ module SmartDeploy =
         let sha = resolveHeadSha workingDir
         let goSumHash = hashFile (Path.Combine(workingDir, "hugo", "go.sum"))
         // Record the spec version actually deployed (go.mod is refreshed to the
-        // fidelity-branch HEAD during the deploy). Keep the previous value if go.mod
+        // main-branch HEAD during the deploy). Keep the previous value if go.mod
         // can't be read so we never blank out the tracking.
         let specVersion = pinnedSpecVersion workingDir |> Option.orElse state.LastSpecVersion
         let updated =
@@ -231,7 +231,7 @@ module SmartDeploy =
         let mutable reasons = []
         let mutable scope = Config.NoDeploy
 
-        // clef-lang-spec upstream changes — resolve the latest fidelity-branch version
+        // clef-lang-spec upstream changes — resolve the latest main-branch version
         // via `go list -m` and compare to what we last deployed. This runs BEFORE the
         // module is pulled, so an upstream spec commit is detected without first having
         // to refresh go.sum (which only changes during the deploy's spec refresh).
