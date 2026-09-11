@@ -65,13 +65,15 @@ flowchart LR
 
 This is a failure of **associativity**, the permission to change parentheses. For finite operands under the same rounding rule, ordinary floating-point addition is commutative: swapping the two operands of one addition does not explain this example. Changing which addition happens first does. Exceptional values and observable exception behavior require their own contract, so we will keep the first example deliberately finite.
 
-A work-stealing scheduler need not produce this problem. It can execute a fixed arithmetic tree in whatever order dependencies allow. Trouble arises when the implementation also changes the tree: different chunk sizes, different worker partial sums, or a shared accumulator updated in arrival order. Those are numerical decisions hiding inside execution decisions.
+A work-stealing scheduler need not produce this problem. It can execute a fixed arithmetic tree in whatever order dependencies allow. Trouble arises when the implementation also changes the tree: different chunk sizes, different worker partial sums, or a shared accumulator updated in arrival order. 
+
+> Those are numerical decisions hiding inside execution decisions.
 
 One remedy is to keep the reduction tree fixed by input indices. Workers may come and go while the same pairs still meet. That is a legitimate way to obtain reproducibility for a specified tree. It can also retain substantial parallelism. Its promise is narrower than “every legal regrouping gives the same answer,” and it does not automatically give the most accurate answer.
 
 There are applications where that narrower promise is exactly right. A compatibility test might require the historical result. Another application might require the correctly rounded sum of all represented inputs. A third might accept a documented error bound in exchange for throughput. In our view, a toolchain needs to determine those factors before selecting an implementation or prompting the user to make an informed choice.
 
-## Four Questions Behind One Word
+## Four Questions
 
 We should take a moment to unpack four things a developer might mean by "fearless parallel" work.
 
@@ -148,7 +150,7 @@ The instructions form a small dependency graph. The two results can remain SSA v
 
 This little graph also makes a compiler hazard visible. Algebraic simplification over real numbers would conclude that the residual is zero. Floating-point rounding is precisely what makes it useful. LLVM's [fast-math permissions](https://llvm.org/docs/LangRef.html#fast-math-flags) can come to bear here. A construction that relies on these operations cannot casually inherit reassociation permissions that invalidate its argument. More elaborate control of the floating-point environment may require constrained operations. And what's more, the proof has to describe the instructions we actually emit. Automating that proof is what would make this pathway fearless under its stated contract.
 
-## Compensation Is an Algorithm
+## Compensation Is A Process
 
 TwoSum is an ingredient. It is not, by itself, a recipe for accumulating an arbitrarily long collection exactly into two floats. More contributions introduce more information. A bounded representation eventually needs a capacity argument, a rounding policy, or a different construction.
 
@@ -173,9 +175,9 @@ For the developer, the relevant menu is therefore more informative than “float
 
 There is a welcome consequence for machines whose efficient arithmetic is IEEE floating point. They are not excluded from the investigation. We can construct stronger numerical behavior from the instructions they already provide. The extra work is real, but it's worth expanding on how the opportunity is real as well. We're expecting to provide these mechanics in analyzers and other code helpers to make both the decision and placement easy and informed. And here we're doing a deeper dive to show what we intend for compiler services to provide in a fully fleshed-out implementation.
 
-## A Short Detour for the Algebraically Inclined
+## An Algebraic Side Bar
 
-The abstraction is small enough to state without inventing a public API. Let \(X\) be the set of admitted represented terms, \(A\) the space of accumulator states, \(V\) the mathematical values we use to describe those states, and \(R\) the result representation. We need an empty state, a way to ingest a term, a merge, and a finalization:
+The abstraction is relatively small, but the implications are large. Let \(X\) be the set of admitted represented terms, \(A\) the space of accumulator states, \(V\) the mathematical values we use to describe those states, and \(R\) the result representation. We need an empty state, a way to ingest a term, a merge, and a finalization:
 
 \[
 \begin{aligned}
@@ -202,7 +204,9 @@ Let \(\nu:A\to V\) describe what an accumulator means. For an exact sum construc
 
 These laws apply only to admitted states and operations. With a finite accumulator, not every pair of states is necessarily a legal merge. The compiler must establish closure over every intermediate state reachable in the proposed decomposition. It cannot prove that the final total fits and quietly assume the route there also fits.
 
-This is the monoidal shape familiar from functional parallel reduction, with the finite-domain qualification made explicit. Associativity and commutativity hold at the level of the represented mathematical value. Two accumulator encodings may carry different redundant limbs or normalization states while denoting the same sum. Requiring identical internal bytes would be unnecessarily strong. Requiring a common, deterministic finalization is what connects that denotational equality to identical result bits.
+> This is the monoidal shape familiar from functional parallel reduction, with the finite-domain qualification made explicit.
+
+Associativity and commutativity hold at the level of the represented mathematical value. Two accumulator encodings may carry different redundant limbs or normalization states while denoting the same sum. Requiring identical internal bytes would be unnecessarily strong. Requiring a common, deterministic finalization is what connects that denotational equality to identical result bits.
 
 ```mermaid
 flowchart TB
@@ -217,11 +221,11 @@ flowchart TB
   R --> O["Same result for every admitted tree"]
 ```
 
-A proof can then proceed by induction over the merge tree. A leaf denotes its assigned term. A merge denotes the sum of its children. The root denotes the sum of the whole partition, independent of its shape. If finalization depends only on that denotation and the agreed output policy, every admitted tree produces the same output.
+It follows then that a proof can proceed by induction over the merge tree. A leaf denotes its assigned term. A merge denotes the sum of its children. The root denotes the sum of the whole partition, independent of its shape. If finalization depends only on that denotation and the agreed output policy, every admitted tree produces the same output.
 
-Notice what had to be supplied: the same terms, a partition that neither omits nor duplicates them, exact ingestion, valid merges and a common finalization. The word “functional” does not impose these premises automatically. It just happens to give us a coherent way to express them.
+Notice what had to be supplied: the same terms, a partition that neither omits nor duplicates them, exact ingestion, valid merges and a common finalization. The word “functional” does not impose these premises automatically. It just happens to give us a coherent way to express those bounds.
 
-NaNs, infinities, signed zero, posit NaR, observable exceptions and overflow do not disappear just to make the diagram look tidy. A construction *can* exclude some of those wrinkles through established range facts, or specify how to handle them. Either way, they belong in its domain and result contract. The finite exact-sum argument above should not be mistaken for a theorem about every possible bit pattern. For the broader range of cases we expect to enumerate options compatible with the hardware capabilities and the application's design.
+NaNs, infinities, signed zero, posit NaR, observable exceptions and overflow do not disappear just to make the diagram look tidy. A construction *can* exclude some of those wrinkles through established range facts, or specify how to handle them. Either way, they belong in its domain and result contract. The finite exact-sum argument above should not be mistaken for a theorem about every possible bit pattern. For the broader range of cases we expect to enumerate options compatible with the hardware capabilities and representative selection of patterns that will expand as the framework matures.
 
 ## How the Quire Informs the Contract
 
