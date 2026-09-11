@@ -107,6 +107,8 @@ module Index =
             Some ("reference", $"/{urlPath}/")
         elif relativePath.StartsWith("docs/guides/") then
             Some ("guides", $"/{urlPath}/")
+        elif relativePath.StartsWith("docs/tooling/") then
+            Some ("tooling", $"/{urlPath}/")
         elif relativePath.StartsWith("spec/") then
             // Spec URLs use /spec/draft/ prefix instead of /spec/
             let specPath = urlPath.Substring("spec/".Length)

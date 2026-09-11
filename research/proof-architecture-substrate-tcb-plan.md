@@ -11,6 +11,8 @@ draft: false
 
 ## Purpose
 
+**Historical planning record; reconciled 2026-09-11.** The current integration decisions and engineering gates live in [Composer's proof-composition architecture](https://github.com/FidelityFramework/Composer/blob/main/docs/Proof_Composition_Architecture.md) and the [verification internals](../hugo/content/docs/internals/verification/proof-composition-and-tooling.md). In particular, the older categorical “solver-only through Tier 3, Rocq only at Tier 4” boundary and any default application-author theorem burden below are superseded. Mode shifts compose checked lemmas under explicit foundations; Tier 3 may retain Rocq dependencies. This record preserves the earlier broader documentation proposal rather than scheduling all of it as current implementation work.
+
 This document is the plan-of-record for two new sub-sections of `/docs/design/` on the Clef language site. Both consolidate material that is currently distributed across blog posts, internals walkthroughs, the categorical-foundations sub-section, and the four arXiv preprints. Neither is the canonical statement of the architecture today. The plan creates the canonical statements and assigns the work to specific files.
 
 The two sub-sections are intentionally orthogonal. The first, `/docs/design/proof-architecture/`, treats verification at the level of decidability fragments and proof-pattern composition. It is invariant across substrates. The second, `/docs/design/substrate-tcb/`, treats the trust dependencies introduced by each compilation target. It is invariant across tiers.

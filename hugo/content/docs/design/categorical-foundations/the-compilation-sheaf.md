@@ -78,14 +78,14 @@ Our four tiers organize the reasoning available for an obligation. The same prog
 |---|---|---|
 | 1 | Dimensional equality and declared algebraic structure | A kinded substitution or derivation under the declared laws |
 | 2 | Range, layout, or arithmetic conditions in a supported fragment | The checked condition and its assumptions, with the analysis result or available solver proof |
-| 3 | A restricted probabilistic property | A library theorem instance, its probability model, and discharged premises |
+| 3 | A parameterized domain or system property | A checked library theorem instance, its model and discharged premises |
 | 4 | A relational property of executions or compilation | A derivation in the applicable relational logic and evidence for its leaves |
 
 For dimensional inference, integer exponents require integer-preserving solving, including divisibility conditions. Grade and escape information have their own rules. Arithmetic obligations may use cvc5 or a sound specialized analysis. The selected theory determines which conditions a procedure can establish and at what cost.
 
-Tier 3 supports reusable probabilistic results, such as almost-sure termination under stated assumptions about a loop's trials. Tier 4 extends the library workflow to relational judgments. Probabilistic relational Hoare logic, pRHL, relates distributions of executions. A compiler-relational logic relates source and target computations under specified semantics. Rocq is a proof assistant in which authors can establish the soundness of those rules or prove reusable domain theorems.
+Tier 3 supports parameterized domain and system results, including resource/protocol invariants and probabilistic results such as almost-sure termination under stated assumptions about a loop's trials. Tier 4 extends the library workflow to relational judgments. Probabilistic relational Hoare logic, pRHL, relates distributions of executions. A compiler-relational logic relates source and target computations under specified semantics. Rocq is a proof assistant in which authors can establish the soundness of those rules or prove reusable domain theorems.
 
-We intend application developers to receive automatic coverage wherever the available rules and libraries cover their program, including Tier 4. Domain authors provide the reusable proofs. The compiler instantiates them and checks their premises at each application. The accepted proof and the conditions of each application remain available to later lowering checks.
+We intend application developers to receive automatic coverage wherever the available rules and libraries cover their program, including Tier 4. Domain authors provide the reusable proofs. The compiler instantiates them and checks their premises at each application. The accepted proof and the conditions of each application remain available to later lowering checks. [Proof Composition and Tooling](/docs/internals/verification/proof-composition-and-tooling/) records the library opportunities and integration requirements. A Rocq-founded theorem retains that dependency at any tier; imported evidence is used as a checked lemma under the permitted foundation, never as a new axiom.
 
 ## Duality and Mode Translations {#the-duality-dimension-as-a-stalk-refinement}
 

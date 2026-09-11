@@ -59,42 +59,37 @@ module Graph =
             do! ensureSchema env
             let now = DateTime.UtcNow.ToString("o")
 
-            // Replace-all: clear then insert. The graph is small (a few hundred rows),
-            // so a full replace is simpler and safer than a diff, and matches the
-            // "rebuild from the full content walk every deploy" model.
-            let! _ = env.DB.prepare("DELETE FROM graph_edges").run<obj>()
-            let! _ = env.DB.prepare("DELETE FROM graph_nodes").run<obj>()
-
+            // One D1 batch is one transaction: an insertion failure must leave the
+            // previous graph intact. JSON rowsets keep this at four statements instead
+            // of thousands of sequential, individually committed requests.
             let nodeSql =
                 """
                 INSERT INTO graph_nodes
                     (page_url, content_type, layer, title, summary, tags, published_at, ext_url, category, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(page_url) DO UPDATE SET
-                    content_type=excluded.content_type, layer=excluded.layer, title=excluded.title,
-                    summary=excluded.summary, tags=excluded.tags, published_at=excluded.published_at,
-                    ext_url=excluded.ext_url, category=excluded.category, updated_at=excluded.updated_at
+                SELECT json_extract(value, '$.pageUrl'), json_extract(value, '$.contentType'),
+                       json_extract(value, '$.layer'), json_extract(value, '$.title'),
+                       json_extract(value, '$.summary'), json_extract(value, '$.tags'),
+                       json_extract(value, '$.publishedAt'), json_extract(value, '$.extUrl'),
+                       json_extract(value, '$.category'), ?
+                FROM json_each(?)
                 """
-            for n in nodes do
-                let! _ =
-                    env.DB.prepare(nodeSql)
-                        .bind(n.pageUrl, n.contentType, n.layer, n.title, n.summary, n.tags, n.publishedAt, n.extUrl, n.category, now)
-                        .run<obj>()
-                ()
 
             let edgeSql =
                 """
                 INSERT INTO graph_edges (source_url, target_url, edge_type, weight, label, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(source_url, target_url, edge_type) DO UPDATE SET
-                    weight=excluded.weight, label=excluded.label, updated_at=excluded.updated_at
+                SELECT json_extract(value, '$.source'), json_extract(value, '$.target'),
+                       json_extract(value, '$.edgeType'), json_extract(value, '$.weight'),
+                       json_extract(value, '$.label'), ?
+                FROM json_each(?)
                 """
-            for e in edges do
-                let! _ =
-                    env.DB.prepare(edgeSql)
-                        .bind(e.source, e.target, e.edgeType, e.weight, e.label, now)
-                        .run<obj>()
-                ()
+
+            let statements = ResizeArray [
+                env.DB.prepare("DELETE FROM graph_edges")
+                env.DB.prepare("DELETE FROM graph_nodes")
+                env.DB.prepare(nodeSql).bind(now, JS.JSON.stringify nodes)
+                env.DB.prepare(edgeSql).bind(now, JS.JSON.stringify edges)
+            ]
+            let! _ = env.DB.batch<obj>(statements)
 
             return box {| nodes = nodes.Length; edges = edges.Length |}
         }

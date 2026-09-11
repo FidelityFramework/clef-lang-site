@@ -180,6 +180,8 @@ The proposed durable continuation record includes the control position or recons
 
 A repeated external write needs an effect-specific protocol. Recording a local step and performing a remote action are not atomic merely because both have identifiers. The effect destination must honor an idempotency key, participate in a supported transaction, or provide another justified recovery protocol. Deduplicating replies at the collector does not undo duplicated external effects. These are the recovery distinctions already made in [ledger lowering](../the-ledger-lowering/#the-write-side-boundary-map).
 
+The [proof-composition design](/docs/internals/verification/proof-composition-and-tooling/#a-numerical-result-needs-a-protocol-to-remain-the-same-result) develops automatic elaboration of these joint numerical and protocol obligations using reusable Rocq foundations. Host-provided scheduling and durability remain explicit premises. The proposed integration preserves this document's arithmetic and recovery requirements; importing a protocol theorem cannot replace them.
+
 ## Compiler artifacts and open premises
 
 The proposed implementation should produce reviewable artifacts rather than infer correctness from an API name:

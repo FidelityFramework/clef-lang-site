@@ -11,7 +11,7 @@ params:
   migration_date: 2026-05-12
 ---
 
-We want a developer to be able to accept a useful proof suggestion while continuing to work in ordinary Clef. An analyzer might identify a region whose bound could be established by a reusable Tier 3 lemma. The editor would show the affected region and the proposed theorem application, with the premises that need checking. Accepting it would add that application to the program's verification structure and dispatch the proof work.
+We want a developer to receive the applicable proof coverage while continuing to work in ordinary Clef. The compiler derives supported obligations from the PSG, instantiates registered library lemmas and dispatches their premises automatically. The editor shows the affected region, claim and evidence. A suggestion is useful when introducing a new domain requirement or repairing a missing premise; it is not a prerequisite for applying an already supported rule.
 
 Our **mode-shift** proposal describes the interface between the reasoning involved. A mode shift would record which judgment is available, which judgment the next step requires, and how evidence can be translated between them. It belongs to the joint constraint mechanism of the Program Semantic Graph (PSG), where the source identities and the facts needed by lowering remain available.
 
@@ -19,18 +19,20 @@ Aram Hăvărneanu's *Classical Adjoint Logic* (AL) describes lawful interfaces b
 
 ## Proof suggestions and visibility {#what-mode-shifts-could-provide}
 
-The proposed editor workflow has four steps:
+The proposed automatic workflow has four steps:
 
-1. **Offer an applicable lemma.** Identify the spanning obligation and the source region it concerns. Show the lemma's conclusion and the premises that remain to be established.
-2. **Record the application.** On acceptance, instantiate the lemma with the program's actual types and values. Preserve dimensional arguments and any refinement assumptions in the PSG.
+1. **Identify the applicable law.** Derive the spanning obligation from the supported construction and its source region. Select its registered rule and retain the premises that need evidence.
+2. **Record the application.** Instantiate the lemma with the program's actual types, values and resources. Preserve dimensional arguments and any refinement assumptions in the PSG.
 3. **Dispatch its premises.** Use the lemma's registered verification procedure and the supported procedures for its side conditions. The application remains pending until the required evidence is available.
 4. **Keep the result inspectable.** Allow proof annotations to be expanded or folded. A folded annotation retains a marker with its scope and current status, and access to its premises.
 
-The visible annotation is a view of the proof application. Hiding it leaves the application in the PSG. If an edit changes a premise or the operation being justified, the affected evidence must be invalidated and checked again. Acceptance authorizes the application and its dispatch. The resulting proof status depends on that dispatch.
+The visible annotation is a view of the proof application. Hiding it leaves the application in the PSG. If an edit changes a premise or the operation being justified, the affected evidence must be invalidated and checked again. Required checks are active independently of editor presentation. The resulting proof status depends on checked evidence.
 
-Tier 3 already provides the library pattern for restricted probabilistic reasoning. A domain author establishes a reusable theorem, and application code supplies the parameters at each use. Tier 4 would extend the same workflow to relational properties. A relational proof system specifies the judgment and its rules, while a proof assistant such as Rocq can establish the reusable rules or library theorems. Automatic application coverage depends on matching those rules and proving their premises.
+Tier 3 provides the library pattern for parameterized domain and system results, including supported concurrent, distributed and restricted probabilistic reasoning. A domain author establishes a reusable theorem, and the compiler obtains the actual parameters from the program. Tier 4 extends the same workflow to relational properties. A relational proof system specifies the judgment and its rules, while a proof assistant such as Rocq can establish reusable rules or library theorems. Automatic application coverage depends on matching those rules and proving their premises. Rocq-founded evidence retains its dependency when used at Tier 3 as well as Tier 4.
 
 We envision typed quotations as one Clef-facing form for these declarations. A quotation would carry the proposition and its parameters, together with the premises and an accepted justification. Our elaborator would retain that structure for checking. The quotation makes a proposition available to the compiler. Its truth requires the justification and the applicable premises.
+
+[Proof Composition and Tooling](/docs/internals/verification/proof-composition-and-tooling/) develops the reuse of Iris, protocol libraries and Rocq through this existing mode-shift mechanism. Theorem and certificate imports are checked lemmas, never new axioms; every application retains its permitted foundation, semantic correspondence and use-site hypotheses. Framework and domain-library authors develop new laws. Ordinary application editing contains no theorem development.
 
 ## Compilation and reasoning coordinates {#extending-the-phgs-structural-dimensions}
 

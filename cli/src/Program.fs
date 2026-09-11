@@ -189,7 +189,7 @@ module Program =
                 | AnalyzeDiff _ -> "Analyze git diff to determine deployment scope"
                 | SmartDeploy _ -> "Deploy based on git diff analysis"
                 | Index _ -> "Index content into D1 FTS5 + Vectorize for search"
-                | Graph _ -> "Rebuild the corpus graph (Map modal) from content links + citations"
+                | Graph _ -> "Rebuild Atlas in D1 from content links + citations (separate from search indexing)"
                 | Purge _ -> "Purge all content from R2 bucket"
                 | Version -> "Show version"
 

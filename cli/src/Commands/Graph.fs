@@ -91,6 +91,9 @@ module Graph =
     // so a section-anchored link (…/foo/#3-2-bar) still captures; the anchor is stripped
     // to the page node below.
     let private internalLink = Regex(@"\]\((/(?:docs|blog|spec)/[a-zA-Z0-9/_#.-]+/?)\)")
+    // Relative URL links in documentation are resolved from the published page URL,
+    // just as the browser resolves them; anchors identify the same page node.
+    let private relativeLink = Regex(@"\]\((\.{1,2}/[^\s)]+)\)")
     // Relative spec→spec links use the spec's own convention: ](foo.md). These appear only
     // inside spec files and resolve to /spec/draft/<basename>/.
     let private relativeSpecLink = Regex(@"\]\(([a-z][a-z0-9-]*)\.md(?:#[a-zA-Z0-9-]+)?\)")
@@ -150,7 +153,15 @@ module Graph =
                 |> List.filter (fun f -> not (Path.GetFileName(f).StartsWith("_")))
 
             let specFiles = specBaseAndFiles |> Option.map snd |> Option.defaultValue []
-            let mdFiles = localFiles @ specFiles
+            // Drafts have no production page. Including them publishes a dead Atlas
+            // destination and also creates connections to unpublished content.
+            let mdFiles =
+                localFiles @ specFiles
+                |> List.filter (fun file ->
+                    match parseFrontMatter (File.ReadAllText(file)) with
+                    | Some (yaml, _) ->
+                        not (Regex.IsMatch(yaml, @"^draft:\s*(?:true|""true""|'true')\s*(?:#.*)?$", RegexOptions.Multiline ||| RegexOptions.IgnoreCase))
+                    | None -> true)
 
             // Pass 1: build the page node set + collect raw bodies keyed by page_url.
             let contentNodes = System.Collections.Generic.Dictionary<string, Node>()
@@ -197,6 +208,11 @@ module Graph =
                 // Absolute /docs|blog|spec links (anchor stripped to the page node).
                 for m in internalLink.Matches(body) do
                     addEdge (normalizeTarget m.Groups.[1].Value)
+                for m in relativeLink.Matches(body) do
+                    let sourceUri = Uri("https://clef-lang.com" + pageUrl)
+                    match Uri.TryCreate(sourceUri, m.Groups.[1].Value) with
+                    | true, target -> addEdge (normalizeTarget target.AbsolutePath)
+                    | false, _ -> ()
                 // Hugo {{< ref "slug" >}} cross-links (the blog convention) → resolve slug to URL.
                 for m in refShortcode.Matches(body) do
                     let slug = m.Groups.[1].Value
