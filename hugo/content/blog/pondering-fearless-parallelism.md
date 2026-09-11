@@ -9,7 +9,7 @@ tags: ["Numerics", "Concurrency", "Parallelism", "Compilation", "Hardware", "Thr
 
 Tech stacks are always promising "fearless **this**" and "fearless ***that***". Follow the promise far enough and you find conditions: use this pragma, follow this recipe on our blog (and remember it), or just leave that operation to an expert. Conditions are unavoidable in engineering.
 
-> The interesting question is who has to remember those conditions, and what happens when someone forgets.
+> The interesting question is who has to carry those conditions, and the consequence when assumptions reveal pernicious failure modes.
 
 Rust gave the phrase a memorable home in Aaron Turon's [“Fearless Concurrency”](https://blog.rust-lang.org/2015/04/10/Fearless-Concurrency/) blog post. 'Ownership' turns a substantial class of bugs into compiler diagnostics instead of late-night investigations. That is a meaningful achievement. A programmer should be able to distribute work within a program without also volunteering to become a forensic specialist in corrupted memory.
 
