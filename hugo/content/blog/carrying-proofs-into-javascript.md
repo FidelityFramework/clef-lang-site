@@ -185,7 +185,7 @@ Nor does a well-formed reply prove that a remote computation is correct. The rec
 
 > Structure, provenance, and correctness answer different questions.
 
-## A Proof Is About Execution
+## A Proof Is Above A Type
 
 The title can sound paradoxical if we think of a proof as something stored inside a type annotation. JavaScript output may carry none of the source's dimensional or refinement vocabulary. What, then, has been preserved?
 
