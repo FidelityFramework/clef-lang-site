@@ -19,7 +19,7 @@ This is a design companion to an earlier, more general treatment. Our [JavaScrip
 
 <a id="what-verified-delivery-must-establish"></a>
 
-## What We Can Establish About JavaScript Arithmetic
+## About JavaScript Arithmetic
 
 JavaScript's constrained numerical environment gives us a concrete basis for reasoning. For the ordinary `Number` operations considered here, the target is binary64 arithmetic. The compiler can work from those specified operations and select a construction whose premises it can establish. In the proposed design, recognizing a supported computation generates its numerical proof obligations automatically as part of ordinary compilation. The developer expresses the calculation and its engineering requirements; the compiler derives the arithmetic conditions needed to satisfy them. The guarantees are mathematical properties of that construction:
 
@@ -69,7 +69,7 @@ That is already a compiler-shaped question. Which values were captured? Which pr
 
 > The developer should not have to remember a different collection of defensive conventions for every `await`.
 
-## What the Cloudflare Contract Supplies
+## The Cloudflare Contract
 
 Before going deeper, we should distinguish the general JavaScript proof opportunity from the particular Cloudflare realization. JavaScript can express many execution and communication arrangements. Our Cloudflare target uses a constrained set of platform facilities and generated patterns, with declared boundaries for foreign behavior. That narrower scope gives the compiler specific invariants to establish.
 
@@ -110,7 +110,7 @@ The [scheduler contract](/spec/draft/scheduler-contract/) defines a turn from on
 
 Object identity and computation identity need separate treatment. Reaching the intended Durable Object does not establish that a reply belongs to the user's current dashboard selection. Conversely, host reactivation does not by itself mean that the application has started a new logical job or actor incarnation. The mapping must preserve the lifecycle policy the application actually declares. The source expression can remain compact while generated control flow maintains those distinctions, using host guarantees wherever they suffice.
 
-## A Mailbox Can Serialize the Wrong Answer
+## Serializing the Wrong Answer
 
 Suppose our worker actors each return a contribution to a numerical total. The collector receives one message at a time and updates its accumulator. There is no shared-memory data race. Each update is locally well behaved.
 
@@ -124,7 +124,7 @@ Changing partition sizes introduces another question. A worker that rounds a sub
 
 > Integer capacity, fixed-point rescaling, floating-point error, and exact-accumulator merging do not cease to matter because the collector happens to run in V8.
 
-## A Super-Process Without a Shared Address Space
+## Super-Process Without Sharing
 
 Now extend the dashboard into an analysis service. A job fans out over remote partitions, waits for their results, writes a report, and notifies its requester. The work may outlive any one request or isolate.
 
@@ -153,7 +153,7 @@ For the dashboard developer, the intended benefit is practical: useful work can 
 
 > Responsiveness and correctness are parts of the same application experience.
 
-## Reordering Is Not Repeating
+## Reordering Without Repeating
 
 Durable execution introduces a condition that pure numerical discussions can overlook: the same work may be attempted again. Workflow steps have retry policies and can eventually fail when those policies are exhausted. [Cloudflare retry behavior](https://developers.cloudflare.com/workflows/build/sleeping-and-retrying/).
 
@@ -169,7 +169,7 @@ The same idea reaches beyond numbers. Duplicate analysis results, repeated inven
 
 These are familiar distributed-systems concerns. The opportunity for Clef is to make the obligations visible to the compiler and bind generated mechanisms to the protocols that satisfy them.
 
-## What Must Survive When Execution Fails
+## When Execution Fails
 
 The [ledger-lowering proposal](/docs/design/javascript-targeting/the-ledger-lowering/) asks what must be retained and what can be reconstructed. This article adds a numerical and actor-specific reason to ask it carefully.
 
@@ -201,7 +201,7 @@ At an open boundary, static reasoning can establish that the generated checker a
 
 This also avoids a different confusion: generating a solver query about a model of an operation is not proof that arbitrary JavaScript or a remote service implements that model. The preservation relationship is part of the engineering work, not a detail hidden by the word “verified.”
 
-## The Host Participates in the Argument
+## Participating in the Argument
 
 The JavaScript engine and host services still execute the emitted artifact. Unless separately verified, their relevant semantics are assumptions of the result. Naming those assumptions makes the claim assessable: which arithmetic is required, which storage update is atomic, which callback discipline applies, and which external operations may fail?
 
@@ -213,7 +213,7 @@ Cloudflare's Durable Objects illustrate why host facilities need specific descri
 
 There is an efficiency question here as well. Finer partitions expose more independent work but create more messages, durable records, and joins. An exact partial accumulator can be larger than a rounded scalar. Reconstructing state saves storage while spending computation. The [cost-of-coordination analysis](/blog/counting-the-cost-of-coordination/) belongs beside these choices, applied only after their semantic eligibility is established.
 
-## Keeping the Promise at the Return Point
+## The Promise at the Return Point
 
 The application author wants to divide useful work, keep an interface responsive, recover from interruption, and make use of available resources. The person using that application wants the right measurements on the screen, a report they can trust, and an operation that survives a disrupted connection without counting the same result twice. The compiler's obligations matter because those ordinary expectations matter.
 
