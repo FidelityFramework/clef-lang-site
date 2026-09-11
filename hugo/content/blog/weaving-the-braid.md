@@ -18,6 +18,8 @@ Forks and joins describe the control around launched work. A future can hold a p
 
 The earlier [Kite work on braided parallelism](https://ieeexplore.ieee.org/document/6272260/) explored interleaved task and data parallelism on heterogeneous systems. We're going to take the word and run with it. The crossing is the return point through which parallel results re-enter sequential control. We want the compiler to keep that crossing explicit while choosing implementations for the surrounding work.
 
+[Pondering Fearless Parallelism](/blog/pondering-fearless-parallelism/) follows the numerical side of that crossing: what happens when changing a reduction's grouping changes its rounded answer, and how arithmetic constructions can give the compiler stronger laws for parallel execution.
+
 > **Width, in this post.** Think of the work available side by side, once its prerequisites are met. For a finite dependency order, *dependency width* is the size of its largest antichain: the largest set of operations with no dependency path between them. [Dilworth's theorem](https://doi.org/10.2307/1969503) identifies it with the minimum number of chains covering the order. The longest chain describes a different property, dependency depth. Neither quantity alone determines utilization on a particular processor.
 >
 > *Bit width* describes a value's numeric representation, as determined through [width inference](/spec/draft/width-inference/). The two uses of “width” concern different compiler decisions.

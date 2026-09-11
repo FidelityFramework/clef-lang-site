@@ -27,7 +27,11 @@ How the DTS maps dimensional constraints to the decidable `QF_LIA` fragment for 
 
 How Composer lowers the PSG into MLIR dialects, how Alex selects between `arith`, `memref`, `scf`, and `cf` dialects based on type information, how the MLIR test infrastructure validates generated IR, and how the pipeline produces native code through LLVM. Includes an introduction to MLIR for developers coming from other compiler backgrounds.
 
-### [Hardware Targets](targets/)
+### [Numerics](numerics/)
+
+Arithmetic construction and placement: how a functional operation can retain rounding residuals, accumulate exactly, or preserve a reproducible reduction structure. The design connects numeric-selection obligations to CPU, GPU, tile and FPGA realizations, including memory and communication costs.
+
+### [Hardware Targets](hardware/)
 
 Target-specific code generation. Cache-conscious memory management for both CPU and GPU architectures, embedded platform support for STM32 and Cortex-M targets, and AMD RDNA unified memory architecture for desktop GPU compute. Each article covers how Composer adapts its lowering strategy to the constraints and opportunities of a specific hardware platform.
 
@@ -35,10 +39,10 @@ Target-specific code generation. Cache-conscious memory management for both CPU 
 
 Farscape provides C and C++ interoperability for Clef. These articles cover binding generation from C++ headers, modular entry points for mixed-language projects, and the design decisions that allow Clef to call into and be called from native C/C++ code without marshaling overhead.
 
-### [Developer Tooling](tooling/)
+### [Developer Tooling](/docs/tooling/)
 
 Lattice is the Clef language server, built on the saturated PSG. It provides design-time diagnostics, escape classification visibility, dimensional verification feedback, and restructuring proposals directly in the editor. These articles also cover autocomplete integration with the Fidelity ecosystem and the test harness for compiler validation.
 
-### [Hardware Architecture](hardware/)
+### [Memory Fabrics](memory-fabrics/)
 
-Hardware-level concerns that inform Composer's code generation decisions. RDMA networking for low-latency actor communication, next-generation memory coherence models that shape how Composer reasons about shared state, and the silicon-level arithmetic architectures (ternary quantization, posit formats) that the DTS representation selection targets.
+Memory and communication across execution resources: RDMA networking, unified-memory arrangements and coherence contracts. These articles explain the platform facts and handoff conditions needed when computation crosses a processor or machine boundary.

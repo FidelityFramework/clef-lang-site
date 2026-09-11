@@ -804,6 +804,14 @@ code, pre, kbd {
   .chroma .w   { color: #6e7681 }
 }
 
+/* Keep wide display equations scrollable without widening the page. */
+.content .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.2em;
+}
+
 /* ── Mermaid diagrams: center the rendered SVG ─────────────────
    Hextra renders mermaid as <pre class="mermaid">, and mermaid.js
    replaces the content with an inline <svg> that defaults to the
