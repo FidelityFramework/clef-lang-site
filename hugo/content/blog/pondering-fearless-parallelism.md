@@ -1,7 +1,7 @@
 ---
 title: "Pondering Fearless Parallelism"
 linkTitle: "Pondering Fearless Parallelism"
-description: "What if a compiler could explain—and preserve—the numerical meaning of parallel work, from ordinary floating-point instructions to a quire in FPGA fabric?"
+description: "What if a compiler could explain and preserve the numerical integrity of parallel work?"
 date: 2026-09-10
 authors: ["Houston Haynes"]
 tags: ["Numerics", "Concurrency", "Parallelism", "Compilation", "Hardware", "ThreeBody"]
