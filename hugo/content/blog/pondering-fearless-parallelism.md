@@ -104,7 +104,7 @@ flowchart TB
 
 The practical ambition is that an application author sees a coherent explanation. A reduction is reproducible under these decompositions; a buffer remains live until this completion event; an unresolved bound prevents this exact-accumulation candidate from being selected. Those are engineering findings attached to the code at the time of authorship.
 
-## A Float Can Be Part of a Larger Number
+## Floating an Idea
 
 Here is the part that deserves a more precise look. Using a floating-point processor does not require representing every intermediate mathematical quantity in a single floating-point value.
 
@@ -177,7 +177,7 @@ Both can be accumulated exactly *after* their terms have been defined. They are 
 
 For the developer, the relevant menu is therefore more informative than “float or posit.” It includes an ordinary specified fold, a fixed-tree reduction, a compensated reduction with its bound, a reproducible construction, and an exact accumulator with a final rounding rule. The compiler needs to know what is available from the hardware, and which of these answers the application has described before it can determine which implementation is 'cheapest' for the given precision and parallelism requirements.
 
-## Enough Bits Is Only the Beginning
+## Bits Are Only the Beginning
 
 There is another distinction worth making before we put those partial results together. Rust's [integer-overflow discussion](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow) specifies two's-complement behavior when arithmetic wraps. That provides which bits result; **but *importantly*** it does not prove that the mathematical answer fits. Rust inserts overflow checks in debug builds, and its [compiler settings](https://doc.rust-lang.org/rustc/codegen-options/index.html#overflow-checks) can enable them in other builds. An explicit wrapping operation asks for modular arithmetic intentionally.
 
@@ -263,7 +263,7 @@ Notice what had to be supplied: the same terms, a partition that neither omits n
 
 NaNs, infinities, signed zero, posit NaR, observable exceptions and overflow do not disappear just to make the diagram look tidy. A construction *can* exclude some of those wrinkles through established range facts, or specify how to handle them. Either way, they belong in its domain and result contract. The finite exact-sum argument above should not be mistaken for a theorem about every possible bit pattern. For the broader range of cases we expect to enumerate options compatible with the hardware capabilities and representative selection of patterns that will expand as the framework matures.
 
-## How the Quire Informs the Contract
+## The Quire Contract
 
 A posit quire gives this exact-accumulation construction a particularly direct representation. Products of represented posit inputs accumulate in a wide fixed-point state. The computation rounds when it converts that state to its declared result representation.
 
@@ -321,7 +321,7 @@ AMD's [rocPRIM reduction interface](https://rocm.docs.amd.com/projects/rocPRIM/e
 
 We are committed to embracing those constructive constraints ***at design time*** before selecting a given decomposition pattern. HIP describes a programming and dispatch environment; it does not supply a general theorem about the user's arithmetic. Our Composer compiler's existing AMD GPU backend takes MLIR through GPU and ROCDL lowering to a code object. Extending the numerical analysis can feed that native path without requiring Clef source to become HIP C++. Loading, dispatch and completion still require explicit platform bindings, which we intend to express directly in Clef without C helper code.
 
-## A Tile Can Construct Arithmetic Too
+## A Tile Can Do Math Too
 
 Spatial AI engines give us an illuminating example of arithmetic assembled from other arithmetic. AMD documents [FP32 emulation on AIE-ML](https://docs.amd.com/r/en-US/ug1603-ai-engine-ml-kernel-graph/Floating-Point-Accuracy) using several BF16 components. Its accuracy modes expand multiplication into different sequences of vector multiply and multiply-accumulate operations. The documented examples use three, six or nine such operations, with different accuracy behavior and explicit treatment of small values.
 
@@ -344,7 +344,7 @@ flowchart TB
 
 An accuracy/performance mode is an informative candidate, provided its actual error contract is acceptable. Selecting it silently because the NPU is idle would confuse a placement opportunity with permission to alter the precision of an outcome without an *informed choice*.
 
-## A Quire with an Ethernet Address
+## Quire Over Ethernet
 
 The other end of our ThreeBody setup is an Arty A7-100T FPGA. We want to give the posit/quire path fair play on hardware that actually implements its arithmetic, rather than judge it entirely by software running on a processor optimized for IEEE floating-point operations.
 
@@ -418,7 +418,7 @@ The current spec deliberately keeps performance out of the representation-select
 
 The ***pit of success*** is therefore not a compiler that guesses a preferred trade-off. It is a hands-free toolchain that makes the admissible choices understandable, selects (and allows developer selection/overrides) within declared goals, and explains when those goals cannot be met under the selected constraints.
 
-## Count the Graph That Does the Work
+## A Graph That Flows
 
 Our [flow-loss analysis entry](/blog/going-deep-with-flow-loss-analysis/) gives this discussion another dimension. It asks how much of a computation's available parallel structure survives a realization. Arithmetic construction changes that structure itself.
 
@@ -438,7 +438,7 @@ It is useful to record arithmetic, data movement, synchronization and boundary c
 
 Private accumulation can remove shared contention. A larger offloaded region can avoid repeated host crossings. A different layout can make vector operations useful. The analysis should identify the opportunity, predict under a declared model and then meet the counters and timing measurements with its predictions still attached.
 
-## Experimenting with Numerical Futures
+## Experimenting with Numerics
 
 Our ThreeBody sample project is an experiment to explore this solution space visually. A few moving points can expose the numerical consequences of choices that otherwise disappear into a benchmark table. Research has helped focus that experiment on exact accumulation, conservation diagnostics and the limits of computational reversal.
 
@@ -469,7 +469,7 @@ Reducing initial error by a factor \(k\) would extend that illustrative horizon 
 
 The quire can remove accumulation rounding. It cannot restore coordinates already rounded before subtraction, make a reciprocal or square root exact, or remove discretization error. A longer useful horizon is therefore a hypothesis to test across initial conditions and timesteps. Posit32 and FP64 also have different input precision and range behavior. We should show where a benefit appears, where it disappears, and which stage explains it.
 
-## Give the Demonstration Three Axes
+## Three Axes
 
 There are really three experiments to display together.
 
