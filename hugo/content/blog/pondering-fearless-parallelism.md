@@ -148,7 +148,9 @@ At the LLVM level the core is equally ordinary:
 
 The instructions form a small dependency graph. The two results can remain SSA values, then machine registers. Returning a source-language pair does not force an allocation. Whether a larger surrounding program keeps every component in registers depends on its register pressure and lowering; that is a question we can inspect rather than assume.
 
-This little graph also makes a compiler hazard visible. Algebraic simplification over real numbers would conclude that the residual is zero. Floating-point rounding is precisely what makes it useful. LLVM's [fast-math permissions](https://llvm.org/docs/LangRef.html#fast-math-flags) can come to bear here. A construction that relies on these operations cannot casually inherit reassociation permissions that invalidate its argument. More elaborate control of the floating-point environment may require constrained operations. And what's more, the proof has to describe the instructions we actually emit. Automating that proof is what would make this pathway fearless under its stated contract.
+This little graph also makes a compiler hazard visible. Algebraic simplification over real numbers would conclude that the residual is zero. Floating-point rounding is precisely what makes it useful. LLVM's [fast-math permissions](https://llvm.org/docs/LangRef.html#fast-math-flags) can come to bear here. A construction that relies on these operations cannot casually inherit reassociation permissions that invalidate its argument. More elaborate control of the floating-point environment may require constrained operations. And what's more, the proof has to describe the instructions we actually emit. 
+
+> Automating that proof is what would make this pathway fearless under its stated contract.
 
 ## Compensation Is A Process
 
