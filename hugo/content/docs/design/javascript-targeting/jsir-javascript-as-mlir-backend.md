@@ -242,5 +242,8 @@ That is a practical direction for engineering: keep the current byte and runtime
 
 ## See also
 
+- [Proof Preservation Across Actors and Workflows](../proof-preservation-across-actors-and-workflows/): continuation, partition/join, arithmetic, and durable-recovery obligations for the proposed JavaScript realization.
+- [Carrying Proofs into JavaScript](/blog/carrying-proofs-into-javascript/): the narrative companion to Pondering Fearless Parallelism, following a logical computation across suspension and isolate boundaries.
+
 - [A Runtime Revolution, sort of...]({{< ref "runtime-revolution-fidelity" >}}): the blog-layer framing of this same JSIR-on-Cloudflare story, walking through why the unified middle-end matters for Workers and how BAREWire carries the contract across the erasure boundary.
 - [Cloudflare Agents and the Boundary Map](/docs/design/javascript-targeting/cloudflare-agents-and-the-boundary-map/): the worked example of this mechanism against Cloudflare's AI-agent surface, where generated per-boundary narrowing spans the request, WebSocket, AI-inference, SQLite, state-sync, and RPC edges a Durable Object multiplies.

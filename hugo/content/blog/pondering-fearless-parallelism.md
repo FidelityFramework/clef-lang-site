@@ -75,6 +75,8 @@ There are applications where that narrower promise is exactly right. A compatibi
 
 ## Four Questions
 
+The companion [Carrying Proofs into JavaScript](/blog/carrying-proofs-into-javascript/) follows this problem through actor replies, event-loop suspension, and durable workflows. A single-threaded isolate removes simultaneous local callback execution; it does not establish which replies belong together, whether a retry repeats a contribution, or which numerical merges are permitted.
+
 We should take a moment to unpack four things a developer might mean by "fearless parallel" work.
 
 | Question | Evidence needed |

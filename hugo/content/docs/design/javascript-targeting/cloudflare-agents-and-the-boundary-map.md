@@ -50,4 +50,6 @@ A useful sounding-board exercise is to map the same application in an ML-family 
 
 ## Status
 
+Boundary shape checks are one part of the actor contract. [Proof Preservation Across Actors and Workflows](../proof-preservation-across-actors-and-workflows/) adds logical job and actor-incarnation correspondence, validity across suspension, permitted numerical merges, and durable acceptance of retried contributions. A well-shaped reply does not establish those behavioral properties. [Carrying Proofs into JavaScript](/blog/carrying-proofs-into-javascript/) develops the application-facing motivation.
+
 The SDK surface must be reviewed against pinned releases. Clef-via-JSIR emission, actor-lifecycle generation, and per-boundary narrowing are design intent. The next evidence is a bounded, reproducible contract-to-artifact example, followed by bindings and checks generated for explicitly inventoried SDK entry points.

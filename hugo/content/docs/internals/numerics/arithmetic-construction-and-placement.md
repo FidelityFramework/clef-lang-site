@@ -58,6 +58,8 @@ These distinctions are established numerical methods, rather than new scalar typ
 
 Race freedom, numerical reproducibility, and trajectory accuracy are separate properties. A repeatable calculation can consistently give an inaccurate result. An accurate algorithm can still have unsafe buffer publication.
 
+Distributed actor execution adds logical contribution identity and retry handling. Associativity and commutativity permit regrouping and reordering, not duplicate insertion. [Proof Preservation Across Actors and Workflows](/docs/design/javascript-targeting/proof-preservation-across-actors-and-workflows/) connects the numerical contract to suspension, consistent acceptance, and durable recovery; [Carrying Proofs into JavaScript](/blog/carrying-proofs-into-javascript/) supplies the narrative companion.
+
 ## Capacity is not an accuracy proof
 
 [Numeric Selection §10.5](/spec/draft/numeric-selection/#105-capacity-error-and-decomposition-obligations) separates the obligations by arithmetic family. A format's range and representation-error profile are inputs to the analysis; neither is an error bound for a complete calculation.

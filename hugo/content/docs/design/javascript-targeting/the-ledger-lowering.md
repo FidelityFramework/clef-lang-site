@@ -32,6 +32,8 @@ The third artifact would be generated recovery code beside the forward path. Seg
 
 ## Typed Checkpoints
 
+Recovery must also preserve which logical contributions have been accepted and which continuation is eligible to resume. [Proof Preservation Across Actors and Workflows](../proof-preservation-across-actors-and-workflows/#partition-and-join-contract) specifies the join invariant, consistent acceptance state, and numerical reconstruction conditions. Repeating an exact contribution changes a sum; exact arithmetic does not supply duplicate suppression.
+
 A typed checkpoint would describe the live values, control position, version, and external observations required at a suspension. BAREWire can provide a common byte layout across JavaScript and native endpoints. Resuming a computation across them additionally requires corresponding continuation/state-machine semantics, compatible code versions, and valid target-local resources; sharing the frame definition alone does not migrate a V8 continuation. Checkpoint size depends on that live state and must be measured.
 
 ## Anchor Placement
