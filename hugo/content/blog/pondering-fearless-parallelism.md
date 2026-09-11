@@ -1,7 +1,7 @@
 ---
 title: "Pondering Fearless Parallelism"
 linkTitle: "Pondering Fearless Parallelism"
-description: "What if a compiler could explain and preserve the numerical integrity of parallel work?"
+description: "What if a compiler could explain and preserve the integrity of parallel work?"
 date: 2026-09-10
 authors: ["Houston Haynes"]
 tags: ["Numerics", "Concurrency", "Parallelism", "Compilation", "Hardware", "ThreeBody"]
@@ -175,7 +175,39 @@ Both can be accumulated exactly *after* their terms have been defined. They are 
 
 For the developer, the relevant menu is therefore more informative than “float or posit.” It includes an ordinary specified fold, a fixed-tree reduction, a compensated reduction with its bound, a reproducible construction, and an exact accumulator with a final rounding rule. The compiler needs to know what is available from the hardware, and which of these answers the application has described before it can determine which implementation is 'cheapest' for the given precision and parallelism requirements.
 
-There is a welcome consequence for machines whose efficient arithmetic is IEEE floating point. They are not excluded from the investigation. We can construct stronger numerical behavior from the instructions they already provide. The extra work is real, but it's worth expanding on how the opportunity is real as well. We're expecting to provide these mechanics in analyzers and other code helpers to make both the decision and placement easy and informed. And here we're doing a deeper dive to show what we intend for compiler services to provide in a fully fleshed-out implementation.
+## Enough Bits Is Only the Beginning
+
+There is another distinction worth making before we put those partial results together. Rust's [integer-overflow discussion](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow) specifies two's-complement behavior when arithmetic wraps. That provides which bits result; **but *importantly*** it does not prove that the mathematical answer fits. Rust inserts overflow checks in debug builds, and its [compiler settings](https://doc.rust-lang.org/rustc/codegen-options/index.html#overflow-checks) can enable them in other builds. An explicit wrapping operation asks for modular arithmetic intentionally.
+
+Clef's direction is **different**, and that is to establish the required capacity during ordinary compilation. Two values each between zero and 255 can sum to 510. That takes nine unsigned bits, regardless of how conveniently they arrived in eight-bit fields. CCS already supplies integer range analysis, and Composer consumes those facts when lowering integer operations. Extending that discipline to the rest of our numerical machinery requires more than giving every value enough bits.
+
+Fixed point makes the distinction tangible. Write a value as an integer carrier times a scale:
+
+\[
+x=X2^{-f},\qquad y=Y2^{-g},\qquad xy=(XY)2^{-(f+g)}.
+\]
+
+The product can fit perfectly while needing a different scale. With four fractional bits, the carriers `3` and `5` represent `3/16` and `5/16`. Their exact product is `15/256`. Round it back to four fractional bits and we get `1/16`, or `16/256`. Nothing overflowed. Information was lost when we changed scale.
+
+Same-scale addition can inherit exact integer arithmetic when every permitted partial sum fits. Multiplication and rescaling need their own account of discarded bits and error. Fixed point is useful, but its name is not a proof of an entire algorithm.
+
+Floating point needs another account again. Our opening example with the two large opposing values and the small contribution never approached overflow. Having enough exponent range did nothing to preserve that contribution. The error came from where the computation rounded.
+
+| Question | What the compiler must establish |
+|---|---|
+| Will it fit? | Capacity of operands, intermediates and boundaries |
+| What information can it lose? | Scale changes, rounding points and propagated error |
+| Can workers regroup it? | Permitted decomposition, merge laws and finalization |
+
+The developer should not have to activate these questions one arithmetic wrapper at a time. The [specified direction](/spec/draft/numeric-selection/#105-capacity-error-and-decomposition-obligations) is automatic analysis, with the required evidence carried through compilation. The broader fixed-point, error-propagation and construction analyses is still in front of us at this writing. An *intelligent* compiler that has established capacity must still be honest when accuracy or merge conditions remain unresolved.
+
+There is a welcome consequence for machines whose efficient arithmetic is IEEE floating point. With those separate obligations understood, we can construct stronger numerical behavior from the instructions they already provide. That opportunity reaches well beyond scientific simulations.
+
+Picture an interactive touch screen on an IoT device. New sensor readings need processing, the display needs fresh data, and the next touch should receive a prompt response. The developer wants to put the device's available parallel resources to work while keeping the displayed measurements trustworthy. Safe handoffs and scheduling address part of that goal. The arithmetic matters when splitting the numerical work changes the answer: we want freedom to distribute that work without making its result depend on which worker finishes first. The developer should be able to express the calculation and inspect the toolchain's choices without maintaining a separate numerical recipe for every execution arrangement.
+
+> The merge laws below are what make that freedom precise.
+
+They establish which partial results can safely meet, so the implementation can exploit parallel execution while preserving the requested answer.
 
 ## An Algebraic Side Bar
 
@@ -273,6 +305,8 @@ This is the setting in which “negative cost of abstraction” considerations b
 
 We should compare the resulting programs, including a strong hand-written baseline. Adding an abstraction and counting fewer source lines proves very little. Removing contention while preserving the requested answer is an engineering result worth measuring.
 
+Now put that work inside an Android or iOS application. The developer's goal might be a dynamic chart, a responsive image adjustment, or a visualization that keeps pace with a finger on the screen. Latency, battery use and sustained performance all belong in that goal. Making effective use of the application's available resources could mean processing independent work together, shortening a burst of activity, or avoiding transfers that consume time and energy. We want the toolchain to expose those opportunities against the application's numerical and resource requirements, with measurements to establish which choices actually help. To do that, we need to follow the computation into the accelerator: its registers, shared memory and coordination costs determine how much useful parallel work it can sustain. With that, we do everything we can to maintain a straightforward design-time experience that looks like 'ordinary code' in the majority of application design scenarios.
+
 ## A GPU Is Another Animal
 
 On a GPU, the same extra accumulator components consume per-thread registers. More components can reduce the number of resident waves, introduce spills or change how a reduction uses shared local memory.
@@ -349,6 +383,8 @@ An ordinary sequential fold whose specified behavior rounds after every addition
 Likewise, finding a familiar pattern in a graph is not the same as establishing its preconditions. Range evidence has to cover the operands and intermediates. Aliasing and effects have to permit decomposition. If a construction depends on a special rounding environment, that requirement must survive calls and boundaries that could change it, including the targeted hardware.
 
 As daunting as it can be to consider all of this information, the mechanics of this can still be a welcoming developer experience. The compiler knows the source locations, the contributing values and the target facts. It can attach an unresolved accumulator bound to the reduction that needs it, show the upstream range that is missing, and preserve the obligation while inference continues. When commitment is required, a missing premise should become a precise diagnostic with options to supply the best choice(s) for a given design.
+
+Several analyses can contribute: range and relational facts establish bounds; scale and divisibility facts identify exact rescaling; error analysis follows rounding through the operation graph; reduction analysis establishes which worker states can merge. The [internals companion](/docs/internals/numerics/arithmetic-construction-and-placement/#automatic-analyses-and-their-responsibilities) separates these responsibilities and their implementation status. Generating an obligation is automatic work we can require of the compiler. Successfully proving every obligation in every program is a different claim. An unresolved premise must remain visible, and switching to an optimized build must not make it disappear.
 
 ```mermaid
 flowchart TB
@@ -467,7 +503,7 @@ Developers reach for parallelism to solve larger problems, shorten the wait for 
 
 That is what it means to bring **fearless parallelism** into the developer's standard lexicon: freedom to use the parallel structure that best suits your solution, with the compiler offering checked numerical contracts, without schedule-dependent rounding surprises and other *gotchas* rearing their ugly heads at runtime.
 
-There will still be little surprises along the way. A hardware target may not meet a timing deadline. An exact accumulator may require more capacity. An application may deliberately prefer a bounded approximation. 
+There will still be little surprises along the way. A hardware target may not meet a timing deadline. An exact accumulator may require more capacity. An application may deliberately prefer a bounded approximation.
 
 > The pit of success is that these choices become visible, informed and checked where the developer makes them in context with other design considerations.
 

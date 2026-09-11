@@ -3,7 +3,7 @@ title: "Rounding on Real Hardware"
 linkTitle: "Rounding on Real Hardware"
 description: "Operation-specific rounding capabilities, sound enclosures, finite accumulation and the evidence required for target lowering."
 weight: 60
-lastmod: 2026-09-10
+lastmod: 2026-09-11
 ---
 
 This page explains the hardware considerations behind the
@@ -183,6 +183,16 @@ Fixed-point spacing is determined by the selected scale. Discarding fractional
 bits requires an operation-specific rounding rule; floor and truncation toward
 zero differ for negative values. Overflow policy is a separate axis.
 
+For values `X · 2^(-f)` and `Y · 2^(-g)`, the exact product carrier is `X · Y`
+at scale `2^(-(f+g))`. Product capacity must be established before rescaling.
+Discarding `d` fractional bits is exact only when the carrier is divisible by
+`2^d`; otherwise the selected rule introduces quantization error. Nearest
+rounding at output spacing `Δ` has local absolute error at most `Δ/2`, without
+clipping. Subsequent operations can amplify that error, so it is not an
+application-level bound. Same-scale addition with adequate partial-sum capacity
+can be exact even when the surrounding multiply/rescale computation is not.
+[Rounding §6.1](/spec/draft/rounding/#61-fixed-point-scale-and-error)
+
 Clef's selection design does not default dimensioned values to saturation. If an
 admitted range exceeds a boundary, coverage fails. A program can state `clamp`
 or modular arithmetic explicitly; the compiler may use a target's saturating or
@@ -191,13 +201,28 @@ wrong for a physical model, while wrapping can be correct for a deliberately
 modular quantity. Neither is universally safe, and neither restores information
 lost outside a finite representation.
 
+Two's-complement encoding defines the signed interpretation of carrier bits.
+Defined wrapping does not establish that a mathematical result fits. Likewise,
+floating-point range coverage does not establish accuracy: cancellation and
+rounding can lose information without overflow. The compiler needs separate
+capacity, error, and decomposition evidence for each arithmetic family.
+[Numeric Selection §10.5](/spec/draft/numeric-selection/#105-capacity-error-and-decomposition-obligations)
+
 ## How the design carries rounding
 
-Composer would retain operation semantics, range evidence, selected representation,
-rounding obligations and transfer error in the graph. A target realization must
+CCS supplies analyzed facts on the PSG; the proposed Composer construction path
+would retain operation semantics, selected representation, rounding obligations
+and transfer error through lowering. A target realization must
 consume those requirements and preserve them through optimization. Unresolved
 soundness requirements must remain pending during analysis and fail at commitment
 if no sound realization is available.
+
+The specified obligation checks run independently of build mode and require no
+opt-in arithmetic wrapper. Existing integer analysis is a foundation, not an
+implementation of general floating-point error propagation. A proof timeout or
+unknown hardware mode remains unresolved evidence. Runtime checking can establish
+a premise only where the source or boundary contract permits it and defines
+failure behavior; it cannot silently replace a promised static guarantee.
 
 The proposed execution organization assigns arena ownership and orchestration to
 Prospero, work to Olivier actors and ready-turn scheduling to Ariel. Scheduling

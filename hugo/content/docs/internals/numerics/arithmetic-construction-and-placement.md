@@ -58,6 +58,64 @@ These distinctions are established numerical methods, rather than new scalar typ
 
 Race freedom, numerical reproducibility, and trajectory accuracy are separate properties. A repeatable calculation can consistently give an inaccurate result. An accurate algorithm can still have unsafe buffer publication.
 
+## Capacity is not an accuracy proof
+
+[Numeric Selection §10.5](/spec/draft/numeric-selection/#105-capacity-error-and-decomposition-obligations) separates the obligations by arithmetic family. A format's range and representation-error profile are inputs to the analysis; neither is an error bound for a complete calculation.
+
+| Arithmetic | Capacity argument | Additional obligations |
+|---|---|---|
+| Integer | Every required intermediate is exactly representable | Operation definedness, boundary coverage, permitted modular semantics |
+| Fixed point | Integer carriers and widened intermediates fit | Scale alignment, rescaling, quantization, propagated error |
+| IEEE or rounded posit | Established magnitudes are covered | Rounding points, cancellation, subnormal and exceptional behavior, error and decomposition scope |
+| Exact accumulator | Terms, partial states, and merge intermediates fit | Exact term formation, merge laws, prescribed finalization; earlier input and method errors remain |
+
+Two's-complement wrapping specifies the bits produced by modular arithmetic. It does not detect overflow or prove that the result equals an ordinary integer calculation. A signed eight-bit wrapped `120 + 20` gives `-116`. That behavior can be correct for an explicitly modular operation and incorrect for a measured quantity.
+
+For two operands in `[0, 255]`, an exact sum requires `[0, 510]`: nine unsigned bits. A native target may use a covering wider instruction; fabric can use the exact width. A later modulo-256 operation has an eight-bit result, but that result range alone does not justify overflowing an earlier exact intermediate. An optimization can collapse the complete expression into modular machine arithmetic only after establishing equivalence, including the sign behavior of the source remainder operation.
+
+### Fixed point carries scale as well as bits
+
+Let \(x=X2^{-f}\) and \(y=Y2^{-g}\). The integer carriers \(X,Y\) encode values at their respective scales. Their exact product is
+
+\[
+xy=(XY)2^{-(f+g)}.
+\]
+
+For example, with four fractional bits, `X = 3` and `Y = 5` represent `3/16` and `5/16`. Their product carrier `15` at eight fractional bits represents `15/256` exactly. Returning to four fractional bits under nearest rounding gives carrier `1`, representing `16/256`. No overflow occurred; rescaling introduced error `1/256`.
+
+Divisibility can establish when discarded bits contain no information. Reducing the product's fractional-bit count by `d` is exact when its carrier is divisible by \(2^d\). Otherwise a rounding rule and error contribution are needed. One nearest rounding at output spacing \(\Delta\) has error at most \(\Delta/2\), without clipping; this is a local bound. A later multiplication or sensitive nonlinear operation can amplify it. [Rounding §6.1](/spec/draft/rounding/#61-fixed-point-scale-and-error) specifies the obligations.
+
+Same-scale sums with adequate intermediate capacity inherit exact integer addition. That permits regrouping those sums. It does not permit moving lossy rescaling across multiplication, assuming saturation is associative, or declaring a whole fixed-point algorithm exact.
+
+### Floating point needs a different error argument
+
+The binary64 cancellation example above overflows nowhere. A capacity proof therefore leaves its grouping-dependent result unchanged. Error analysis needs the actual rounded operation graph, including operand dependencies, term formation, FMA use, and the admitted arithmetic environment. An outward enclosure can justify bounds; an error bound additionally identifies the reference quantity being approximated.
+
+Error relative to exact operations on represented inputs differs from error relative to ideal inputs or a physical model. Input quantization, arithmetic rounding, and numerical-method error must remain distinguishable when composing an application-level claim. A fixed-tree reduction may be reproducible while inaccurate; an error-bounded reduction need not be bitwise reproducible.
+
+## Automatic analyses and their responsibilities
+
+The specified checks belong to ordinary compilation, independent of debug settings or opt-in wrappers. Developers still supply application meaning and justified input contracts where inference cannot establish them. The compiler cannot infer a desired accuracy goal from an instruction set or invent a physical input bound from an MMIO field's capacity.
+
+CCS already runs integer range analysis during saturation, with arbitrary-precision interval endpoints, guard refinements, and loop widening. Uncovered platform integer ranges produce a hard coverage diagnostic. Composer's integer binary-operation lowering consumes settled operand and result ranges for widths and sign extension. These are implemented foundations, not evidence that the complete real-arithmetic analysis below exists.
+
+| Mechanism | Contribution | Status in this design |
+|---|---|---|
+| Integer interval and relational propagation | Widths, applicable guard facts, intermediate ranges | Existing CCS foundation; operation and lowering coverage still require validation |
+| Scale, congruence, and known-bit reasoning | Exact alignment and rescaling; justified masks or modular realizations | Required facts identified; a unified fixed-point analysis is not implemented here |
+| Numerical error propagation | Bounds through rounding, dependencies, cancellation, and transfers | Required contract; analysis algorithms and evidence encoding remain open |
+| Domain invariants and supported proof procedures | Discharge conditions not settled by propagation | Each law needs premises; solver theory and encoding must match the obligation |
+| Reduction and merge analysis | Permitted partitions, multiplicities, accumulator capacity, finalization | Specified construction obligations; integrated selector remains proposed |
+| Lowering preservation | Keep emitted widths, arithmetic modes, and boundaries consistent with the proof | Required through the compilation chain; no completed cross-target numerical audit is claimed |
+
+These mechanisms cooperate through justified facts on the PSG. A conservative interval can be refined by a valid relational fact; it is not a list of values known to occur. A timeout, unsupported theory, or insufficiently tight bound is unresolved evidence, not a counterexample. Each analysis must terminate under its admitted procedure and preserve soundness, including in its own bound arithmetic.
+
+At commitment, required unresolved facts produce a located diagnostic. A runtime check can establish a premise on its success path only where the source or boundary contract permits that check and specifies failure behavior. It cannot silently replace a static guarantee. Nor may an automatic selector change a rounded fold into an exact reduction merely to satisfy a numerical goal.
+
+LLVM illustrates why preservation matters. Its plain integer `add` has modular bit semantics; `nsw` and `nuw` assert conditions whose violation produces poison. They are not dynamic checks. Overflow-reporting intrinsics return a result and status for an explicitly checked realization. The compiler must justify the selected instruction and any flags from the operation contract. [LLVM addition](https://llvm.org/docs/LangRef.html#add-instruction), [overflow intrinsics](https://llvm.org/docs/LangRef.html#arithmetic-with-overflow-intrinsics).
+
+Useful acceptance cases include a fitting final result with an overflowing partial sum; exact and inexact fixed-point rescaling; negative floor versus truncation; finite floating-point cancellation without overflow; and the same exact reduction across admitted partitions. Validation should also exercise stale mutable-bound evidence and build-mode consistency. Arithmetic tests do not replace proof of the construction, and numerical proof does not replace ownership, publication, or progress checks.
+
 ## Functional residual arithmetic
 
 TwoSum illustrates a construction using ordinary floating-point operations. In the following schematic Clef expression, each operation has the same selected IEEE format and round-to-nearest, ties-to-even rule:
