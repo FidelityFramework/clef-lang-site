@@ -13,9 +13,45 @@ Most of our considerations around JavaScript targeting center on Cloudflare as a
 
 In [Pondering Fearless Parallelism](/blog/pondering-fearless-parallelism/), we explored how a compiler might establish which ways of dividing numerical work preserve its answer. That discussion reaches naturally into JavaScript. A single isolate simplifies one part of execution; a useful application can involve many isolates, many suspended operations, and several generations of a calculation in flight.
 
-The next question is which obligations establish "fearless" concurrency and parallelism in that environment, and what evidence must be preserved as the work crosses those boundaries.
+The central opportunity is numerical: which exactness, error, and reproducibility guarantees can a compiler establish using the arithmetic JavaScript actually provides? Cloudflare supplies execution and coordination facilities. Our contribution is to establish the numerical contract of the work they carry, and preserve it across those boundaries.
 
 This is a design companion to an earlier, more general treatment. Our [JavaScript targeting work](/docs/design/javascript-targeting/) distinguishes the working F#/Fable path from Composer's proposed JSIR backend. The actor, workflow, and proof-preserving lowering described here are the implementation direction. The [technical companion](/docs/design/javascript-targeting/proof-preservation-across-actors-and-workflows/) records the obligations and acceptance cases.
+
+<a id="what-verified-delivery-must-establish"></a>
+
+## What We Can Establish About JavaScript Arithmetic
+
+JavaScript's constrained numerical environment gives us a concrete basis for reasoning. For the ordinary `Number` operations considered here, the target is binary64 arithmetic. The compiler can work from those specified operations and select a construction whose premises it can establish. In the proposed design, recognizing a supported computation generates its numerical proof obligations automatically as part of ordinary compilation. The developer expresses the calculation and its engineering requirements; the compiler derives the arithmetic conditions needed to satisfy them. The guarantees are mathematical properties of that construction:
+
+- **Exact integer computation within a proved range.** If admitted integer inputs and every exact intermediate remain within binary64's consecutive-integer range, addition, subtraction, and multiplication preserve their mathematical integer results. A small final answer alone is insufficient.
+- **Exact fixed-point operations, or a stated quantization bound.** Scale alignment and carrier capacity can establish exactness. When rescaling discards information, its rounding rule determines a local error bound that the analysis must propagate through subsequent operations.
+- **Recovery of a floating-point rounding residual.** A construction such as TwoSum can represent the exact sum of two finite inputs as two `Number` components under its established conditions. Ordinary JavaScript arithmetic can carry more information than one rounded scalar.
+- **An error bound for a specified reduction.** The operation graph, rounding model, and admitted inputs can establish a bound on accumulation error. This is separate from merely knowing that the result is finite or repeatable.
+- **A result independent of permitted worker partitions and merge order.** An exact accumulator with exact merges and deterministic final rounding can establish this stronger property. Keeping a rounded tree fixed gives a narrower reproducibility guarantee; compensation alone does not establish arbitrary merge freedom.
+- **Preserved numerical meaning across a message or checkpoint.** Encoding and decoding must preserve the represented contribution or accumulator state, or meet an explicitly permitted error bound. Correct transport cannot recover information discarded before serialization.
+
+Here is a short exactness argument using only ordinary JavaScript numbers. If integer terms have magnitude at most \(B\), there are at most \(N\) of them, and
+
+\[
+\sum_i |x_i|\le NB\le 2^{53},
+\]
+
+every subtotal formed from a subset of those terms is an exactly representable integer. Each addition therefore returns the exact subtotal. Induction through any tree of disjoint partial sums gives the same exact total. This is a proof of order-independent integer reduction within a stated domain, despite the carrier being a float. It excludes accidental integer coercions and specifies zero handling where signed zero is observable. [ECMAScript's Number semantics](https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-number-type).
+
+General fractional inputs need a different construction. The TwoSum result from [Pondering](/blog/pondering-fearless-parallelism/#a-float-can-be-part-of-a-larger-number) satisfies
+
+\[
+\operatorname{value}(h)+\operatorname{value}(\ell)
+=\operatorname{value}(a)+\operatorname{value}(b).
+\]
+
+The equality describes the real value of the pair, not a rounded JavaScript addition of its components. Finite inputs, round-to-nearest/ties-to-even, gradual underflow, and no intermediate overflow are premises. A complete exact reduction needs additional accumulator and merge laws; two components do not hold an unlimited exact sum.
+
+The [numerical proof sketches in the companion](/docs/design/javascript-targeting/proof-preservation-across-actors-and-workflows/#numerical-guarantees-within-javascript) make the next steps explicit: fixed-point divisibility and error, a rounding-error bound for a tree, and an exact integer-backed construction for sums of represented binary64 inputs. These are established mathematical arguments and construction requirements. Their automatic instantiation and preservation through Composer's proposed JSIR path remain implementation work; we are not claiming completed artifact-bound proofs for that path.
+
+**This is the proposed mechanism for verified numerical capability delivery:** automatically generate the arithmetic obligations from the computation, instantiate established construction theorems, discharge their premises against the available program facts and JavaScript's supported operations, and carry the resulting evidence through lowering. In the integer example above, analysis supplies the term-count and magnitude bounds and generates the capacity obligation that permits exact merging. The developer need not discover that proof or carry a handwritten compensation recipe at every reduction. Application-specific tolerances and facts unavailable from the program still need a contract. The compiler must account for the construction's cost and explain when the requested guarantee cannot be established.
+
+The actor and workflow discussion that follows serves this numerical argument. It explains how the right terms reach the calculation, how they avoid being counted twice, and how recovery preserves their meaning. Cloudflare supplies the host facilities; the arithmetic theorem concerns the work we execute through them.
 
 ## Carrying Unfinished Stories
 
@@ -32,6 +68,22 @@ This is why a fact established before suspension deserves attention when executi
 That is already a compiler-shaped question. Which values were captured? Which properties depended on mutable storage? Which operations can change it? Where does the result become eligible to resume this particular computation?
 
 > The developer should not have to remember a different collection of defensive conventions for every `await`.
+
+## What the Cloudflare Contract Supplies
+
+Before going deeper, we should distinguish the general JavaScript proof opportunity from the particular Cloudflare realization. JavaScript can express many execution and communication arrangements. Our Cloudflare target uses a constrained set of platform facilities and generated patterns, with declared boundaries for foreign behavior. That narrower scope gives the compiler specific invariants to establish.
+
+Cloudflare supplies isolate boundaries, Durable Object identity and addressing, and documented concurrency and storage mechanisms. Those facilities belong to the **trusted computing base (TCB)**: our argument depends on their contracts holding. Proving that generated application code uses them correctly does not prove their implementation. [Durable Object model](https://developers.cloudflare.com/durable-objects/concepts/what-are-durable-objects/), [concurrency rules](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/).
+
+Those premises help preserve the domain of the numerical proof: contributions come from the admitted input snapshot, are accepted with the required multiplicity, and retain their representation through storage and delivery. Existing host guarantees should supply their part directly. The remaining application obligations concern correct use of those facilities and any conditions they do not establish, such as whether a returned value belongs to the current dashboard selection.
+
+The evidence distinguishes a proved numerical property, a generated boundary check, and an assumed host guarantee. This target uses Cloudflare's existing execution facilities; it does not introduce a scheduler or claim to verify platform internals. A result can be proved invariant under admitted execution choices while successful completion still depends on delivery and host progress.
+
+These are the design's proof obligations, where some elements are already in place and other components are slated for future implementation work. The [current evidence inventory](/docs/design/javascript-targeting/design-time-spec-runtime-reliability/) records component checks and declaration-level proof queries; the [acceptance path](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/#from-contract-to-emitted-artifact) identifies the remaining connection to emitted artifacts. The distinction lets us describe precisely what a completed implementation must deliver.
+
+Our [Erlang exploration](/blog/ode-to-erlang/) already introduces McErlang, their proof framework for distributed systems guarantees (and their limits). In the Fidelity Framework we have a further reach available to us. Our [three-layer actor contract](/docs/design/concurrency/the-three-layer-actor-contract/#fit-with-the-existing-architecture) examines our unique scope more closely: model checking automation establishes specified properties over the explored execution model, with state-space cost and semantic granularity limiting coverage. That does not automatically establish numerical exactness or independence from reduction order. Those require their own arithmetic arguments.
+
+[Dafny](https://dafny.org/latest/DafnyRef/DafnyRef) remains another relevant precedent for program verification and JavaScript output. It already generates verification conditions and automates much of their discharge, including some inference; developers supply specifications and, where needed, invariants or supporting lemmas. Its [tutorial](https://github.com/dafny-lang/dafny/blob/master/docs/OnlineTutorial/guide.md) makes that division of responsibility concrete. Fidelity's intended shift is to derive the supported numerical obligations and their construction-specific proof structure from the compilation graph and numeric contract, making this part of ordinary compilation. That automation integrates numerical construction and its proofs with the actor, boundary, recovery, and platform contracts that preserve their premises through delivery.
 
 ## The Braid's Return Address
 
@@ -56,7 +108,7 @@ In Fidelity's conceptual organization around the actor model, Olivier actors per
 
 The [scheduler contract](/spec/draft/scheduler-contract/) defines a turn from one resumption to suspension, completion, or fault. For a JavaScript target, we use that contract to identify the properties supplied by host callbacks and the actor-state discipline the generated application must preserve. A promise completing must still reach the appropriate continuation through the platform's execution mechanisms.
 
-Actor identity needs care too. A reply for an actor's retired incarnation is not necessarily a valid reply for a newly created actor occupying a similar role. The source expression can remain compact while the lowered state machine preserves those distinctions. That is a useful form of abstraction: the mechanism carries obligations the developer would otherwise have to remember.
+Object identity and computation identity need separate treatment. Reaching the intended Durable Object does not establish that a reply belongs to the user's current dashboard selection. Conversely, host reactivation does not by itself mean that the application has started a new logical job or actor incarnation. The mapping must preserve the lifecycle policy the application actually declares. The source expression can remain compact while generated control flow maintains those distinctions, using host guarantees wherever they suffice.
 
 ## A Mailbox Can Serialize the Wrong Answer
 
@@ -169,6 +221,6 @@ Fidelity Framework approaches software across a variety of substrates: MCU firmw
 
 That contract should be honest enough to distinguish an established guarantee from an assumption or an unresolved requirement, and approachable enough to help a developer act on the distinction. It should explain which work can proceed independently, which results can safely combine, what must survive interruption, and what the chosen implementation costs. As support grows, proofs, emitted-code evidence, and focused experiments must substantiate those answers. The [technical companion](/docs/design/javascript-targeting/proof-preservation-across-actors-and-workflows/#bounded-acceptance-sequence) sets out that progression for this JavaScript design.
 
-[Pondering Fearless Parallelism](/blog/pondering-fearless-parallelism/) asks which arithmetic lets independent work meet without changing its meaning. Here, identity, suspension, and recovery join that argument. Together they point toward a developer experience in which a compact expression of work retains its intent across very different execution environments, with the opportunities and limits visible along the way.
+[Pondering Fearless Parallelism](/blog/pondering-fearless-parallelism/) asks which arithmetic lets independent work meet without changing its meaning. Here, identity, suspension, and recovery join that argument. Automatically generating and discharging the supported proof obligations is what makes that mathematical machinery accessible to the application author. Together they point toward a developer experience in which a compact expression of work retains its intent across very different execution environments, with the opportunities and limits visible along the way.
 
 The purpose is to help developers deliver valuable software with confidence: a responsive device, a dependable service, a useful result delivered from a server that's close to the person waiting for it. That kind of seamless capability experience for the end user is what we want Fidelity Framework's contracts to make easier, wherever the work runs.
