@@ -11,7 +11,7 @@ params:
   migration_date: 2026-03-12
 ---
 
-I want building a native interface to feel as approachable as composing a web layout. The F# community has given us several useful ways to do that, and Fabulous remains an important reference for its functional authoring style. In our Fidelity.UI work, we are also drawing on ReactiveElmish.Avalonia, Partas.Solid and Fable.Ripple, particularly where their approaches help a component update independently.
+Our goal is to make building a native interface feel as approachable as composing a web layout. The F# community has given us several useful ways to do that, and Fabulous remains an important reference for its functional authoring style. In our Fidelity.UI work, we are also drawing on ReactiveElmish.Avalonia, Partas.Solid and Fable.Ripple, particularly where their approaches help a component update independently.
 
 We are designing Fidelity.UI around Clef's intrinsic reactive foundation, with `Incremental<'T>` as the default for derived state and `Observable<'T>` for producer-driven events. The [reactive-area engine]({{< relref "/docs/design/user-interfaces" >}}) would use those dependencies to update native layout and painting. A DOM backend would preserve the component behavior while using browser rendering.
 
@@ -71,4 +71,4 @@ Forms illustrate the boundary between behavior and presentation. Parsing, valida
 
 We intend the shared vocabulary to cover controls and their behavior, with explicit extensions for platform-specific facilities. A portable layout would use those controls. A browser-only view could also use markup and CSS directly.
 
-In HelloWayland we can examine native presentation and bounded raster work. WrenHello gives us an embedded frontend with a native host. I would like the next component experiments to preserve an edit while its row moves, replace its presentation without restarting validation, and retire the control while an asynchronous result is pending. Those are useful tests of whether the authoring experience holds together beyond a static layout.
+In HelloWayland we can examine native presentation and bounded raster work. WrenHello gives us an embedded frontend with a native host. The next component experiments should preserve an edit while its row moves, replace its presentation without restarting validation, and retire the control while an asynchronous result is pending. Those are useful tests of whether the authoring experience holds together beyond a static layout.

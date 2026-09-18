@@ -13,7 +13,7 @@ params:
 
 Mojo is an experiment in bridging two worlds that usually stay apart. Created by Chris Lattner, whose work on LLVM and MLIR reshaped how we build compiler infrastructure, Mojo sets out to bring Python's accessibility to systems programming on top of MLIR.
 
-At SpeakEZ, we've been working in similar territory with our Fidelity framework and its Clef language. Both projects build on MLIR, yet they approach modern language design from different starting points. That divergence is what I want to walk through here.
+At SpeakEZ, we've been working in similar territory with our Fidelity framework and its Clef language. Both projects build on MLIR, yet they approach modern language design from different starting points. That divergence is the focus of this comparison.
 
 ## The MLIR Foundation They Share
 
@@ -174,7 +174,7 @@ The two approaches reflect different design priorities. Mojo prioritizes a unifi
 
 ## The Path Forward: Complementary Directions
 
-What I find worth watching about this moment in language design is how many different approaches can explore the design space MLIR opens. Mojo's effort to bring Python into systems programming is an experiment that could change how a large set of developers approach performance-critical code.
+MLIR opens a design space worth watching for the range of approaches it can support. Mojo's effort to bring Python into systems programming is an experiment that could change how a large set of developers approach performance-critical code.
 
 The challenges Mojo faces are substantial. A language that satisfies both Python developers' expectations and systems programmers' requirements means working through a long list of design decisions. That the Mojo compiler remains closed source likely reflects the scope of the undertaking, getting the basics right before opening the implementation to broader scrutiny.
 
@@ -198,15 +198,15 @@ Both projects can learn from each other's approaches:
 
 ## Where the Two Paths Diverge
 
-I read Mojo and Fidelity as complementary explorations of MLIR rather than competitors. Chris Lattner's aim of making high-performance computing accessible to Python developers could widen access to systems programming, and the Mojo team's willingness to take on the work of bridging Python and systems programming deserves recognition.
+We view Mojo and Fidelity as complementary explorations of MLIR rather than competitors. Chris Lattner's aim of making high-performance computing accessible to Python developers could widen access to systems programming, and the Mojo team's willingness to take on the work of bridging Python and systems programming deserves recognition.
 
 The `def/fn` split is an honest acknowledgment of the tensions in that bridging effort. The transparency about the difficulty of unifying dynamic and static worlds is worth crediting, and it also surfaces what may be a contradiction the project cannot resolve. The promise of "Python with systems programming performance" dissolves into "Python or systems programming performance," with developers choosing between the two at every function boundary. Working past that may take not just years of engineering but a re-tooling of the project's goals.
 
 At SpeakEZ, we're working in this space alongside Mojo from a different starting point. F#'s functional heritage and mature design create their own openings for MLIR, particularly for applications that need deterministic performance across diverse deployment targets. Our unified computational model sidesteps some of the bifurcation challenges, though we are solving a different set of problems.
 
-As MLIR matures, I expect more approaches to language design to follow. Some will start from dynamic languages and add performance, like Mojo. Others will start from a formal foundation and add flexibility. Still others will explore points in the design space neither of us is looking at.
+As MLIR matures, we expect more approaches to language design to follow. Some will start from dynamic languages and add performance, like Mojo. Others will start from a formal foundation and add flexibility. Still others will explore points in the design space neither of us is looking at.
 
-We'll keep watching Mojo's evolution as we build Fidelity out, and we'll keep learning from the parts of the design space the Mojo team is mapping that we are not. That is the work I want to continue: carrying the Clef language through MLIR toward deterministic performance across targets, and seeing how far the unified model holds as the rest of the framework comes into place.
+We'll keep watching Mojo's evolution as we build Fidelity out, and we'll keep learning from the parts of the design space the Mojo team is mapping that we are not. Our goal is to carry the Clef language through MLIR toward deterministic performance across targets, and to see how far the unified model holds as the rest of the framework comes into place.
 
 ## See also
 

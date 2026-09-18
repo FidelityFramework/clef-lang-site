@@ -11,33 +11,33 @@ params:
   migration_date: 2026-02-15
 ---
 
-## A Confession and a Vision
+<a id="a-confession-and-a-vision"></a>
 
-> A personal note from the founder of SpeakEZ Technologies, Houston Haynes
+## Engineering Goals and Mathematical Foundations
 
-I must admit something upfront: when I began designing the Fidelity framework in 2020, I was driven by practical engineering frustrations, particularly with AI development. A managed runtime made some memory decisions difficult to control. Numerical errors accumulated across operations that looked harmless in isolation. Machine learning framework conventions could obscure the physical meaning of the data. I started building from those experiences, guided more by engineering intuition than mathematical theory.
+Design of the Fidelity framework began in 2020 with practical engineering problems, particularly in AI development. A managed runtime made some memory decisions difficult to control. Numerical errors accumulated across operations that looked harmless in isolation. Machine learning framework conventions could obscure the physical meaning of the data. Those problems shaped the initial design, guided more by engineering requirements than mathematical theory.
 
-Encountering Gavranović et al.'s [*Categorical Deep Learning is an Algebraic Theory of All Architectures*](https://arxiv.org/abs/2402.15332) felt like recognition. The authors connect constraints on a model with the operations used to implement it. I had been approaching that relationship from the compiler side, trying to keep the meaning of a computation available while changing how it runs.
+Gavranović et al.'s [*Categorical Deep Learning is an Algebraic Theory of All Architectures*](https://arxiv.org/abs/2402.15332) provided a mathematical account of a related design problem. The authors connect constraints on a model with the operations used to implement it. Our compiler work had approached that relationship by trying to keep the meaning of a computation available while changing how it runs.
 
-A significant credit belongs to [Paul Snively and his polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557). His experience with functional programming and formal verification helped me connect practical design decisions with results I might otherwise have taken years to find. [Paul's conversation on programming languages, reliable code, and good taste](https://www.youtube.com/watch?v=Cq_IstGhUv4) gives a sense of that perspective. I may eventually have connected some of these ideas on my own, but Paul helped me reach them much sooner and with a better sense of their practical history. Much of this synthesis owes its development to our conversations. Mistakes and omissions remain my own.
+A significant credit belongs to [Paul Snively and his polyglot perspective](https://podcasts.apple.com/us/podcast/37-the-future-of-everything-with-paul-snively/id1531666706?i=1000531977557). His experience with functional programming and formal verification helped connect practical design decisions with established results. [Paul's conversation on programming languages, reliable code, and good taste](https://www.youtube.com/watch?v=Cq_IstGhUv4) gives a sense of that perspective. Conversations between Paul and Fidelity founder Houston Haynes contributed substantially to this synthesis and its grounding in the practical history of these ideas. Responsibility for mistakes and omissions remains with the project.
 
-I found that recognition both humbling and exhilarating. I had been assembling pieces from practical compiler problems, and here was a body of work that could help me explain why they belonged together. It encouraged me to keep exploring the connections and to share what I was learning along the way.
+This body of work helps explain how solutions to practical compiler problems fit together. Exploring those connections gives us a basis for refining the design and explaining its foundations.
 
-The categorical vocabulary can take some getting used to. My way into it was through ordinary questions about functions and data: which values are shared, what can change, and what must remain true after a transformation? Those questions give the notation something familiar to describe.
+The categorical vocabulary can take some getting used to. Ordinary questions about functions and data offer a useful starting point: which values are shared, what can change, and what must remain true after a transformation? Those questions give the notation something familiar to describe.
 
-I want a developer to combine a physical simulation with a learned component without having to reconstruct the model's meaning at every library or hardware boundary. The same platform should leave room for quantum and other specialized targets as their implementations become useful. That ambition has driven our choices in Clef, its compiler, and the Fidelity framework.
+The goal is for a developer to combine a physical simulation with a learned component without having to reconstruct the model's meaning at every library or hardware boundary. The same platform should leave room for quantum and other specialized targets as their implementations become useful. That ambition has driven our choices in Clef, its compiler, and the Fidelity framework.
 
 ## The Journey So Far
 
-Our early explorations of [alternatives to transformer architectures](/blog/beyond-transformers/) encouraged me to treat tensor operations as implementation choices. A recurrent update, a sparse geometric product, and a dense matrix multiplication have different structure. The compiler needs enough information to distinguish them before selecting an implementation.
+Our early explorations of [alternatives to transformer architectures](/blog/beyond-transformers/) encouraged us to treat tensor operations as implementation choices. A recurrent update, a sparse geometric product, and a dense matrix multiplication have different structure. The compiler needs enough information to distinguish them before selecting an implementation.
 
-The explorations of [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) and [discriminated unions for post-transformer AI](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/) were part of that process. I wanted to give different kinds of computation a suitable representation and then see how they could work together. That was also the ambition behind [Fidelity as an AI Refinery](/blog/fidelity-as-ai-refinery/): a platform on which the shape of the problem could guide the use of the hardware.
+The explorations of [ternary models and heterogeneous computing](https://speakez.tech/blog/a-unified-vision-for-ternary-models/) and [discriminated unions for post-transformer AI](https://speakez.tech/blog/discriminated-unions-in-post-transformer-ai/) were part of that process. The aim was to give different kinds of computation a suitable representation and then explore how they could work together. That was also the ambition behind [Fidelity as an AI Refinery](/blog/fidelity-as-ai-refinery/): a platform on which the shape of the problem could guide the use of the hardware.
 
 Work on the [Program Hypergraph](/docs/internals/pipeline/hyping-hypergraphs/) addressed relationships involving several operations at once. A buffer shared by a producer and multiple consumers has a joint lifetime and access contract. A conservation law may constrain the input, output, and internal state of a physical process. Keeping only isolated operation annotations makes those relationships difficult to check.
 
 BAREWire brought the same concern to memory layout, interprocess communication, and network contracts. A quantity's representation affects the bytes in memory and the agreement between systems exchanging those bytes. Our [proof-aware compilation design](/docs/internals/pipeline/proof-aware-compilation/) extends that agreement through the transformations that produce executable code.
 
-These engineering problems gave me a reason to study the categorical account. I wanted to understand which relationships could be established once and safely reused as the program changes form.
+These engineering problems motivate a closer study of the categorical account: which relationships can be established once and safely reused as the program changes form?
 
 <a id="the-current-crisis-divergent-paths"></a>
 <a id="hpcs-challenges"></a>
@@ -98,7 +98,7 @@ The word *adjoint* appears in several relevant settings. In numerical sensitivit
 
 A [categorical adjunction](/docs/design/categorical-foundations/categorical-deep-learning-adjoint-correspondence/#the-adjoint-correspondence) has functors, a unit, and a counit satisfying triangle identities. Those laws describe a correspondence between constructions. They do not make every backward computation an inverse.
 
-I see value in giving these structures a common place in the framework while retaining the laws specific to each. A compiler should preserve a valid reverse derivative through a transformation. A quantum lowering should preserve the stated circuit semantics. Sharing a graph infrastructure can support both jobs, provided each transformation carries the appropriate justification.
+Giving these structures a common place in the framework is useful when the laws specific to each remain explicit. A compiler should preserve a valid reverse derivative through a transformation. A quantum lowering should preserve the stated circuit semantics. Sharing a graph infrastructure can support both jobs, provided each transformation carries the appropriate justification.
 
 <a id="why-clef-is-a-natural-choice-for-this-domain"></a>
 <a id="beyond-functional-the-engineering-bridge"></a>
@@ -107,7 +107,7 @@ I see value in giving these structures a common place in the framework while ret
 
 Our language design draws from several lines of work. Kennedy's dimensional inference provides the measure algebra. OCaml and F# contribute practical ML experience, including the quotation facilities that influenced Clef's design. Scheme's nanopass tradition informs small compiler transformations. MLKit supplies experience with region inference, while the verification work in F* and Dafny informs how proofs can participate in ordinary programming.
 
-I want those influences to reduce the number of decisions a developer must repeat. The source should express the mathematical operation and the conditions under which it is meaningful. The compiler can then use platform information to determine storage and execution details.
+The goal is for those influences to reduce the number of decisions a developer must repeat. The source should express the mathematical operation and the conditions under which it is meaningful. The compiler can then use platform information to determine storage and execution details.
 
 <a id="units-of-measure-dimensional-analysis-for-free"></a>
 
@@ -144,7 +144,7 @@ For a matrix product, a library contract could state compatible shapes, element 
 
 A domain library can establish a lemma once and expose its parameters and premises for automatic application. The intended editor experience is ordinary programming with that library: the analyzer proposes a relevant lemma for a region, the developer accepts its application, and the compiler checks the instantiated premises. An annotation may be folded away while a marker retains the obligation's scope and current or stale status.
 
-This is the kind of assistance I want from proofs. A developer using a conservation-preserving update should benefit from the library's established result each time it applies. Explicit proof development extends the library when a new operation requires new justification.
+This is the intended role of proofs in the developer experience. A developer using a conservation-preserving update should benefit from the library's established result each time it applies. Explicit proof development extends the library when a new operation requires new justification.
 
 <a id="universal-numbers-solving-the-numerical-problem"></a>
 <a id="posit-arithmetic-the-best-of-both-worlds"></a>
@@ -152,9 +152,9 @@ This is the kind of assistance I want from proofs. A developer using a conservat
 
 ## Numerical Representation and Accumulation
 
-This brings me back to one of the frustrations that started the project: a calculation can be correctly assembled and still lose useful information through repeated rounding. I wanted numerical representation to be something we could reason about alongside the calculation, with the hardware choices available for inspection.
+This returns to one of the engineering problems that started the project: a calculation can be correctly assembled and still lose useful information through repeated rounding. The goal is to make numerical representation something we can reason about alongside the calculation, with the hardware choices available for inspection.
 
-The [Universal Numbers library](https://github.com/stillwater-sc/universal) provides arithmetic implementations for exploring a variety of number systems and mixed-precision algorithms. I see it as a useful part of making representation a deliberate target decision. IEEE formats, posits, integers, and other representations have different properties that a platform can declare.
+The [Universal Numbers library](https://github.com/stillwater-sc/universal) provides arithmetic implementations for exploring a variety of number systems and mixed-precision algorithms. It supports exploration of representation as a deliberate target decision. IEEE formats, posits, integers, and other representations have different properties that a platform can declare.
 
 Posits offer tapered precision. A quire can accumulate products of represented operands exactly within its finite capacity and round when converting the result. The [2022 Posit Standard](https://posithub.org/docs/posit_standard-2.pdf) specifies a 512-bit quire for posit32, giving 64 bytes of accumulator storage before any enclosing layout requirements.
 
@@ -184,7 +184,7 @@ A useful comparison should measure peak live storage, arithmetic work, and train
 
 ## Proofs in the Program Graph
 
-From the developer's side, a proof should often feel like using a well-chosen library operation. The library author has established a result, and our program supplies the inputs and conditions under which it applies. A *lemma* is one of those reusable proved results. I want the compiler to handle the repeated application work so the engineer can concentrate on the model.
+From the developer's side, a proof should often feel like using a well-chosen library operation. The library author has established a result, and our program supplies the inputs and conditions under which it applies. A *lemma* is one of those reusable proved results. The compiler should handle the repeated application work so the engineer can concentrate on the model.
 
 Our Program Semantic Graph is intended to carry the joint constraints of the computation, including the relationships that justify an operation. The Program Hypergraph makes relationships involving several nodes explicit. A matrix product, for example, connects two input shapes with an output shape, an element operation, and the storage on which its implementation depends.
 
@@ -252,7 +252,7 @@ MLIR gives us infrastructure for representing and transforming operations. Prese
 
 ## Physical Learning Contracts
 
-I find the design easier to assess through applications where the learned component has a specific job. A digital twin may estimate an uncertain material parameter. A climate model may use a learned subgrid correction. An autonomous system may estimate observation noise. Each can expose an operating envelope and the physical conditions that the learned output must respect.
+The design is easier to assess through applications where the learned component has a specific job. A digital twin may estimate an uncertain material parameter. A climate model may use a learned subgrid correction. An autonomous system may estimate observation noise. Each can expose an operating envelope and the physical conditions that the learned output must respect.
 
 | Application | Fixed commitment | Learned quantity | Additional evidence |
 |---|---|---|---|
@@ -346,8 +346,8 @@ A JavaScript lowering path presents different realization choices again. Runtime
 
 ## Practical Milestones
 
-I want the progress of this work to be visible in small, complete examples. A measured primitive should retain its type identity through elaboration, select a covering representation, and produce a validated native result. A layout-dependent operation should carry the BAREWire premises used to justify its addresses. A proof should remain associated with the corresponding operation through lowering and be reconsidered when a relevant premise changes.
+Progress on this work should be visible in small, complete examples. A measured primitive should retain its type identity through elaboration, select a covering representation, and produce a validated native result. A layout-dependent operation should carry the BAREWire premises used to justify its addresses. A proof should remain associated with the corresponding operation through lowering and be reconsidered when a relevant premise changes.
 
 The next application-level examples should combine those mechanisms. An estimator with a checked covariance construction would exercise learning, algebra, and numerical selection. A coupled simulation would exercise a spanning interface law and transfer contracts. Running those examples on another target would test whether the preserved evidence actually supports heterogeneous compilation.
 
-I would like an engineer opening one of those programs to see the physical operation first, then inspect the dimensions, ranges, and applied proofs when needed. Changing a sensor model or trying a different target should feel like continuing work on the same problem, with the compiler explaining the new decisions that arise. That is the engineering experience I had in mind when I began this project, and the mathematical connections have given me more reason to pursue it.
+An engineer opening one of those programs should see the physical operation first, then be able to inspect the dimensions, ranges, and applied proofs when needed. Changing a sensor model or trying a different target should feel like continuing work on the same problem, with the compiler explaining the new decisions that arise. That engineering experience has been a goal of the project from the outset, and the mathematical connections provide a stronger foundation for pursuing it.

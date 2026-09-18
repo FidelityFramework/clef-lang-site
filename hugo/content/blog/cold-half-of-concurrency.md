@@ -21,13 +21,13 @@ Our default for derived state is `Incremental<'T>`. It caches a result and track
 
 Jane Street's [Incremental](https://blog.janestreet.com/introducing-incremental/) developed the approach in OCaml around observers and stabilization. An observer establishes demand, and a stabilization pass processes the affected graph in dependency order. A cutoff stops further propagation from a recomputed value when its result is unchanged. We use that vocabulary in our [incremental computation specification](/spec/draft/incremental-computation/).
 
-In F#, [FSharp.Data.Adaptive](https://github.com/fsprojects/FSharp.Data.Adaptive) offers another reference for demand-driven values and changing collections. Jimmy Byrd's [IcedTasks](https://github.com/TheAngryByrd/IcedTasks) was a direct influence on my preference for cold execution. Its reusable cold-task factory defers starting work. An incremental value adds caching and dependency invalidation, so the two have different uses even when both begin with deferred work.
+In F#, [FSharp.Data.Adaptive](https://github.com/fsprojects/FSharp.Data.Adaptive) offers another reference for demand-driven values and changing collections. Jimmy Byrd's [IcedTasks](https://github.com/TheAngryByrd/IcedTasks) was a direct influence on our choice of cold execution. Its reusable cold-task factory defers starting work. An incremental value adds caching and dependency invalidation, so the two have different uses even when both begin with deferred work.
 
 Those libraries provide their abstractions within their host language and runtime. In Clef we can specify cold execution and incremental computation as language intrinsics, allowing Composer to retain their semantics during lowering. That is the architectural choice we are making for Fidelity.
 
 ## Demand and readiness
 
-Cold execution moves some cost to the point of request. A hidden chart can consume little computation while closed and still take time to prepare when opened. I want that tradeoff to be explicit, particularly on hardware where we can measure a defined deployment profile.
+Cold execution moves some cost to the point of request. A hidden chart can consume little computation while closed and still take time to prepare when opened. That tradeoff should be explicit, particularly on hardware where we can measure a defined deployment profile.
 
 An application could keep selected time-series calculations current through a background observer. Closing the chart would remove visual demand while the service continued its own work. Alternatively, it could retain a stale cache or prewarm the chart before displaying it. These policies have different memory and processing costs, even though all use the same demand machinery.
 
@@ -47,4 +47,4 @@ Our [scheduler contract](/spec/draft/scheduler-contract/) provides a place to sp
 
 The useful comparison is a pair of charts over the same data feed. Leave one cold when hidden and keep the other's selected calculations observed in the background. Reopen both under load and measure the time to a current frame, alongside the work and memory each consumed while closed.
 
-We can then add prewarming and compare how much preparation was reusable after a resize or a new input revision. On a fixed instrument or kiosk deployment, those measurements would let us choose a readiness policy against a known switching-latency budget. That is the practical reason I favor incremental computation as our starting point: the application can ask for more readiness where it needs it.
+We can then add prewarming and compare how much preparation was reusable after a resize or a new input revision. On a fixed instrument or kiosk deployment, those measurements would let us choose a readiness policy against a known switching-latency budget. That is the practical reason we favor incremental computation as our starting point: the application can ask for more readiness where it needs it.

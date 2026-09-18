@@ -53,7 +53,7 @@ The source's `map` gives the compiler a recognizable shape. Its body and the sur
 
 Our intended analysis would identify these regions in the PSG, establish their dependencies, and select an implementation using the target's declared capabilities. The crossing would retain the live values and the conditions under which execution continues. The [flow-loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) explores how to compare the parallel structure available in a program with the structure retained by a particular lowering.
 
-A compiler may generate a CPU loop for a small frontier and a parallel kernel for a larger one. Such a choice needs an appropriate cost model as well as a valid transformation. I want the developer to write the resolver and inspect those decisions where they affect the application.
+A compiler may generate a CPU loop for a small frontier and a parallel kernel for a larger one. Such a choice needs an appropriate cost model as well as a valid transformation. The goal is for the developer to write the resolver and inspect those decisions where they affect the application.
 
 ## Standing Art in Other Ecosystems
 
@@ -127,7 +127,7 @@ The protocol's state-threading condition and the application's state invariant h
 
 Even commuting updates need care when replies expose intermediate state. Two increments produce the same final counter in either order, while the client receiving the first reply can observe a different value. Order-independent observations require a separate law about the relevant requests and responses.
 
-We came to the [Olivier contract](/docs/design/concurrency/the-three-layer-actor-contract/) through supervision and actor-owned storage. The receive loop was there for ordinary engineering reasons before we read it alongside a rule from linear logic. I find that kind of recognition encouraging: we gain a concrete construction against which to test and extend the design. The intended developer experience remains a state type and a receive loop, with applicable library proofs dispatched from their checked structure.
+We came to the [Olivier contract](/docs/design/concurrency/the-three-layer-actor-contract/) through supervision and actor-owned storage. The receive loop was there for ordinary engineering reasons before we read it alongside a rule from linear logic. That connection gives us a concrete construction against which to test and extend the design. The intended developer experience remains a state type and a receive loop, with applicable library proofs dispatched from their checked structure.
 
 ## Two Braids
 
@@ -226,7 +226,7 @@ A scheduler must also advance runnable work for an execution to make progress. B
 
 ## The Unseen
 
-Go back to the resolver as an application developer. Its useful vocabulary is packages, constraints, and frontiers. The loop and its mutable locals are garden-variety code, and I want as much of the coordination machinery as possible to remain the compiler's work. The compiler should derive the dependency and lifetime facts it can establish, then apply the relevant library results. An unresolved condition should point to the operation and premise that need attention.
+Go back to the resolver as an application developer. Its useful vocabulary is packages, constraints, and frontiers. The loop and its mutable locals are garden-variety code, and the goal is for as much of the coordination machinery as possible to remain the compiler's work. The compiler should derive the dependency and lifetime facts it can establish, then apply the relevant library results. An unresolved condition should point to the operation and premise that need attention.
 
 The intended editor can suggest a lemma for a spanning obligation. Accepting the suggestion applies it and dispatches its premises. An annotation may be folded away while a marker retains its scope and whether the evidence remains current. That makes reusable proof work part of ordinary development without hiding its dependencies.
 
@@ -238,4 +238,4 @@ An actor-owned arena gives the compiler a lifetime boundary to analyze. Cross-ac
 
 Our next useful demonstration is a resolver round that can be followed from source to execution. It should show the independently extracted constraints, the solve that combines them, and the continuation that consumes the result. Its artifact evidence should retain the layout facts and explain any parallel scheduling or synchronization.
 
-Changing the target should produce another inspectable realization of that same computation. Running the example then tests the generated implementation and its resource behavior. I would like the developer to be able to follow the decision, try another placement, and continue working in the same source. We will keep reporting what those demonstrations establish as the compiler takes on more of that coordination work.
+Changing the target should produce another inspectable realization of that same computation. Running the example then tests the generated implementation and its resource behavior. The developer should be able to follow the decision, try another placement, and continue working in the same source. We will keep reporting what those demonstrations establish as the compiler takes on more of that coordination work.

@@ -18,7 +18,7 @@ This insight emerged from our practical work on [CNN to Topological Object Class
 
 ## From Branch Selector to Fabric Description
 
-If you have written F#, or tried the discriminated unions now landing in C# (still finding their feet, in my opinion), you know them as control flow. You define a closed set of cases, the compiler makes you handle each one, and `match` picks the branch. The union's job is to organize a decision, and it ends the moment the branch is chosen.
+If you have written F#, or tried the discriminated unions now landing in C# (still finding their feet, in our assessment), you know them as control flow. You define a closed set of cases, the compiler makes you handle each one, and `match` picks the branch. The union's job is to organize a decision, and it ends the moment the branch is chosen.
 
 Resolve that same union's layout at compile time and something changes about what it *is*. The case set and the per-case field positions stop being a value the runtime inspects and become a static description of a shape: which cases exist, how large each is, where its fields sit. That description is not tied to any one processor. The same union drives a native struct layout on a CPU, a fabric configuration on an FPGA, and the wire contract between two actors on different machines, because on each substrate it is the same fixed answer to "what is this and where does it live," settled before the program runs. A discriminated union, resolved this way, reads less like an `if` and more like a blueprint a substrate is built to.
 

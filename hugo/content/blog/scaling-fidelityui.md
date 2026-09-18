@@ -1,5 +1,5 @@
 ---
-title: "Scaling Fidelity.UI: Ownership and Demand"
+title: "Scaling Fidelity.UI"
 linkTitle: "Scaling Fidelity.UI"
 description: "Owned reactive graphs, background demand and explicit distribution in Fidelity.UI"
 date: 2025-05-24
@@ -11,7 +11,9 @@ params:
   migration_date: 2026-03-12
 ---
 
-Close a chart and its data feed may still need to run. Open a second chart and both can share the same history, even if they display different time windows. These are ordinary expectations for a dashboard, and they are part of what I want our Fidelity.UI model to express without a tangle of application-managed subscriptions.
+## Ownership & Demand
+
+Close a chart and its data feed may still need to run. Open a second chart and both can share the same history, even if they display different time windows. These are ordinary expectations for a dashboard, and our Fidelity.UI model is intended to express them without a tangle of application-managed subscriptions.
 
 We are designing [Fidelity.UI]({{< relref "/docs/design/user-interfaces" >}}) around owner-local reactive graphs that can drive several visual areas. Larger sections could have independent owners where isolation or scheduling calls for them. That gives us a starting point for an instrument screen and a way to organize larger applications without tying component syntax to a thread or process.
 
@@ -84,4 +86,4 @@ We would first change one of two areas and measure the affected work, then exerc
 
 Worker and process cases add completion during resize, close and restart. Distributed cases add packet loss, duplicate delivery, reconnect and slow clients, checking both bounded resource use and domain correctness. A larger client count is meaningful only when the workload, update rate, transport and resource envelope are stated.
 
-For the dashboard, I would start with two charts over the same feed: one left cold when hidden and one kept current by a service observer. Reopening each would expose the latency tradeoff. Running the same comparison during reconnect would also show whether our local readiness policy survives a break in the data source.
+For the dashboard, a useful starting point would be two charts over the same feed: one left cold when hidden and one kept current by a service observer. Reopening each would expose the latency tradeoff. Running the same comparison during reconnect would also show whether our local readiness policy survives a break in the data source.

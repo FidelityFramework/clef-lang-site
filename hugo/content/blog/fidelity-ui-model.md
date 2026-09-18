@@ -17,7 +17,7 @@ That is the direction of our Fidelity.UI design. Clef's intrinsic incremental co
 
 ## Functional Components
 
-I prefer ordinary functions and lists as the primary surface. Typed properties and modifiers let us compose controls without surrounding a small view with much machinery. In proposed design notation, a counter would look like this:
+Ordinary functions and lists are the preferred authoring surface. Typed properties and modifiers let us compose controls without surrounding a small view with much machinery. In proposed design notation, a counter would look like this:
 
 ```fsharp
 let counter =
