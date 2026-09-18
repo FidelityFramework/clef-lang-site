@@ -1,7 +1,7 @@
 ---
 title: "Fully Informed Bindings"
 linkTitle: "Fully Informed Bindings"
-description: "The binding factory for the Cloudflare surface: a declared shape from TypeScript analysis, a measured body from the JSIR lift, and the join that makes a Clef binding derive from what a library is, never only from what its declarations admit."
+description: "Combining TypeScript declarations, JavaScript implementation evidence and deferred Clef inference for bindings and owned supporting libraries."
 date: 2026-08-23
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Interop", "JavaScript", "Design"]
@@ -26,6 +26,8 @@ The rest of this page concerns the second category, a minority of the surface by
 
 A TypeScript declaration and the JavaScript shipped with it provide different evidence. Xantham supplies declared signatures and structural types; the [JSIR](/docs/design/javascript-targeting/jsir-javascript-as-mlir-backend/) forward path exposes supported control flow and expressions in the implementation. Joining them requires a pinned package, entry-point resolution, and a justified mapping through exports, wrappers, and source maps. A symbol-name match is a candidate correspondence, not proof that the body implements the declaration. JSIR's placeholder value types do not restore TypeScript's erased semantic types.
 
+JSHIR is a worked analysis candidate within a coordinated foreign-language frontend. Composer’s [tooling contribution map](https://forge.spkez.dev/FidelityFramework/Composer/src/branch/main/docs/javascript-targeting/02_jsir_tooling.md) also considers Bun’s structural/dependency evidence, Dafny’s contract and realization precedents, and Fable’s executable references. Their roles overlap; CCS owns semantic elaboration, and consistent unresolved facts remain pending until the relevant build or REPL commitment.
+
 That join is what “fully informed” means here: declarations plus implementation evidence, with unknowns retained. Lifting JavaScript into JSHIR supplies an analysis surface. It does not make arbitrary JavaScript into typed Clef, and types shipped beside a body remain claims to check.
 
 ## Four Instruments
@@ -38,7 +40,9 @@ The join yields four instruments, in ascending ambition.
 
 **The disagreement channel.** Farscape's boundary taught that a C header under-declares, and the TypeScript boundary has the complementary vice: it over-declares, with rich types that are claims without enforcement. When the lifted body of an SDK function reaches `fetch` behind a signature that reads pure, or touches storage its types never mention, that divergence is a first-class finding. Regenerated per release, the channel is a lint on the vendor, and on a pre-1.0 surface that changes monthly it may be the single most valuable output of the pass, catching behavioral drift under stable signatures where a `.d.ts` diff sees nothing.
 
-**The absorption workbench.** Whole-library absorption remains outside the roadmap. A bounded experiment could nominate small protocol fragments, join their declarations to inspected bodies, and produce candidate Clef with human review. Round-trip JSHIR comparison and differential execution would test those candidates. Graduation additionally needs stated behavioral contracts and justified correspondence for the supported operations; round-trip similarity alone does not prove equivalence or eliminate runtime dependencies. Only dependencies actually replaced by the accepted implementation are retired.
+**The dependency-recovery workbench.** The design direction is owned Clef SDKs and supporting Clef libraries. Development proceeds through bounded replacements with declaration/body correspondence, deferred inference and human review. Retain a versioned complete package dependency graph independently of application reachability; pin changes invalidate affected correspondence and evidence. The libraries and accepted evidence become durable assets rather than restarting foreign conversion on every build. See Composer’s [dependency-recovery guide](https://forge.spkez.dev/FidelityFramework/Composer/src/branch/main/docs/javascript-targeting/09_contract_directed_dependency_recovery.md). Round-trip JSHIR comparison and differential execution would test those candidates. Graduation additionally needs stated behavioral contracts and justified correspondence for the supported operations; round-trip similarity alone does not prove equivalence or eliminate runtime dependencies. Only dependencies actually replaced by the accepted implementation are retired.
+
+For JSX-producing UI bindings, compare structure before Solid compilation and supported ordinary JavaScript afterward. Upstream JSIR cannot lift JSX through its native bridge without extension, and two producers sharing Solid have a shared compiler assumption. The [toolchain chapter](../javascript-jsx-toolchain/) adds framework-transform and final-WebView acceptance obligations.
 
 ## One Discipline, Two Boundaries
 
@@ -48,7 +52,7 @@ A per-package configuration would name entry points, accepted effect summaries a
 
 ## The Compatibility Contract
 
-The API of the resulting Clef library is constrained from the F# side. Today's Fidelity.CloudEdge surface serves as the normative contract for the first cut: module organization, record and discriminated-union message types, and computation-expression shapes carry across as cognates. The deliberate differences appear where Clef's integrity machinery pulls a construct upward, and their locations are predictable. Dynamic and `obj`-shaped surfaces become schema-directed narrowing returning `Result`, with [The Foreign Pair](/docs/design/javascript-targeting/the-foreign-pair/) supplying the boundary types and their grade discipline. Promise-shaped APIs become DCont-backed. Each `[<Emit>]` becomes a witnessing rule. Effectful call sites would carry conservative summaries and their evidence. The intended port preserves the application structure while making boundary assumptions explicit as obligations, generated checks, or accepted premises.
+The F#/Fable surface supplies a useful API and executable reference over an explicit shared contract; Clef semantics and the selected host contract govern the Clef implementation. The first cut can retain familiar structure: module organization, record and discriminated-union message types, and computation-expression shapes carry across as cognates. The deliberate differences appear where Clef's integrity machinery pulls a construct upward, and their locations are predictable. Dynamic and `obj`-shaped surfaces become schema-directed narrowing returning `Result`, with [The Foreign Pair](/docs/design/javascript-targeting/the-foreign-pair/) supplying the boundary types and their grade discipline. Promise-shaped APIs become DCont-backed. Each supported interop operation needs a Clef boundary contract, portable witnessing and a matching target realization; replacing an `[<Emit>]` template does not itself establish that correspondence. Effectful call sites would carry conservative summaries and their evidence. The intended port preserves the application structure while making boundary assumptions explicit as obligations, generated checks, or accepted premises.
 
 ## The Sequence
 

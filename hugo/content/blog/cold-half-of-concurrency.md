@@ -1,8 +1,9 @@
 ---
 title: "The Cold Half of Concurrency"
 linkTitle: "The Cold Half of Concurrency"
-description: "Incremental's ML lineage, from adaptive functional programming to industrial stabilizers, and the runtime graph a well-articulated actor system already draws"
+description: "Incremental's ML lineage, from adaptive functional programming to industrial stabilizers, and its place in actor-owned reactive graphs"
 date: 2026-07-14T11:00:00-04:00
+lastmod: 2026-09-18
 draft: true
 authors: ["Houston Haynes"]
 tags: ["Concurrency", "Design", "Analysis"]
@@ -10,40 +11,40 @@ params:
   originally_published: 2026-07-14
 ---
 
-The first incremental system most of us ever touched was a spreadsheet. Change one cell and the dependents recompute, in dependency order, and nothing else recalculates. Nobody schedules that recalculation by hand, nobody writes a callback, and no cell recomputes twice. The machinery underneath has a name in the research literature and a decades-long debt to the ML family, and it is the half of our concurrency story this corpus has not yet given its own account.
+A spreadsheet is often our first encounter with incremental computation. Change a cell and the dependent formulas update. The useful expectation is that the application retains valid results and recomputes the affected calculations in the right order. We want that discipline throughout our Fidelity framework, including the work an application defers while nobody needs its result.
 
-The hot half already has one. [Fidelity.Rx](/blog/fidelityrx-native-reactivity/) covered the push model: `Observable`, events arriving whether or not anyone is ready, the producer setting the pace. Its dual is `Incremental<'T>`, the cold, pull-based side our [concurrency model](/blog/ode-to-erlang/) holds as an intrinsic, where nothing computes until something downstream demands a value. Cold is where the spreadsheet lives. It is also the side with a lineage that deserves to be named properly, because we intend to draw on every part of it.
+Our default for derived state is `Incremental<'T>`. It caches a result and tracks the inputs used to produce it, with recomputation when the result is both stale and demanded. Producer-driven events remain part of the model through `Observable<'T>`. A sensor reading can invalidate an incremental derivation while an unobserved chart leaves its calculations deferred. The [native reactivity account](/blog/native-reactivity-in-clef/) describes how the two compose.
 
-## Bred in the ML Family
+## The ML lineage
 
-The paper trail starts with [adaptive functional programming](https://www.cs.cmu.edu/~guyb/papers/popl02.pdf), Acar, Blelloch, and Harper at POPL 2002, working in Standard ML: run a program once, record its dynamic dependence graph, then propagate an input change through just the affected region instead of rerunning the program. Acar's thesis developed the idea into a field under the name self-adjusting computation. The mechanisms that matter were all present at the start: the dependence graph is discovered from execution rather than declared, change propagation follows it selectively, and memoization decides where propagation stops.
+[Adaptive functional programming](https://www.cs.cmu.edu/~guyb/papers/popl02.pdf), developed by Acar, Blelloch and Harper in Standard ML, records dependencies during execution and uses them to propagate changes selectively. That work is part of the research lineage we draw on for Clef's intrinsic model.
 
-Industrial maturity came in OCaml. Jane Street's [Incremental](https://blog.janestreet.com/introducing-incremental/) hardened the theory into a library that keeps a trading firm's derived state current: every node carries a height; a stabilization pass processes dirty nodes in height order, so a diamond dependency computes once per wave; an observer is how demand enters the system; and a cutoff stops propagation when a recomputed value is unchanged. The vocabulary that library settled, stabilize, observe, cutoff, is the vocabulary of the cold half everywhere, and their retrospective on its seven implementations is one of the best accounts in print of how much design space there is inside "just recompute what changed."
+Jane Street's [Incremental](https://blog.janestreet.com/introducing-incremental/) developed the approach in OCaml around observers and stabilization. An observer establishes demand, and a stabilization pass processes the affected graph in dependency order. A cutoff stops further propagation from a recomputed value when its result is unchanged. We use that vocabulary in our [incremental computation specification](/spec/draft/incremental-computation/).
 
-In the F# world we descend from, the line continues as [FSharp.Data.Adaptive](https://github.com/fsprojects/FSharp.Data.Adaptive), and our async lineage [credits](/blog/dotnet-to-fidelity-concurrency/) the cold-side design sources it drew on. Clef's `Incremental<'T>` is that inheritance made intrinsic: demand, staleness, and stabilization are specified in our [incremental computation](/spec/draft/incremental-computation/) spec rather than supplied by a package.
+In F#, [FSharp.Data.Adaptive](https://github.com/fsprojects/FSharp.Data.Adaptive) offers another reference for demand-driven values and changing collections. Jimmy Byrd's [IcedTasks](https://github.com/TheAngryByrd/IcedTasks) was a direct influence on my preference for cold execution. Its reusable cold-task factory defers starting work. An incremental value adds caching and dependency invalidation, so the two have different uses even when both begin with deferred work.
 
-## The Graph the Actors Already Draw
+Those libraries provide their abstractions within their host language and runtime. In Clef we can specify cold execution and incremental computation as language intrinsics, allowing Composer to retain their semantics during lowering. That is the architectural choice we are making for Fidelity.
 
-This post began as one observation in a design conversation: a well-articulated actor system already contains this graph, as standing structure rather than resemblance.
+## Demand and readiness
 
-Read an actor system through the process-shaped glasses the Erlang and Akka traditions supply and you see mailboxes, supervision, and delivery. Read the same system cold and a different structure surfaces. Our [actor behaviors are pure functions](/docs/design/concurrency/the-three-layer-actor-contract/) from state and message to effects. Take the pure fraction: actor state is a memoized node value, message receipt is an input change, the behavior is the recompute function, and the articulation of actor references is the dependence graph, standing in memory at runtime. The effectful residue is the part incremental computation cannot express, and the reason the system is an actor system rather than a spreadsheet. So the honest claim is a projection, in the same sense our three-layer work calls the wait-for edge a projection of the session type onto the liveness question. The incremental graph is the projection of the actor system onto the demand-and-validity axis.
+Cold execution moves some cost to the point of request. A hidden chart can consume little computation while closed and still take time to prepare when opened. I want that tradeoff to be explicit, particularly on hardware where we can measure a defined deployment profile.
 
-The projection is worth naming because it carries three resources the mailbox traditions have no seat for, by design, since unconditional delivery is their model:
+An application could keep selected time-series calculations current through a background observer. Closing the chart would remove visual demand while the service continued its own work. Alternatively, it could retain a stale cache or prewarm the chart before displaying it. These policies have different memory and processing costs, even though all use the same demand machinery.
 
-**Demand.** Nothing in a mailbox records whether anyone observes an actor's output. Under the projection, an effect-free actor whose outputs no consumer demands is never dispatched at all. Our spec already places demand registration for actor-based incremental nodes with Prospero, so the junction between the actor system and the cold graph is a standing commitment rather than a proposal.
+The distinction also applies during construction. `Incremental<'T>` defers a calculation, while `Cold<Incremental<'T>>` additionally defers constructing the subgraph. An active effect has demand of its own. Our cold UI descriptions therefore need to defer effect creation until an owner activates them.
 
-**Cutoff.** Actors forward messages regardless of whether the derived state changed. A cutoff at the actor boundary would wake no dependents when recomputation produces an unchanged value, which is backpressure by equality.
+## Actor-owned graphs
 
-**Order.** A stabilization pass dispatches the dirty, demanded fragment in dependency order, which is why incremental systems compute a diamond once per wave. Mailbox order can compute it twice. The graph that would settle the order is already in our compiler's possession.
+An actor can own many incremental nodes. Its message handler admits input changes, and local stabilization computes the demanded results before publication. We can use the pure calculations within an [actor behavior](/docs/design/concurrency/the-three-layer-actor-contract/) as candidates for incremental evaluation when the relevant reads and effects are known.
 
-## One Contract for Both Temperatures
+The ownership boundary also preserves required event handling. An unobserved temperature chart can leave its derived plot stale while the same actor continues recording readings. A command must retain its occurrence semantics even when processing it leaves a visible value unchanged.
 
-This is where the cold half meets [the scheduler we recently gave formal standing](/blog/surfacing-the-scheduler/). The [scheduler contract](/spec/draft/scheduler-contract/) was drafted substrate-neutral on purpose, and its determinism clause admits more than mailbox dispatch: a stabilization pass over the demanded, dirty fragment is a conforming implementation for the cold side, dispatching in dependency order what the hot side dispatches by resume. Ariel is the junction where the two temperatures interleave, [under Prospero's policy either way](/docs/design/concurrency/ariel-under-prospero/).
+Cutoff applies to individual derived results. If one input produces the same value, a dependent still needs to account for changes to its other inputs. Across actors, messages require an explicit delivery contract. Within an owner, the graph requires dependency-ordered stabilization. Our [specification](/spec/draft/incremental-computation/#12-relationship-to-actors) keeps those responsibilities separate.
 
-The proposed `Dormant` reference state reads naturally under the same projection. Hydration is a memo restore, the cached node value mapped back from its BAREWire layout. Restart after a fault is invalidation, recompute from inputs. The identity line we drew there, preserved across sleep and re-minted across failure, is the cache-hit-versus-invalidation line that every incremental system already enforces, which gives that design a second ancestry with no activation framework anywhere in it.
+Our [scheduler contract](/spec/draft/scheduler-contract/) provides a place to specify the admission and scheduling of this work. For a local graph, that includes ordering stale, demanded computations. For cross-owner updates, it includes delivery and the point at which a received revision becomes visible locally.
 
-We are still early on the actor-side reading, and the imagining frame belongs on it: we imagine demand and cutoff surfacing at actor granularity through the same inference-with-override posture the rest of the boundary uses, never as annotations a developer threads by hand. The spec commitments named above are the parts already standing. The projection is the direction of the design work underway.
+## Chart readiness
 
-## An Inheritance Worth Claiming
+The useful comparison is a pair of charts over the same data feed. Leave one cold when hidden and keep the other's selected calculations observed in the background. Reopen both under load and measure the time to a current frame, alongside the work and memory each consumed while closed.
 
-The engineers who watched these ideas mature, in Standard ML seminar rooms and then in OCaml at industrial scale, already carry the discipline this post describes. They built the graph as a library, wired demand through observers, and learned to trust a stabilizer with the order of the world's recomputation. Our design intent is that the graph they assembled by hand is the graph a well-articulated actor system already draws, carried by the same contract that schedules everything else. The hot half got its account in Fidelity.Rx. This is the cold half's opening chapter, and we will keep reporting as we carry the projection from reading into machinery.
+We can then add prewarming and compare how much preparation was reusable after a resize or a new input revision. On a fixed instrument or kiosk deployment, those measurements would let us choose a readiness policy against a known switching-latency budget. That is the practical reason I favor incremental computation as our starting point: the application can ask for more readiness where it needs it.

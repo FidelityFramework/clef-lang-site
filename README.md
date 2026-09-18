@@ -1,6 +1,6 @@
 # clef-lang-site
 
-Source for [clef-lang.com](https://clef-lang.com) — the official site for the Clef programming language.
+Source for [clef-lang.com](https://clef-lang.com), the official site for the Clef programming language.
 
 Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems. It is developed as part of the [Fidelity Framework](https://github.com/FidelityFramework).
 
@@ -24,7 +24,7 @@ clef-lang-site/
 | Blog | `content/blog/` | Announcements, releases, analysis |
 
 Specification refresh and change detection follow `clef-lang-spec`'s `main`
-branch. `hugo/go.mod` and `hugo/go.sum` pin the resolved revision; the deployment
+branch. `hugo/go.mod` and `hugo/go.sum` pin the resolved revision. The deployment
 CLI re-vendors it under `hugo/_vendor/` before building. The vendor directory is
 generated and ignored by Git. The specification repository no longer publishes
 through a separate `gh-pages` branch.
@@ -65,13 +65,13 @@ dotnet run --project cli/ClefLang.CLI.fsproj -- graph --verbose
 ```
 
 Atlas and search are separate indexes. `graph.sh` replaces Atlas's nodes and
-connections from the local content and pinned, vendored specification;
+connections from the local content and pinned, vendored specification.
 `index.sh` updates the full-text and vector search indexes. Neither command
 deploys site pages. Deploy new pages before linking to them from the live graph.
 
 `smart-deploy.sh` rebuilds Atlas after each actual deployment, but skips it when
 it decides no deployment is needed. `deploy-pages.sh` alone does not rebuild
-Atlas. Use `graph.sh` to refresh Atlas independently; `--local --port PORT`
+Atlas. Use `graph.sh` to refresh Atlas independently. The `--local --port PORT` option
 targets a local search worker instead. A rebuild failure during smart deploy
 is currently reported as `Skipped`, so check its Atlas output when diagnosing
 a stale graph.
@@ -80,16 +80,20 @@ Graph replacement uses one D1 transaction for both nodes and connections, so a
 failed rebuild preserves the previous graph. The extractor includes relative
 documentation links and tooling pages, and excludes draft pages.
 
-F# regression checks live in `cli/tests/`: `GraphTests.fsx` checks extraction
-through a local capture endpoint; `GraphStorageTests.fsx` checks a local worker's
+F# regression checks reside in `cli/tests/`: `GraphTests.fsx` checks extraction
+through a local capture endpoint. `GraphStorageTests.fsx` checks a local worker's
 full replacement and rollback behavior. Each file documents its invocation.
 
 ## Related Repositories
 
-- [clef-lang-spec](https://github.com/FidelityFramework/clef-lang-spec) — Language specification
-- [composer](https://github.com/FidelityFramework/composer) — Compiler
-- [clefpak](https://github.com/FidelityFramework/clefpak) — Package manager
-- [alloy](https://github.com/FidelityFramework/alloy) — Base libraries
+- [clef-lang-spec](https://github.com/FidelityFramework/clef-lang-spec): Language specification
+- [composer](https://github.com/FidelityFramework/composer): Compiler
+- [clefpak](https://github.com/FidelityFramework/clefpak): Package manager
+
+Our language specification defines core types and evaluation primitives,
+including `Observable` and `Incremental`, as Clef intrinsics for Composer to
+lower. Projects use them without a base-library package dependency. See the
+[language specification](https://clef-lang.com/spec/draft/).
 
 ## License
 

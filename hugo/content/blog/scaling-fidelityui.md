@@ -1,8 +1,9 @@
 ---
-title: "Scaling FidelityUI: The Actor Model"
-linkTitle: "Scaling FidelityUI"
-description: "How Olivier and Prospero extend FidelityUI"
+title: "Scaling Fidelity.UI: Ownership and Demand"
+linkTitle: "Scaling Fidelity.UI"
+description: "Owned reactive graphs, background demand and explicit distribution in Fidelity.UI"
 date: 2025-05-24
+lastmod: 2026-09-18
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
@@ -10,430 +11,77 @@ params:
   migration_date: 2026-03-12
 ---
 
-As we've established in previous entries, from [the FidelityUI model]({{< ref "fidelity-ui-model" >}}) to [leveraging Fabulous for native UI]({{< ref "leveraging-fabulous-for-native-ui" >}}), our FidelityUI deterministic memory approach serves embedded systems and many desktop applications. The question we take up here is what happens when an application grows beyond simple UI interactions: when it needs to coordinate business logic, handle concurrent operations, and manage rendering pipelines. From our design perspective, this is where the Olivier actor model and Prospero orchestration layer are meant to extend FidelityUI from a UI framework into an application architecture that scales to distributed systems, while keeping deterministic memory management through [RAII (Resource Acquisition Is Initialization) principles](/docs/design/memory/raii-in-olivier-and-prospero/).
+Close a chart and its data feed may still need to run. Open a second chart and both can share the same history, even if they display different time windows. These are ordinary expectations for a dashboard, and they are part of what I want our Fidelity.UI model to express without a tangle of application-managed subscriptions.
 
-We do not abandon our deterministic memory principles. We extend them with arena-based allocation that follows RAII patterns. The picture we work from is moving from building individual houses to planning a neighborhood, where each house (actor) manages its own property (arena) and handles cleanup when moving out. The construction techniques stay the same, with a systematic approach to organizing the larger whole.
+We are designing [Fidelity.UI]({{< relref "/docs/design/user-interfaces" >}}) around owner-local reactive graphs that can drive several visual areas. Larger sections could have independent owners where isolation or scheduling calls for them. That gives us a starting point for an instrument screen and a way to organize larger applications without tying component syntax to a thread or process.
 
-## The Architectural Evolution: From Components to Actors
+## Local consistency
 
-To follow how FidelityUI scales with the actor model, let's first establish what doesn't change. Our stack-based patterns, compile-time optimizations, and direct LVGL bindings remain as they are. When you write a button component or lay out a grid, you're still using the same stack-based approach. What changes is how these components are organized and coordinated in larger applications.
+A signal supplies a current value. A memo caches a derivation. An effect creates demand for work with an external consequence. Several input changes can stabilize as one local update so a dependent view observes a consistent result.
 
-The actor model introduces a process-based architecture where each process owns memory arenas that its actors can use. Multiple actors within a process would share immutable data while keeping logical separation through message passing. Each actor receives its own arena, reclaimed when the actor terminates, which is RAII at the actor level. Between processes you get strong isolation; within a process you get collaboration with deterministic memory management.
+Actor messages have a different responsibility: they carry occurrences under a delivery contract. A message may update a signal, append an event to a history or request an operation. Coalescing the mailbox cannot by itself guarantee dependency-ordered stabilization, and equal payloads do not make two commands interchangeable.
 
-## Understanding RAII in the Actor Model
+One actor can own many incremental nodes and visual areas. The runtime need not turn every binding or widget into an actor. Prospero's ownership and supervision can enclose the graph, while the graph retains its own demand, invalidation and cutoff semantics.
 
-RAII brings deterministic memory management to our actor system through one principle: resource lifetime is tied to object lifetime. When an actor is created, it gets an arena. When the actor terminates, the arena is reclaimed. No scanning, no pauses, and cleanup that happens exactly when expected.
+## Background demand
 
-In our process-actor model, RAII integrates as follows. While we are early in this design, the intended shape is:
+Consider a dashboard with a live history, two charts and an inspector. Ingestion may need to preserve every admitted event even when no chart is visible. A latest-value projection can serve a meter, while a history store supports time-window calculations. Those requirements should be explicit before selecting a coalescing policy.
 
-```fsharp
-module ProcessManagement =
+The charts can use different readiness policies:
 
-    // Each process manages a pool of arenas
-    type ProcessArenaPool = {
-        ProcessId: ProcessId
-        TotalSize: int64
-        AvailableArenas: Arena list
-        AllocatedArenas: Map<ActorId, Arena>
-    }
+| Policy | While the chart is closed | On reopening |
+|---|---|---|
+| On demand | No visual demand; owned services follow their own policy | Compute demanded results |
+| Retain cache | Preserve results and storage, allowing staleness | Validate and recompute as needed |
+| Keep data current | A service observer maintains selected derivations | Attach to current data; prepare visual resources |
+| Scoped prewarm | Prepare selected data, layout or paint under a budget | Reuse preparation whose inputs remain valid |
 
-    // Arena configuration for different workloads
-    type ArenaConfig = {
-        Size: int64
-        AllocationStrategy: AllocationStrategy
-        GrowthPolicy: GrowthPolicy
-    }
+A service observer can keep its demand after the inspector closes. We would account for that work under the service owner, with a separate policy for any retained component state.
 
-    // Create a process with arena pool
-    let createProcess name poolSize =
-        let pool = {
-            ProcessId = ProcessId.generate()
-            TotalSize = poolSize
-            AvailableArenas = Arena.createPool poolSize
-            AllocatedArenas = Map.empty
-        }
+We favor cold construction by default. For a view that must open quickly, an application could explicitly demand preparation in advance. We would measure the resulting switching latency alongside background work and retained memory.
 
-        let process = Process.create name pool
+## Execution boundaries
 
-        // Register with Prospero for orchestration
-        Prospero.registerProcess process
-        process
-```
-
-RAII removes the need for separate memory tracking. When an actor is created, it gets an arena from the pool. When the actor terminates, the arena returns to the pool or is destroyed. This lifecycle is meant to keep memory management predictable and efficient.
+We might give latency-sensitive input its own execution owner, or isolate a subsystem whose restart should leave the rest of the interface usable. Moving work to another core also introduces scheduling and communication costs. We would choose those boundaries for the workload rather than assign one to every visual area.
 
-## Actor Memory Arenas and Lifecycle Integration
-
-Consider a real-time data visualization dashboard. It might have several processes, each containing multiple actors with their own arenas:
+A worker can receive a bounded task over immutable inputs and return prepared results. An independent actor can own a larger domain with its own state and lifecycle. A process can provide stronger isolation. Each choice needs an admitted input/output contract, and platform window or DOM mutation remains with its authorized owner.
 
-```fsharp
-module UIProcess =
-    let processPool = createArenaPool "UI" (512 * MB)
+A pure reducer is useful where domain transitions need explicit messages and reproducible state changes. Components can combine those transitions with local signals and incremental selectors. This preserves the benefits of functional state modeling without imposing one application-wide rendering loop.
 
-    type RenderActor() =
-        inherit Actor<RenderMessage>()
+## Retirement and resource release
 
-        // Actor gets an arena that lives exactly as long as the actor
-        let arena = Arena.allocate processPool (50 * MB)
+A component's owner covers its subscriptions, timers, callbacks and asynchronous operations. Retirement stops new work and invalidates pending results. A completion should carry enough identity to establish that it belongs to the current owner generation and input revision.
 
-        // RAII collections allocated from actor's arena
-        let renderPipeline = RenderPipeline.createIn arena
-        let frameBuffers = ResizeArray<FrameBuffer>()
+Logical cancellation is distinct from physical completion. A worker may still be writing an output buffer. A GPU or compositor may still be reading a submitted surface. Storage must remain valid until those uses finish, even when the visual result is no longer wanted.
 
-        override this.Receive message =
-            match message with
-            | CreatePipeline config ->
-                // Resources allocated from arena
-                renderPipeline.Configure(config)
+Our native implementation needs a reclamation policy for repeatedly replaced children. Keeping every child allocation until actor retirement would allow storage to grow during a long session. We would test sustained mount, update and removal alongside logical cleanup on JavaScript, where the host manages storage.
 
-            | RenderFrame ->
-                // Rendering still uses stack-based patterns
-                renderPipeline.Execute()
+## Distributed projections
 
-        // RAII: Arena automatically cleaned up with actor
-        interface IDisposable with
-            member this.Dispose() =
-                arena.Dispose()  // Immediate reclamation
+A remote update arrives through a protocol and becomes input to the client's local graph. The client sends commands to the authority responsible for the domain operation. We would make that boundary explicit so reconnect and stale-data behavior remain visible in the application design.
 
-    type InputActor() =
-        inherit Actor<InputMessage>()
+A concrete protocol needs to specify:
 
-        // Smaller arena for input handling
-        let arena = Arena.allocate processPool (10 * MB)
+- Stable entity identity, schema version and payload validation.
+- Snapshot and update ordering, including how a client detects a missing revision.
+- Reconnect, resynchronization and stale-data presentation.
+- Command identity, acknowledgement and retry semantics.
+- Queue limits, admission policy and which updates may be coalesced.
 
-        // RAII collections manage their own cleanup
-        let gestureRecognizer = GestureRecognizer.createIn arena
-
-        override this.Receive message =
-            match message with
-            | TouchEvent data ->
-                // Process input using stack operations
-                let gesture = recognizeGesture data
-                // Communicate with render actor in same process
-                RenderActor.Tell(UpdateForGesture gesture)
-
-        interface IDisposable with
-            member this.Dispose() =
-                arena.Dispose()
-```
-
-In this architecture each actor controls its own memory lifecycle. When an actor terminates, its entire arena is reclaimed immediately. No waiting and no scanning, with cleanup that happens exactly when the actor's dispose method is called.
-
-## Cross-Process References with Sentinels
-
-References between actors in different processes are handled differently in our memory management than in the actor systems we have surveyed. Instead of null references, we use Reference Sentinels that carry state information:
-
-```fsharp
-module CrossProcessReferences =
-
-    // Sentinel states provide more information than simple null/non-null
-    type ReferenceState =
-        | Valid              // Actor is alive and reachable
-        | Terminated         // Actor has terminated cleanly
-        | ProcessUnavailable // Process is down or unreachable
-        | Unknown            // State cannot be determined
-
-    // Sentinels track cross-process references
-    type CrossProcessSentinel = {
-        TargetProcessId: ProcessId
-        TargetActorId: ActorId
-        mutable State: ReferenceState
-        mutable LastVerified: int64
-    }
-
-    // Sending messages across processes with automatic verification
-    let sendCrossProcess (sender: ActorRef) (recipient: ActorRef) message =
-        match recipient.Sentinel with
-        | None ->
-            // Same process - direct delivery
-            deliverLocal recipient message
-
-        | Some sentinel ->
-            // Cross-process - verify through sentinel
-            match verifySentinel sentinel with
-            | Valid ->
-                // Serialize and send via BAREWire
-                let serialized = BAREWire.serialize message
-                BAREWire.send sentinel.TargetProcessId serialized
-
-            | Terminated ->
-                // Handle dead letter with rich information
-                DeadLetterActor.Tell(DeadLetter(sender, recipient, message, Terminated))
-
-            | ProcessUnavailable ->
-                // Process is down - might restart
-                handleProcessFailure sender recipient message
-```
-
-The sentinel approach is meant to give actionable information about reference validity without relying on a runtime memory management system.
-
-## Arena Orchestration with Prospero
-
-Prospero is designed to orchestrate arena usage within a process, keeping memory utilization efficient while preserving actor independence:
-
-```fsharp
-module Prospero.ArenaOrchestration =
-
-    // Prospero tracks arena usage across actors
-    type ProcessArenaState = {
-        ProcessId: ProcessId
-        TotalArenaSize: int64
-        ActorArenas: Map<ActorId, ArenaStats>
-        PoolingStrategy: PoolingStrategy
-    }
-
-    // Arena pooling strategies
-    type PoolingStrategy =
-        | FixedSize      // All arenas same size
-        | Adaptive       // Size based on actor type
-        | OnDemand       // Create as needed
-
-    // Prospero coordinates actor lifecycle with arenas
-    let terminateActor (processId: ProcessId) (actorId: ActorId) =
-        let arena = getActorArena processId actorId
-
-        // Standard termination
-        let actor = getActor actorId
-        actor.Mailbox.Complete()
-
-        // RAII handles cleanup automatically
-        actor.Dispose()  // This triggers arena.Dispose()
-
-        // Return arena to pool or destroy based on strategy
-        match getPoolingStrategy processId with
-        | FixedSize ->
-            // Return to pool for reuse
-            returnArenaToPool processId arena
-
-        | Adaptive ->
-            // Decide based on usage patterns
-            if arena.Size < getAverageArenaSize processId then
-                returnArenaToPool processId arena
-            else
-                arena.Destroy()  // Too large, don't keep
-
-        | OnDemand ->
-            // Always destroy, create fresh when needed
-            arena.Destroy()
-```
-
-This coordination is meant to manage memory according to application needs without garbage collection algorithms.
-
-## Coordinated Rendering in the UI Process
-
-The UI process shows how multiple actors work together under RAII-based memory management:
-
-```fsharp
-module UIProcessArchitecture =
-    let uiProcessConfig = {
-        PoolSize = 512 * MB
-        ArenaConfig = {
-            DefaultSize = 50 * MB
-            AllocationStrategy = FastAlloc
-            GrowthPolicy = DoubleOnDemand
-        }
-    }
-
-    // Shared immutable data with RAII lifetime
-    type SharedViewHierarchy = {
-        RootView: View
-        ViewCache: Map<ViewId, View>
-        LayoutCache: Map<ViewId, LayoutInfo>
-    }
-
-    // UI Coordinator with dedicated arena
-    type UICoordinatorActor() =
-        inherit Actor<UIMessage>()
-
-        // Arena for view hierarchy
-        let arena = Arena.allocate "UI" (100 * MB)
-
-        // RAII collections for view management
-        let viewHierarchy = SharedViewHierarchy.createIn arena
-
-        override this.Receive message =
-            match message with
-            | UpdateView (id, updater) ->
-                let newHierarchy = viewHierarchy.Update(id, updater)
-
-                // Other actors can safely reference immutable data
-                LayoutActor.Tell(RecalculateLayout newHierarchy)
-                RenderActor.Tell(PrepareRender newHierarchy)
-
-        interface IDisposable with
-            member this.Dispose() =
-                arena.Dispose()  // All view data cleaned up
- 
-```
-
-In this design the view hierarchy lives in the coordinator's arena and is reclaimed when the coordinator terminates. No separate tracking is needed.
-
-## Process Topology with Arena Management
-
-The process-actor hierarchy with RAII supports different deployment patterns:
-
-```fsharp
-// Embedded deployment - single process, minimal arenas
-let configureEmbedded() =
-    { Processes = [
-        { Name = "Main"
-          ArenaPoolSize = 32 * MB
-          ArenaConfig = {
-              DefaultSize = 4 * MB
-              AllocationStrategy = Conservative
-          }
-          Actors = [
-              createActor<UICoordinatorActor>()
-              createActor<SimpleRenderActor>()
-          ]}
-      ]}
-
-// Desktop deployment - multiple specialized processes
-let configureDesktop() =
-    { Processes = [
-        { Name = "UIProcess"
-          ArenaPoolSize = 512 * MB
-          ArenaConfig = {
-              DefaultSize = 50 * MB
-              AllocationStrategy = Balanced
-          }
-          Actors = [
-              createActor<UICoordinatorActor>()
-              createActor<RenderActor>()
-              createActor<InputActor>()
-              createActor<AnimationActor>()
-          ]}
-        { Name = "DataProcess"
-          ArenaPoolSize = 1 * GB
-          ArenaConfig = {
-              DefaultSize = 100 * MB
-              AllocationStrategy = BulkOriented
-          }
-          Actors = [
-              createActor<DataLoaderActor>()
-              createActor<DataTransformActor>()
-              createActor<CacheManagerActor>()
-          ]}
-      ]}
-```
-
-Each deployment scenario configures its arena pools accordingly, and the same cleanup mechanism works across all of them.
-
-## Real-World Example: A Trading Dashboard
-
-Consider how this architecture would handle a real-world application with RAII-based memory management:
-
-```fsharp
-module TradingDashboard =
-    // UI Process - Must be responsive
-    module UIProcess =
-        let config = {
-            ArenaPoolSize = 1 * GB
-            DefaultArenaSize = 100 * MB
-        }
-
-        type MarketDataDisplay() =
-            inherit Actor<MarketDisplayMessage>()
-
-            let arena = Arena.allocate "UI" (200 * MB)
-
-            // RAII collections for market data
-            let marketView = MarketView.createIn arena
-
-            override this.Receive = function
-                | UpdatePrices prices ->
-                    // Update view in place
-                    marketView.UpdatePrices(prices)
-
-                    // Share with other UI actors
-                    ChartRenderer.Tell(RenderPriceChart marketView)
-                    GridUpdater.Tell(UpdatePriceGrid marketView)
-
-            interface IDisposable with
-                member this.Dispose() = arena.Dispose()
-
-        type AlertManager() =
-            inherit Actor<AlertMessage>()
-
-            // Small arena for alerts
-            let arena = Arena.allocate "UI" (10 * MB)
-
-            // RAII map for active alerts
-            let activeAlerts = Dictionary<AlertId, Alert>()
-
-            override this.Receive = function
-                | PriceAlert (symbol, price) ->
-                    let alert = Alert.createIn arena symbol price
-                    activeAlerts.[alert.Id] <- alert
-                    NotificationUI.Tell(ShowAlert alert)
-
-                | DismissAlert id ->
-                    activeAlerts.Remove(id) |> ignore
-
-            interface IDisposable with
-                member this.Dispose() = arena.Dispose()
-```
-
-This architecture is meant to keep separation clean and cleanup predictable. When actors terminate, their arenas are reclaimed immediately. No pauses and no scanning, with deterministic resource management.
-
-## The Developer Experience: Simplicity by Default
-
-The RAII approach is meant to let developers focus on their domain logic without managing memory by hand:
-
-```fsharp
-// Simple app - memory management is invisible
-let simpleApp() =
-    window "My App" {
-        label "Hello, World!"
-        button "Click me" (fun () -> printfn "Clicked!")
-    }
-
-// Add an actor - RAII handles cleanup
-let actorApp() =
-    let dataActor = Actor.Create<DataActor>()  // Gets arena automatically
-
-    window "My App" {
-        button "Load Data" (fun () -> dataActor.Tell(LoadData))
-    }
-
-// Scale to multiple processes - still simple
-let multiProcessApp() =
-    let uiProcess = Process.Create("UI", arenaSize = 512 * MB)
-    let dataProcess = Process.Create("Data", arenaSize = 1 * GB)
-
-    let ui = uiProcess.SpawnActor<UIActor>()
-    let data = dataProcess.SpawnActor<DataActor>()
-
-    window "My App" {
-        button "Process" (fun () -> data.Tell(ProcessDataset))
-    }
-```
-
-With this progressive disclosure, teams could adopt the more advanced features gradually without learning a separate set of memory management concepts.
-
-## Performance Benefits of RAII
-
-The RAII approach is designed to provide several benefits:
-
-**Predictable Performance**: No collection pauses or scanning overhead. Memory is reclaimed when actors terminate.
-
-**Memory Efficiency**: Arena allocation reduces fragmentation. Related allocations are grouped together and cleaned up as a unit.
-
-**Simplified Mental Model**: Developers think in terms of actor lifetimes, not complex collection algorithms.
-
-**Better Cache Locality**: Arena allocation keeps actor data together, improving cache performance.
-
-## Scaling Through One Rule
-
-Our FidelityUI deterministic memory patterns, the Olivier/Prospero actor model, and RAII-based memory management combine to give each actor its own arena with automatic cleanup. From this, our design is meant to provide:
-
-1. **Deterministic memory management** through RAII principles
-2. **Strong isolation** between processes with rich failure information via sentinels
-3. **Natural concurrency** through the actor model
-4. **Progressive complexity** that grows with your application's needs
-
-RAII rests on one rule: when an actor terminates, its memory is reclaimed. There are no garbage collection algorithms to understand, no tuning parameters to adjust, and no collection pauses to work around. That predictability is what makes the system's behavior and performance easier to reason about.
-
-For embedded developers, small arenas keep memory usage predictable. For desktop developers, larger arenas support richer applications. For enterprise developers, process isolation provides fault tolerance. The same RAII principle carries all three.
-
-We will keep building toward this as the rest of the Olivier and Prospero work comes into place, with the aim of making concurrent applications on FidelityUI more predictable to reason about than the garbage-collected alternatives we set out from.
+Our BAREWire representation can describe the typed payloads exchanged by that protocol. Application code still specifies the ordering and recovery rules. Each local graph then stabilizes the updates its owner admits.
+
+For a device fleet, we would use the same component model to present local projections and select storage and connection policies for each deployment. A disconnected device can retain a readable snapshot and show its freshness explicitly, according to product requirements.
+
+## Components across resource profiles
+
+The portable vocabulary covers semantic controls, composition, editing, focus and accessibility. Native and DOM backends realize those behaviors through their own rendering and input facilities. Target extensions remain explicit where capabilities differ.
+
+An MCU panel can use bounded partial updates and omit decorative motion. A more capable panel or desktop can admit transitions and retained composition. A WREN frontend can use browser layout and painting. We would test the domain behavior and ownership rules through each backend, including the effects of changing its motion profile.
+
+## Workload comparisons
+
+We would first change one of two areas and measure the affected work, then exercise layout-dependent changes and retirement.
+
+Worker and process cases add completion during resize, close and restart. Distributed cases add packet loss, duplicate delivery, reconnect and slow clients, checking both bounded resource use and domain correctness. A larger client count is meaningful only when the workload, update rate, transport and resource envelope are stated.
+
+For the dashboard, I would start with two charts over the same feed: one left cold when hidden and one kept current by a service observer. Reopening each would expose the latency tradeoff. Running the same comparison during reconnect would also show whether our local readiness policy survives a break in the data source.

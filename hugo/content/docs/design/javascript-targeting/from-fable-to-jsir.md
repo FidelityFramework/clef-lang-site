@@ -1,7 +1,7 @@
 ---
-title: "From Fable to JSIR: The Back-End Transition for JavaScript Targeting"
-linkTitle: "Fable to JSIR"
-description: "How Composer's JavaScript-emission back-end transitions from Fable + npm bundlers to JSIR + MLIR, while the .NET-hosted compiler persists across the change"
+title: "Fable and Composer: Two Paths to JavaScript"
+linkTitle: "Fable and Composer"
+description: "How the working F# / Fable path informs a Clef / Composer backend, with shared Solid and Vite stages for JSX frontends."
 date: 2026-05-04
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Compilation", "JavaScript", "JSIR", "Design"]
@@ -19,6 +19,8 @@ Fable compiles F# through its own intermediate AST and target transformations. I
 Composer owns Clef's Program Semantic Graph. The proposed route carries its facts through Alex toward JSHIR/JSIR and JavaScript. Earlier drafts considered a separate JavaScript AST route that bypassed Alex. Moving the design into the MLIR fan-out offers a common place to express and check lowering obligations; it does not automatically prove those obligations.
 
 The difference is therefore the owner of the language semantics and preservation work. F# continues through Fable. Clef would use Composer. Both can target the same host APIs, and both can be checked against the same external contract where their source semantics overlap.
+
+For WREN frontends, both producers can feed the same downstream JSX toolchain: Solid transforms JSX through Babel, Vite bundles the assets, and the native host embeds them. WrenHello already exercises that path with Fable. The [JS / JSX toolchain chapter](../javascript-jsx-toolchain/) describes the proposed Clef producer and JSIR extension. Adopting JSIR does not replace the framework compiler or bundler.
 
 ## What Fable Does Well, What Composer Needs to Add
 
@@ -48,11 +50,11 @@ The semantic metadata remains in PSG/codata through the reasoning and affected l
 
 JSIR supplies operations and an analysis substrate, along with source regeneration. Its reported round-trip success is empirical fidelity, not a proof that Composer's serializer emits the right bytes. Upstream verification is also path-specific: AST conversion invokes MLIR verification, while the reviewed transformation runner disables pass-manager verification pending an IR fix. The [pinned upstream details](../jsir-javascript-as-mlir-backend/#boundary-2-lowering-fidelity) belong in the tool qualification, not in an assumption that every pass is verified.
 
-The proposed Library of Alexandria would collect reusable lowering rules and their contracts. A rule can then be applied across call sites whose premises it covers. That is a useful unit for tests and eventual proof work. Unknown shapes and external behavior still need explicit treatment.
+The Library of Alexandria supplies portable witnessing patterns and elements. JavaScript/JSX realization follows that boundary, with reusable target conversions and their contracts applied where their premises hold. That is a useful unit for tests and eventual proof work. Unknown shapes and external behavior still need explicit treatment.
 
 ## Direct Tools and the Supply Chain
 
-A direct `jsir_gen` invocation can reduce the orchestration needed for one emission stage. It is still a tool built from dependencies: the reviewed upstream embeds Babel and QuickJS. Removing a Node launcher does not remove those implementations from the trust base. The exact revision also matters: current upstream spells the routes `source2ast,ast2jsir` and `jsir2ast,ast2source`, while the April checkout used `ast2hir` and `hir2ast`. [Pinned driver](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_gen.cc), [embedded dependencies](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/quickjs_babel/BUILD).
+JSIR’s conversion APIs can supply a source-generation stage. Its current `jsir_gen` CLI initializes JavaScript-source input; the reverse pass names do not establish a standalone MLIR-input emitter. Composer would need library integration or a suitable driver. It is still a tool built from dependencies: the reviewed upstream embeds Babel and QuickJS. Removing a Node launcher does not remove those implementations from the trust base. The exact revision also matters: current upstream spells the routes `source2ast,ast2jsir` and `jsir2ast,ast2source`, while the April checkout used `ast2hir` and `hir2ast`. [Pinned driver](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/jsir_gen.cc), [embedded dependencies](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/quickjs_babel/BUILD).
 
 The artifact's runtime dependencies are another question. Type-only declarations for a host API need not ship JavaScript. A wrapper SDK can ship substantial behavior in the bundle, even when there is no `node_modules` directory at runtime. Bindings describe that code; they do not absorb or verify it. [Fully Informed Bindings](../fully-informed-bindings/) separates host surfaces, wrapper libraries and management clients.
 
@@ -141,4 +143,4 @@ This is familiar compiler engineering: a reference corpus supplies examples and 
 - [Design-Time Specification for Runtime Reliability](../design-time-spec-runtime-reliability/): current checks and proposed preservation work
 - [TypeScript Binding via Xantham](../../interop/typescript-binding-via-xantham/): declaration analysis
 - [Library Binding for C/C++](../../interop/library-binding/): the native binding counterpart
-- [Atelier Transcribe](https://github.com/speakeztech/Atelier/blob/main/docs/10_transcribe.md): the proposed design-time ingestion layer
+- [Atelier Transcribe](https://forge.spkez.dev/FidelityFramework/Atelier/src/branch/main/docs/10_transcribe.md): the proposed design-time ingestion layer

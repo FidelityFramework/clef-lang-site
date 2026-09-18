@@ -23,4 +23,4 @@ The instruments that surround the Clef compiler: the language server and editor 
 
 The first Lattice gate needs the compiler and editor path. The other projects provide inputs or later consumers; they are not all dependencies of a basic editing session. Conclave is the platform for intelligent distributed systems in Cloudflare; BAREWire is the glue connecting its components.
 
-The [earlier AutoComplete proposal](clef-autocomplete-integration/) is retained as historical background. Its FSAC setup examples are superseded by the current CCS-backed integration.
+Our [editor integration](clef-editor-integration/) uses compiler-owned project context and versioned results for diagnostics and navigation. Source-proof queries use the same checked input generation.

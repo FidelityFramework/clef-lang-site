@@ -17,6 +17,7 @@ The sections run from the inside out, starting at the language a developer write
 - **[Categorical Foundations](/docs/design/categorical-foundations/)**: the 2-categorical structure the type system and memory model turn out to instantiate, placing gradients, sensitivity, and quantum evolution under one algebraic framework.
 - **[Constrained Machine Learning](/docs/design/constrained-machine-learning/)**: the Adaptive Domain Model, where a domain's conserved quantities, dimensions, and symmetries live in the types and inform the weights the model fits.
 - **[JavaScript Targeting](/docs/design/javascript-targeting/)**: emission across the erasure boundary to the edge, where actors written once run on bare metal or Cloudflare's platform without code changes.
+- **[User Interfaces](/docs/design/user-interfaces/)**: the current experimental direction for a Clef-native reactive-area engine and shared functional authoring across native displays and WREN.
 - **[FFI](/docs/design/interop/)**: foreign function interfaces and library binding at the boundary with non-Clef code.
 
 For how the compiler carries out the lowering these articles motivate, the saturation engine, the nanopass pipeline, and the MLIR dialect path, see [Compiler Internals](/docs/internals/).

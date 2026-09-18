@@ -119,7 +119,7 @@ This mechanism is central to our compilation strategy. The Composer compiler is 
 
 ## Platform-Aware Continuation Compilation
 
-Compiling Clef's async expressions to efficient native code across different platforms means expressing continuation-passing style in a way that survives to code generation. This is an explicit articulation of continuation structure that the Composer compiler recognizes and translates to MLIR, not the implicit CPS transformation a compiler performs internally. The framework's real primitives here are the dual `Incremental` and `Observable`: cold pull-based computation on one side, push-based on the other. `async`/`await` is the historical surface that industry convention has standardized on, and it maps onto the cold `Incremental` side, a deferred computation held as a value that does not run until it is observed.
+Our Composer design preserves the continuation structure of Clef's async expressions through native code generation. An async description defers work until activation, with `await` expressing a suspension and resumption point. `Incremental<'T>` additionally specifies caching and dependency invalidation for demand-driven derivations. `Observable<'T>` specifies producer-driven event delivery. These constructs use continuation structure while retaining their distinct evaluation contracts.
 
 The approach combines delimited continuations with true RAII principles. Where .NET async relies on heap-allocated Tasks and thread pool scheduling, a Clef async expression compiles to a stack-based state machine with deterministic resource cleanup:
 
@@ -228,9 +228,9 @@ Beyond traditional architectures, continuation structure provides a natural fit 
 
 Delimited continuations touch every part of the Fidelity framework:
 
-**Reactivity** ([Fidelity.Rx: Native Reactivity in Clef](/blog/fidelityrx-native-reactivity/)) uses continuation capture for subscription callbacks. [When an observable emits, it resumes the captured continuation of each subscriber](/spec/draft/observable-computation/#42-emission).
+**Reactivity** ([Native Reactivity in Clef](/blog/native-reactivity-in-clef/)) uses continuation structure for deferred computations and subscription callbacks. `Incremental<'T>` provides demand-driven cached derivations. `Observable<'T>` supplies producer-driven events. [An observable emission invokes its registered observers](/spec/draft/observable-computation/#42-emission), while invalidating an incremental node can leave its recomputation deferred until demand.
 
-**BAREWire** ([Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/)) leverages continuations for zero-copy message handling. The deserialization callback is a continuation that processes the message without intermediate allocation.
+**BAREWire** ([Getting the Signal with BAREWire](/blog/getting-the-signal-with-barewire/)) delivers decoded values or an admitted borrowed view to a consumer continuation. Allocation and copying depend on the selected representation, transport and buffer lifetime.
 
 **Olivier actors** use continuations for both message receipt and supervision. A supervisor's failure handler is a continuation captured when the child was spawned.
 

@@ -69,3 +69,7 @@ A dependency's TypeScript signature describes an interface. It cannot establish 
 The goal is less work repeated by hand: one declaration informing a codec, one boundary policy generating its narrowing, one obligation traced through the operation that implements it. Some checks can disappear when their premises and preservation are established. Others belong at the boundary where a value first becomes known.
 
 That combination lets BAREWire stay economical at final lowering while the compiler remains informed beforehand. JSIR offers a place to extend the discipline to JavaScript. The next step is to earn it one supported operation at a time, with the current tests and the specification both serving as concrete guides.
+
+## UI Toolchain Preservation
+
+For a Solid/WREN profile, [JSX generation](../javascript-jsx-toolchain/) is followed by Solid’s Babel-based transformation, bundling and native embedding. Preserve or re-check affected properties through those steps and bind evidence to the final assets, shipped dependencies and selected WebView. A successful JSX parse or source map does not establish reactive tracking, event multiplicity or cleanup behavior. The same proof-preservation principle applies; this is an additional realization path, not a replacement for the actor and numeric obligations above.

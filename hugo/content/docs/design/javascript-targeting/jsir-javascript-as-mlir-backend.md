@@ -34,6 +34,8 @@ Previous architecture:
                                           (separate lowering)
 ```
 
+That bypass was a choice in the earlier plan, not an inherent property of structured AST emission. A Babel-AST exporter could also consume the result of portable witnessing and retain the same preservation obligations.
+
 Two paths can share a language contract and still require separate preservation work. The opportunity is to share more of that work before the target-specific decisions begin.
 
 ## What JSIR Changes
@@ -50,19 +52,25 @@ Proposed JSIR path:
   Clef PSG ──▶ Alex MiddleEnd ──▶ JSIR ──▶ JavaScript source
 ```
 
-Both paths would go through Alex and use MLIR's pass infrastructure. A pass can preserve a carried property, or a check at its output can establish it again. That is the obligation in [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering); merely placing a pass in MLIR establishes neither.
+Alex witnesses `func`, `scf`, `arith`, `memref` and `index`; target-specific JSHIR/JSIR realization follows that boundary with useful PSG/codata retained. Both paths would go through Alex and use MLIR's pass infrastructure. A pass can preserve a carried property, or a check at its output can establish it again. That is the obligation in [Conformance §6](/spec/draft/conformance/#6-the-preservation-obligation-through-lowering); merely placing a pass in MLIR establishes neither.
 
 This matters because representation and contract metadata can remain in PSG/codata until all reasoning that needs it is complete. A common codec derivation can choose field order and byte encodings once. The native and JavaScript lowerings must then preserve that choice, including bounds, endian order and numeric conversions. Shared derivation reduces opportunities for drift and gives the checks a common reference. Cross-target byte tests and lowering evidence still have work to do.
 
 ## JSIR's Design
 
-JSIR maps JavaScript syntax into MLIR operations, distinguishing references from values and using JSHIR regions for high-level control flow. In the reviewed upstream revision [`1488d9b`](https://github.com/google/jsir/tree/1488d9bd408ec9163ac7051252dfe80e40a4e26a), the driver exposes source, Babel AST and high-level IR. The CLI spells the forward route `source2ast,ast2jsir` and the reverse route `jsir2ast,ast2source`. The April checkout used `ast2hir` and `hir2ast`; commands must be paired with the pinned tool revision. The presence of both `jsir` and `jshir` dialects is not a promise of a separately supported low-level emission route. [Driver source](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_gen.cc).
+JSIR maps JavaScript syntax into MLIR operations, distinguishing references from values and using JSHIR regions for high-level control flow. In the upstream revision reviewed on September 15, 2026 [`d5322bd`](https://github.com/google/jsir/tree/d5322bda6e1311357ead5e20376e28461c8cbc2a), the driver exposes source, Babel AST and high-level IR. The CLI names the forward conversions `source2ast,ast2jsir` and the reverse conversions `jsir2ast,ast2source`. Its input is initialized as JavaScript source: the reverse conversions operate on JSHIR already in the representation pipeline, not an established reverse-only CLI accepting an MLIR file. Composer needs conversion-library integration or a JSHIR-input driver. [Input initialization](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/jsir_gen_lib.cc), [conversion APIs](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/driver/conversion.h). The April checkout used `ast2hir` and `hir2ast`; commands must be paired with the pinned tool revision. The presence of both `jsir` and `jshir` dialects is not a promise of a separately supported low-level emission route. [Driver source](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/jsir_gen.cc).
 
-The forward route also opens an avenue beyond bindings: lift a small library fragment, recover candidate Clef code, and maintain that code locally. That would require an explicit semantic contract, preservation evidence, licensing and an update policy. Neither a successful lift nor a round trip proves that the recovered program behaves the same. [Fully Informed Bindings](/docs/design/javascript-targeting/fully-informed-bindings/) explores bounded experiments; whole-library absorption is not a commitment of this backend plan.
+The forward route also opens an avenue beyond bindings: lift a small library fragment, recover candidate Clef code, and maintain that code locally. That would require an explicit semantic contract, preservation evidence, licensing and an update policy. Neither a successful lift nor a round trip proves that the recovered program behaves the same. [Fully Informed Bindings](/docs/design/javascript-targeting/fully-informed-bindings/) describes the broader design direction of owned Clef SDKs and supporting libraries, developed through bounded, validated replacements and deferred inference. That frontend work is separate from adopting a target emitter; a JSIR lift alone implements neither.
 
-The work builds on MLIR's established dialect and analysis machinery. Its [design document](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/docs/intermediate_representation_design.md) is a useful starting point for that engineering, especially the distinction between faithful syntax representation and analysis of JavaScript behavior.
+The work builds on MLIR's established dialect and analysis machinery. Its [design document](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/docs/intermediate_representation_design.md) is a useful starting point for that engineering, especially the distinction between faithful syntax representation and analysis of JavaScript behavior.
 
-JSIR is not TypeScript's semantic type system. Its current type machinery includes a placeholder `JsirAny`; it does not carry Clef dimensions, range proofs or boundary grades for us. Composer must retain those facts alongside the lowering and connect them to the operations whose behavior they constrain. Erasing metadata is safe only after its preservation obligations have been fulfilled. [IR type definitions](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/jsir_types.td).
+JSIR is not TypeScript's semantic type system. Its current type machinery includes a placeholder `JsirAny`; it does not carry Clef dimensions, range proofs or boundary grades for us. Composer must retain those facts alongside the lowering and connect them to the operations whose behavior they constrain. Erasing metadata is safe only after its preservation obligations have been fulfilled. [IR type definitions](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/jsir_types.td).
+
+## JSX as a Framework Handoff
+
+For a Solid/WREN frontend, the proposed output can retain JSX for Solid’s compiler before Vite bundles the result. Babel already represents and prints JSX; the reviewed JSIR native AST/IR bridge does not. The [JS / JSX toolchain chapter](../javascript-jsx-toolchain/) describes the generated-definition and driver work, reactive-read preservation, and the existing WrenHello path that a Clef producer could reuse. General JavaScript remains the output for non-UI computation.
+
+This extends the preservation chain through Solid compilation, bundling and native embedding. Evidence must concern final assets and shipped dependencies, with the affected obligations preserved or re-checked across those stages. JSX is an intermediate contract, not a proof boundary at which the argument can stop.
 
 ## The Trust Chain
 
@@ -90,7 +98,7 @@ The Clef profile keeps that dynamic work at declared boundaries, through `JsValu
 
 ### Boundary 2: Lowering Fidelity
 
-MLIR can check operation structure, region invariants and value use. These are useful checks, with a narrower scope than semantic preservation. At the pinned upstream revision, [AST-to-JSHIR conversion invokes `mlir::verify`](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/conversion/utils.cc), while [the transformation runner disables pass-manager verification](https://github.com/google/jsir/blob/1488d9bd408ec9163ac7051252dfe80e40a4e26a/maldoca/js/ir/transforms/transform.cc) pending an IR-design fix. The two paths must not be described as a universally verified pipeline.
+MLIR can check operation structure, region invariants and value use. These are useful checks, with a narrower scope than semantic preservation. At the pinned upstream revision, [AST-to-JSHIR conversion invokes `mlir::verify`](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/conversion/utils.cc), while [the transformation runner disables pass-manager verification](https://github.com/google/jsir/blob/d5322bda6e1311357ead5e20376e28461c8cbc2a/maldoca/js/ir/transforms/transform.cc) pending an IR-design fix. The two paths must not be described as a universally verified pipeline.
 
 A well-formed call to `DataView.getFloat64` can still use the wrong offset or endian flag. Preservation work therefore starts at each affected lowering edge, not only at final emission. Composer would need a certified transformation or a re-check connecting the source operation to its target behavior. Source regeneration and empirical round trips are useful additional evidence; neither discharges that correspondence by itself.
 

@@ -15,7 +15,7 @@ Clef's computation expressions give a unified syntax for control flow that would
 
 The spine of this is the monad/applicative axis. A monad sequences because the second effect can depend on the first value, which is the DCont case. An applicative composes independent effects and is therefore parallelizable, which is the Inet and tensor case. McBride and Paterson named that distinction in [*Applicative programming with effects*](https://www.staff.city.ac.uk/~ross/papers/Applicative.html), and it is the precise account of what the compiler is partitioning.
 
-This builds on the architectural foundations we've established across the Fidelity framework - from [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from the [reactive programming model](/blog/fidelityrx-native-reactivity/) to [referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
+This builds on the architectural foundations we've established across the Fidelity framework - from [coeffect analysis for context-aware compilation](/docs/internals/mlir/context-aware-compilation/) to [continuation preservation](/docs/design/concurrency/the-continuation-preservation-paradox/), and from the [intrinsic reactive model](/blog/native-reactivity-in-clef/) to [referential transparency](/docs/internals/concepts/seeking-referential-transparency/).
 
 ## A Principled Start
 
@@ -428,7 +428,7 @@ These improvements compound. A workflow that mixes async I/O with data processin
 
 ## Custom Computation Expressions
 
-The classification extends to custom computation expressions. Library authors can hint at the intended compilation strategy. This applies to the framework's [intrinsic reactive model](/blog/fidelityrx-native-reactivity/), where multicast observables map to the parallel side and unicast observables map to delimited continuations:
+For custom computation expressions, we could use compilation hints alongside read/effect and non-interference checks. Our [intrinsic reactive model](/blog/native-reactivity-in-clef/) specifies dependencies and demand through `Incremental<'T>`, with cutoff on unchanged derived results. `Observable<'T>` preserves producer-driven event delivery. Parallel subscriber work requires an independence argument, while execution ownership determines where that work may run.
 
 ```fsharp
 [<CompileTo(ComputationPattern.Parallel)>]

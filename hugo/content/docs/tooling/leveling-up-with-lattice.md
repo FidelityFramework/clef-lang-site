@@ -132,5 +132,5 @@ Lattice is the editor-facing part of the Clef toolchain. Related tooling has its
 
 ## See also
 
-- [Earlier Clef AutoComplete integration](/docs/tooling/clef-autocomplete-integration/): the historical FSAC bridge proposal, retained as background to the current CCS-backed design.
+- [Clef Editor Integration](/docs/tooling/clef-editor-integration/): compiler-owned project context and versioned editor queries through Lattice.
 - [Opining Upon Reflection](/blog/opining-upon-reflection/): the case for why a PSG-backed language server is not a shadow model beside the sources, told for readers arriving from the .NET reflection mindset.
