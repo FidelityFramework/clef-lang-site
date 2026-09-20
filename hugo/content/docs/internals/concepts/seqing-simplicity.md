@@ -335,25 +335,7 @@ cf.br ^loop
 
 This is the loop a developer writes when implementing an iterator manually. The compiler generates it from the high-level `for x in s do` syntax.
 
-## The Fidelity.Closures Dialect
-
-The current implementation generates MLIR using a mix of `func`, `cf`, `arith`, and `llvm` dialect operations. This works well for LLVM targets, but the Fidelity project has broader ambitions.
-
-A future direction we are actively exploring is a dedicated MLIR dialect that captures closure and sequence semantics at a higher level:
-
-```mlir
-// There is no seq dialect, and none is planned. A seq is the pair (moveNext, env);
-// MoveNext is scf.index_switch over the state slot, in the five portable dialects —
-// see the witnessed form in seq-representation §5.2.
-```
-
-Such a dialect would enable:
-
-- **Target-agnostic representation**: The same sequence semantics could lower to LLVM, GPU compute kernels, or specialized accelerators
-- **Semantic optimization**: Fusion of adjacent sequence operations, elimination of intermediate structures
-- **Verification**: Proving properties about iteration patterns at the MLIR level
-
-The current implementation prioritizes correctness and compatibility with existing Clef semantics. But the architectural choices made today (flat closures, explicit state, deterministic memory) create a foundation that can support richer intermediate representations as the project matures.
+The current [suspension contract](/spec/draft/dcont-representation/#2-the-suspension-recipe) places sequence elaboration, suspension segmentation, and joint proof obligations in Baker's PSG/hypergraph decomposition. Alex's passive zipper witnesses the settled relationships into standard MLIR operations, including the [structured state dispatch](/spec/draft/seq-representation/#52-state-machine-structure). This graph contract governs the architecture beyond the historical lowering examples above.
 
 ## Shared Edges
 
