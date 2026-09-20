@@ -134,6 +134,10 @@ flowchart TD
 
 This architecture answers a question that tripped us up during implementation. Early prototypes stored internal state in SSA registers, which worked for simple cases but failed when the state needed to survive across yields. We concluded that internal state must live in the struct rather than in function-local storage. That placement resolved the issue and matches the base mechanics of the .NET implementation.
 
+The precise boundary is **liveness across a suspension cut**. Baker must establish which bindings are needed after each yield, including immutable values whose uses span the cut. Those values need surviving storage; values whose uses finish within one segment can remain local to it. The [suspension recipe](/spec/draft/dcont-representation/#2-the-suspension-recipe) uses these relationships to settle frame slots, their interference, and their lifetime obligations.
+
+Initialization timing belongs in that graph too. A sequence transformer captures its supplied function and input sequence when the wrapper is created. Its generator initializes an enumerator on the first pull, before entering the loop, and binds each current element before applying the transformation. An explicit binding gives later uses one resolved value identity and an evaluation position. Merely reusing an expression's node ID does not establish when it executes or how its state survives suspension. These are prerequisites for Baker's suspension decomposition, carried forward for Alex to witness.
+
 ## The MoveNext State Machine
 
 [The `MoveNext` function](/spec/draft/seq-representation/#5-movenext-calling-convention) advances the iterator on each call, either producing the next value and returning `true`, or signaling completion with `false`. The state field tracks where computation should resume.
