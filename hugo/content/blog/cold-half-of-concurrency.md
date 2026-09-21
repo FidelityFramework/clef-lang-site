@@ -3,8 +3,8 @@ title: "The Cold Half of Concurrency"
 linkTitle: "The Cold Half of Concurrency"
 description: "Incremental's ML lineage, from adaptive functional programming to industrial stabilizers, and its place in actor-owned reactive graphs"
 date: 2026-07-14T11:00:00-04:00
-lastmod: 2026-09-18
-draft: true
+lastmod: 2026-09-21
+draft: false
 authors: ["Houston Haynes"]
 tags: ["Concurrency", "Design", "Analysis"]
 params:
@@ -24,6 +24,8 @@ Jane Street's [Incremental](https://blog.janestreet.com/introducing-incremental/
 In F#, [FSharp.Data.Adaptive](https://github.com/fsprojects/FSharp.Data.Adaptive) offers another reference for demand-driven values and changing collections. Jimmy Byrd's [IcedTasks](https://github.com/TheAngryByrd/IcedTasks) was a direct influence on our choice of cold execution. Its reusable cold-task factory defers starting work. An incremental value adds caching and dependency invalidation, so the two have different uses even when both begin with deferred work.
 
 Those libraries provide their abstractions within their host language and runtime. In Clef we can specify cold execution and incremental computation as language intrinsics, allowing Composer to retain their semantics during lowering. That is the architectural choice we are making for Fidelity.
+
+[A Path Less Traveled](/blog/a-path-less-traveled/) considers the same move for bidirectional composition. A quieter application interface still needs explicit dependency, resource and execution semantics in the compiler. Deferring a calculation can avoid unnecessary work; it does not make captured state free or establish that the calculation has an inverse.
 
 ## Demand and readiness
 
@@ -46,5 +48,7 @@ Our [scheduler contract](/spec/draft/scheduler-contract/) provides a place to sp
 ## Chart readiness
 
 The useful comparison is a pair of charts over the same data feed. Leave one cold when hidden and keep the other's selected calculations observed in the background. Reopen both under load and measure the time to a current frame, alongside the work and memory each consumed while closed.
+
+The browser study in [Pitch, touch and demand](/blog/pitch-slew-and-demand/) makes one part of that distinction interactive: hide the plot while the tone continues, and the audio still consumes the sampled and smoothed control values. Visual demand can end while another consumer keeps the calculation active.
 
 We can then add prewarming and compare how much preparation was reusable after a resize or a new input revision. On a fixed instrument or kiosk deployment, those measurements would let us choose a readiness policy against a known switching-latency budget. That is the practical reason we favor incremental computation as our starting point: the application can ask for more readiness where it needs it.

@@ -3,6 +3,7 @@ title: "Composing Proofs Across the Framework"
 linkTitle: "Proof Composition and Tooling"
 description: "Automatic theorem instantiation, mode shifts, and a consolidated Rocq toolchain for numerical, concurrent, distributed and device-level guarantees."
 date: 2026-09-11
+lastmod: 2026-09-21
 weight: 55
 authors: ["Houston Haynes"]
 tags: ["Formal Methods", "Architecture", "Concurrency", "MMIO"]
@@ -21,6 +22,8 @@ Theorem development belongs to framework and domain-library authors. Initially, 
 Typed quotations remain one possible Clef-facing form for a law's parameters, proposition and premises. Existing Rocq theorems can also be registered through a checked binding, avoiding a fresh handwritten quotation or proof for each theorem. That binding still needs to identify what the theorem means for the actual Clef operation. A proof in an upstream language model is not automatically a proof about a Fidelity actor.
 
 An editor may suggest a new domain requirement or a way to repair a missing premise. It need not ask the developer to choose a theorem every time an already supported operation appears. Automatic elaboration is the common path through all supported tiers, including Tier 4.
+
+Native bidirectional composition would use the same division of responsibility. A domain operation could expose an ordinary Clef interface while its admitted law establishes how values, later requirements and resource uses connect. Matching a value-indexed resource, proving an inverse, and bounding numerical reconstruction error are different conclusions. Their premises must name the actual operation and participants. [A Path Less Traveled](/blog/a-path-less-traveled/) develops that application-facing goal, with the integration work tracked in the [composition plan](https://github.com/FidelityFramework/Composer/blob/main/docs/Bidirectional_Composition_Plan.md). No new proof wrapper at each application call is implied.
 
 ## Tiers describe reasoning, not a list of tools
 

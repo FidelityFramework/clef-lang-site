@@ -21,6 +21,8 @@ We specify these behaviors as intrinsic parts of Clef in [Incremental Computatio
 
 [Ken Okabe's Timeline library](https://github.com/ken-okabe/timeline) has influenced our preference for concise reactive composition. Jimmy Byrd's [IcedTasks](https://github.com/TheAngryByrd/IcedTasks) provides an influential model of explicitly activated, reusable cold work. In Clef, we combine that activation discipline with incremental evaluation. Reusable cold work postpones execution. Caching a result and invalidating it when dependencies change require additional semantics.
 
+[The Cold Half of Concurrency](/blog/cold-half-of-concurrency/) follows that ML lineage into actor-owned graphs, deferred demand and the cost of keeping a result ready.
+
 ## Deferred Computation
 
 A derived value needs evaluation when a consumer requests a result and no current cached result is available. Changing an input can invalidate a cache while leaving evaluation deferred. When demand arrives, stabilization validates the required dependencies and recomputes affected values in dependency order.

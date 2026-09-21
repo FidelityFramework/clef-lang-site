@@ -3,6 +3,7 @@ title: "Baker: A Key Ingredient to Composer"
 linkTitle: "Baker Saturation Engine"
 description: "How the Ingredients and Recipes of Baker combine to saturate Composer's semantic graph through a nanopass infrastructure"
 date: 2025-12-12
+lastmod: 2026-09-21
 authors: ["Houston Haynes"]
 tags: ["Design", "Architecture", "Innovation"]
 params:
@@ -20,9 +21,9 @@ Baker's development within the Composer compiler tracks that vision. Early itera
 
 ## The Landscape: Elaboration and Saturation
 
-In programming language theory (PLT) circles, the venacular often includes talk of "Elaboration", essentially, the process of making implicit semantics explicit.
+Elaboration makes the semantics of an admitted source operation explicit. Baker carries that work into typed PSG structure: operand evaluation, callbacks, branches, captures and the relationships required to justify their implementation. Saturation settles the applicable facts before Alex witnesses the construction. The [current Baker architecture](https://github.com/FidelityFramework/clef/blob/main/docs/fidelity/Baker_Saturation_Architecture.md) owns the engineering details and current APIs; the code below illustrates the recipe style.
 
-In Composer, we distinguish between **Elaboration** (handling intrinsics) and **Saturation** (handling language constructs). Baker operates in the saturation phase. The point of *saturation* is to find those points in the program's semantic graph and determine which sub-graph of composed intrinsics fully express the intent of the higher order function or similar construct.
+This includes ordinary native operations and higher-order constructs. Platform bindings contribute their declared external contracts. A recipe can construct both executable nodes and joint relations over their participants; fold-in must retain the correspondence. A range or placement result may be a local coeffect, while the guard, values, stores and consumer that justify it form a multi-participant relation in the same graph.
 
 ```mermaid
 flowchart TD
@@ -30,27 +31,22 @@ flowchart TD
         PSG[Initial Pruned PSG]
     end
 
-    subgraph Elaboration [Phase: Elaboration]
-        Intrinsics[Identify Intrinsics] --> Syscalls[Expand Syscalls]
-        Syscalls --> NativeOps[Resolve Native Ops]
-        NativeOps --> FoldIn1[Fold-In: Merge Subgraphs]
-    end
-
-    subgraph Baker [Phase: Baker Saturation]
+    subgraph Baker [Baker Elaboration and Saturation]
         Discovery[Fan-Out: Discovery Zipper] --> Sites{Saturation Site?}
         Sites -- Yes --> Recipe[Apply Recipe]
-        Recipe --> Primitives[Generate Sub-Tree]
-        Primitives --> FoldIn2[Fold-In: Merge Subgraphs]
+        Recipe --> Primitives[Typed Nodes and Joint Relations]
+        Primitives --> FoldIn2[Fold-In: Preserve Identities and Dependencies]
+        FoldIn2 --> Settle[Settle Required Facts]
     end
 
-    Input --> Elaboration
-    Elaboration --> Baker
+    Input --> Baker
+    Contracts[Admitted Operation and Platform Contracts] --> Recipe
     Baker --> Alex[Alex: Backend Witness]
 ```
 
-Before Baker starts its pass, our **Elaboration** nanopasses have already run. These passes look for "intrinsic" operations, things like platform I/O calls or specific `[<FidelityExtern>]` bindings. They expand these calls into the specific system calls or library bindings required by the target architecture. This is akin to how a C compiler might expand a macro. We are making the external world visible to the graph.
+When you write a `List.map` or a recursive `match` expression, [Baker constructs the algorithm and relationships required by its source semantics](/spec/draft/list-operations-representation/#32-higher-order-functions-baker-decomposes). Alex consumes the settled construction; it cannot repair missing source semantics from a physical slot or a familiar operation name. A recipe's presence alone does not establish complete native coverage.
 
-**Baker** begins from there. Its job is to explain the *internal* world of Clef rather than bind to the outside world. When you write a `List.map` or a recursive `match` expression, there is no single machine instruction that performs that task. [Baker must "saturate" the graph with the algorithm that fully implements that feature](/spec/draft/list-operations-representation/#32-higher-order-functions-baker-decomposes) with no user intervention.
+The proposed bidirectional extension follows that boundary. Its operation contract would specify how forward results, backward requirements, effects and resource uses connect. Compiler analysis reaching a fixed point would not establish that a recursive source computation is productive. Nor would a reverse dependency imply an inverse program or a saved history. [A Path Less Traveled](/blog/a-path-less-traveled/) explains those distinctions and links the coordinated implementation plan.
 
 ## The Nanopass Infrastructure
 
@@ -74,7 +70,7 @@ We eschew imperative and functional "push" code for PSG node construction. There
 ### 1. The Ingredients (Primitives)
 Ingredients are the elemental building blocks. They wrap the lowest-level PSG operations, like `cons`, `head`, `tail`, or `ifThenElse`, into type-safe, semantic units.
 
-Architectural discipline dictates that *only* Ingredients may modify the graph structure. An Ingredient looks something like this:
+The construction APIs concentrate primitive node creation in Ingredients, with reusable structures and recipes composed above them. This is an architectural boundary maintained through API use, review and graph checks; F# assembly visibility does not enforce a folder-level restriction. An illustrative Ingredient looks like this:
 
 ```fsharp
 // An Ingredient: Safe, atomic wrapper around a primitive

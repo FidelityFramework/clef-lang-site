@@ -3,7 +3,7 @@ title: "The Lyapunov Window"
 linkTitle: "The Lyapunov Window"
 description: "A proposed error-limited reconstruction horizon, with explicit sensitivity assumptions, checkpoint costs and experimental acceptance criteria."
 date: 2026-08-23
-lastmod: 2026-09-10
+lastmod: 2026-09-21
 authors: ["Houston Haynes"]
 tags: ["Reversibility", "Numerics", "Coeffects", "Design"]
 weight: 65
@@ -149,6 +149,21 @@ This proposed analysis would need numerical transfer functions and consumers
 that establish the sensitivity and local-error evidence. The
 [arithmetic construction and placement](/docs/internals/numerics/arithmetic-construction-and-placement/)
 design identifies how that evidence would constrain eligible realizations.
+
+The relation can describe a whole computation region. Its inverse recipe and
+numerical evidence do not imply a saved dual beside every intermediate value.
+An admitted exact inverse can reconstruct from current state; an approximate
+inverse needs its error envelope; replay needs its inputs; a checkpoint policy
+needs its retention and recomputation budget. The selected realization determines
+which execution values remain live. [A Path Less Traveled](/blog/a-path-less-traveled/)
+connects that distinction to native bidirectional composition.
+
+Forward-mode differentiation adds another, separate choice. A fixed number of
+current tangents can move through a streaming calculation without retaining all
+earlier tangents. Their storage follows the live schedule and tangent count.
+They carry sensitivity information, not a predecessor history or an inverse
+certificate. Selecting a recovery strategy therefore needs the primal dynamics
+and arithmetic contract even when its gradient computation has no reverse tape.
 
 ## Local Exponents and Global Claims
 

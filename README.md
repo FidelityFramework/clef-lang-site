@@ -23,6 +23,11 @@ clef-lang-site/
 | Documentation | `content/docs/` | Guides, reference, compiler internals |
 | Blog | `content/blog/` | Announcements, releases, analysis |
 
+Blog entries belong to the published set. Keep `draft: false` (or omit the field),
+use a publication date that is not in the future, and verify the production build
+contains the post. The blog archetype uses `draft: false` so an inherited draft
+flag does not hide a completed entry.
+
 Specification refresh and change detection follow `clef-lang-spec`'s `main`
 branch. `hugo/go.mod` and `hugo/go.sum` pin the resolved revision. The deployment
 CLI re-vendors it under `hugo/_vendor/` before building. The vendor directory is

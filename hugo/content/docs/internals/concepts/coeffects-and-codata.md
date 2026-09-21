@@ -4,6 +4,7 @@ linkTitle: "Coeffects and Codata"
 description: "Coeffect tracking and codata recognition in Composer's async compilation design"
 weight: 30
 date: 2025-08-01
+lastmod: 2026-09-21
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Design", "Innovation"]
 aliases:
@@ -97,6 +98,8 @@ In mathematical notation:
 \[f : \Gamma @ R \vdash \tau\]
 
 The \(R\) represents the coeffect: the resources and context required by \(f\) to produce a value of type \(\tau\) from context \(\Gamma\). The compilation decisions below reference this notation.
+
+A requirement may begin as a fact attached to one expression and later depend on several participants: a captured value, its owner, a consumer and the boundary between them. The PHG makes that joint relation explicit within the program's semantic representation. The graph topology records which participants belong together; each analysis supplies its own algebra for propagating facts. A lattice used by one analysis is not a claim that the whole hypergraph is a lattice. Neither the relation nor its proof label implies a corresponding runtime allocation. [A Path Less Traveled](/blog/a-path-less-traveled/) follows this progression into the proposed bidirectional and recovery disciplines.
 
 ### Practical Coeffect Tracking
 

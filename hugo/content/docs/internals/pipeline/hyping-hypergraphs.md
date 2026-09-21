@@ -3,6 +3,7 @@ title: "Hyping Hypergraphs"
 linkTitle: "Hyping Hypergraphs"
 description: "How Evolving from our Program Semantic Graph Supports Both Traditional and Emerging Architectures"
 date: 2025-08-07T00:00:00+00:00
+lastmod: 2026-09-21
 authors: ["Houston Haynes"]
 tags: ["Architecture", "Innovation", "Design"]
 params:
@@ -10,7 +11,9 @@ params:
   migration_date: 2026-02-15
 ---
 
-The industry is investing on the order of \$4 billion to move past the 80-year-old Harvard/Von Neumann design pattern. Companies like NextSilicon, Groq, and Tenstorrent are building alternative architectures that eliminate the traditional bottlenecks between memory and program execution. Compiler intermediate representations, by contrast, still force multi-way relationships into artificial constructions, obscuring the alignment with dataflow patterns those architectures depend on. Recognizing that programs are hypergraphs by nature lets traditional and dataflow targets fall out of the same representation. The evolution from our Program Semantic Graph (PSG) to a Program Hypergraph (PHG) changes the representation itself: the PHG preserves those multi-way relationships directly, and is designed to let Fidelity produce efficient workflows for everything from LLVM-targeted CPUs to photonic processors.
+The Program Hypergraph extends Clef's Program Semantic Graph with explicit relations among several participants. An operation's ordered inputs and outputs, a continuation's captures and lifetime, or a numerical result and its proof premises can remain connected while the compiler selects an implementation. That organization is useful across conventional processors and spatial targets. Its benefit depends on retaining the right semantics and checking the transformations that use them.
+
+The executable structure, local coeffects and joint relations belong to one program representation. The graph is not an archive of every runtime value, and a hyperedge does not itself establish a proof. An analysis may order its facts in a lattice; graph topology records which facts depend on which participants. [A Path Less Traveled](/blog/a-path-less-traveled/) follows this distinction into native bidirectional composition, including why an inverse recipe need not create a second live computation.
 
 Our design also treats the hypergraph as a candidate learning system. Over a temporal graph, the compiler could refine its compilation strategies across applications, or across iterations of the same application. This follows from combining recursion schemes, bidirectional zippers, and event-sourced compilation telemetry, all well-established algorithmic tools that map onto the current diversification of compute hardware. Within the Fidelity framework the same principled representation addresses efficiency and safety on the older architectures while profiling and targeting the newer ones.
 
@@ -46,17 +49,13 @@ graph TD
 
 ## The Decomposition Challenge
 
-Traditional compiler intermediate representations create cruft not because of inherent complexity but because they **decompose multi-way relationships into artificially disconnected operations**. Consider how async code with delimited continuations creates rich, multi-way dependencies that current IRs represent awkwardly through opaque state machines. That is not a matter of computational convenience: it accumulates cruft, inefficiency, and surface area for vulnerabilities and errors that is difficult to recover from.
+A binary incidence graph can encode a hypergraph without losing information. The design choice is to make the multi-participant relation explicit in the compiler's own contract, so consumers do not have to reconstruct it independently. Ordered operand occurrences also matter: an operation using the same value twice has two input occurrences even when a scheduling dependency set contains only one identity.
 
-Traditional graphs force the compiler to create:
+A continuation illustrates the joint requirement. Its body, captured values, owner, resumption point and storage must agree. Node-local facts can summarize established results, while a relation retains the participants and premises that justify them. Replacing that relation during lowering requires a preserving interpretation or the necessary re-checks; copying a metadata label is insufficient.
 
-- Auxiliary "join" nodes to merge multiple inputs
-- Artificial "split" nodes to distribute outputs
-- Property lists and metadata to track what should be intrinsic relationships
+Control flow and dataflow remain useful views of the same admitted computation. The PHG is intended to retain enough information to select a suitable realization for each target, including conventional control flow. [Flow-loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) studies the work and dependency costs of those realizations. Graph representation alone establishes neither an optimal schedule nor a performance improvement.
 
-Beyond losing semantic information, this stilted decomposition **obscures the shift from control-flow to data-flow** that defines the continuum from "Modified Harvard" or "Von Neumann" to next generation processor architectures. Traditional compiler representations emphasize control flow (sequential instruction execution, branching, state machines and memory-compute separation), which aligns with the Modified Harvard/Von Neumann architectural assumptions. With AI and high performance computing taking center stage, newer processors compute in terms of data flow, their natural representation, where computation is spatially adjacent to data and multiple operations proceed simultaneously with fewer processor wait cycles and less heat dissipation burden. Because the PHG preserves the data-flow reading alongside the control-flow lowering, the cost of the shift is something the graph can report directly: [flow loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) measures how much of a program's data-flow parallelism a control-flow target serializes.
-
-The underlying issue is that the older Harvard/Von Neumann assumptions cannot capture the simultaneity and spatial locality that these newer architectures exploit. Forcing multi-way data flow relationships into standard control flow loses the semantic richness needed to generate efficient code. The PHG within the Composer compiler is designed to take ***the same application code*** and articulate it as traditional control flow (CFG) instructions for the standard targets developers have used for decades. As hybrid systems emerge, the Fidelity framework would address each type of processor from the same code base, where the common practice is a separate toolchain or a per-architecture rewrite for each.
+The temporal-learning material below is a research direction beyond these representation obligations. Heuristics may rank admissible realizations; they cannot supply missing semantic premises or turn an unresolved obligation into an established fact.
 
 ## Decades-Old Math on Current Hardware
 

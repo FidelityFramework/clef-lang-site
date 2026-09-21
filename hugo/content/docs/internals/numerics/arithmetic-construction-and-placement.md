@@ -3,6 +3,7 @@ title: "Arithmetic Construction and Placement"
 linkTitle: "Arithmetic Construction"
 description: "Preserving numerical contracts while selecting accumulation algorithms, parallel decompositions, memory layouts, and hardware placement."
 date: 2026-09-10
+lastmod: 2026-09-21
 authors: ["Houston Haynes"]
 tags: ["Numerics", "Architecture", "Verification", "Parallelism"]
 weight: 10
@@ -227,6 +228,8 @@ Composer would establish numerical eligibility, legal decomposition, layout cons
 Each arithmetic construction has its own realized graph. A compensated algorithm changes work \(W\); a new merge structure changes span \(S\); wider state changes movement and storage. [Flow-loss analysis](/docs/design/structure-and-performance/flow-loss-analysis/) therefore needs to evaluate each realization, with a preservation relation back to the source computation. It cannot reuse one \(W,S\) pair across algorithms that perform different work.
 
 Arithmetic latency, traffic, synchronization, and waiting can overlap. A cost report should state its overlap model and distinguish estimates, bounds, and measurements. Additional arithmetic can reduce total time by shortening dependencies or avoiding contention; it can also reduce occupancy. [Going Deep with Flow-Loss Analysis](/blog/going-deep-with-flow-loss-analysis/) provides the broader analysis context.
+
+Recovery adds a region-level construction choice: a checked exact inverse, an approximate reverse within an established error envelope, deterministic replay, or retained checkpoints. The selected arithmetic must support that contract. Static inverse code and its certificate do not require a second live trajectory. Runtime storage consists of the current state, live tangents or other workspace, and whatever recovery information the selected policy actually retains. Peak live storage, reconstruction work and retention coverage must therefore be compared together. [A Path Less Traveled](/blog/a-path-less-traveled/) explains the composition model; the [Lyapunov Window](/docs/design/types/lyapunov-window/) owns the numerical reconstruction conditions.
 
 ## ThreeBody as an acceptance experiment
 
