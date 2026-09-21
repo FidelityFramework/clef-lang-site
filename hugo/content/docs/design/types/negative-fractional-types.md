@@ -39,7 +39,7 @@ forward:                    reverse:
     q := q + G(p)               p := p - F(q)
 ```
 
-The equalities hold for deterministic `F` and `G` under the same parameters, with exact addition/subtraction on the admitted domain or explicitly modular arithmetic. Reverse order restores the inputs needed to recompute each increment. The two state components already belong to the model; no sequence of their earlier values is required. Ordinary rounded floating-point updates need a further argument. [JANUS](https://arxiv.org/abs/1704.07715) is a concrete example of constructing bitwise reversible numerical updates with integer and floating-point arithmetic.
+The equalities hold for total pure `F` and `G` under unchanged parameters, with exact addition/subtraction on the admitted domain or explicitly modular arithmetic. Reverse order restores the inputs needed to recompute each increment. The two state components already belong to the model; no sequence of their earlier values is required. Ordinary rounded floating-point updates need a further argument. [JANUS](https://arxiv.org/abs/1704.07715) is a concrete example of constructing bitwise reversible numerical updates with integer and floating-point arithmetic.
 
 For a many-to-one operation, enough distinguishing information must instead remain available or be reproducible. The recovery policy can use a smaller residual, a checkpoint, or deterministic replay. An inverse recipe and its proof are compiler information; retained execution values consume runtime storage. The [Lyapunov window](/docs/design/types/lyapunov-window/) describes a proposed error-bounded reconstruction policy and its separate numerical and storage obligations.
 
