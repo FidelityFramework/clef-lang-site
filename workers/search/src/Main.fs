@@ -72,7 +72,11 @@ module Main =
 
                         | "POST", "/graph/rebuild" ->
                             // Idempotent full rebuild of the corpus graph (authenticated)
-                            let! response = Handlers.handleGraphRebuild request env
+                            let! response = Handlers.handleGraphWrite true request env
+                            return response
+
+                        | "POST", "/graph/sync" ->
+                            let! response = Handlers.handleGraphWrite false request env
                             return response
 
                         | "GET", "/graph" ->
@@ -96,6 +100,7 @@ module Main =
                                     createObj [ "method" ==> "POST"; "path" ==> "/index"; "description" ==> "Batch index content (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/purge-index"; "description" ==> "Clear all indexed content (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/reconcile"; "description" ==> "Delete stale sections/vectors not in the current content set (authenticated)" ]
+                                    createObj [ "method" ==> "POST"; "path" ==> "/graph/sync"; "description" ==> "Reconcile the corpus graph against D1 (authenticated)" ]
                                     createObj [ "method" ==> "POST"; "path" ==> "/graph/rebuild"; "description" ==> "Idempotent full rebuild of the corpus graph (authenticated)" ]
                                     createObj [ "method" ==> "GET"; "path" ==> "/graph"; "description" ==> "Cytoscape-shaped corpus graph for the Map modal" ]
                                     createObj [ "method" ==> "GET"; "path" ==> "/health"; "description" ==> "Health check" ]

@@ -172,16 +172,13 @@ module SmartDeploy =
             return syncCount
         }
 
-    /// Rebuild the corpus graph (Atlas) — idempotent full nuke-and-reinsert against the
-    /// live worker. Runs on EVERY deploy, not just content-changed ones: the extractor
-    /// logic or the vendored spec can change without hugo/content changing, and a stale
-    /// graph would silently persist if this were gated behind content-diff. Cheap (one
-    /// walk + one POST), soft-fails if the search worker is not deployed.
-    let private rebuildGraph (verbose: bool) : Async<unit> =
+    /// Reconcile Atlas after each deploy, including extractor/spec-only changes.
+    /// Forced deployments replace every row; ordinary deployments preserve unchanged rows.
+    let private updateGraph (force: bool) (verbose: bool) : Async<unit> =
         async {
             printfn ""
-            printfn "=== Rebuilding Corpus Graph (Atlas) ==="
-            let! graphResult = Graph.execute "./hugo/content" false 8787 verbose
+            printfn "=== Updating Corpus Graph (Atlas) ==="
+            let! graphResult = Graph.execute "./hugo/content" force false 8787 verbose
             match graphResult with
             | Ok _ -> ()
             | Error e -> printfn "  Skipped: %s" e
@@ -289,7 +286,7 @@ module SmartDeploy =
                 let! _ = syncAndIndex config true verbose
 
                 // 4. Rebuild the Atlas graph (idempotent full rebuild)
-                do! rebuildGraph verbose
+                do! updateGraph force verbose
 
                 let workingDir = Environment.CurrentDirectory
                 saveDeployState workingDir (fun s -> { s with LastSyncTimestamp = Some DateTime.UtcNow })
@@ -359,9 +356,9 @@ module SmartDeploy =
                     | Error e -> return Error $"Pages deployment failed: {e}"
                     | Ok _ ->
 
-                    // Rebuild the Atlas graph even on a pages-only deploy: the vendored spec
+                    // Update the Atlas graph even on a pages-only deploy: the vendored spec
                     // or extractor may have changed without content changing.
-                    do! rebuildGraph verbose
+                    do! updateGraph force verbose
 
                     saveDeployState workingDir id
 
@@ -383,8 +380,8 @@ module SmartDeploy =
                     // 2. Sync + index (soft)
                     let! syncCount = syncAndIndex config false verbose
 
-                    // 3. Always rebuild the Atlas graph (idempotent; not content-gated)
-                    do! rebuildGraph verbose
+                    // 3. Reconcile Atlas against the stored graph (not content-gated)
+                    do! updateGraph force verbose
 
                     saveDeployState workingDir (fun s -> { s with LastSyncTimestamp = Some DateTime.UtcNow })
 
@@ -424,10 +421,10 @@ module SmartDeploy =
                         let! _ = syncAndIndex config false verbose
                         ()
 
-                    // Always rebuild the Atlas graph, even when content did not change —
+                    // Always reconcile the Atlas graph, even when content did not change —
                     // a CLI/extractor or vendored-spec change updates the graph without
                     // touching hugo/content, and a content-gated rebuild would skip it.
-                    do! rebuildGraph verbose
+                    do! updateGraph force verbose
 
                     saveDeployState workingDir id
 

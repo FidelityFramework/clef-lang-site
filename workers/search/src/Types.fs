@@ -95,10 +95,10 @@ module Types =
         abstract member weight: float with get
         abstract member label: string with get
 
-    /// Full graph rebuild payload from the CLI (idempotent replace)
+    /// Complete desired graph snapshot for reconciliation or forced replacement
     [<AllowNullLiteral>]
     [<Interface>]
-    type GraphRebuildRequest =
+    type GraphWriteRequest =
         abstract member nodes: GraphNodeRequest array with get
         abstract member edges: GraphEdgeRequest array with get
 

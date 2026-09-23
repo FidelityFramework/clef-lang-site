@@ -43,19 +43,30 @@ draft: false
     use listener = new HttpListener()
     listener.Prefixes.Add($"http://localhost:{port}/")
     listener.Start()
-    let payload =
+    let capture force =
         async {
-            let! extraction = Graph.execute content true port false |> Async.StartChild
+            let! extraction = Graph.execute content force true port true |> Async.StartChild
             let! request = listener.GetContextAsync() |> Async.AwaitTask
+            let expectedPath = if force then "/graph/rebuild" else "/graph/sync"
+            check (request.Request.Url.AbsolutePath = expectedPath) "Incorrect force routing"
+            check (request.Request.Headers.["Authorization"] = "Bearer dev-local-key") "Missing authentication"
             use reader = new StreamReader(request.Request.InputStream)
             let! body = reader.ReadToEndAsync() |> Async.AwaitTask
-            request.Response.StatusCode <- 200
+            let response = """{"success":true,"result":{"before":{"nodes":0,"edges":0},"after":{"nodes":9,"edges":2},"nodes":{"added":9,"updated":0,"deleted":0,"unchanged":0},"edges":{"added":2,"updated":0,"deleted":0,"unchanged":0}}}"""
+            use writer = new StreamWriter(request.Response.OutputStream)
+            do! writer.WriteAsync(response) |> Async.AwaitTask
+            do! writer.FlushAsync() |> Async.AwaitTask
             request.Response.Close()
             let! result = extraction
             match result with
             | Error e -> return failwith e
             | Ok _ -> return body
         } |> fun work -> Async.RunSynchronously(work, 30000)
+    let payload = capture false
+    // Hugo creates an empty vendor directory for the fixture with no modules.
+    let vendor = Path.Combine(root, "_vendor")
+    if Directory.Exists vendor then Directory.Delete(vendor, true)
+    check (capture true = payload) "Force changed the extracted snapshot"
     use json = JsonDocument.Parse(payload)
     let nodes =
         json.RootElement.GetProperty("nodes").EnumerateArray()

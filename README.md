@@ -59,35 +59,47 @@ hugo server
 
 See `./scripts/*.sh --help` for all available commands.
 
-### Rebuilding Atlas
+### Updating Atlas
 
 ```bash
-# Rebuild the Atlas graph in the configured search worker's D1 database
+# Apply the delta between D1 and the current extracted graph
 ./scripts/graph.sh --verbose
+
+# Delete and reinsert every graph row, even if content is unchanged
+./scripts/graph.sh --force --verbose
 
 # Equivalent direct F# CLI command, from the repository root
 dotnet run --project cli/ClefLang.CLI.fsproj -- graph --verbose
 ```
 
-Atlas and search are separate indexes. `graph.sh` replaces Atlas's nodes and
-connections from the local content and pinned, vendored specification.
+Atlas and search are separate indexes. `graph.sh` extracts Atlas's nodes and
+connections from the local content and pinned, vendored specification, then
+compares them with the actual D1 rows. It inserts new rows, updates changed
+fields, deletes stale rows, and preserves unchanged rows and their timestamps.
 `index.sh` updates the full-text and vector search indexes. Neither command
 deploys site pages. Deploy new pages before linking to them from the live graph.
 
-`smart-deploy.sh` rebuilds Atlas after each actual deployment, but skips it when
+`smart-deploy.sh` reconciles Atlas after each actual deployment, but skips it when
 it decides no deployment is needed. `deploy-pages.sh` alone does not rebuild
-Atlas. Use `graph.sh` to refresh Atlas independently. The `--local --port PORT` option
+Atlas. Use `graph.sh` to refresh Atlas independently. `smart-deploy.sh --force`
+also forces a complete Atlas replacement. The `--local --port PORT` option
 targets a local search worker instead. A rebuild failure during smart deploy
 is currently reported as `Skipped`, so check its Atlas output when diagnosing
 a stale graph.
 
-Graph replacement uses one D1 transaction for both nodes and connections, so a
-failed rebuild preserves the previous graph. The extractor includes relative
-documentation links and tooling pages, and excludes draft pages.
+Both modes compare and write in one D1 transaction, so a failed update preserves
+the previous graph. Output reports actual database counts before and after the
+transaction, plus additions, updates, deletions, and unchanged rows. Deploy the
+updated search worker before using the new CLI: normal updates use the new
+authenticated `/graph/sync` route; forced rebuilds use `/graph/rebuild`. The
+extractor includes relative documentation links and tooling pages, and excludes
+draft pages.
 
 F# regression checks reside in `cli/tests/`: `GraphTests.fsx` checks extraction
 through a local capture endpoint. `GraphStorageTests.fsx` checks a local worker's
-full replacement and rollback behavior. Each file documents its invocation.
+full replacement, differential updates, no-op behavior, and rollback. Pass its
+optional local SQLite path to audit actual row writes and timestamps. Each file
+documents its invocation.
 
 ## Related Repositories
 

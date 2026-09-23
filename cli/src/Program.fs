@@ -137,6 +137,7 @@ module Program =
     [<RequireQualifiedAccess>]
     type GraphArgs =
         | [<AltCommandLine("-d")>] Content_Dir of path: string
+        | [<AltCommandLine("-f")>] Force
         | [<AltCommandLine("-l")>] Local
         | [<AltCommandLine("-p")>] Port of int
         | [<AltCommandLine("-v")>] Verbose
@@ -145,6 +146,7 @@ module Program =
             member this.Usage =
                 match this with
                 | Content_Dir _ -> "Hugo content directory (default: ./hugo/content)"
+                | Force -> "Replace every graph row; otherwise apply only the database delta"
                 | Local -> "Use local search worker (localhost:8787)"
                 | Port _ -> "Local worker port (default: 8787, requires --local)"
                 | Verbose -> "Enable verbose output"
@@ -189,7 +191,7 @@ module Program =
                 | AnalyzeDiff _ -> "Analyze git diff to determine deployment scope"
                 | SmartDeploy _ -> "Deploy based on git diff analysis"
                 | Index _ -> "Index content into D1 FTS5 + Vectorize for search"
-                | Graph _ -> "Rebuild Atlas in D1 from content links + citations (separate from search indexing)"
+                | Graph _ -> "Update Atlas in D1 from content links + citations (separate from search indexing)"
                 | Purge _ -> "Purge all content from R2 bucket"
                 | Version -> "Show version"
 
@@ -378,7 +380,8 @@ module Program =
                     let useLocal = args.Contains <@ GraphArgs.Local @>
                     let localPort = args.GetResult(<@ GraphArgs.Port @>, 8787)
                     let verbose = args.Contains <@ GraphArgs.Verbose @>
-                    Commands.Graph.execute contentDir useLocal localPort verbose
+                    let force = args.Contains <@ GraphArgs.Force @>
+                    Commands.Graph.execute contentDir force useLocal localPort verbose
                     |> runAsync
 
                 | CLIArgs.Purge args ->

@@ -415,29 +415,32 @@ module Handlers =
             return jsonResponse {| success = true; message = "Reconciled"; staleVectorsDeleted = vectorsDeleted; staleRowsDeleted = rowsDeleted; validCount = validIds.Length |} 200
         }
 
-    /// POST /graph/rebuild (auth required) — idempotent full rebuild of the corpus graph.
-    /// The CLI graph extractor sends the complete node + edge set from the content walk;
-    /// this replaces the stored graph. Refuses an empty node set so a CLI bug cannot wipe it.
-    let handleGraphRebuild (request: Request) (env: WorkerEnv) : JS.Promise<Response> =
+    /// Both authenticated write routes take a complete snapshot. Storage decides
+    /// whether to reconcile it or replace every row in one transaction.
+    let handleGraphWrite force (request: Request) (env: WorkerEnv) : JS.Promise<Response> =
         promise {
             if not (verifyAuth request env) then
                 return jsonResponse {| success = false; message = "Unauthorized" |} 401
             else
-
-            let! body = request.json<GraphRebuildRequest>()
-            let nodes =
-                if isNullOrUndefined body || isNullOrUndefined body.nodes then [||]
-                else body.nodes
-            let edges =
-                if isNullOrUndefined body || isNullOrUndefined body.edges then [||]
-                else body.edges
-
-            if nodes.Length = 0 then
-                return jsonResponse {| success = false; message = "graph rebuild received an empty node set; refusing to wipe the graph" |} 400
-            else
-
-            let! result = Graph.rebuild env nodes edges
-            return jsonResponse {| success = true; result = result |} 200
+                let! body = request.json<GraphWriteRequest>()
+                if isNullOrUndefined body || isNullOrUndefined body.nodes || isNullOrUndefined body.edges then
+                    return jsonResponse {| success = false; message = "Graph update requires nodes and edges arrays" |} 400
+                elif body.nodes.Length = 0 then
+                    return jsonResponse {| success = false; message = "Graph update received an empty node set; refusing to wipe the graph" |} 400
+                else
+                    let nodes, edges = body.nodes, body.edges
+                    let nodeIds = nodes |> Array.map (fun n -> n.pageUrl) |> Set.ofArray
+                    let edgeIds = edges |> Array.map (fun e -> e.source, e.target, e.edgeType) |> Set.ofArray
+                    let invalidNode = nodes |> Array.exists (fun n -> String.IsNullOrWhiteSpace n.pageUrl)
+                    let invalidEdge =
+                        edges |> Array.exists (fun e ->
+                            String.IsNullOrWhiteSpace e.edgeType ||
+                            not (nodeIds.Contains e.source && nodeIds.Contains e.target))
+                    if invalidNode || invalidEdge || nodeIds.Count <> nodes.Length || edgeIds.Count <> edges.Length then
+                        return jsonResponse {| success = false; message = "Graph contains duplicate keys, invalid IDs, or dangling edges" |} 400
+                    else
+                        let! result = GraphStorage.write env force nodes edges
+                        return jsonResponse {| success = true; result = result |} 200
         }
 
     /// GET /graph (public, CORS) — the Cytoscape-shaped corpus graph for the Map modal.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rebuild Atlas only. All options and rebuild logic belong to the F# CLI.
+# Update Atlas only. All options and reconciliation logic belong to the F# CLI.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
