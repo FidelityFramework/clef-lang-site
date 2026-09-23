@@ -122,5 +122,7 @@ github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260911133408-db3e6b
 github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260911133408-db3e6b4b1979/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
 github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260918144237-fe20ad9dc8cf h1:UIT9+FQMULM/PZyWAgwhLYIY8l5H6G7D9Fn1bVve0LQ=
 github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260918144237-fe20ad9dc8cf/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260921124240-504d8f7d8217 h1:WGnl4FnJh/FUhdFFn81rfXvOXGn3lkxgiC4P+MQ/9QY=
+github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260921124240-504d8f7d8217/go.mod h1:mS0exSvMMvpd0Ube3MMjF5uLf0Ldw2qWvIYq6A35wCA=
 github.com/imfing/hextra v0.11.1 h1:8pTc4ReYbzGTHAnyiebmlT3ijFfIXiGu1r7tM/UGjFI=
 github.com/imfing/hextra v0.11.1/go.mod h1:cEfel3lU/bSx7lTE/+uuR4GJaphyOyiwNR3PTqFTXpI=

@@ -3,7 +3,7 @@ title: "Pitch, touch and demand"
 linkTitle: "Pitch, touch and demand"
 description: "An interactive pitch-smoothing experiment for HelloDISCO, and what a musical control reveals about demand-driven UI."
 date: 2026-09-18
-draft: false
+draft: true
 authors: ["Houston Haynes"]
 tags: ["Audio", "Embedded", "Design", "User Interfaces"]
 ---

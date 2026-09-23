@@ -3,6 +3,6 @@ module github.com/FidelityFramework/clef-lang-site
 go 1.25.7
 
 require (
-	github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260918144237-fe20ad9dc8cf // indirect
+	github.com/FidelityFramework/clef-lang-spec v0.1.0-draft.0.20260921124240-504d8f7d8217 // indirect
 	github.com/imfing/hextra v0.11.1 // indirect
 )
