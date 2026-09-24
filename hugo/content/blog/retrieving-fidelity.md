@@ -1,7 +1,7 @@
 ---
 title: "Retrieving Fidelity"
 date: 2026-09-24T00:00:00-04:00
-description: "An hybrid agentic knowledge graph that learns continuously, one commit at a time."
+description: "A hybrid agentic knowledge graph that learns continuously, one commit at a time."
 draft: false
 tags: ["AI", "Architecture", "Knowledge Graphs"]
 authors: ["Houston Haynes"]
