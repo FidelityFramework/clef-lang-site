@@ -29,6 +29,8 @@ The frontend and backend share a command/event vocabulary. Native code owns the 
 
 Our native UI acceptance runner exercises the real button-to-native-to-DOM sequence and malformed messages. It also checks window commands and retirement. Its scope is the experimental single-window Linux host, with general multiwindow behavior requiring a broader protocol and lifetime model.
 
+Our [repository graph](/blog/retrieving-fidelity/#knowledge-representation-again) also makes WrenHello's native dependencies easier to investigate. We can follow project references into the WebKit and GTK bindings, then inspect a binding's generator declaration and likely generation profile with source citations.
+
 For a Composer-produced frontend, we would compile Clef through the portable middle end into JavaScript or a JSX handoff. The existing Partas transformation is a Fable plugin. Implementing the corresponding Clef pathway requires preserving reactive reads and ownership through our compiler. The [JavaScript/JSX toolchain review]({{< relref "/docs/design/javascript-targeting/javascript-jsx-toolchain" >}}) describes those obligations.
 
 ## Embedded Assets

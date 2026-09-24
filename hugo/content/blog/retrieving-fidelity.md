@@ -11,9 +11,9 @@ Ask a question about a system whose information base is constantly growing and t
 
 Knowledge compression takes several forms along that route. A language model encodes learned patterns in its weights. An embedding gives us a compact representation for finding similar material, and a summary condenses an argument. A knowledge graph retains selected entities and their relationships, with explicit paths back to the evidence. Language models have "swallowed all of the air in the room" for a few years, but now other time-tested knowledge compression patterns are showing their value as we encounter the practical limits of transformer-based architectures.
 
-In our work we have a need to follow questions across the Clef language and the Fidelity Framework as both continue to develop. A question about Composer can lead through a language specification into a native binding and its generation profile. We want local models to help with that research, including models running with modest memory and a limited context window. Their usefulness depends heavily on the information they can use within those windows.
+In our work we have a need to follow questions across the Clef language and the [Fidelity Framework](/blog/fidelity-framework-primer/) as both continue to develop. A question about Composer can lead through a language specification into a [native binding](/blog/the-farscape-bridge/#care-and-feeding-of-generated-libraries) and its generation profile. We want local models to help with that research, including models running with modest memory and a limited context window. Their usefulness depends heavily on the information they can use within those windows.
 
-Graph databases give us a practical form of neurosymbolic reach: a model interprets the question, a graph query follows recorded relationships, and the next model works from the resulting evidence. Much of the "intelligence" is in how we organize the garden-variety work of building the graph and conditioning how it's accessed by transformer models.
+Graph databases give us a practical form of neurosymbolic reach: a model interprets the question, a graph query follows recorded relationships, and the next model works from the resulting evidence. Much of the "intelligence" is in how we organize the garden-variety work of building the graph and conditioning how it's accessed by transformer models. Our [discussion of construction and convergence](/blog/beyond-the-bitter-lesson-structural-convergence/#structure-is-meaningful-at-both-ends) considers this role for structure around a learner.
 
 ## A Finite Window on a Growing Corpus
 
@@ -30,11 +30,13 @@ Here \(S\) is our selected evidence and \(C\) is the available context. Every so
 
 Larger windows give us more capacity, while evidence placement and selection remain engineering concerns. The *Lost in the Middle* experiments found that the tested models often retrieved information more successfully near the beginning or end of their context than in its middle. We take that result as a reason to measure retrieval behavior alongside advertised window size. Our workers receive enough evidence for a defined task, and can request another bounded slice when the task requires it. [Liu et al., 2024](https://aclanthology.org/2024.tacl-1.9/)
 
-The compression we want is question-dependent. A source file may contribute three relevant lines to one investigation and several complete functions to another. Keeping the citation attached lets us return to the original whenever the shorter representation needs inspection.
+The compression we want is question-dependent. A source file may contribute three relevant lines to one investigation and several complete functions to another. Keeping the citation attached lets us return to the original whenever the shorter representation needs inspection. Our earlier [cognitive architecture sketch](/blog/unified-cognitive-architecture/#knowledge-as-a-service-not-a-monument) considers loading only the domain knowledge a query requires.
 
 ## Knowledge Representation, Again
 
 There was a time when an explicit network of concepts and relationships was comfortably described as AI. We still think it belongs there. In their 1993 account of knowledge representation, Randall Davis, Howard Shrobe, and Peter Szolovits discussed semantic networks alongside other established AI representations. They also asked a particularly apt question for our work: which properties of the original does a representation preserve? Their discussion uses the word *fidelity*. [What Is a Knowledge Representation?](https://courses.csail.mit.edu/6.803/pdf/davis.pdf)
+
+Our [AI Refinery research](/blog/fidelity-as-ai-refinery/#looking-forward-neuromorphic-oracle-architecture) also considers structured knowledge consultation during inference, with neuromorphic execution as a prospective target.
 
 Our retrieval graph starts with a deliberately concrete vocabulary. Repositories contain files. Files have source chunks, and documents link to other documents. Project declarations establish cross-repository references. Additional extraction rules identify likely relationships, retaining the rule and supporting source with each result.
 
@@ -59,6 +61,8 @@ flowchart LR
 The arrow from a chunk points to its parent file. That small detail becomes consequential when we ask for all chunks belonging to a file: the query must traverse the relationship in the incoming direction. The dashed generation-profile edge represents an inferred research lead, with its extraction basis available for inspection. A source declaration and an inferred match carry different evidential weight.
 
 Our current snapshot contains 2,249 files across twelve curated repositories, represented by 8,050 nodes and 11,576 edges. That includes 42 capability nodes and 2,031 derived relationships. The graph gives us a manageable way to navigate that material while retaining the source-level detail needed to assess a conclusion.
+
+A question about [WrenHello's native host](/blog/wren-stack/#our-wrenhello-host), for example, can lead through project references to WebKit and GTK bindings, then to a binding's declared generator and likely generation profile. Our graph retains the source evidence for each step.
 
 We store it in [DuckDB](https://duckdb.org/) and use [DuckPGQ](https://duckpgq.org/) for graph pattern matching. DuckPGQ supplies SQL/PGQ operations over relational data, so graph traversal and ordinary database handling can share a compact execution engine. Our retrieval API exposes a restricted query language over that graph.
 
@@ -142,7 +146,7 @@ Our final few-shot examples have passed native grammar checks and returned the e
 
 Our larger model can use retrieval directly, or delegate a question to a smaller worker with a specific assignment. We have exercised native retrieval tools through three workers, each returning fresh, commit-linked evidence. That gives us a basis for more ambitious research fan-out as our confidence grows in the reliability of the pattern.
 
-For a cross-repository investigation, we would divide the work by purpose. A research worker would locate the relevant declaration and follow its supporting relationships. An adversarial auditor would look for a counterexample or a mismatch between documentation and current code. A summarization worker would condense the selected passages, retaining citations and identifying unresolved questions.
+For a cross-repository investigation, we would divide the work by purpose. A research worker would locate the relevant declaration and follow its supporting relationships. An adversarial auditor would look for a counterexample or a mismatch between documentation and current code. A summarization worker would condense the selected passages, retaining citations and identifying unresolved questions. This division of work fits the [specialist-model orchestration](/blog/beyond-transformers/#model-orchestration-for-decentralized-ai) we have explored for decentralized AI.
 
 ```mermaid
 flowchart TD
@@ -198,6 +202,6 @@ Schmidhuber's 1987 work already explored learning how to learn, including progra
 
 With a bit of systems knowledge, we can connect free tools such as DuckDB and DuckPGQ to a local inference runtime and build useful adaptive systems today. The engineering is available to anyone prepared to define the graph and test the retrieval behavior. No one needs to wait on a 'frontier lab' or other misnamed entity for this capability. Anyone can build it ***today***.
 
-Our current arrangement spans on-premises services and Cloudflare. Public hybrid search runs alongside the site, while committed-source graph retrieval and local inference run within our own infrastructure. Our deployment choices follow the workload. The result we care about is reliable, near-deterministic knowledge compression for intelligent systems design: a focused evidence packet whose origin and selection we can inspect. We can use it for further inference or more concrete redirection.
+Our current arrangement spans on-premises services and Cloudflare. Public hybrid search runs alongside the site through the [Fable-to-JavaScript pathway](/blog/the-web-on-native-terms/#javascript-as-an-ordinary-backend), while committed-source graph retrieval and local inference run within our own infrastructure. Our deployment choices follow the workload. The result we care about is reliable, near-deterministic knowledge compression for intelligent systems design: a focused evidence packet whose origin and selection we can inspect. We can use it for further inference or more concrete redirection.
 
 The information we're building with is constantly growing. Our graph changes with it. The next question starts from there, and our 'frontier' expands with data sovereignty and efficiency as first-class considerations.

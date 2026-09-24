@@ -45,6 +45,8 @@ At one end the structure is exact and typed. A domain model carries its grade, i
 
 Where we would keep a message in-contract, he keeps a call in-distribution, and both are the same discipline at two resolutions.
 
+Our [graph-query worker](/blog/retrieving-fidelity/#grammar-examples-and-meaning) receives worked query examples for a narrow task, and its graph queries pass gateway validation before execution.
+
 So the axis is not structure against no-structure. It is the form the structure takes, exact and constructed where the invariant is known, statistical and arranged where it is not. Structural convergence is our name for the axis: convergence that runs inside a constructed frame, and settles faster when it is a product of principle and not lossy discovery.
 
 ## A Matter of Phase

@@ -87,6 +87,8 @@ The economics shift with this structure: instead of training massive models, org
 
 We have since worked this vision into a concrete research program. The specialized models sketched here are developed as [Adaptive Domain Models](/docs/design/constrained-machine-learning/adaptive-domain-models/), and the arrangement in which many of them compose alongside a general model is [the constellation](/docs/design/constrained-machine-learning/the-constellation/).
 
+Our [source-retrieval service](/blog/retrieving-fidelity/#a-finite-window-on-a-growing-corpus) applies question-specific selection to revision-linked evidence for local models.
+
 ## Fractal Reasoning
 
 ### System 1 vs System 2, Naturally

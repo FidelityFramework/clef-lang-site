@@ -199,6 +199,8 @@ Building on Clef's type safety and our Fidelity Framework's compilation architec
 
 The PSG already represents computational relationships as a graph structure, and our current work suggests this same graph can encode semantic knowledge, proof obligations, and even target neuromorphic spike patterns. Pairing the PSG with emerging spiking neural chips from companies like Infineon opens an architectural possibility we are pursuing: **AI systems that consult structured knowledge graphs as oracle memory** during inference.
 
+We use structured knowledge consultation in our [current retrieval service](/blog/retrieving-fidelity/#knowledge-representation-again), where local models query a repository source graph in DuckDB and receive cited evidence.
+
 Where current approaches try to encode all knowledge in neural weights, our neuromorphic oracle architecture separates learned patterns (optimized for pattern recognition) from structured knowledge (optimized for logical reasoning). As we currently conceive it, when faced with questions requiring physical laws or mathematical constraints, the neuromorphic circuit would generate query patterns that traverse the knowledge hypergraph and perform deductive closure over verified relationships.
 
 In this design, our Composer compiler's zipper-based traversal of the PSG would carry a second role beyond compilation: a **learning agent** that discovers paths through both computational and knowledge graphs. As the system compiled more code and processed more queries, it would learn which knowledge patterns are most valuable and how to structure the graph for efficient access.

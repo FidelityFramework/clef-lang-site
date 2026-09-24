@@ -709,6 +709,8 @@ This system combines efficient weight representations with sub-quadratic sequent
 
 This synthesis of multiple research vectors aims at a deployment architecture more flexible and more efficient than these approaches taken alone. We have found no other representative implementations of this combination in the standing literature we have reviewed.
 
+In [Retrieving Fidelity](/blog/retrieving-fidelity/#focused-workers-concentrated-evidence), we examine how focused research and audit workers could supply cited evidence to a larger model.
+
 ### Direct Hardware Targeting Through MLIR Lowering
 
 These post-transformer approaches align with emerging hardware accelerator architectures. Through Alex and our MLIR dialect hierarchy, we can directly target specialized hardware without inefficiencies of intermediate representations:

@@ -435,6 +435,8 @@ Farscape addresses this through an absolute boundary between generated and devel
 
 This three-layer architecture (generated declarations, generated wrappers, developer overlay) keeps the friction of library evolution low. The generated layers handle the mechanical translation from C to Clef. The overlay carries the semantic investment that only a domain expert can contribute, and the compiler enforces the boundary between them rather than leaving it to convention.
 
+We also investigate generated bindings through our [repository knowledge graph](/blog/retrieving-fidelity/#knowledge-representation-again). It connects selected bindings to their declared generator and likely generation profile, retaining source citations for inspection.
+
 ## A Bridge Under Construction
 
 Our Farscape design connects decades of native development with the dimensional safety the Clef language carries. By making C and C++ libraries reachable from the Clef ecosystem, Farscape lets developers keep the performance and ubiquity of native code while gaining safety the type system checks at compile time. As part of our Fidelity Framework, it is the integration layer that lets Clef reach across the computing spectrum, from embedded devices to supercomputers, without leaving the existing native ecosystem behind.
