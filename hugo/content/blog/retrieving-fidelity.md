@@ -62,9 +62,9 @@ The arrow from a chunk points to its parent file. That small detail becomes cons
 
 Our current snapshot contains 2,249 files across twelve curated repositories, represented by 8,050 nodes and 11,576 edges. That includes 42 capability nodes and 2,031 derived relationships. The graph gives us a manageable way to navigate that material while retaining the source-level detail needed to assess a conclusion.
 
-A question about [WrenHello's native host](/blog/wren-stack/#our-wrenhello-host), for example, can lead through project references to WebKit and GTK bindings, then to a binding's declared generator and likely generation profile. Our graph retains the source evidence for each step.
+A question about [WrenHello's native host](/blog/wren-stack/#our-wrenhello-host) on Linux, for example, can lead through project references to WebKit and GTK bindings, then to a binding's declared generator and likely generation profile. Our graph retains the source evidence for each step.
 
-We store it in [DuckDB](https://duckdb.org/) and use [DuckPGQ](https://duckpgq.org/) for graph pattern matching. DuckPGQ supplies SQL/PGQ operations over relational data, so graph traversal and ordinary database handling can share a compact execution engine. Our retrieval API exposes a restricted query language over that graph.
+We store it in [DuckDB](https://duckdb.org/) and use [DuckPGQ](https://duckpgq.org/) for graph pattern matching. DuckPGQ supplies SQL/PGQ operations over relational data, so graph traversal and ordinary database handling can share a fast, compact execution engine. Our retrieval API exposes a restricted query language over that graph.
 
 ## Smart Search, on Both Sides of the Tool Call
 
