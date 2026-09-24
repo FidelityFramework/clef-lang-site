@@ -49,7 +49,8 @@
   // Preserved across close/reopen so the modal rehydrates instead of starting
   // blank. Persisted to sessionStorage (see snapshotSession) so the snapshot also
   // survives full page navigation, since this is a multi-page site with no client
-  // router and the script reloads on every page. Cleared only by the Clear button.
+  // router and the script reloads on every page. Cleared by the Clear button or
+  // when the saved snapshot predates the current synthesis architecture.
   let lastResultsHtml = "";
   let lastStatsText = "";
   let lastSynthesisHtml = "";
@@ -63,6 +64,8 @@
   // result". All access is wrapped because storage can throw (private mode, quota).
 
   const SESSION_KEY = "clefSearchSession";
+  // Bump when prompt/content corrections make previous summaries misleading.
+  const SESSION_VERSION = "automatic-proof-dispatch-1";
 
   function snapshotSession() {
     try {
@@ -71,6 +74,7 @@
         return;
       }
       sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        version: SESSION_VERSION,
         query: lastQuery,
         resultsHtml: lastResultsHtml,
         statsText: lastStatsText,
@@ -86,6 +90,10 @@
       if (!raw) return;
       const s = JSON.parse(raw);
       if (!s || !s.query) return;
+      if (s.version !== SESSION_VERSION) {
+        sessionStorage.removeItem(SESSION_KEY);
+        return;
+      }
       lastQuery = s.query;
       lastResultsHtml = s.resultsHtml || "";
       lastStatsText = s.statsText || "";

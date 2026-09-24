@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../shared/Synthesis.fs" Link="Shared/Synthesis.fs" />
     <Compile Include="src/Types.fs" />
     <Compile Include="src/Handlers.fs" />
     <Compile Include="src/Main.fs" />

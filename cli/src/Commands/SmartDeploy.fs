@@ -95,15 +95,17 @@ module SmartDeploy =
             | Error _ -> None
 
     /// Determine which workers need redeployment from changed file paths
-    let private changedWorkers (workerFiles: string list) : Set<string> =
+    let changedWorkers (workerFiles: string list) : Set<string> =
         workerFiles
-        |> List.choose (fun path ->
+        |> List.collect (fun path ->
             let parts = path.Replace("\\", "/").Split('/')
             // workers/smart-search/src/Foo.fs → "smart-search"
             if parts.Length >= 2 && parts.[0] = "workers" then
-                Some parts.[1]
+                // Shared proof policy must reach every synthesis endpoint.
+                if parts.[1] = "shared" then [ "search"; "smart-search" ]
+                else [ parts.[1] ]
             else
-                None)
+                [])
         |> Set.ofList
 
     /// Deploy only the workers whose source files changed

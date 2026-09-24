@@ -198,11 +198,11 @@ flowchart TD
     subgraph AZ["Alex Traversal"]
         AZ1[Zipper focuses on node]
         AZ2[XParsec matches extern pattern]
-        AZ3[ExternDispatch.dispatch]
+        EXTERN_DISPATCH[ExternDispatch.dispatch]
         AZ4[Binding lookup by entry point]
         AZ1 --> AZ2
-        AZ2 --> AZ3
-        AZ3 --> AZ4
+        AZ2 --> EXTERN_DISPATCH
+        EXTERN_DISPATCH --> AZ4
     end
 
     subgraph ML["MLIR Output"]

@@ -41,25 +41,10 @@ module Handlers =
 
     /// Build the synthesis prompt from search results
     let private buildSynthesisPrompt (query: string) (results: SearchResult array) : string =
-        let contextParts =
-            results
-            |> Array.mapi (fun i r ->
-                $"[{i + 1}] {r.title}\n{r.snippet}")
-            |> String.concat "\n\n"
-
-        $"""You are a helpful assistant for the Clef programming language documentation site (clef-lang.com).
-Clef is a concurrent systems language targeting CPU, GPU, NPU, FPGA, and other accelerators with proof-carrying capabilities for safe realtime systems.
-
-The user searched for: "{query}"
-
-Here are the top search results with snippets:
-
-{contextParts}
-
-Provide a concise 2-3 sentence summary that synthesizes these results in relation to the user's query.
-Reference specific results by their content but do not use numbered citations.
-If the results don't seem relevant to the query, say so briefly.
-Do not make up information not present in the snippets."""
+        let excerpts = results |> Array.map (fun r -> r.title, r.snippet)
+        let task =
+            "Provide a concise two-to-three sentence summary relating the SOURCE EXCERPTS to the USER REQUEST. Reference specific concepts by their content, without numbered citations. Use only evidence relevant to the request and do not invent details."
+        ClefLang.Synthesis.buildPrompt query task excerpts
 
     /// Handle the /synthesize POST endpoint
     /// Takes pre-ranked BM25 results and returns an AI-generated summary

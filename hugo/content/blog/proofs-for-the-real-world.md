@@ -30,7 +30,7 @@ type Range<[<Measure>] 'T, [<Measure>] 'U> =
 
 Both type parameters are measures in the abelian group algebra. `Range` is what distinguishes a pair of propagation bounds from an ordinary pair of values. When the application writes `Range(5000.0<kg>, 80000.0<kg>)`, the compiler knows to propagate that interval through every arithmetic operation in the computation graph.
 
-The interval arithmetic that propagates ranges through multiplication, division, addition, and subtraction is deterministic, bounded-time, and closed under the same operations that dimensional types are closed under. When the compiler propagates a range through a computation graph and the output range exceeds a declared bound, the violation is a design-time finding. No annotation is required beyond the input ranges and the material property that defines the bound. The computation graph determines the rest.
+Sound transfer rules propagate ranges through supported arithmetic operations, accounting for conditions such as a divisor excluding zero. When an output enclosure exceeds a declared bound, the compiler reports a potential violation. Establishing an actual violation requires a reachable counterexample or a sufficiently precise analysis. The obligations come from the computation graph and its input contracts without per-function proof annotations.
 
 ## Domain Case: Aerospace Structural Integrity
 
@@ -196,7 +196,7 @@ The compiler reports two findings:
 
 The dimensional types catch a class of clinical error that dimensional analysis was originally designed to prevent: confusing mg/kg (dose per body mass) with mg/L (plasma concentration), or applying a dose rate in mg/kg/hr to a duration in minutes without converting. These errors have caused patient harm in practice. The range propagation adds the therapeutic window check: the computation is dimensionally correct, but the dosage at certain combinations of patient mass, rate, and duration falls outside the safe range. The compiler identifies the specific parameter combinations.
 
-Note that the compiler does not know pharmacology. It knows dimensional types, declared ranges, and interval arithmetic. The pharmacological knowledge is encoded in the application's constants, therapeutic bounds, and range declarations. `Fidelity.Physics.Clinical` contributes only the measure types that make those declarations dimensionally safe. The compiler's contribution is propagating the consequences through the computation graph exhaustively and exactly.
+The compiler does not know pharmacology. It checks dimensional types, established ranges, and supported arithmetic rules. The application's model and boundary contracts supply the pharmacological assumptions. `Fidelity.Physics.Clinical` contributes the measure types that make those declarations dimensionally consistent. Any derived bound remains conditional on that model; it does not independently establish clinical safety.
 
 ## The Common Pattern
 
@@ -235,7 +235,7 @@ let safetyEnvelope (massRange : Range<kg>) (gRange : Range<1>) =
 
 The function `computeStress` has a known computation graph (a single division). Its range behavior is deterministic: output range equals input range divided by input range. The call from `safetyEnvelope` passes a derived range (the product of mass, gravitational acceleration, and G-force ranges) into `computeStress`, and the range propagation continues through the function boundary without interruption.
 
-Parametricity ensures this works. The function `computeStress` is parametric in the magnitude of its inputs; it divides whatever it receives. The range propagation commutes with the function application for the same reason that dimensional annotations commute with compilation passes: the function does not inspect or modify the metadata, only the computational structure.
+A sound analysis can propagate ranges through `computeStress` using its body or a checked summary. The division rule must account for its input intervals, a nonzero denominator, and the selected numerical representation. The dimensional relation and the numerical bound have separate justifications.
 
 For functions that compose multiple range-carrying operations, the propagation chains:
 
@@ -248,19 +248,15 @@ let fullAnalysis mass gForce sparArea yieldStrength =
     // compiler derives the range of safetyMargin
 ```
 
-The safety margin's range is computed from the chain of operations. If the lower bound is negative, the compiler reports the specific combination of input values that produces a negative margin. This is not a test; it is a proof over the declared operating envelope.
+The safety margin's enclosure is computed from the chain of operations. A nonnegative lower bound establishes a nonnegative margin under the input assumptions. A negative lower bound can signal a potential violation; identifying a particular violating input requires further evidence.
 
-## Where Range Propagation Is Exact
+## When Range Propagation Establishes a Bound
 
-The compiler's range analysis produces exact bounds (no false positives, no false negatives) when the computation satisfies three conditions:
+A sound range analysis encloses every result allowed by its input assumptions and operation semantics. If that enclosure lies within a required bound, it establishes the bound even when the enclosure is conservative. An enclosure that crosses the bound leaves the safety obligation unresolved; it does not by itself demonstrate a violating execution.
 
-**Monotonic arithmetic.** Multiplication of positive values, addition, subtraction, and division by positive values are all monotonic: the output range endpoints correspond to specific input range endpoints. The compiler evaluates the operation at the endpoint combinations and takes the extremes. This is exact.
+Monotonic arithmetic over independent input intervals can yield tight bounds. Straight-line code alone does not guarantee tightness: repeated uses of one value can lose their relationship under ordinary interval propagation. For example, independent interval treatment of `x - x` can overestimate its range although the mathematical result is zero. The PSG can retain such relationships for an analysis that knows how to use them.
 
-**No control flow.** The computation is a straight-line sequence of arithmetic operations. There are no branches, no conditionals, no pattern matches that would split the range into cases. The range at every node is determined by a single arithmetic path from the inputs.
-
-**All inputs are range-declared.** Every leaf value in the computation graph has a declared range or a known value (from explicit annotation, from a constant declaration, or from a material property). There are no unranged inputs whose range defaults to the full representable interval.
-
-When all three conditions hold, the range analysis is a proof: the output is guaranteed to lie within the computed range for all inputs within the declared ranges. The compiler reports this as "range analysis confidence: exact."
+Ranges may come from constants, guards, checked library contracts, or explicit declarations at input boundaries. Numerical guarantees also require the selected representation's rounding and overflow behavior. None of these obligations requires a proof attribute on every arithmetic operation.
 
 Stated in Hoare logic, the analysis discharges the triple:
 
@@ -272,62 +268,60 @@ $$
 \{\,\mathit{output} \in \mathit{computed\_range} \;\wedge\; \mathit{computed\_range} \subseteq \mathit{safe\_bound}\,\}
 $$
 
-The declared input ranges are the precondition. The straight-line arithmetic is the command. The propagated output range is the strongest postcondition derivable from those preconditions and the operations. The bound check is an application of the consequence rule: if the computed range implies the declared safety bound, the triple is valid, and an SMT solver discharges that implication as a `QF_LIA` obligation. Range propagation, in this reading, is forward strongest-postcondition computation over the PSG.
+The established input ranges are the precondition. The computation graph is the command. A sound propagated enclosure supplies an output condition, and the consequence rule applies when that enclosure is contained in the required safety bound. A specialized analysis or solver checks the generated condition in its supported theory. Linear integer conditions can use `QF_LIA`; real-valued, nonlinear, and representation-specific conditions need their applicable encodings and procedures.
 
-Structural analysis, thermal analysis, fluid dynamics boundary conditions, sensor fusion pipelines, and electrical power budgets are typically straight-line arithmetic over declared physical ranges. They satisfy all three conditions. For these computations, the proofs are free for the same reason dimensional consistency is free: the computation graph determines the result.
+Structural analysis, thermal analysis, sensor processing, and power budgets provide useful applications for this automatic analysis. Their domain models and boundary assumptions still determine what the resulting proof says about a physical system.
 
 ## Where Range Propagation Is Conservative
 
-The analysis becomes conservative (may report violations that cannot actually occur) in cases that fall into two distinct categories. The distinction matters: the first category is resolved by Tier 2 annotations the engineer writes locally; the second is resolved by Tier 3 lemmas that the compiler instantiates from a growing library. They are not the same kind of gap.
+An unresolved bound can require a more precise local analysis or a reusable domain law. This is a distinction between sources of evidence, not between levels of mandatory source annotation.
 
-### Resolved at Tier 2 by an annotation
+### Tier 2: Local facts and graph coeffects
 
-**Branching control flow with narrowing.** When a computation branches on a runtime condition, the range at the join point is the union of the ranges from both branches. For branches that correspond to operating regimes (subsonic vs. supersonic, laminar vs. turbulent), the union is the correct range. But for branches that narrow the range (a clamp, a saturation, a guarded reciprocal), the conservative analysis may report a violation that the clamp itself prevents. The engineer resolves this by inserting a range assertion at the join point. In Hoare logic this is the conjunction rule: instead of carrying `{Q₁ ∨ Q₂}` forward as the postcondition of the branch, the engineer asserts `{bound}` and the solver discharges `bound ⊆ Q₁ ∧ bound ⊆ Q₂` as a `QF_LIA` obligation. The asserted bound then becomes the precondition for the rest of the graph, and propagation continues.
+**Branching control flow with narrowing.** Guards, clamps, and saturation operations can supply range facts directly from code. The intended analysis retains those facts through the PSG and checks the bound at each relevant branch. To conclude a common bound from branch conditions `Q₁` and `Q₂`, it must establish `Q₁ ⇒ bound` and `Q₂ ⇒ bound`. An explicit assertion can state an additional requirement, but its presence is not evidence that the requirement holds.
 
-**Bounded loops with linear invariants.** A loop whose iteration count depends on runtime data produces a range that the compiler must compute by fixed-point iteration over the interval. For bounded loops with a linear invariant, the engineer states the invariant as an annotation and the solver discharges the Hoare while rule: the invariant holds initially, is preserved by each iteration, and implies the postcondition on exit. This stays inside the `QF_LIA` fragment and remains a Tier 2 obligation.
+**Bounded loops with linear invariants.** A supported loop analysis can generate an invariant from program structure or a registered rule. Checking it requires initialization, preservation by each iteration, and the exit implication. When those conditions fall within an admitted local arithmetic fragment, they remain Tier 2 obligations. A developer may supply missing domain information, but Tier 2 is not defined by manual invariant annotation. If the available analysis cannot establish the invariant, the obligation stays unresolved.
 
-**External inputs.** Values that enter from outside the compilation boundary (sensor readings, API responses, user input) carry only their declared range. The compiler cannot verify that the external source respects the declared range. The analysis is sound with respect to the declaration; it is not sound with respect to the actual source. This is a boundary condition rather than a tier issue. The declaration is the contract.
+**External inputs.** Values from sensors, APIs, or user input need a justified boundary contract. A declared range remains an assumption unless validation or evidence establishes it. The analysis's conclusion is conditional on that contract; the compiler cannot infer a device's behavior from a unit declaration.
 
 ### Resolved at Tier 3 by a parameterized lemma
 
-**Wide-interval transcendentals.** The sine of a wide interval is `[-1, 1]`. The exponential of a wide interval is `[0, ∞)`. The naive interval rule for these functions is too coarse for useful constraint checking. An annotation cannot resolve this case, because the engineer cannot honestly assert a tighter range without invoking a real-analysis fact. The resolution is a lemma in `Fidelity.Lemmas.Mathematics`, parameterized over the interval, proved once in Rocq, and instantiated automatically by the compiler from the specific interval values in the PSG. The Tier 2 discharge confirms that the concrete interval satisfies the lemma's precondition; the lemma supplies the tighter postcondition. The compiler reports a conservative finding today because the relevant lemma is not yet in the library, not because the approach cannot express it.
+**Transcendental bounds.** Coarse bounds for sine or exponential may be insufficient for a particular safety condition. A checked theorem can supply a tighter result under specified interval and operation premises. In the intended library workflow, a domain author proves that theorem once, potentially in Rocq, and the compiler instantiates its parameters from the PSG. Local analysis checks the applicable premises. The application author need not attach the lemma to every call.
 
-**Loops with nonlinear or transcendental invariants.** A loop whose invariant requires reasoning beyond `QF_LIA` (convergence of an iterative solver, monotonic decrease of a Lyapunov function, a fixed-point bound on a nonlinear recurrence) is a Tier 3 obligation. The lemma is parameterized over the recurrence and the operating interval; the instantiation comes from the PSG. As with the transcendental case, the conservative diagnostic today is an honest acknowledgment that the relevant lemma is not yet available, not a structural limitation.
+**Domain and system invariants.** A convergence theorem, resource-handoff law, or distributed reduction result can depend on several related operations. Tier 3 uses reusable laws whose participants and shared premises are retained in PSG hyperedges. The compiler instantiates a law only for its supported construction and checks its premises. Falling outside `QF_LIA` does not by itself select Tier 3: the obligation's reasoning role and the available procedures determine dispatch.
 
-In each of these cases, the compiler reports the confidence level alongside the finding:
+An illustrative diagnostic for an unresolved range obligation could be:
 
 ```
 ⚠ Potential range exceeded: thermal_stress upper bound 3.1e8 <Pa>
   may exceed yield_strength 2.7e8 <Pa>
   Range analysis confidence: conservative
     (branch at line 47 widens interval; actual range may be narrower)
-  Consider: add range assertion or narrow input range declaration
+  Needed: a justified tighter range or an applicable checked rule
 ```
 
-The diagnostic distinguishes between exact findings (proofs) and conservative findings (warnings). For the first category above, the engineer tightens the finding into an exact one by adding a Tier 2 annotation. For the second, the resolution arrives when the relevant lemma lands in `Fidelity.Lemmas.Mathematics`; from that point forward, every program whose PSG annotations fall within the lemma's parameter types is instantiable for free. The conservative region shrinks as the lemma library grows.
+The diagnostic distinguishes an established bound from an unresolved requirement. More precise transfer rules and additional domain laws can extend automatic coverage. A library theorem applies only when its instantiated premises hold. A theorem proved in Rocq retains that foundation even when a solver checks its local arithmetic premises.
 
-The categorical reading of this gap is precise about where the witness is missing. Each conservative finding corresponds to a non-trivial obstruction class in the first cohomology of the relevant verification sheaf: the local arithmetic cannot be extended to a globally consistent range assignment without an additional witness, and the witness is exactly what a Tier 3 lemma supplies. The space of conservative findings is therefore the space of obstruction classes for which no witness has yet been added to the library. Adding a lemma kills the corresponding obstruction class, and every program whose PSG falls within the lemma's parameter types becomes exact at that boundary. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) treats the four-tier verification stack as a graduated sequence of sheaves over the same compilation poset, and the conservative-finding diagnostic is the operational face of an \(H^1\) obstruction in that framework.
+The [compilation sheaf design](/docs/design/categorical-foundations/the-compilation-sheaf/#conservative-findings-as-uncharacterized-cohomology) organizes the compatibility of evidence across analyses and lowering stages. Interpreting an unresolved condition as a cohomological obstruction would require an additional mathematical correspondence; an interval overestimate alone does not establish such a class.
 
 ## The Revised Tier Boundary
 
-The Fidelity framework's [formal verification design](/docs/design/categorical-foundations/formal-verification-compilation-byproduct/) defined Tier 1 as dimensional consistency, escape classification, allocation verification, and capability checking. Range consistency and physical safety constraint checking belong in Tier 1 as well, when the computation satisfies the exactness conditions above.
+The current [Decidable By Construction](https://arxiv.org/abs/2603.25414) model organizes proofs by the justification they need. An automatically generated range proof belongs to Tier 2 even when its bound is tight; automation does not make every obligation Tier 1.
 
-The revised Tier 1 coverage:
+The four tiers support the same ordinary programming workflow:
 
-| Property | Mechanism | Free? |
+| Tier | Coverage | Dispatch |
 |---|---|---|
-| Dimensional consistency | Abelian group algebra over type annotations | Yes |
-| Escape classification | Coeffect propagation through PSG | Yes |
-| Allocation verification | Escape classification mapped to target memory | Yes |
-| Capability checking | Coeffect requirements against target profile | Yes |
-| Representation selection | Interval arithmetic over dimensional ranges | Yes |
-| Physical range safety | Same interval arithmetic, compared against physical bounds | Yes, when exact |
+| 1 | Dimensional equality and admitted structural rules | Inference and structural derivations from typed code |
+| 2 | Range, layout, and local arithmetic conditions | Graph coeffects and automatically generated analysis or solver obligations |
+| 3 | Parameterized domain and system properties spanning PSG relationships | Reusable lemmas instantiated from hyperedges and checked premises |
+| 4 | Relations between executions or realizations | Supported compiler-relational (cRHL) and probabilistic-relational (pRHL) rules |
 
-The last two rows use the same mechanism. The difference is what the computed range is compared against: a representation's dynamic range (for representation selection) or a physical property's value (for safety checking). The comparison target determines whether the finding is "use posit32" or "the wing breaks at G-force 3.44." The propagation is identical.
+Representation selection and physical bound checking can use the same propagated range against different requirements. Both need the applicable numerical semantics and assumptions. A physical bound additionally depends on the domain model that makes that comparison meaningful.
 
-For the majority of safety-critical arithmetic, the engineer writes no proof code and no verification annotations. The compiler does the work at Tier 1. Tier 2 (scoped assertions) is needed only when the range analysis is conservative in a way a local annotation can resolve: a clamp at a join point, a linear loop invariant. Tier 3 is needed for properties that range propagation cannot express: convergence, termination of iterative procedures, transcendental bounds, and correctness of algorithms whose safety depends on control flow rather than arithmetic. Tier 3 lemmas in `Fidelity.Lemmas.Mathematics` are parameterized over interval bounds and instantiated by the compiler from the Tier 2 facts already present in the PSG. The marginal cost of a new lemma is the proof itself; instantiation is automatic. The same lemma-reuse mechanism applies to cryptographic protocols in the formal verification design, where one proof in the library discharges every program that falls within its parameter types.
+Application developers receive supported coverage through types, ordinary operations, and domain libraries. Framework and library authors establish reusable laws; the compiler generates their supported instances and dispatches the premises. This includes supported Tier 4 derivations. New requirements may need explicit formulation, but the tiers do not impose a staircase of per-function proof annotations. Unsupported obligations and timeouts remain unresolved.
 
-The coeffect algebra that emerged from evaluating and departing from F*'s dependent type approach is precisely what makes range propagation composable: the same algebraic structure that tracks escape classification and memory lifetimes also tracks value ranges through the computation graph. The [verification internals](/docs/internals/verification/) cover this design path in full.
+The PSG retains the relationships among dimensional, range, lifetime, and resource facts while respecting their different analysis domains. The [verification internals](/docs/internals/verification/) describe that design. As the whitepaper records, the Rocq integrations, semantic adapters, and automatic Tier 3/4 compositions remain work to implement and check.
 
 ## Implications for Domain Libraries
 
@@ -366,27 +360,27 @@ let aluminum7075 = {
 }
 ```
 
-The compiler combines these application-level declarations with the computation graph to produce safety findings without any per-function annotation. The library provides the type algebra; the application provides the constants, bounds, ranges, and computation graph; the range propagation is the verification. All compose at design time, and the proofs, where they are exact, are free.
+The compiler combines these application-level declarations with the computation graph to generate obligations without per-function proof annotations. Libraries provide types and checked laws; application code supplies the computation and its boundary requirements. A sound propagated enclosure can establish a bound without being the tightest possible enclosure.
 
 ## From Findings to Certificates
 
-The design-time diagnostics shown in the examples above are derived from SMT proof obligations that CCS generates as it saturates the PSG. When the range analysis for `shear_stress` produces an exact finding, that finding corresponds to a resolved `QF_LIA` assertion in the PSG node. The release path we are designing carries those resolved assertions forward: a `clef build --release` would aggregate them into a global SMT problem, verify it with the solver, and hash the resulting witness cryptographically alongside the compiled binary into a `.proofcert` artifact.
+The design-time diagnostics illustrated above correspond to obligations generated from the PSG. A range finding needs the analysis result or checked proof for the relevant arithmetic semantics. The release path we are designing would carry that evidence through lowering and associate it with the resulting artifact.
 
-The certificate guarantees that every range finding reported at design time holds in the compiled output. The range exceeded at G-force 3.44, the VaR breach at leverage ratio 1.27, the therapeutic window boundary at dose rate 1.0 for a 40 kg patient: each is a solver-verified constraint that survives MLIR lowering through translation validation. The [verification internals](/docs/internals/verification/) document this pipeline from PSG saturation through the cryptographic release certificate.
+A certificate must name the checked claim, its premises, the artifact, and the proof dependencies. Establishing that a source-level bound describes the compiled output also requires checked preservation across the affected lowering steps. A hash identifies evidence or an artifact; it does not establish those semantic connections. The [compilation sheaf design](/docs/design/categorical-foundations/the-compilation-sheaf/) describes the intended preservation account.
 
-The practical consequence is that the engineer who sees a range finding in Lattice during development can trust that the same constraint is enforced in the release binary. The proof ships with the artifact.
+The intended result is an inspectable connection between an editing-time finding and the released program, with unresolved obligations still visible at the boundary that requires them.
 
 ## Better Design, Safer Results
 
-This approach satisfies proofs for a large portion of the physical computations that safety-critical engineering depends on: structural loads, thermal gradients, pressure differentials, electrical power budgets, and sensor operating envelopes. Range propagation through the computation graph produces exact safety proofs for a well-defined class of computations: straight-line arithmetic over declared ranges with monotonic operations. 
+Range propagation can establish useful bounds for structural loads, thermal calculations, power budgets, and sensor operating envelopes. Those results are conditional on the domain model, input contracts, and numerical semantics. A sound enclosure within a required bound is enough to establish that particular obligation.
 
-The class does not include computations whose safety depends on control flow, iterative convergence, or runtime-dependent data. For those, the compiler produces conservative warnings that may require Tier 2 annotation to resolve. The boundary between "free proof" and "requires annotation" is determined by the computation's structure, not by the engineer's diligence. The compiler knows which case applies and reports accordingly.
+Control flow and runtime inputs can contribute facts to automatic analysis. More demanding properties may need reusable lemmas or relational rules. The boundary is the available checked construction and its premises, not a requirement that developers annotate every function above Tier 1.
 
-Representation selection and safety constraint checking are the same mechanism applied to different comparands. The infrastructure for safety checking was present in the DTS from the beginning; it was designed for representation selection and deployed for that purpose. Extending it to physical safety constraints requires no new machinery, only the recognition that a range bound compared against a material property is the same operation as a range bound compared against a numeric format's dynamic range.
+Representation selection and safety constraint checking can share propagated ranges and comparison machinery. Their conclusions have different requirements: a representation must cover the admitted values and numerical error criteria, while a physical or application bound also depends on a justified domain model. Extending coverage requires the rules and evidence for those additional premises.
 
-The four influences on this design each contribute a specific element. Kennedy's Units of Measure showed that dimensional inference is practical in a production language. Syme's F# proved it scales. Gustafson's posit arithmetic connected dimensional ranges to numeric representation selection, creating the interval propagation machinery. Wadler's parametricity result provides the formal guarantee that the propagated types generate correct theorems. Range propagation extends these theorems from dimensional consistency into the physical, financial, and clinical constraints that the types were designed to represent.
+The influences on this design contribute distinct ideas: Kennedy's dimensional inference, Syme's work on F#, Gustafson's numerical representations, and Wadler's account of parametricity. Dimensional consistency, numerical enclosure, and domain adequacy remain different claims. The four-tier architecture connects their evidence while retaining the assumptions and proof rules each requires.
 
-The proofs follow the computation graph as far as the arithmetic is monotonic, the inputs are declared, and the control flow is absent. For a significant and practically important class of computations across multiple domains, that is far enough. The domain library is the design-time decision that scopes the proofs to a specific field. We have found no other representative implementation in the standing literature we have reviewed that derives physical, financial, and clinical range proofs from the same dimensional propagation that selects numeric representations, and that is the direction we will keep extending as the lemma library grows and the conservative region shrinks.
+The compiler's task is to derive supported obligations from the program, dispatch them to the applicable analysis or rule library, and retain their evidence. Growing that coverage through reusable laws lets applications benefit without reconstructing each domain proof at every use.
 
 ## References
 

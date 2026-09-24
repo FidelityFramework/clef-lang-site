@@ -422,53 +422,18 @@ module Search =
     /// Build synthesis prompt from full-content sections grouped under their pages.
     /// `request` is the raw user input; `answerMode` switches the task verb between
     /// answering a question and describing what the corpus covers.
-    /// Does this synthesis touch the four-tier verification architecture? Checked
-    /// against the request and the assembled evidence so the canonical-tier guard
-    /// is injected only when relevant — non-verification summaries stay lean.
-    let private touchesVerificationTiers (request: string) (evidence: string) : bool =
-        let haystack = (request + " " + evidence).ToLowerInvariant()
-        let signals =
-            [| "tier 1"; "tier 2"; "tier 3"; "tier 4"; "four-tier"; "four tier"
-               "qf_lia"; "qf_bv"; "prhl"; "rocq"; "hoare"; "trusted computing base"
-               "rejection-sampling"; "rejection sampling"; "proof obligation"
-               "free theorem"; "decidab"; "verification tier"; "compilation byproduct" |]
-        // "z3" alone is too broad (appears in general compiler prose); require it to
-        // co-occur with a tier or proof signal, handled by the list above already.
-        signals |> Array.exists (fun s -> haystack.Contains(s))
-
-    /// Canonical four-tier mapping, treated as GROUND TRUTH over any ambiguous
-    /// excerpt phrasing. Verified against
-    /// docs/design/categorical-foundations/formal-verification-compilation-byproduct.md.
-    /// This exists because small models scramble the tier→mechanism mapping under
-    /// summarization pressure (e.g. attributing Z3 to Tier 1, which is wrong).
-    let private fourTierGuard =
-        """ACCURACY GUARD — the four-tier verification architecture. Getting this exactly right is critical: the tier→mechanism and tier→trusted-computing-base pairings are the framework's core formal claim, and a wrong pairing (e.g. describing Tier 1 properties as requiring Z3-discharged assertions, or putting Rocq in the trusted computing base before Tier 4) is a serious correctness error that misrepresents the architecture to a formal-methods audience. When the synthesis makes any claim about which tier uses which proof mechanism or which trusted computing base, the mapping below is authoritative. If an excerpt's wording seems to conflict with it, follow THIS mapping. Do not assign a mechanism to a tier unless it matches this table, and do not state a tier→mechanism pairing this table does not support.
-
-- Tier 1 — Compilation byproducts. Dimensional types, memory lifetimes, grades, escape analysis, and parametricity-derived (free) theorems, carried through abelian group structure and computed at ZERO annotation cost during normal compilation. Free theorems apply at Tier 1 only. The QF_LIA/QF_BV assertion mechanism is Tier 2, not Tier 1; do not describe Tier 1 properties as requiring assertion annotations.
-- Tier 2 — Scoped Hoare assertions. Bounds, invariants, and lifetime orderings via the [<Requires>]/[<Ensures>] attributes, discharged by Z3 over QF_LIA (dimensional algebra, range bounds) and QF_BV (bit-level and word-width reasoning from representation selection). This is where Hoare-logic vocabulary correctly belongs.
-- Tier 3 — Restricted probabilistic fragment. Library-instantiated lemmas (e.g. rejection-sampling termination, transcendental/range bounds), discharged through Z3 alone. Rocq is NOT in the trusted computing base at Tier 3.
-- Tier 4 — Probabilistic Relational Hoare Logic (pRHL). Relational proofs for cryptographic indistinguishability, type-checked by the Composer's pRHL type checker against a Rocq-proved rule library; Z3 handles only the arithmetic leaves. Rocq enters the trusted computing base ONLY at Tier 4.
-
-Trusted computing base: Z3 alone for Tiers 1–3; Rocq is added only at Tier 4."""
-
     let buildSynthesisPromptFull
         (request: string)
         (answerMode: bool)
         (sections: (SearchResult * string) array)
         : string =
-        let evidence =
+        let excerpts =
             sections
-            |> Array.mapi (fun i (r, body) ->
+            |> Array.map (fun (r, body) ->
                 let heading =
                     if String.IsNullOrWhiteSpace(r.sectionTitle) then r.pageTitle
                     else $"{r.pageTitle} — {r.sectionTitle}"
-                $"--- EXCERPT {i + 1}: {heading} ---\n{body}")
-            |> String.concat "\n\n"
-
-        // Inject the canonical-tier guard only for verification-topic syntheses.
-        let guardBlock =
-            if touchesVerificationTiers request evidence then "\n\n" + fourTierGuard
-            else ""
+                heading, body)
 
         let task =
             if answerMode then
@@ -476,43 +441,9 @@ Trusted computing base: Z3 alone for Tiers 1–3; Rocq is added only at Tier 4."
             else
                 "The USER REQUEST is a topic, not a question. In two to four sentences, describe what the SOURCE EXCERPTS say about it and how the relevant pieces connect. Do not pad beyond what the excerpts support."
 
-        $"""You are a documentation assistant for the Clef programming language and the Fidelity framework (clef-lang.com).
+        ClefLang.Synthesis.buildPrompt request task excerpts
 
-Clef is a hard-forked F# compiler that targets native code through MLIR for CPUs, GPUs, NPUs, FPGAs, and spatial accelerators. The Fidelity framework around it spans dimensional type systems, deterministic memory management, coeffect-based escape analysis, design-time verification through Z3, categorical foundations (sheaf theory, cellular sheaves on the compilation pipeline), Hoare logic at multiple tiers, probabilistic relational reasoning for cryptography, posit arithmetic, forward-mode automatic differentiation, neuromorphic targets, and physics-informed compilation. Subject matter that sounds purely mathematical (sheaves, functors, parametricity, free theorems, group actions, Hoare triples, lattice cryptography, geometric algebra) is first-class here, not off-topic background.
-
-USER REQUEST:
-"{request}"
-
-SOURCE EXCERPTS:
-
-{evidence}
-
-TASK:
-{task}{guardBlock}
-
-Rules:
-- Use only information present in the SOURCE EXCERPTS. Do not invent details, names, or claims.
-- If an excerpt does not bear on the USER REQUEST, ignore it. Do not force unrelated excerpts into the answer.
-- Quote specific named concepts and connect excerpts where the connection is visible in the text.
-- Clef is the present language of the framework. F#, F* (F-star), Scheme, OCaml, and Erlang are LINEAGE and INSPIRATION only, never the framework's present language. When an excerpt traces an idea to one of them, attribute the capability to Clef or the Fidelity framework and name the other language only as origin or inspiration ("a model Clef inherits from F#", "inspired by Erlang"). Never present F#'s (or F*'s, Scheme's, Erlang's) features as if they are Clef's current capabilities, and never imply the framework compiles or runs F#. If an excerpt itself uses heritage wording ("descends from", "inherits", "carries forward"), preserve that framing; do not flatten it into a present-tense feature of F#.
-- Do not preface with phrases like "the search results describe", "based on the excerpts", or "the documentation says". Deliver the synthesis directly."""
-
-    /// Build synthesis prompt from ranked search results (for smart-search worker)
+    /// Snippet-only callers use the same architecture and evidence rules.
     let buildSynthesisPrompt (query: string) (results: SearchResult array) : string =
-        let contextParts =
-            results
-            |> Array.mapi (fun i r ->
-                $"[{i + 1}] {r.pageTitle} — {r.sectionTitle}\n{r.snippet}")
-            |> String.concat "\n\n"
-
-        $"""You are a documentation assistant for the Clef programming language and the Fidelity framework (clef-lang.com).
-
-Clef is a hard-forked F# compiler that targets native code through MLIR for CPUs, GPUs, NPUs, FPGAs, and spatial accelerators. The Fidelity framework around it covers a wide span of topics: dimensional type systems, deterministic memory management, coeffect-based escape analysis, design-time verification through Z3, categorical foundations including sheaf theory and cellular sheaves on the compilation pipeline, Hoare logic at multiple tiers, probabilistic relational reasoning for cryptography, posit arithmetic, forward-mode automatic differentiation, neuromorphic targets, and physics-informed compilation. Topics that may sound purely mathematical (sheaves, functors, parametricity, free theorems, group actions, Hoare triples, lattice cryptography, geometric algebra) are first-class subject matter for this site, not off-topic background. Treat them as such.
-
-The user's query: "{query}"
-
-Top search results, each with a snippet from the source page:
-
-{contextParts}
-
-Write a substantive synthesis of what these results say about the query, in 4 to 6 sentences. Quote specific concepts and named results by their content. Connect the snippets to one another where the connections are visible in the text. Use only information present in the snippets; do not invent details. If a snippet directly answers the query, lead with that answer rather than describing the snippet. Do not preface the synthesis with phrases like "the search results describe" or "based on the snippets" — just deliver the synthesis directly. Do not declare the results irrelevant; if the connection to the query is loose, explain what the results actually cover instead."""
+        let sections = results |> Array.map (fun r -> r, r.snippet)
+        buildSynthesisPromptFull query (isQuestionOrRequest query) sections

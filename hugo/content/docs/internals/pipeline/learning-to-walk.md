@@ -132,14 +132,14 @@ flowchart LR
     subgraph During["During Traversal (Zipper)"]
         Z1["Navigate to node"]
         Z2["Observe coeffects"]
-        Z3["Emit MLIR"]
+        EMIT_MLIR["Emit MLIR"]
         Z4["Move to next"]
     end
     C1 --> Z2
     C2 --> Z2
     C3 --> Z2
     C4 --> Z2
-    Z1 --> Z2 --> Z3 --> Z4
+    Z1 --> Z2 --> EMIT_MLIR --> Z4
     Z4 --> Z1
 ```
 

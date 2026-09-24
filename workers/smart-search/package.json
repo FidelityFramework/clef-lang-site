@@ -8,6 +8,7 @@
     "fable": "dotnet fable . --outDir dist/fable --noCache",
     "bundle": "esbuild dist/fable/src/Main.js --bundle --format=esm --outfile=dist/worker.js --minify",
     "build": "npm run fable && npm run bundle",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "build:watch": "dotnet fable . --outDir dist/fable --watch",
     "dev": "npm run build && wrangler dev --remote",
     "dev:local": "npm run build && wrangler dev",

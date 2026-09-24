@@ -29,29 +29,29 @@ The DTS extends Hindley-Milner unification with dimensional annotations drawn fr
 
 Parametricity guarantees this uniformity. A multiplication function that works correctly for meters must work correctly for kilograms, for seconds, for any dimension, because the dimension variable is abstract. The function has no mechanism to dispatch on the dimension and do something different. The type prevents it.
 
-This is the formal reason that dimensional type inference is sound. When our DTS infers that a computation is dimensionally consistent, it is deriving a free theorem from the computation's polymorphic type. The inference is decidable (polynomial time, complete, principal) because the dimensional constraints form a system of linear equations over the integers, solved by Gaussian elimination. But the correctness of that inference, the reason the inferred types actually guarantee dimensional consistency of the compiled artifact, rests on parametricity.
+This provides a semantic motivation for dimensional inference. The measure fragment has decidable principal inference over integer-exponent equations, using solving that preserves the integer and divisibility constraints. Soundness also requires that the inference rules implement the declared dimensional algebra. Connecting the result to a compiled artifact adds preservation obligations for the compiler's transformations.
 
 ## Persistence Through Lowering
 
-The DTS paper's central claim is that dimensional annotations persist through multi-stage MLIR lowering. Each lowering pass transforms the program's structure (from high-level operations to target-specific instructions) while preserving the dimensional annotations as MLIR attributes. Parametricity provides the formal justification for this claim.
+The DTS design retains dimensional information through multi-stage MLIR lowering so that later representation and memory decisions can use it. A lowering pass changes the program's structure and must preserve the meaning of the relevant facts. Parametricity can justify metadata uniformity for a suitably parametric transformation; connecting those facts to emitted operations requires a preservation argument or validation at that boundary.
 
 Each lowering pass is a structure-preserving transformation, a function from one program representation to another. The dimensional annotations are polymorphic metadata that the pass carries through. Wadler's map-commutation theorem applies directly: if the lowering pass is parametric in the dimension (it does not inspect or modify dimensional annotations, only the computational structure), then lowering and reading the dimension gives the same result as reading the dimension and lowering.
 
-In more concrete terms: it does not matter whether the compiler checks dimensional consistency before or after lowering to the LLVM dialect. The result is the same, because the lowering is parametric in the dimension. This is not an implementation property of specific MLIR passes; it is a consequence of the type structure that Wadler formalized.
+For an implementation satisfying those premises, the dimensional account can remain consistent before and after lowering. Retaining an unchanged annotation alone does not prove that the emitted operation implements its source meaning. The source-to-target relation is part of the Tier 4 compiler-preservation account.
 
-The DTS paper's information accrual principle (Section 6.6) states that each compilation stage has strictly more information than its predecessor. Parametricity is the mechanism that ensures this accrual is monotonic: dimensional information established at an early stage cannot be contradicted at a later stage, because the later stage's transformations are parametric in the dimensions.
+Later stages can add target and layout facts while retaining the consequences needed from earlier evidence. A transformation that changes a premise must trigger revalidation of affected obligations. Information can be released when its required consequences have been preserved and its remaining consumers are satisfied.
 
-## Free Theorem Cascade in the Fidelity Framework
+## From Types to Further Proof Obligations
 
-Several properties that the DTS paper establishes as design-time verification results are, in Wadler's terminology, free theorems. They cost nothing beyond the type declarations that the programmer provides (or that the inference engine derives):
+Dimensional inference supplies a foundation for further verification. The compiler can generate many of the additional obligations automatically, but each property needs its applicable analysis or proof rule:
 
 **Dimensional consistency of the chain rule.** If \(f\) maps values with dimension \(d_1\) to values with dimension \(d_2\), then the derivative \(df/dx\) carries dimension \(d_2 \cdot d_1^{-1}\). This is a free theorem: the chain rule's dimensional behavior follows from the polymorphic type of differentiation. The DTS verifies it without examining the computation's structure, because the type determines it.
 
-**Cross-target transfer fidelity.** When a value crosses a hardware boundary (FPGA to CPU, NPU to GPU), the dimensional annotation determines whether the precision conversion is acceptable. The representation selection function operates on the dimensional range, which is a type-level property. The transfer fidelity analysis is a free theorem of the value's dimensional type and the target's representation profile.
+**Cross-target transfer fidelity.** When a value crosses a hardware boundary (FPGA to CPU, NPU to GPU), its dimension records its meaning. Establishing an acceptable precision conversion also requires a range, source and target representation semantics, and an error criterion. These become graph-carried analysis obligations; dimensional equality alone does not prove the conversion adequate.
 
-**Coeffect propagation.** The escape classification system (StackScoped, ClosureCapture, ReturnEscape, ByRefEscape) is a coeffect discipline in the sense of Petricek et al. The propagation of coeffects through the compilation graph follows the same parametricity structure: a transformation that is parametric in the coeffect annotation cannot change the escape classification.
+**Coeffect propagation.** The escape classification system (StackScoped, ClosureCapture, ReturnEscape, ByRefEscape) is a coeffect discipline in the sense of Petricek et al. Its analysis propagates contextual requirements through the PSG under specified transfer rules. Range, lifetime, layout, and target requirements have their own domains and preservation obligations.
 
-**Grade preservation in geometric algebra.** The PHG paper (arXiv:2603.17627) introduces grade as a dimension axis within the DTS abelian group framework. Grade preservation through training, the theorem that forward-mode autodiff with quire-exact accumulation preserves the structural zeros of the Cayley table, is a free theorem of the grade-annotated type. The grade variable is polymorphic; operations that are parametric in grade cannot introduce grade corruption.
+**Grade and blade support in geometric algebra.** The PHG paper (arXiv:2603.17627) develops structural analyses for geometric products. Checked operation rules determine possible output grades and blade support. Preserving those facts through an update or lowering requires the relevant rule and its premises; exact accumulation alone does not establish every geometric invariant.
 
 ## The Connection to Reynolds
 
@@ -67,7 +67,7 @@ The convergence of these two contributions in one researcher's body of work is n
 
 ## Implications for DTS
 
-The [DTS paper](https://arxiv.org/abs/2603.16437)'s Section 2.2 (dimensional inference) derives its soundness from parametricity. The claim that dimensional annotations survive lowering (the persistence property) is a consequence of parametric polymorphism applied to compilation passes. The decidability result (polynomial time, complete, principal) establishes that the inference algorithm terminates; parametricity establishes that the inferred types mean what they claim to mean.
+The [DTS paper](https://arxiv.org/abs/2603.16437) connects dimensional inference with semantic preservation. Principal inference describes the admissible dimensional assignments. Parametricity explains uniformity under suitable polymorphic operations. Checked transformations connect those source facts to later representations.
 
 In short, the full summary of Clef's innovation stems from:
 
@@ -78,11 +78,20 @@ In short, the full summary of Clef's innovation stems from:
 
 ## The Free Theorem Boundary
 
-The properties enumerated above (dimensional consistency, grade preservation, coeffect propagation, transfer fidelity) all share a structural feature that makes them genuinely free: each is a statement about an *abelian-group-valued annotation* whose preservation under polymorphic operations is forced by parametricity. The dimensional algebra is a free abelian group on the base units. Grade is an integer index in that same abelian setting. Escape classifications form a finite lattice that the compiler propagates without engineer intervention. In every case, the theorem follows from the type structure alone, and the engineer's annotation cost is zero.
+Dimensional equality uses the free abelian group on the base measures. Grade support, escape classifications, ranges, and transfer fidelity have additional rules and analysis domains. Automatic coverage can extend across these domains without turning every property into a consequence of dimensional parametricity.
 
-This boundary is sharp, and it is worth being explicit about where it falls. Properties that involve *inequalities* over the integers (a buffer index lies within bounds, a temperature stays below a threshold, a sampled coefficient stays inside a norm bound) are not free theorems. They are not derivable from type structure by parametricity alone, because parametricity is silent about which specific values the variables take. Such properties live one tier up in the Fidelity framework's verification stack: the engineer declares a range, the compiler propagates it through the computation, and an SMT solver discharges the resulting QF_LIA obligations. The cost is modest, and the obligations are decidable, but the discharge requires *establishing* a precondition rather than deriving one from a type. Properties that involve probability distributions (rejection-sampling termination, support equality of uniform distributions over lattice cosets) and properties that involve pairs of program runs (the probabilistic relational reasoning at the heart of cryptographic indistinguishability proofs) live further still from "free," because the obligations are no longer about a single value at a single point but about a distribution or a relation between two computations.
+The current [Decidable By Construction](https://arxiv.org/abs/2603.25414) account organizes that coverage by reasoning role:
 
-The framework treats the four logical fragments (\(\mathbb{Z}^n\) equality, QF_LIA, the restricted probabilistic fragment, probabilistic relational Hoare logic) as distinct sheaves over a shared compilation poset, where the stalk category is what changes between tiers and the staged-discharge mechanism is what remains constant. The [compilation sheaf design document](/docs/design/categorical-foundations/the-compilation-sheaf/) makes that structure precise, and the [triangle without mystery](/blog/a-triangle-without-mystery/) post sketches why the same categorical scaffolding shows up in Tarau's combinatorial isomorphisms and in the recent cellular-sheaf literature on compositional information flow. The point worth carrying out of this post is the fence: parametricity does the work in the abelian fragment, and only in the abelian fragment.
+| Tier | Source of supported proof obligations |
+|---|---|
+| 1 | Types, dimensional equations, and admitted structural rules |
+| 2 | Graph coeffects and analysis facts that generate local range, layout, and arithmetic conditions |
+| 3 | Spanning PSG relationships and hyperedges, with reusable domain or system lemmas instantiated against checked premises |
+| 4 | Relations between executions or realizations, including compiler-relational Hoare logic (cRHL) and probabilistic relational Hoare logic (pRHL) |
+
+A Tier 2 bounds check may use a range inferred from a guard, constant, or library contract. It does not inherently require a developer-written proof annotation. Tier 3 extends coverage through laws established by framework and domain authors. Supported Tier 4 rules can likewise generate derivations from program structure and existing evidence. Each obligation retains its assumptions; a probabilistic relation does not establish a cryptographic security theorem without the appropriate adversary model and quantitative argument.
+
+These tiers do not prescribe an increasing annotation burden. Application developers receive supported coverage through typed code and library use. New requirements may need explicit formulation, while unsupported obligations and timeouts remain unresolved. The [compilation sheaf design](/docs/design/categorical-foundations/the-compilation-sheaf/#tiers-as-stalk-category-refinements) records the evidence and dependencies across the tiers. A theorem established in Rocq retains that foundation when its arithmetic premises are checked by a solver. The proposed Tier 3/4 integrations still require implementation and validation.
 
 ## Lower Bounds Framing
 
@@ -98,9 +107,9 @@ The discipline that the (problem, technique) framing imposes is symmetric. Treat
 
 ## The Deeper Pattern
 
-Wadler's paper demonstrates a principle that recurs throughout our framework's design: structure that is present in the type system generates properties of the compiled artifact for free. Dimensional consistency, escape classification, grade preservation, coeffect propagation, and cross-target transfer fidelity are all instances of this principle. None requires runtime enforcement. None requires separate verification tooling. Each falls out of the type structure through parametricity.
+Wadler's paper demonstrates how useful theorems can follow from polymorphic types. Clef builds on dimensional inference and supplements it with graph analyses, reusable laws, and relational rules. These have distinct justifications, even when the application developer receives their results through the same editing experience.
 
-This is the formal content of the claim that verification is a compilation byproduct: the types determine the theorems, the compiler infers the types, and the theorems follow. The cost is the type system's design. Once that design is in place, the theorems are free in Wadler's original sense, and that is the property we will keep building on as the verification stack fills out the tiers above the abelian fragment.
+Verification as a compilation byproduct means generating and dispatching supported obligations from the structure the program already supplies. The foundational proofs and semantic adapters remain work for compiler and library authors, so application authors need not reconstruct them at every use.
 
 ## References
 

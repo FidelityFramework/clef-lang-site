@@ -79,6 +79,15 @@ fields, deletes stale rows, and preserves unchanged rows and their timestamps.
 `index.sh` updates the full-text and vector search indexes. Neither command
 deploys site pages. Deploy new pages before linking to them from the live graph.
 
+AI summary guidance lives in `workers/shared/Synthesis.fs`, compiled into both
+`search` and `smart-search`. Changes there require redeploying both workers;
+smart deploy maps shared-source changes to both. Content corrections also need
+`index.sh` to update full-text snippets, embeddings, and removed sections. Deploy
+the site assets to deliver changes to the search UI's saved-session version,
+which invalidates summaries persisted under an older prompt or content model.
+
+Run the compiled prompt checks with `npm test` in each search worker directory.
+
 `smart-deploy.sh` reconciles Atlas after each actual deployment, but skips it when
 it decides no deployment is needed. `deploy-pages.sh` alone does not rebuild
 Atlas. Use `graph.sh` to refresh Atlas independently. `smart-deploy.sh --force`

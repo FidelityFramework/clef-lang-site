@@ -132,7 +132,7 @@ graph TD
     subgraph "Hardware Entropy Layer"
         Z1[Avalanche Diode 1] --> S1[Sample CH0]
         Z2[Avalanche Diode 2] --> S2[Sample CH1]
-        Z3[Avalanche Diode 3] --> S3[Sample CH2]
+        DIODE3[Avalanche Diode 3] --> S3[Sample CH2]
         Z4[Avalanche Diode 4] --> S4[Sample CH3]
     end
 
