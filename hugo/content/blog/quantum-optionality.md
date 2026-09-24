@@ -23,7 +23,7 @@ A dimensional equation and a protocol invariant need different kinds of evidence
 | **1: Types and structural rules** | Dimensional equations and admitted algebraic relationships | Type inference and structural derivations |
 | **2: Graph coeffects** | Local conditions on ranges and layouts, with lifetime and resource requirements | Sound analysis and generated solver obligations in supported fragments |
 | **3: Spanning graph concerns** | Joint relationships retained by Program Semantic Graph (PSG) hyperedges | Reusable domain or system lemmas, instantiated with checked premises |
-| **4: Relational reasoning** | Relations between executions or between source and target realizations | Checked derivations in compiler relational Hoare logic (cRHL) or probabilistic relational Hoare logic (pRHL) |
+| **4: Relational reasoning** | Relations between executions or between source and target realizations | Checked derivations in computational relational Hoare logic (cRHL) or probabilistic relational Hoare logic (pRHL) |
 
 A hyperedge can retain a joint buffer-capacity inequality that the compiler checks at Tier 2. A resource handoff involving those buffers may use a Tier 3 protocol law. Our PSG preserves the participants and their shared premises so the compiler can use the evidence appropriate to each obligation.
 
