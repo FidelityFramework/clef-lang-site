@@ -7,7 +7,7 @@ tags: ["AI", "Architecture", "Knowledge Graphs"]
 authors: ["Houston Haynes"]
 ---
 
-Ask a question about a system whose information base is constantly growing and the research quickly fans out. A design document explains an architectural choice. The implementation establishes what currently happens, while a test records the conditions it was designed to check. A second repository may contain the generator responsible for the code under review. We need enough of those connections to answer a deep question, with room left to consider follow-on questions and instructions.
+Ask a question about a system whose information base is constantly growing and the research quickly fans out. A design document explains an architectural choice. The implementation establishes what currently happens, while a test records the conditions it was designed to check. A second repository may contain the generator responsible for the code under review. We need enough of those connections to answer a deep question, with room left to consider follow-on review and instructions.
 
 Knowledge compression takes several forms along that route. A language model encodes learned patterns in its weights. An embedding gives us a compact representation for finding similar material, and a summary condenses an argument. A knowledge graph retains selected entities and their relationships, with explicit paths back to the evidence. Language models have "swallowed all of the air in the room" for a few years, but now other time-tested knowledge compression patterns are showing their value as we encounter the practical limits of transformer-based architectures.
 
