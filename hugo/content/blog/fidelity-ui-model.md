@@ -3,7 +3,7 @@ title: "Building User Interfaces with the Fidelity Framework"
 linkTitle: "Fidelity UI Model"
 description: "Quiet functional composition over shared native and browser semantics"
 date: 2025-05-16
-lastmod: 2026-09-18
+lastmod: 2026-09-25
 authors: ["Houston Haynes"]
 tags: ["Design", "UI", "Architecture"]
 params:
@@ -70,7 +70,7 @@ Signals expose current values, while messages carry occurrences. Coherent local 
 
 The alarm threshold field needs to preserve raw text while the operator edits it. Parsing can temporarily fail without overwriting the last accepted domain value. Validation and commit behavior belong to the field controller, whose identity should survive a change in presentation.
 
-Ripple.Form offers useful research into reusable behavior and replaceable markup. Its rendering contract includes DOM types. For Fidelity, we need a boundary that both native and browser presentations can implement, including focus and accessible naming. Error exposure and read-only behavior also need equivalent meaning on both targets.
+Our work with [Partas.Solid](https://github.com/shayanhabibi/Partas.Solid), which brings SolidJS to F# through the Fable compiler, and later with [Fable.Ripple](https://github.com/fable-hub/Fable.Ripple) taught us to separate reusable component behavior from replaceable presentation. Fable.Ripple's form library applies that lesson within a DOM-based rendering contract. For Fidelity, we need a boundary that both native and browser presentations can implement, including focus and accessible naming. Error exposure and read-only behavior also need equivalent meaning on both targets.
 
 Lists add an identity problem. Reordering rows should preserve each editor, while replacing a record under the same key should update its payload. Removal retires the row's scope. A delayed validation result must be checked against that retired identity before publication, and repeated edits must reclaim obsolete metadata as well as subscriptions.
 
