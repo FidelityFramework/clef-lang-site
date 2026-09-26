@@ -34,7 +34,7 @@ Before examining implementation strategies, we should be precise about what lazy
 
 This description reveals three distinct concerns:
 
-**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly. Because that closure is settled at construction, a thunk carries no null state even before it is forced. It is [null-free by construction](/docs/design/language/null-free-by-construction/) rather than null-checked, and that same settledness lets the value cross substrates unchanged.
+**Closure capture**: The thunk is fundamentally a closure. It closes over variables from its environment. Everything we explored in [Gaining Closure](/docs/design/memory/gaining-closure/) about flat closures, capture semantics, and memory safety applies directly. Its function value and capture entries are initialized at construction. Crossing substrates additionally requires usable code and a valid mapping for each captured reference; a flat layout alone does not establish those transfer obligations.
 
 **Deferred execution**: Unlike an ordinary closure that executes when called, a thunk execution is controlled by a forcing operation. The thunk must know whether it has been evaluated.
 
@@ -116,7 +116,7 @@ This works well in the .NET ecosystem. For native compilation, every aspect of t
 
 ## Fidelity's Approach: Extended Flat Closures
 
-Our implementation builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A [lazy value is a flat closure](/spec/draft/lazy-representation/) with additional fields for memoization state.
+The current contract builds directly on the flat closure architecture described in [Gaining Closure](/docs/design/memory/gaining-closure/), itself an extension of techniques pioneered in Standard ML compilers. A [lazy value is a flat closure](/spec/draft/lazy-representation/) with additional fields for memoization state.
 
 | Lazy<T> = (thunk, env); env: | | | |
 |:---:|:---:|:---:|:---:|
@@ -125,7 +125,7 @@ Our implementation builds directly on the flat closure architecture described in
 
 The thunk is the function-value half of the pair, not a field: no function address is stored in the environment.
 
-The structure is self-contained: no pointers to outer environments, no heap allocation beyond the lazy value itself, and no collector to involve. A chain of linked thunks would break exactly this containment: each unforced link widens the set of live captures a lifetime judgment must account for, which is the space leak stated structurally. Keeping the thunk flat keeps that set at the field list, so the abstraction arrives with its judgments already finite and costs less than a hand-rolled deferral scheme that would carry none of them.
+The environment contains direct capture entries, without a linked chain of enclosing environments. A captured value can still refer to other storage, including another deferred value. Finite capture fields give a finite set of direct obligations; they do not bound every reachable object or the number of dynamic instances. Lifetime analysis must cover both the environment and any storage retained by its captures or cached result.
 
 ### The Thunk Calling Convention
 
@@ -189,28 +189,15 @@ This analysis happens upstream in CCS (Clef Compiler Services), not downstream i
 
 ## The Coeffect Model
 
-Fidelity's compiler architecture separates analysis from generation. We explored this in [Gaining Closure](/docs/design/memory/gaining-closure/) as the "photographer principle": coeffects are computed before code generation begins; witnesses observe these coeffects during MLIR emission.
+Fidelity's compiler architecture separates analysis from generation. CCS records source captures and types; Baker elaborates the lazy form and settles its typed result slot, capture modes, layout, and lifetime obligations on the PSG. The environment contains `computed`, the typed cached value, and captures. The function value remains separate.
 
-For lazy values, the coeffect is `LazyLayout`: a pre-computed structure describing everything about a specific lazy expression's representation.
-
-```fsharp
-type LazyLayout = {
-    LazyNodeId: NodeId
-    CaptureCount: int
-    Captures: CaptureSlot list
-    LazyStructType: MLIRType  // { i1, T, ptr, cap_0, cap_1, ... }
-    ElementType: MLIRType     // T
-    // ... SSA slots for construction ...
-}
-```
-
-When the zipper encounters a lazy expression during code generation, it looks up the `LazyLayout` and emits the operations that layout specifies. Emission follows the pre-computed layout the same way for every lazy expression, with no branching on the expression's structure.
+Alex's zipper and Element/Pattern/Witness composition consume those facts while emitting SSA values. Layout settlement must not depend on a preallocated count of emission registers, and witnessing must not rediscover the source capture or storage policy.
 
 This separation has practical benefits beyond architectural cleanliness. Optimization passes can reason about lazy layouts without understanding MLIR emission, layout computation can be tested on its own, and the compiler stages stay decoupled.
 
 ## Memoization: Current and Future
 
-The current Fidelity implementation provides pure thunk semantics: forcing a lazy value always executes the computation. This is semantically correct for pure computations; if the function has no side effects, executing it multiple times produces the same result.
+*Design update, 26 September 2026:* the original January article reported a prototype that recomputed on every force and described memoization as a future optimization. That behavior is not the Clef contract. [Lazy Representation §11](/spec/draft/lazy-representation/#11-normative-requirements) requires the first force to compute and store its result and later forces to return that stored value. C-05 completion must establish that behavior, including cached-result type, identity, and lifetime.
 
 ```fsharp
 let expensive = lazy (
@@ -218,32 +205,22 @@ let expensive = lazy (
     42
 )
 
-let v1 = Lazy.force expensive  // side effect runs
-let v2 = Lazy.force expensive  // side effect runs again, no memoization yet
+let v1 = eager (Lazy.force expensive)  // reached binding demands the force
+let v2 = eager (Lazy.force expensive)  // reuses the cache; no repeated effect
  
 ```
 
-True memoization, where the result is computed once and cached, requires mutation of the lazy struct. The `computed` flag must transition from false to true; the `value` slot must store the result. In a single-threaded context, this is straightforward. With concurrency, it requires synchronization.
+The explicit eager bindings make these force operations active when the containing computation reaches them. An ordinary unused `let v1 = Lazy.force expensive` would remain deferred under Clef's default demand rules. Neither marker activates an enclosing uncalled function or unselected branch.
 
-Our roadmap includes memoizing lazy values once the arena-based memory model is complete. Arena allocation provides the stable memory locations that memoization requires; the lazy struct lives in the arena and can be mutated safely. Thread synchronization will use compare-and-swap operations similar to what .NET's `Lazy<T>` employs.
+Memoization changes the computed flag and typed value slot. It does not require an arena: stack, region, static, or permitted heap storage can supply a valid lifetime. An immutable captured reference preserves sharing of its referent, and a shared cached result does not become a fresh result at every force.
 
-For now, the pure thunk semantics validate the architecture. Memoization is an optimization that builds on correct foundations.
+Force sites crossing threads or actor boundaries must discharge the specification's single-semantic-forcer ownership obligation and the target's visibility requirements. A sequential example alone cannot establish concurrent correctness. The specification must also settle reentrant forcing and failed initialization before a compiler accepts behavior that depends on those cases; this article does not choose a policy for them.
+
+Recomputing a nominally pure expression is not a substitute for these semantics: allocation identity, retained storage, and later mutation of a shared result can be observable.
 
 ## SSA Complexity
 
-Much of the implementation challenge lies not in the conceptual model but in the SSA (Static Single Assignment) accounting. Creating a lazy value requires multiple MLIR operations:
-
-1. Allocate an undefined struct of the appropriate type
-2. Insert the `false` constant at the computed slot
-3. Insert the address of the thunk function at the code pointer slot
-4. Insert each captured value at its slot
-5. The result is the fully initialized lazy struct
-
-Each step produces an SSA value. The final insert operation produces the lazy struct that subsequent code references. This chain must be computed before code generation begins so that dependent operations know which SSA identifier to reference.
-
-The Fidelity approach computes all SSA assignments in a dedicated [nanopass](/docs/internals/concepts/nanopass-navigation/). Lazy expressions receive SSA slots for each construction step. Thunk bodies receive SSA slots for extracting captures from the struct pointer. Force operations receive SSA slots for the result value. Everything is determined before the zipper begins its traversal.
-
-This is bookkeeping at scale, and it is the bookkeeping that makes code generation clean: the witness layer observes pre-computed coeffects and emits operations without runtime decisions.
+The original implementation discussion counted SSA slots before emission and inserted a thunk address into a struct. The current contract instead witnesses `(thunk, env)` as two values, with no function address in the environment and no cast joining the pair. Construction initializes the state and captures; the result slot becomes readable only after the successful force establishes its value. Alex emits that settled form through ordinary composition rather than requiring a precomputed SSA cost formula.
 
 ## The Developer Experience
 
@@ -264,9 +241,9 @@ let v3 = Lazy.force result  // 40
  
 ```
 
-The syntax is substantially similar to F#. The semantics match expectations. What differs sits beneath the surface. The closures are stack-allocated and flat, captures are resolved by explicit analysis, and the memory layout is fixed at compile time with nothing pulled in at runtime.
+The explicit Lazy syntax is familiar to an F# developer, but ordinary Clef bindings are lazy by default: `v1`, `v2` and `v3` above denote shared computations, and the force happens when each result is demanded. Capture analysis preserves those identities. The flat environment uses stack, region, static or permitted heap storage only when the lifetime proof supports that placement; a local `let` does not select it by itself.
 
-This continuity is intentional. Fidelity preserves F# idioms at the source level while providing native semantics at the binary level. A developer familiar with F# lazy evaluation can write the same patterns; the compiler handles the translation.
+The compiler must preserve both the explicit Lazy memoization protocol and Clef's ordinary demand rules through native lowering. Familiar syntax does not import F#'s ordinary eager evaluation policy.
 
 ## Building Blocks for Sequences
 
@@ -274,9 +251,9 @@ Lazy evaluation is not an isolated feature. It is infrastructure for higher-leve
 
 F# sequences (`seq { }`) are fundamentally lazy. They produce values on demand, maintain state between iterations, and compose through operations like `map`, `filter`, and `take`. Under the hood, sequences are state machines that yield values one at a time.
 
-Our implementation of sequences will build on the lazy machinery established here: flat closures for captured state, the coeffect model for layout computation, and the thunk calling convention for deferred execution. Sequences add iteration control on top.
+Sequences share the capture and storage discipline, but [their specified protocol](/spec/draft/seq-representation/) uses independent enumeration state and resumable computation, not a memoized `Lazy<'T>` value for each pull. Source formation, enumeration creation, and per-element demand remain distinct.
 
-Similarly, asynchronous workflows involve suspended computations that resume when results are available. The LLVM coroutine infrastructure we plan to leverage shares conceptual territory with thunks: code that pauses and resumes, with state preserved across suspension points.
+Similarly, [delimited continuations](/spec/draft/dcont-representation/) preserve live state across suspension. Their portable middle-end contract is a settled frame and resume structure in standard dialects; target coroutine or scheduling mechanisms belong below that boundary.
 
 The lazy implementation validates architectural choices that these more complex features will depend on.
 
@@ -286,12 +263,12 @@ Fidelity's lazy values have predictable performance characteristics:
 
 | Operation | Cost |
 |-----------|------|
-| Creating a lazy value | Stack allocation + N field writes (N = capture count) |
-| First force (non-memoizing) | Indirect call + capture extraction |
-| Subsequent forces (non-memoizing) | Same as first force |
-| Memory per lazy value | sizeof(i1) + sizeof(T) + sizeof(ptr) + captures |
+| Creating a lazy value | Selected storage acquisition plus state and capture initialization |
+| First successful force | State check, thunk invocation, typed result store, state update |
+| Subsequent forces | State check and cached-result access |
+| Memory per lazy value | Settled environment layout, including padding, plus the separate function value where needed |
 
-There is no heap allocation, no garbage collector involvement, no synchronization overhead in the current implementation. The closure is flat; access is direct. The thunk call is indirect (through the code pointer) but predictable.
+These are protocol costs, not measured timings. The storage class, capture representation, known or indirect call, and synchronization obligations determine the realized cost. No GC-managed allocation is permitted by the native lazy contract.
 
 Compare with managed lazy evaluation, where creating a lazy value may allocate a heap object, forcing may involve thread synchronization, and memory pressure depends on GC behavior. The Fidelity approach trades some runtime sophistication for predictability.
 
@@ -308,7 +285,7 @@ Standard ML of New Jersey's closure conversion, documented in Appel's "Compiling
 
 ## A Foundation
 
-Lazy evaluation in Fidelity is infrastructure that later features build on. The flat closure architecture, the coeffect model, and the SSA accounting all generalize past this one feature.
+Lazy evaluation shares the flat closure architecture, typed graph facts, and lifetime discipline with other deferred computations. Its memoization protocol remains specific to lazy values.
 
 Sequences and async workflows will reuse the capture analysis, layout computation, and uniform calling conventions established here.
 

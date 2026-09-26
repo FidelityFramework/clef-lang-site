@@ -30,7 +30,7 @@ let makeCounter (start: int) : (unit -> int) =
 
 This function returns a lambda that captures `count`, a mutable variable. Each call to `makeCounter` should produce an independent counter with its own state. When invoked, each counter should increment its own captured value.
 
-Whether a value becomes a closure at all is decided upstream, by arity analysis: a saturated call compiles to a direct function call and needs no closure, while a partial application or a returned lambda like this one does. [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) covers that decision. This page describes closure representation once arity analysis has decided a closure is required.
+Application analysis identifies the arguments supplied at each source frontier; capture and use analysis determine the callable's representation. A saturated call can still invoke a captured environment. A captureless lambda needs no environment, and a named nested function proven not to escape passes captures as ordinary parameters. [Arity On The Side of Caution](/docs/design/structure-and-performance/arity-on-the-side-of-caution/) covers application staging. This page describes the closure form required when captures must travel with a function value.
 
 In .NET, this works transparently. The runtime allocates a heap object to hold captured variables, and garbage collection ensures that object lives as long as any closure references it. The developer writes the code. The runtime handles memory.
 
@@ -67,13 +67,13 @@ An environment link can keep bindings alive even when the closure uses only one 
 
 ### Flat Closures
 
-A [flat closure](/spec/draft/closure-representation/) stores its captures in one environment. Immutable values are copied into fields. Mutable bindings contribute references to their shared storage cells. The field list records the captures directly, without a chain of enclosing environments.
+A [flat closure](/spec/draft/closure-representation/) stores its captures in one environment. Immutable bindings contribute their established values or shared deferred identities; capture does not force an initializer. Mutable bindings contribute references to their shared storage cells. The field list records the captures directly, without a chain of enclosing environments.
 
 ```mermaid
 flowchart LR
-    subgraph FlatClosure["Flat Closure"]
+    CP[function value]
+    subgraph FlatClosure["Flat capture environment"]
         direction LR
-        CP[code]
         CX[captured_x]
         CY[captured_y]
         ETC[...]
@@ -98,7 +98,7 @@ The MLKit approach influenced our design significantly. While our current implem
 
 Clef specifies different capture modes for mutable and immutable bindings. [ByRef Resolved](/docs/design/types/byref-resolved/) develops the native reference semantics.
 
-When a closure captures an immutable binding, it copies the value into the environment. If that value is a reference to mutable storage, the reference is copied and the underlying storage remains shared.
+When a closure captures an immutable binding, it retains an already established value or the identity of its shared deferred computation. It does not force that computation to obtain a current-value snapshot. If the established value is a reference to mutable storage, the reference is copied and the underlying storage remains shared.
 
 Mutable bindings require different treatment. A mutable variable captured by multiple closures must share state. All closures must see the same value. Copying the value would break this contract.
 
@@ -116,25 +116,21 @@ The returned closure must share `count` with every other closure over that bindi
 
 ## Captured Constraints
 
-Clef's flat closure representation carries the source binding's dimensional identity together with its capture mode. An immutable scalar is captured by value, so a range constraint established for that value remains valid inside the closure. A mutable binding is captured by reference to shared storage, so a guard checked when the closure is constructed does not automatically constrain a later read. Writes through an alias or another closure matter just as direct assignment does. These are the [normative capture semantics](/spec/draft/closure-representation/#22-capture-semantics), independent of whether the backend uses a native flat environment or a JavaScript host closure.
+Clef's flat closure representation carries the source binding's dimensional identity together with its capture mode. A range established for an already computed immutable scalar remains valid inside the closure. If an immutable binding still denotes a deferred computation, its result range must retain the demand and dependency premises; copying its identity does not discharge them. A mutable binding is captured by reference to shared storage, so a guard checked when the closure is constructed does not automatically constrain a later read. Writes through an alias or another closure matter just as direct assignment does. These are the [normative capture semantics](/spec/draft/closure-representation/#22-capture-semantics), independent of whether the backend uses a native flat environment or a JavaScript host closure.
 
 The distinction applies to [lazy values](/spec/draft/lazy-representation/) and sequences as well. Deferring a computation preserves its dimensional type and pending obligations. Mutable inputs still require validity at the relevant reads. Memoization shares the result already computed. It does not make a shared mutable object inside that result independently polymorphic for each consumer. An immutable binding and immutable reachable storage are different properties, specified in [generalization and deferred computation](/spec/draft/inference-constraint-solving/#generalization-immutable-sharing-and-deferred-computation).
 
 [Width Inference §2](/spec/draft/width-inference/#2-value-range-analysis) requires range constraints to retain their guard and dependency provenance on the PSG. If a callback captures an immutable slice length, a bound already established for that value remains useful when the callback runs. If it reads a shared counter, the compiler must account for intervening writes before reusing a bound on the counter's contents. Retaining those dependencies lets ordinary closure code reuse the facts that still hold and request a fresh check where one is needed.
 
-## The Two-Pass Architecture
+## The Settled Graph and Its Witness
 
-Our Composer implementation separates capture identification from the allocation of SSA (Static Single Assignment) identifiers and concrete environment layout. The layout needs stable identifiers for the captured values and their storage.
+*Design update, 26 September 2026:* the original January account described two Alex preprocessing passes around SSA assignment. The current [specification](/spec/draft/closure-representation/#9-compilation-pipeline) assigns capture and layout settlement to the semantic graph before witnessing. The publication date above records the original article; this section describes the current contract.
 
-The solution is a two-pass architecture in the Alex preprocessing phase.
+CCS records lexical captures, their source identities, and mutability. Baker elaborates application stages and closure forms, then saturates their typed capture, layout, and lifetime obligations. A generic layout can remain symbolic until its representation is committed. Stable semantic identities, rather than preassigned emission registers, relate each capture to its initializer and shared storage.
 
-**Pass 1: Capture Identification** runs before SSA assignment. It traverses the Program Semantic Graph (PSG), identifies lambda nodes, and marks which variables each lambda captures. This pass also determines capture semantics: ByValue for immutable bindings, ByRef for mutable bindings.
+Alex's zipper and Element/Pattern/Witness composition consume those settled facts while producing SSA values. Witnessing does not choose capture semantics, infer storage lifetimes, or reconstruct layouts from source names. A known implementation can make the function-value half implicit, but invocation must still recall the environment belonging to the actual callable occurrence.
 
-**SSA Assignment** then runs with awareness of captures. Variables that are captured by reference receive additional SSA identifiers for their addresses, not just their values.
-
-**Pass 2: Closure Layout** runs after SSA assignment. With SSA identifiers now available, this pass computes the concrete layout of each closure's environment structure: field offsets, struct types, and the synthetic SSA identifiers for environment allocation and field access.
-
-Our PSG must carry settled capture and layout facts before witnessing. The Zipper and witnesses read those facts when producing portable IR. A proof ledger currently cross-checks preservation while the proof-carrying graph mechanism is validated. That scaffold does not transfer responsibility for the constraints out of the PSG.
+This contract is a C-series acceptance requirement. Coverage of one known-callable path does not establish conformance for returned, stored, or dynamically selected callables. Each admitted path must preserve the same capture identity, sharing, lifetime, and lowering correspondence.
 
 ## The Witnessed Form
 

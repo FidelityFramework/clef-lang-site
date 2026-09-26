@@ -27,14 +27,16 @@ The general-purpose CPU is the default target. Its profile:
 
 **Quire support:** Software emulation. A b-posit32 quire occupies a fixed 800 bits (100 bytes) on the stack; a full-gamut posit32 quire is \(n^2/2 = 512\) bits (64 bytes). Performance cost is approximately 50 cycles per fused multiply-add operation, dominated by the multi-precision integer arithmetic required to maintain exact accumulation without hardware support.
 
-**Memory model:** Conventional stack/heap with the DMM coeffect discipline. Escape analysis maps to standard allocation decisions:
+**Memory model:** Conventional storage under the DMM coeffect discipline. *Closure-contract update, 26 September 2026:* the original escape-event table did not distinguish all required lifetimes. The current [closure specification](/spec/draft/closure-representation/#33-escape-analysis) selects storage from the lifetime proved for the value and its captures:
 
-| Escape Classification | x86/ARM Allocation |
+| Proved Lifetime | x86/ARM Allocation |
 |---|---|
-| StackScoped | `memref.alloca` (stack frame) |
-| ClosureCapture(\(t\)) | Arena or heap, depending on closure lifetime |
-| ReturnEscape | Caller-provided buffer or arena |
-| ByRefEscape | Arena with lifetime tracking |
+| Scope-bounded | `memref.alloca` in a covering activation |
+| Region-bounded | An established covering region, including suitable caller-provided storage |
+| Program-lifetime | Static storage for a value constructed once and retained for the program's lifetime |
+| Genuinely dynamic | Heap storage when the target permits it |
+
+Being captured or returned does not itself select a row. Every shared captured cell and referenced value must have storage covering its actual uses. An unavailable lifetime class is a compile-time obligation failure, not an implicit allocation fallback.
 
 **Compilation path:** PSG → standard MLIR dialects (`arith`, `memref`, `scf`, `linalg`) → LLVM dialect → LLVM IR → native code. The Composer orchestrates this lowering, distributing PSG representations into the appropriate MLIR infrastructure at each stage. Dimensional annotations persist as MLIR attributes through lowering and inform representation selection and transfer fidelity analysis at each stage where they are needed.
 

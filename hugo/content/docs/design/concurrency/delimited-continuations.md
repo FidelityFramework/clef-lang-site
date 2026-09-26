@@ -121,23 +121,17 @@ This mechanism is central to our compilation strategy. The Composer compiler is 
 
 Our Composer design preserves the continuation structure of Clef's async expressions through native code generation. An async description defers work until activation, with `await` expressing a suspension and resumption point. `Incremental<'T>` additionally specifies caching and dependency invalidation for demand-driven derivations. `Observable<'T>` specifies producer-driven event delivery. These constructs use continuation structure while retaining their distinct evaluation contracts.
 
-The approach combines delimited continuations with true RAII principles. Where .NET async relies on heap-allocated Tasks and thread pool scheduling, a Clef async expression compiles to a stack-based state machine with deterministic resource cleanup:
+The approach combines delimited continuations with deterministic resource cleanup. *Contract correction, 26 September 2026:* the original example used a source `stackalloc` and returned a slice without establishing its backing storage's lifetime. Clef does not expose that raw-pointer allocation surface. Its [continuation contract](/spec/draft/dcont-representation/) requires explicit live-across-suspension state and valid frame residence; it does not promise stack placement for every async computation.
 
-```fsharp
-// What developers write - familiar Clef async
-let processFile() = async {
-    let! handle = File.openAsync "data.txt"
-    let buffer = stackalloc<byte> 4096
-    let! bytesRead = handle.readAsync buffer
-    return buffer.Slice(0, bytesRead)
-}
+A file-reading computation illustrates the obligations without prescribing an API:
 
-// What it compiles to:
-// - Stack frame for continuation state (0 heap bytes)
-// - Automatic resource cleanup at scope boundaries
-// - Platform-specific I/O (IOCP on Windows, io_uring on Linux)
- 
-```
+1. Acquire a handle and a bounded buffer through the target's declared interfaces.
+2. Preserve both across the read suspension in storage that covers the continuation's lifetime.
+3. On resumption, establish the initialized range from the number of bytes read.
+4. If a view is returned, prove its backing storage covers every consumer; otherwise return an owned result or finish consumption within the established lifetime.
+5. Release resources at their required exits, including admitted failure and cancellation paths.
+
+Stack placement is valid only when the covering activation survives every suspension and use. Other admitted lifetimes follow the declared storage and region contracts. Platform I/O and scheduling mechanisms realize the settled protocol below the portable middle-end boundary.
 
 The types themselves encode CPS structure. The async primitives make continuation capture explicit in their signatures, and the Composer compiler recognizes these patterns during type resolution, recording them in the Program Semantic Graph for code generation.
 
@@ -147,9 +141,9 @@ The target representation is the graph itself. The design once placed a DCont di
 
 The [zipper-based pipeline](https://speakez.tech/blog/baker-a-key-ingredient-to-firefly/) that correlates Clef's typed tree with the Program Semantic Graph becomes essential when compiling continuations. During type resolution, the compiler identifies continuation points (suspension, capture, and boundary markers) and annotates the PSG accordingly. These annotations then guide code generation, determining the state indices, the resume blocks, and the boundary of the emitted state machine.
 
-The coherence between type resolution and code generation ensures that continuation annotations align exactly with MLIR emission. Variables captured across suspension points are stack-allocated. Boundary scopes map to the state machine's entry and completion. Suspension points become resume blocks with their result types. No scope mismatch, no lost context.
+The compiler must preserve the correspondence between the settled graph and emitted operations. Variables live across suspension occupy proved frame slots; external mutable captures retain their actual shared cells and their separate lifetime obligations. Boundary scopes map to the state machine's entry and completion, and suspension points become resume blocks with the settled result types. The witness consumes these facts rather than choosing state indices or inferring residence during emission.
 
-This principled front-loading means the Composer compiler requires far fewer MLIR and LLVM passes than compilers for imperative languages. As Andrew Appel demonstrated in his seminal 1998 paper, [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf): the Static Single-Assignment form at the heart of optimizing compilers is mathematically equivalent to functional programming with lexical scope. When C++ or Rust compile to LLVM, their compilers must *reconstruct* the functional relationships that imperative syntax obscures: analyzing loops, tracking mutations, resolving aliasing. Fidelity's pipeline preserves what those compilers must rediscover. The continuation structure, the type information, the scope boundaries: in our model ***these features survive intact*** from Clef source through the PSG to MLIR. This is the meaning behind the framework's name: fidelity to the original program structure yields faster compilation and more predictable optimization, because MLIR operates on preserved intent rather than speculative reconstructions.
+Preserving source relationships gives later passes useful information; it does not by itself establish fewer passes or faster compilation than another compiler. Appel's [SSA is functional programming](https://www.cs.princeton.edu/~appel/papers/ssafun.pdf) explains the connection between SSA and functional scope. Composer's delivery obligation is to retain the relevant continuation, type, identity and scope facts through Baker settlement, actual-occurrence Alex composition and target lowering. Pass-count or timing improvements require measurements on the selected pipeline and workload; artifact checks must establish that the retained facts describe the emitted program.
 
 ## Behind the Scenes
 

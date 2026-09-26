@@ -105,70 +105,47 @@ This is a standing tension in ML compilation. OCaml accepts it as a tradeoff: op
 
 ## Fidelity's Approach: Principled Arity Tracking
 
-For our Fidelity framework, we adopt the OCaml model, with the benefit of Clef's type system providing additional information.
+*Design update, 26 September 2026:* the original January discussion used a packed pointer-bearing closure example and described saturation as flattening nested applications. The current [closure contract](/spec/draft/closure-representation/) requires a function value and a separate environment, and source evaluation frontiers constrain when applications can be combined. This section records that contract, rather than claiming every example is already a validated compiler path.
 
 ### Arity in the PSG
 
-Our Program Semantic Graph (PSG) carries explicit arity for all function bindings:
+The Program Semantic Graph (PSG) retains the function's source type and its declared application stages. A source type such as `'a -> 'b -> 'c` alone does not establish that one native call consumes two arguments: the first application can execute a body that returns another callable. Hidden environment and result-destination parameters belong to the settled physical signature, not the source argument count.
 
-```fsharp
-type BindingInfo = {
-    Name: string
-    Type: NativeType
-    IsMutable: bool
-    Arity: int option  // Known arity, or None for opaque functions
-    // ...
-}
-```
-
-When CCS (Clef Compiler Services) encounters a function definition, it records the arity:
+For a definition with two declared source parameters:
 
 ```fsharp
 // let greet prefix name = ...
-// Arity = Some 2
+// Two declared parameters at one application boundary
  
 ```
 
 ### Saturation Detection
 
-During PSG construction, CCS detects saturated calls through partial applications:
+CCS preserves the source applications. Baker can settle a complete direct invocation when the known callable and its argument stages justify it:
 
 ```fsharp
 // Source: Console.readln() |> greet prefix
 
-// Without arity tracking: nested Applications
-App(App(greet, prefix), readln())  // Alex doesn't know how to emit this
-
-// With arity tracking: flattened when saturated
-App(greet, [prefix; readln()])     // Direct 2-arg call
+// Ordinary prefix and readln() arguments retain shared deferred identities.
+// The demanded body decides which values it needs; direct eager arguments
+// would instead be demanded at this activated application boundary.
  
 ```
 
-`greet` has arity 2. We provide 2 arguments (prefix and the readln result). This is a saturated call that should compile to a direct function call rather than closure creation.
+If an earlier partial application is stored, its ordinary supplied operands retain their shared deferred identities. Formation does not force them. Direct `eager` operands are demanded at the activated partial-application boundary; later uses reuse the established values without replay. Combining stages must preserve these distinct frontiers and cannot move a later operand ahead of the body producing a returned callable. The same rule governs [stored and bare sequence operations](/spec/draft/seq-operations-representation/#3-formation-and-application).
 
 ### Closure Representation When Needed
 
-When arity analysis cannot prove a call saturated, the partial application becomes a closure, and from that point the [flat closure representation](/docs/design/memory/gaining-closure/) governs what it is and why it is safe: a code pointer paired with a settled environment, [null-free by construction](/docs/design/language/null-free-by-construction/), placed on the stack or in a region by escape analysis. Arity analysis settles whether a closure exists at all. When one does, the flat closure representation fixes its layout and lifetime. Every closure that does exist has an enumerated environment and a known extent.
+An unsupplied source argument leaves a function value. Its representation follows capture and use analysis: a captureless function needs no environment, while captured values travel in the [flat closure representation](/docs/design/memory/gaining-closure/). Saturation alone does not remove an existing environment. Before layout commitment, capture types and target layout facts must determine its extent; lifetime evidence selects stack, region, static storage, or permitted heap storage.
 
-For genuinely escaping partial applications, the design carries an explicit closure node.
+Binding a partial application to a name does not by itself prove escape:
 
 ```fsharp
-let partial = greet "Hello"  // Escapes, bound to a name
-
-// PSG represents this as:
-PartialApplication(greet, ["Hello"], remainingArity=1)
+let partial = greet "Hello"  // Retains the supplied argument when formed
+partial "Ada"               // Uses decide the required lifetime
 ```
 
-From this node, Alex is designed to emit a closure struct on the stack:
-
-```mlir
-// Closure struct: { funcPtr, captured_arg0 }
-%closure = memref.alloca() : memref<2xi64>
-memref.store %greet_ptr, %closure[0] : memref<2xi64>
-memref.store %hello_str, %closure[1] : memref<2xi64>
-```
-
-When this closure is later applied, we load the captured argument and make a direct call.
+The portable closure form carries the function value and environment as two SSA values. Code is never stored as an integer or pointer field in that environment, and the pair is never packed or cast. Invocation passes the environment first, followed by the explicit arguments. A known implementation permits a direct call, provided it uses the environment recalled from this particular function value.
 
 ## Why This Matters for Fidelity
 
@@ -185,17 +162,17 @@ List.map (fun x -> x + 1) items  // map has arity 2, fully applied
 
 ### 2. Stack-Allocated Closures
 
-When partial application does occur and the closure does not escape, it lives on the stack, reclaimed when the frame exits. When it escapes, its environment is hoisted into a region whose lifetime covers it. Neither path touches a garbage-collected heap.
+Scope-bounded environments can live on the stack. Escaping environments require storage covering all uses: an established region, static storage for a value constructed once and held for the program's lifetime, or permitted heap storage for genuinely dynamic extent. Every referenced capture has its own covering-lifetime obligation. A target without suitable storage must diagnose an unsatisfied lifetime obligation.
 
 ```fsharp
-let addFive = add 5  // Closure on stack, lives in this frame
-items |> List.map addFive  // Closure doesn't escape
+let addFive = add 5
+items |> List.map addFive  // Captures and demanded uses determine residence
  
 ```
 
 ### 3. Predictable Performance
 
-In .NET, closure allocation is implicit and its cost is hard to predict. Our Fidelity framework makes that cost visible: the PSG represents `PartialApplication` nodes directly, so developers can see exactly where closures are created.
+The PSG makes application stages, captured values, and selected storage inspectable. This exposes the allocation and initialization costs of the selected representation without making the source programmer choose a storage mechanism. A callback passed to a lazy operation can remain live in its deferred result; local syntax alone does not establish stack residence.
 
 ### 4. Information Preserved, Not Discarded
 
@@ -215,13 +192,13 @@ flowchart TD
 
     subgraph "PSG Representation"
         D[Lambda with Arity]
-        E[PartialApplication Node]
+        E[Settled application stages]
         F[Flattened Application]
     end
 
     subgraph "MLIR/SSA"
         G[func.func with N args]
-        H[Closure struct + call]
+        H[Function value + environment + call]
         I[Direct func.call]
     end
 
@@ -242,10 +219,10 @@ result |> Option.map processValue
 
 The next steps involve:
 - **Arity propagation through higher-order functions**: When possible, infer arity through abstractions
-- **Closure escape analysis**: When a partial application escapes its stack frame, [escape analysis](/docs/design/types/byref-resolved/) hoists its environment into a region whose lifetime covers it, rather than rejecting the program
+- **Closure escape analysis**: Establish storage covering the environment and every referenced capture, using the target's available lifetime classes
 - **Defunctionalization for closed sets**: When all uses of a higher-order function are known, eliminate closures entirely
 
-Tracking arity conservatively lets curried code compile straight to native code: saturated calls become direct function calls, and partial application gets a principled representation instead of a heap allocation the runtime would have to manage. The same discipline governs every function value. Arity determines whether a value is a closure at all. When it is, the [flat closure](/docs/design/memory/gaining-closure/) makes that value safe by construction, with its lifetime and inhabitance resolved at the moment it is built. Because the framework does not discard what it has resolved, that safety survives lowering rather than being reconstructed at the bottom. That refusal to throw information away is what our Fidelity framework is named for. We will keep refining the arity propagation and escape analysis as the compiler work continues.
+The C-series delivery must cover these forms together: direct calls, stored partials, returned functions, higher-order uses, and dynamically selected callables. Completion requires preservation of source evaluation order, actual capture identity, typed calling conventions, and valid storage through target lowering. A successful direct-call example cannot stand in for that complete contract.
 
 ---
 

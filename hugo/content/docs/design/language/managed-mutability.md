@@ -10,6 +10,8 @@ params:
   migration_date: 2026-02-15
 ---
 
+*Historical implementation report, 5 February 2026; contract note added 26 September 2026.* The sample counts, implementation statuses, and roadmap below describe that February snapshot. The current [closure specification](/spec/draft/closure-representation/#33-escape-analysis) requires lifetime-driven placement across stack, region, static storage, and permitted heap storage. Capture alone does not imply escape or arena allocation. Every mutable cell must outlive all closures sharing it, and immutable references retain their referents' sharing. The C-series must establish that complete contract; this historical report is not current conformance evidence.
+
 We just hit a milestone in the Composer compiler: mutable variables work in simple loops. Three console samples compile and execute correctly. Many more don't, and this is the third time we've reached this point along different design paths.
 
 Those three working samples share an architectural pattern that composes cleanly and fails visibly. Each failure marks a point where the architecture is incomplete, and marks it precisely. The sections below cover how we built managed mutability this way, and why honest accounting of what works and what still fails serves the design better than inflated claims.
